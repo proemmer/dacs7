@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 
 namespace InacS7Core.Helper
 {
@@ -13,9 +14,14 @@ namespace InacS7Core.Helper
         #region HelperClass
         private class FoundMarker
         {
-            internal FoundMarker(byte[] marker, PatternMatch<byte>.Result result) { Marker = marker; Result = result; }
+            internal FoundMarker(byte[] marker, PatternMatch<byte>.Result result, Marker metaData)
+            {
+                Marker = marker; Result = result;
+                MetaData = metaData;
+            }
             public byte[] Marker { get; private set; }
             public PatternMatch<byte>.Result Result { get; private set; }
+            public Marker MetaData { get; private set; }
         }
 
 
@@ -27,34 +33,67 @@ namespace InacS7Core.Helper
         #endregion
 
         #region Fields
-
-        private static readonly Dictionary<Type,ProtocolBinding> Bindings = new Dictionary<Type, ProtocolBinding>();
+        private static readonly ReaderWriterLockSlim CacheLock = new ReaderWriterLockSlim();
+        private static readonly Dictionary<Type, ProtocolBinding> Bindings = new Dictionary<Type, ProtocolBinding>();
         private enum EProcessingState { SyncingOffset, SyncingLength, Collecting };
         private readonly List<Marker> _markers = new List<Marker>();
-        private readonly List<Tuple<byte[], int>> _beginMarkerSequences = new List<Tuple<byte[], int>>();
-        private readonly List<Tuple<byte[], int>> _endMarkerSequences = new List<Tuple<byte[], int>>();
+        private readonly List<Tuple<byte[], Marker>> _beginMarkerSequences = new List<Tuple<byte[], Marker>>();
+        private readonly List<Tuple<byte[], Marker>> _endMarkerSequences = new List<Tuple<byte[], Marker>>();
+        private static List<ProtocolPolicyBase> _orderedBindingsCache = null;
         //private ILogger logger = NullLogger.Instance;
         #endregion
 
         #region Policy Factory 
         public static IProtocolPolicy FindPolicyByPayload(IEnumerable<byte> data)
         {
-            return Bindings.Values
-                .OrderByDescending(x => x.ProtocolPolicy.BeginMarkerEnd)
-                .Select(binding => binding.ProtocolPolicy)
-                .FirstOrDefault(x => x.Test(data));
+            CacheLock.EnterUpgradeableReadLock();
+            try
+            {
+                if (_orderedBindingsCache == null)
+                {
+                    CacheLock.EnterWriteLock();
+                    try
+                    {
+                        _orderedBindingsCache = Bindings.Values
+                            .OrderByDescending(x => x.ProtocolPolicy.BeginMarkerEnd)
+                            .Select(binding => binding.ProtocolPolicy).ToList();
+                    }
+                    finally
+                    {
+                        CacheLock.ExitWriteLock();
+                    }
+                }
+                return _orderedBindingsCache.FirstOrDefault(x => x.Test(data));
+            }
+            finally
+            {
+                CacheLock.ExitUpgradeableReadLock();
+            }
+
         }
 
         #endregion
 
         protected ProtocolPolicyBase()
         {
-            if(!Bindings.ContainsKey(this.GetType()))
+            if (!Bindings.ContainsKey(GetType()))
             {
-                Bindings.Add(GetType(),new ProtocolBinding()
+                Bindings.Add(GetType(), new ProtocolBinding()
                 {
                     ProtocolPolicy = this
                 });
+
+                if (_orderedBindingsCache == null)
+                    return;
+                CacheLock.EnterWriteLock();
+                try
+                {
+                    _orderedBindingsCache = null;
+                }
+                finally
+                {
+                    CacheLock.ExitWriteLock();
+                }
             }
         }
 
@@ -76,11 +115,11 @@ namespace InacS7Core.Helper
             if (aMarker.IsEndMarker)
             {
                 if (_endMarkerSequences.Count == 1)
-                    throw new Exception("Only one End marker allowed!!!!!");
-                _endMarkerSequences.Add(new Tuple<byte[], int>(aMarker.ByteSequence.ToArray(), aMarker.OffsetInStream));
+                    throw new Exception("Only one End marker allowed!");
+                _endMarkerSequences.Add(new Tuple<byte[], Marker>(aMarker.ByteSequence.ToArray(), aMarker));
             }
             else
-                _beginMarkerSequences.Add(new Tuple<byte[], int>(aMarker.ByteSequence.ToArray(), aMarker.OffsetInStream));
+                _beginMarkerSequences.Add(new Tuple<byte[], Marker>(aMarker.ByteSequence.ToArray(), aMarker));
 
         }
 
@@ -192,19 +231,20 @@ namespace InacS7Core.Helper
 
         #region Private Methods
 
-        private static FoundMarker FindDatagramMarker(IEnumerable<byte> data, IEnumerable<Tuple<byte[], int>> markers)
+        private static FoundMarker FindDatagramMarker(IEnumerable<byte> data, IEnumerable<Tuple<byte[], Marker>> markers)
         {
             var patternMatchResults = new List<FoundMarker>();
             var aCollection = data as byte[] ?? data.ToArray();
             var firstOffset = 0;
             foreach (var marker in markers)
             {
-                var result = PatternMatch<byte>.MatchOrMatchPartiallyAtEnd(aCollection, marker.Item1, firstOffset + marker.Item2);
+                var offset = marker.Item2.OffsetInStream;
+                var result = PatternMatch<byte>.MatchOrMatchPartiallyAtEnd(aCollection, marker.Item1, firstOffset + offset);
                 if (!result.NoMatch)
                 {
                     if (!patternMatchResults.Any())
-                        firstOffset = result.MatchPos - marker.Item2;
-                    patternMatchResults.Add(new FoundMarker(marker.Item1, result));
+                        firstOffset = result.MatchPos - offset;
+                    patternMatchResults.Add(new FoundMarker(marker.Item1, result, marker.Item2));
                 }
                 else
                     break; //if we have no marker, then 
@@ -261,7 +301,6 @@ namespace InacS7Core.Helper
                 sb.Length = sb.Length - 1;
 
             var asString = Encoding.ASCII.GetString(data.ToArray(), 0, minCount);
-            //Logger.InfoFormat("ProtocolPolicyBase eat {0} bytes: {1} ({2})", minCount, sb, asString);
         }
 
         private List<object> InspectAndExtract(IEnumerable<byte> data)
@@ -286,23 +325,25 @@ namespace InacS7Core.Helper
                                 if (foundMarker != null && foundMarker.Result != null)
                                 {
                                     // Find the marker in the marker list by it's byte sequence.
-                                    offsetMarker = _markers.Find(m => !m.ByteSequence.SequenceEqual(foundMarker.Marker));
+                                    //offsetMarker = _markers.Find(m => !m.ByteSequence.SequenceEqual(foundMarker.Marker));
+                                    offsetMarker = foundMarker.MetaData;
+                                    var offsetInStream = offsetMarker.OffsetInStream;
 
                                     if (foundMarker.Result.FullMatch)
                                     {
-                                        if (foundMarker.Result.MatchPos > offsetMarker.OffsetInStream)
+                                        if (foundMarker.Result.MatchPos > offsetInStream)
                                         {
                                             // read away up to sync
-                                            Eat(originData, foundMarker.Result.MatchPos - offsetMarker.OffsetInStream);
+                                            Eat(originData, foundMarker.Result.MatchPos - offsetInStream);
                                         }
                                         processingState = EProcessingState.SyncingLength;
                                     }
                                     else if (foundMarker.Result.PartialMatch)
                                     {
-                                        if (foundMarker.Result.MatchPos > offsetMarker.OffsetInStream)
+                                        if (foundMarker.Result.MatchPos > offsetInStream)
                                         {
                                             // read away up to partial (potential) match position
-                                            Eat(originData, foundMarker.Result.MatchPos - offsetMarker.OffsetInStream);
+                                            Eat(originData, foundMarker.Result.MatchPos - offsetInStream);
                                         }
                                         ready = true;
                                     }
@@ -339,7 +380,7 @@ namespace InacS7Core.Helper
 
                     case EProcessingState.Collecting:
                         {
-                            var length = originData.Count;
+                            var length = originData != null ? originData.Count : -1;
                             var datagramLength = int.MaxValue;
 
                             if (_endMarkerSequences.Count > 0)
@@ -348,8 +389,21 @@ namespace InacS7Core.Helper
                                 var foundMarker = FindDatagramMarker(originData, _endMarkerSequences);
                                 if (foundMarker != null && foundMarker.Result != null)
                                 {
+                                    lengthMarker = foundMarker.MetaData;
                                     // Find the marker in the marker list by it's byte sequence.
-                                    lengthMarker = _markers.Find(m => !m.ByteSequence.SequenceEqual(foundMarker.Marker));
+                                    //lengthMarker = _markers.Find(m =>
+                                    //{
+                                    //    var fmarker = foundMarker.Marker;
+                                    //    if (m.ByteSequence.Count() != fmarker.Count())
+                                    //        return false;
+                                    //    for (var i = 0; i < m.ByteSequence.Count(); ++i)
+                                    //    {
+                                    //        if (m.ByteSequence.ElementAt(i) != fmarker.ElementAt(i))
+                                    //            return false;
+                                    //    }
+                                    //    return true;
+                                    //}
+                                    //);
 
                                     if (foundMarker.Result.FullMatch)
                                         datagramLength = foundMarker.Result.MatchPos + lengthMarker.SequenceLength;
@@ -357,16 +411,16 @@ namespace InacS7Core.Helper
                             }
                             else
                             {
-                                datagramLength = GetDatagramLength(data);
+                                datagramLength = GetDatagramLength(originData);
                             }
 
 
                             //Logger.DebugFormat("InspectAndExtract '{0}': Collecting data for DatagramLength <{1}>", protocolName, datagramLength);
-                            if (datagramLength > 0 && datagramLength <= length)
+                            if (originData != null && datagramLength > 0 && datagramLength <= length)
                             {
                                 try
                                 {
-                                    var buffer = new List<byte>(data.Take(datagramLength));
+                                    var buffer = new List<byte>(originData.Take(datagramLength));
                                     //Remove the First and The last Marker if they are Exclusive Markers
                                     if (lengthMarker != null && lengthMarker.IsExclusiveMarker)
                                         buffer.RemoveRange(lengthMarker.OffsetInStream, lengthMarker.SequenceLength);
@@ -429,6 +483,7 @@ namespace InacS7Core.Helper
 
             if (baseType == null)
                 throw new ArgumentNullException("baseType", "Parent Type must be defined");
+
 
             // get all the types
             var types = assembly.GetTypes();

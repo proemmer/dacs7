@@ -3,6 +3,7 @@ using InacS7Core.Helper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace InacS7Core.Protocols
 {

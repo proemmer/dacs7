@@ -24,7 +24,6 @@ namespace InacS7Core
     // To enable this option, right-click on the project and select the Properties menu item. In the Build tab select "Produce outputs on build".
     public class InacS7CoreClient : IInacS7CoreClient
     {
-
         #region Helper class
         private class CallbackHandler
         {
@@ -39,29 +38,48 @@ namespace InacS7Core
         #region Fields
 
         private readonly object _syncRoot = new object();
+        //private SemaphoreSlim _semaphore;
         private readonly UpperProtocolHandlerFactory _upperProtocolHandlerFactory = new UpperProtocolHandlerFactory();
         private readonly Queue<AutoResetEvent> _eventQueue = new Queue<AutoResetEvent>();
+        private readonly ReaderWriterLockSlim _queueLockSlim = new ReaderWriterLockSlim();
+        private readonly ReaderWriterLockSlim _callbackLockSlim = new ReaderWriterLockSlim();
+        private bool _disposed;
         private UInt16 _alarmUpdateId;
-        private UInt16 _callbackWaiter;
-        private static int _currentNumberOfPendingCalls;
-        private const int SleeptimeAfterMaxPendingCallsReached = 10;
+        private int _currentNumberOfPendingCalls;
+        private int _sleeptimeAfterMaxPendingCallsReached;
+        private ushort _maxParallelJobs;
         private ushort _maxParallelCalls;
+        private TaskCreationOptions _taskCreationOptions = TaskCreationOptions.None;
         private ConnectionParameters _parameter;
         private ClientSocket _clientSocket;
         private readonly Dictionary<int, CallbackHandler> _callbacks = new Dictionary<int, CallbackHandler>();
         private string _connectionString = string.Empty;
-        private int _timeout = 50000;
-        private const UInt16 PduSizeDefault = 480;
+        private int _timeout = 5000;
+        private const UInt16 PduSizeDefault = 960;
         private int _referenceId;
         private readonly object _idLock = new object();
-
+        private UInt16 _receivedPduSize = 0;
         #endregion
 
         #region Properties
 
-        private UInt16 PduSize { get { return _parameter.GetParameter("PduSize", PduSizeDefault); } }
+        private UInt16 PduSize
+        {
+            get { return _receivedPduSize <= 0 ? _parameter.GetParameter("PduSize", PduSizeDefault) : _receivedPduSize; }
+            set
+            {
+                if (value < _parameter.GetParameter("PduSize", PduSizeDefault))  //PDUSize is the maximum pdu size
+                    _receivedPduSize = value;
+            }
+        }
         private UInt16 ItemReadSlice { get { return (UInt16)(PduSize - 18); } }  //18 Header and some other data 
         private UInt16 ItemWriteSlice { get { return (UInt16)(PduSize - 28); } } //28 Header and some other data
+
+        /// <summary>
+        /// Callback to an log Message Handler
+        /// </summary>
+        /// <returns></returns>
+        public Action<string> OnLogEntry { get; set; }
 
         /// <summary>
         /// Max bytes to read in one telegram.
@@ -108,6 +126,31 @@ namespace InacS7Core
 
         #endregion
 
+        ~InacS7CoreClient()
+        {
+            if (_queueLockSlim != null)
+            {
+                try
+                {
+                    _queueLockSlim.Dispose();
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+            }
+
+            if (_callbackLockSlim != null)
+            {
+                try
+                {
+                    _callbackLockSlim.Dispose();
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+            }
+        }
+
         /// <summary>
         /// Connect to a plc
         /// </summary>
@@ -125,7 +168,6 @@ namespace InacS7Core
                 AssigneParameter();
                 _clientSocket.OnConnectionStateChanged += OnClientStateChanged;
                 _clientSocket.OnRawDataReceived += OnRawDataReceived;
-
                 if (_clientSocket.Open())
                 {
                     //Socket was Connected wait for Upper Protocol
@@ -142,20 +184,28 @@ namespace InacS7Core
                     if (_clientSocket.IsConnected)
                     {
                         var id = GetNextReferenceId();
-                        var reqMsg = S7MessageCreator.CreateCommunicationSetup(id, _maxParallelCalls, PduSize);
+                        var reqMsg = S7MessageCreator.CreateCommunicationSetup(id, _maxParallelJobs, PduSize);
                         var policy = new S7JobSetupProtocolPolicy();
                         Log(string.Format("Connect: ProtocolDataUnitReference is {0}", id));
                         PerformeDataExchange(id, reqMsg, policy, (cbh) =>
                         {
                             var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
                             if (errorClass == 0)
+                            {
+                                var data = cbh.ResponseMessage.GetAttribute("ParameterData", new byte[0]);
+                                if (data.Length >= 7)
+                                {
+                                    PduSize = data.GetSwap<UInt16>(5);
+                                    Log(string.Format("Connected: PduSize is {0}", PduSize));
+                                }
                                 return;
+                            }
                             var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
                             throw new InacS7Exception(errorClass, errorCode);
                         });
                     }
                     else
-                        throw new TimeoutException("Timeout while waiting for Connection Confirmation");
+                        throw new TimeoutException("Timeout while waiting for connection confirmation");
                 }
             }
         }
@@ -167,7 +217,7 @@ namespace InacS7Core
         /// <returns></returns>
         public Task ConnectAsync(string connectionString = null)
         {
-            return Task.Factory.StartNew(() => Connect(connectionString));
+            return Task.Factory.StartNew(() => Connect(connectionString), TaskCreationOptions.LongRunning);
         }
 
         /// <summary>
@@ -175,20 +225,28 @@ namespace InacS7Core
         /// </summary>
         public void Disconnect()
         {
-
-            while (_eventQueue.Any())
+            _queueLockSlim.EnterWriteLock();
+            try
             {
-                try
+                while (_eventQueue.Any())
                 {
-                    var ev = _eventQueue.Dequeue();
-                    ev.Set();
-                    ev.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    Log(string.Format("Exception on Disconnect. Error was: {0}", ex.Message));
+                    try
+                    {
+                        var ev = _eventQueue.Dequeue();
+                        ev.Set();
+                        ev.Dispose();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log(string.Format("Exception on Disconnect. Error was: {0}", ex.Message));
+                    }
                 }
             }
+            finally
+            {
+                _queueLockSlim.ExitWriteLock();
+            }
+
 
             lock (_syncRoot)
             {
@@ -200,9 +258,15 @@ namespace InacS7Core
                 }
                 catch (Exception ex)
                 {
-                    Log(string.Format("Exception on Disconnect while closing Socket. Error was: {0}", ex.Message));
+                    Log(string.Format("Exception on Disconnect while closing socket. Error was: {0}", ex.Message));
                 }
             }
+
+            //if (_semaphore != null)
+            //{
+            //    _semaphore.Dispose();
+            //    _semaphore = null;
+            //}
         }
 
         /// <summary>
@@ -210,7 +274,7 @@ namespace InacS7Core
         /// </summary>
         public Task DisconnectAsync()
         {
-            return Task.Factory.StartNew(() => Disconnect());
+            return Task.Factory.StartNew(Disconnect, TaskCreationOptions.LongRunning);
         }
 
         /// <summary>
@@ -279,7 +343,8 @@ namespace InacS7Core
         /// <param name="type">Specify the .Net data type for the red data</param>
         /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
         /// <returns></returns>
-        public object ReadAnyParallel(PlcArea area, int offset, Type type, params int[] args)
+        /// http://www.tugberkugurlu.com/archive/how-and-where-concurrent-asynchronous-io-with-asp-net-web-api
+        private object ReadAnyPartsAsync(PlcArea area, int offset, Type type, params int[] args)
         {
             try
             {
@@ -291,13 +356,15 @@ namespace InacS7Core
                 for (var j = 0; j < length; j += ItemReadSlice)
                 {
                     while (_currentNumberOfPendingCalls >= _maxParallelCalls)
-                        Thread.Sleep(10);
+                        Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
                     var readLength = Math.Min(ItemReadSlice, packageLength);
-                    requests.Add(ReadAnyAsync(area, offset + j, type, new int[] { readLength, dbNr }));
+                    var readOffset = offset + j;
+                    requests.Add(Task.Factory.StartNew(() => ReadAny(area, readOffset, type, new int[] { readLength, dbNr }), _taskCreationOptions));
                     packageLength -= ItemReadSlice;
                 }
 
                 Task.WaitAll(requests.ToArray());
+
                 foreach (var result in requests.Select(request => request.Result as byte[]))
                 {
                     if (result != null)
@@ -305,6 +372,52 @@ namespace InacS7Core
                     else
                         throw new InvalidDataException("Returned data are null");
                 }
+                return readResult.ToArray<byte>();
+            }
+            catch (AggregateException exception)
+            {
+                //Throw only the first exception
+                throw exception.InnerExceptions.First();
+            }
+        }
+
+        /// <summary>
+        /// Read data from the plc as parallel and convert it to the given .Net type.
+        /// </summary>
+        /// <param name="area">Specify the plc area to read.  e.g. IB InputByte</param>
+        /// <param name="offset">Specify the read offset</param>
+        /// <param name="type">Specify the .Net data type for the red data</param>
+        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
+        /// <returns></returns>
+        /// http://www.tugberkugurlu.com/archive/how-and-where-concurrent-asynchronous-io-with-asp-net-web-api
+        public object ReadAnyParallel(PlcArea area, int offset, Type type, params int[] args)
+        {
+            try
+            {
+                var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
+                var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
+                var packageLength = length;
+                var readResult = new List<byte>();
+                var results = new Dictionary<int, byte[]>();
+                var requests = new List<Tuple<int, int, int>>();
+                for (var j = 0; j < length; j += ItemReadSlice)
+                {
+                    var readLength = Math.Min(ItemReadSlice, packageLength);
+                    requests.Add(new Tuple<int, int, int>(j, offset + j, readLength));
+                    packageLength -= ItemReadSlice;
+                }
+
+                foreach (var result in requests.AsParallel().Select(result => new KeyValuePair<int, byte[]>(result.Item1, ReadAny(area, result.Item2, type, new int[] { result.Item3, dbNr }) as byte[])))
+                {
+                    if (result.Value != null)
+                        results.Add(result.Key, result.Value);
+                    else
+                        throw new InvalidDataException("Returned data are null");
+                }
+
+                foreach (var result in results.OrderBy(x => x.Key).Select(x => x.Value))
+                    readResult.AddRange(result);
+
                 return readResult.ToArray<byte>();
             }
             catch (AggregateException exception)
@@ -324,7 +437,11 @@ namespace InacS7Core
         /// <returns></returns>
         public Task<object> ReadAnyAsync(PlcArea area, int offset, Type type, params int[] args)
         {
-            return Task.Factory.StartNew(() => ReadAny(area, offset, type, args));
+            return Task.Factory.StartNew(() =>
+                _maxParallelCalls <= 1 ?
+                ReadAny(area, offset, type, args) :
+                ReadAnyPartsAsync(area, offset, type, args),
+                _taskCreationOptions);
         }
 
         /// <summary>
@@ -342,10 +459,11 @@ namespace InacS7Core
             var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
             var policy = new S7JobWriteProtocolPolicy();
             var packageLength = length;
+            var isToExtract = length > ItemWriteSlice;
             for (var j = 0; j < length; j += ItemWriteSlice)
             {
                 var writeLength = Math.Min(ItemWriteSlice, packageLength);
-                var reqMsg = S7MessageCreator.CreateWriteRequest(id, area, dbNr, offset + j, writeLength, value);
+                var reqMsg = S7MessageCreator.CreateWriteRequest(id, area, dbNr, offset + j, writeLength, isToExtract ? ExtractData(value, j, writeLength) : value);
                 Log(string.Format("WriteAny: ProtocolDataUnitReference is {0}", id));
                 PerformeDataExchange(id, reqMsg, policy, (cbh) =>
                 {
@@ -379,20 +497,59 @@ namespace InacS7Core
         /// <returns></returns>
         public void WriteAnyParallel(PlcArea area, int offset, object value, params int[] args)
         {
+
+            try
+            {
+                var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
+                var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
+                var packageLength = length;
+                var requests = new List<Tuple<int, int, int>>();
+                var isToExtract = length > ItemWriteSlice;
+                for (var j = 0; j < length; j += ItemReadSlice)
+                {
+                    var writeLength = Math.Min(ItemReadSlice, packageLength);
+                    requests.Add(new Tuple<int, int, int>(j, offset + j, writeLength));
+                    packageLength -= ItemReadSlice;
+                }
+
+                Parallel.ForEach(requests, (request) => WriteAny(area, request.Item2, isToExtract ? ExtractData(value, request.Item1, request.Item3) : value, new int[] { request.Item3, dbNr }));
+            }
+            catch (AggregateException exception)
+            {
+                //Throw only the first exception
+                throw exception.InnerExceptions.First();
+            }
+        }
+
+
+        /// <summary>
+        /// Write data parallel to the connected plc.
+        /// </summary>
+        /// <param name="area">Specify the plc area to write to.  e.g. OB OutputByte</param>
+        /// <param name="offset">Specify the write offset</param>
+        /// <param name="value">Value to write</param>
+        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
+        /// <returns></returns>
+        private void WriteAnyPartsAsync(PlcArea area, int offset, object value, params int[] args)
+        {
             try
             {
                 var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
                 var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
                 var packageLength = length;
                 var requests = new List<Task>();
-                for (var j = 0; j < length; j += ItemWriteSlice)
+                var isToExtract = length > ItemWriteSlice;
+                for (var j = 0; j < length; j += ItemReadSlice)
                 {
                     while (_currentNumberOfPendingCalls >= _maxParallelCalls)
-                        Thread.Sleep(SleeptimeAfterMaxPendingCallsReached);
-                    var writeLength = Math.Min(ItemWriteSlice, packageLength);
-                    requests.Add(WriteAnyAsync(area, offset + j, ConvertDataToArray(value, j, writeLength), new int[] { writeLength, dbNr }));
-                    packageLength -= ItemWriteSlice;
+                        Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
+                    var writeLength = Math.Min(ItemReadSlice, packageLength);
+                    var writeOffset = offset + j;
+                    var data = isToExtract ? ExtractData(value, j, writeLength) : value;
+                    requests.Add(Task.Factory.StartNew(() => WriteAny(area, writeOffset, data, new int[] { writeLength, dbNr }), TaskCreationOptions.LongRunning));
+                    packageLength -= ItemReadSlice;
                 }
+
                 Task.WaitAll(requests.ToArray());
             }
             catch (AggregateException exception)
@@ -401,6 +558,7 @@ namespace InacS7Core
                 throw exception.InnerExceptions.First();
             }
         }
+
 
         /// <summary>
         /// Write data asynchronous to the connected plc.
@@ -412,7 +570,15 @@ namespace InacS7Core
         /// <returns></returns>
         public Task WriteAnyAsync(PlcArea area, int offset, object value, params int[] args)
         {
-            return Task.Factory.StartNew(() => WriteAny(area, offset, value, args));
+            return Task.Factory.StartNew(() =>
+            {
+                if (_maxParallelCalls <= 1)
+                    WriteAny(area, offset, value, args);
+                else
+                    WriteAnyPartsAsync(area, offset, value, args);
+            },
+            _taskCreationOptions);
+
         }
 
         /// <summary>
@@ -487,7 +653,7 @@ namespace InacS7Core
         /// <returns>Return a structure with all Counts of blocks</returns>
         public Task<IPlcBlocksCount> GetBlocksCountAsync()
         {
-            return Task.Factory.StartNew(() => GetBlocksCount());
+            return Task.Factory.StartNew(() => GetBlocksCount(), _taskCreationOptions);
         }
 
         /// <summary>
@@ -555,7 +721,7 @@ namespace InacS7Core
         /// <returns>Return a list off all blocks of this type</returns>
         public Task<IEnumerable<IPlcBlocks>> GetBlocksOfTypeAsync(PlcBlockType type)
         {
-            return Task.Factory.StartNew(() => GetBlocksOfType(type));
+            return Task.Factory.StartNew(() => GetBlocksOfType(type), _taskCreationOptions);
         }
 
         /// <summary>
@@ -771,7 +937,7 @@ namespace InacS7Core
         /// <returns></returns>
         public Task<IPlcBlockInfo> ReadBlockInfoAsync(PlcBlockType blockType, int blocknumber)
         {
-            return Task.Factory.StartNew(() => ReadBlockInfo(blockType, blocknumber));
+            return Task.Factory.StartNew(() => ReadBlockInfo(blockType, blocknumber), _taskCreationOptions);
         }
 
         /// <summary>
@@ -841,7 +1007,7 @@ namespace InacS7Core
         /// <returns>returns a list of all pending alarms</returns>
         public Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync()
         {
-            return Task.Factory.StartNew(() => ReadPendingAlarms());
+            return Task.Factory.StartNew(() => ReadPendingAlarms(), _taskCreationOptions);
         }
 
         /// <summary>
@@ -970,7 +1136,7 @@ namespace InacS7Core
         /// <returns></returns>
         public Task<DateTime> GetPlcTimeAsync()
         {
-            return Task.Factory.StartNew(() => GetPlcTime());
+            return Task.Factory.StartNew(() => GetPlcTime(), _taskCreationOptions);
         }
 
 
@@ -978,7 +1144,7 @@ namespace InacS7Core
 
         private void OnClientStateChanged(string socketHandle, bool connected)
         {
-            if(connected)
+            if (connected)
             {
                 _upperProtocolHandlerFactory.OnConnected();
             }
@@ -1006,7 +1172,8 @@ namespace InacS7Core
                                 if (id == 0 && _alarmUpdateId != 0 && policy is S7UserDataAckAlarmUpdateProtocolPolicy)
                                     id = _alarmUpdateId;
                                 Log(string.Format("OnRawDataReceived: ProtocolDataUnitReference is {0}", id));
-                                lock (_callbacks)
+                                _callbackLockSlim.EnterReadLock();
+                                try
                                 {
                                     CallbackHandler cb;
                                     if (_callbacks.TryGetValue(id, out cb))
@@ -1023,6 +1190,10 @@ namespace InacS7Core
                                         Log(string.Format("OnRawDataReceived: message with id {0} has no waiter!", id));
                                     }
                                 }
+                                finally
+                                {
+                                    _callbackLockSlim.ExitReadLock();
+                                }
                             }
                         }
                     }
@@ -1034,24 +1205,39 @@ namespace InacS7Core
             {
                 Log(string.Format("OnRawDataReceived: Exception was {0} -{1}", ex.Message, ex.StackTrace));
                 //Set the Exception to all pending Calls
-                lock (_callbacks)
+                List<CallbackHandler> snapshot;
+                _callbackLockSlim.EnterReadLock();
+                try
                 {
-                    foreach (var cb in _callbacks.Values)
-                    {
-                        cb.OccuredException = ex;
-                        if (cb.Event != null)
-                            cb.Event.Set();
-                        else if (cb.OnCallbackAction != null)
-                            cb.OnCallbackAction(null);
-                    }
+                    snapshot = _callbacks.Values.ToList();
                 }
+                finally
+                {
+                    _callbackLockSlim.ExitReadLock();
+                }
+
+
+                foreach (var cb in snapshot)
+                {
+                    cb.OccuredException = ex;
+                    if (cb.Event != null)
+                        cb.Event.Set();
+                    else if (cb.OnCallbackAction != null)
+                        cb.OnCallbackAction(null);
+                }
+
             }
         }
 
         private void AssigneParameter()
         {
             _timeout = _parameter.GetParameter("Receive Timeout", 5000);
-            _maxParallelCalls = _parameter.GetParameter("Maximum Parallel Calls", (ushort)100);
+            _maxParallelJobs = _parameter.GetParameter("Maximum Parallel Jobs", (ushort)1);  //Used by simatic manager -> best performance with 1
+            _maxParallelCalls = _parameter.GetParameter("Maximum Parallel Calls", (ushort)4); //Used by InacS7
+            _taskCreationOptions = _parameter.GetParameter("Use Threads", true) ? TaskCreationOptions.LongRunning : TaskCreationOptions.None; //Used by InacS7
+            //_semaphore = new SemaphoreSlim(_maxParallelCalls, _maxParallelCalls);
+            _sleeptimeAfterMaxPendingCallsReached = _parameter.GetParameter("Sleeptime After Max Pending Calls Reached", 5);
+
             var config = new ClientSocketConfiguration
             {
                 Hostname = _parameter.GetParameter("Ip", "127.0.0.1"),
@@ -1061,6 +1247,7 @@ namespace InacS7Core
                 //_parameter.GetParameter("KeepAliveTime", default(uint)),
                 //_parameter.GetParameter("KeepAliveInterval", default(uint))
             };
+
             //Setup the socket
             _clientSocket = new ClientSocket(config);
 
@@ -1102,6 +1289,8 @@ namespace InacS7Core
 
         private void Log(string message)
         {
+            if (OnLogEntry != null)
+                OnLogEntry(message);
         }
 
         private object PerformeDataExchange(ushort id, IMessage msg, IProtocolPolicy policy, Func<CallbackHandler, object> func)
@@ -1156,13 +1345,32 @@ namespace InacS7Core
 
         private CallbackHandler GetCallbackHandler(ushort id, bool withoutEvent = false)
         {
+            //_semaphore.Wait();
             Interlocked.Increment(ref _currentNumberOfPendingCalls);
             AutoResetEvent arEvent = null;
             if (!withoutEvent)
             {
-                lock (_eventQueue)
+                _queueLockSlim.EnterUpgradeableReadLock();
+                try
                 {
-                    arEvent = _eventQueue.Any() ? _eventQueue.Dequeue() : new AutoResetEvent(false);
+                    if (_eventQueue.Any())
+                    {
+                        _queueLockSlim.EnterWriteLock();
+                        try
+                        {
+                            arEvent = _eventQueue.Dequeue();
+                        }
+                        finally
+                        {
+                            _queueLockSlim.ExitWriteLock();
+                        }
+                    }
+                    else
+                        arEvent = new AutoResetEvent(false);
+                }
+                finally
+                {
+                    _queueLockSlim.ExitUpgradeableReadLock();
                 }
             }
 
@@ -1172,8 +1380,16 @@ namespace InacS7Core
                 Event = arEvent,
             };
 
-            lock (_callbacks)
+            _callbackLockSlim.EnterWriteLock();
+            try
+            {
                 _callbacks.Add(id, cbh);
+            }
+            finally
+            {
+                _callbackLockSlim.ExitWriteLock();
+            }
+
 
             return cbh;
         }
@@ -1182,17 +1398,43 @@ namespace InacS7Core
         {
             CallbackHandler cbh;
 
-            lock (_callbacks)
+            _callbackLockSlim.EnterUpgradeableReadLock();
+            try
             {
                 if (_callbacks.TryGetValue(id, out cbh))
-                    _callbacks.Remove(id);
+                {
+                    _callbackLockSlim.EnterWriteLock();
+                    try
+                    {
+                        _callbacks.Remove(id);
+                    }
+                    finally
+                    {
+                        _callbackLockSlim.ExitWriteLock();
+                    }
+                }
             }
+            finally
+            {
+                _callbackLockSlim.ExitUpgradeableReadLock();
+            }
+
 
             if (cbh != null && cbh.Event != null)
             {
-                lock (_eventQueue)
+                _queueLockSlim.EnterWriteLock();
+                try
+                {
                     _eventQueue.Enqueue(cbh.Event);
+                    Log(String.Format("Number of queued events {0}", _eventQueue.Count));
+                }
+                finally
+                {
+                    _queueLockSlim.ExitWriteLock();
+                }
             }
+
+            //_semaphore.Release();
             Interlocked.Decrement(ref _currentNumberOfPendingCalls);
         }
 
@@ -1268,7 +1510,7 @@ namespace InacS7Core
             return result.ToArray<T>();
         }
 
-        private static object ConvertDataToArray(object data, int offset = 0, int length = Int32.MaxValue)
+        private static object ExtractData(object data, int offset = 0, int length = Int32.MaxValue)
         {
             var enumerable = data as byte[];
             if (enumerable == null)
@@ -1277,14 +1519,14 @@ namespace InacS7Core
                 if (boolEnum == null)
                 {
                     if (data is bool)
-                        return new bool[] { (bool)data };
+                        return (bool)data;
                     if (data is byte || data is char)
-                        return new byte[] { (byte)data };
+                        return (byte)data;
                     return null;
                 }
-                return boolEnum.Skip(offset).Take(length).ToArray();
+                return boolEnum.SubArray(offset, length);
             }
-            return enumerable.Skip(offset).Take(length).ToArray();
+            return enumerable.SubArray(offset, length);
         }
 
         private static DateTime ConvertToDateTime(IList<byte> data, int offset = 2)
@@ -1354,7 +1596,7 @@ namespace InacS7Core
             if (Enum.TryParse(s, out result))
             {
                 var r = GetEnumDescription(result);
-                if (!string.IsNullOrWhiteSpace(r))
+                if (!r.IsNullOrEmpty())
                     return r;
             }
             return s;

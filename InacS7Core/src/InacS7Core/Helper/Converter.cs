@@ -213,6 +213,16 @@ namespace InacS7Core.Helper
             return (byte)(data & (~(1U << bit)));
         }
 
+        public static T[] SubArray<T>(this T[] data, int index, int length = -1)
+        {
+            if (length == -1)
+                length = data.Length - index;
+            var result = new T[length];
+            Array.Copy(data, index, result, 0, length);
+            return result;
+        }
+
+
         public static byte[] ToByteArray<T>(this T value, int maxLength)
         {
             var rawdata = new byte[Marshal.SizeOf(value)];
