@@ -4,9 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net;
-using System.Runtime.InteropServices;
-using InacS7Core.Arch;
-using System.Threading;
 
 namespace InacS7Core.Communication
 {

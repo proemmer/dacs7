@@ -1,8 +1,6 @@
-﻿
-using InacS7Core.Arch;
+﻿using InacS7Core.Arch;
 using InacS7Core.Communication;
 using InacS7Core.Domain;
-using InacS7Core.Helper;
 using InacS7Core.Helper;
 using InacS7Core.Helper.S7;
 using InacS7Core.Protocols;
@@ -39,13 +37,12 @@ namespace InacS7Core
         #region Fields
 
         private readonly object _syncRoot = new object();
-        //private SemaphoreSlim _semaphore;
         private readonly UpperProtocolHandlerFactory _upperProtocolHandlerFactory = new UpperProtocolHandlerFactory();
         private readonly Queue<AutoResetEvent> _eventQueue = new Queue<AutoResetEvent>();
         private readonly ReaderWriterLockSlim _queueLockSlim = new ReaderWriterLockSlim();
         private readonly ReaderWriterLockSlim _callbackLockSlim = new ReaderWriterLockSlim();
         private bool _disposed;
-        private UInt16 _alarmUpdateId;
+        private ushort _alarmUpdateId;
         private int _currentNumberOfPendingCalls;
         private int _sleeptimeAfterMaxPendingCallsReached;
         private ushort _maxParallelJobs;
@@ -56,10 +53,11 @@ namespace InacS7Core
         private readonly Dictionary<int, CallbackHandler> _callbacks = new Dictionary<int, CallbackHandler>();
         private string _connectionString = string.Empty;
         private int _timeout = 5000;
-        private const UInt16 PduSizeDefault = 960;
+        private const ushort PduSizeDefault = 960;
         private int _referenceId;
         private readonly object _idLock = new object();
-        private UInt16 _receivedPduSize = 0;
+        private ushort _receivedPduSize;
+
         #endregion
 
         #region Properties
@@ -127,6 +125,9 @@ namespace InacS7Core
 
         #endregion
 
+        /// <summary>
+        /// Finalizer to free the locks
+        /// </summary>
         ~InacS7CoreClient()
         {
             if (_queueLockSlim != null)
@@ -262,12 +263,6 @@ namespace InacS7Core
                     Log(string.Format("Exception on Disconnect while closing socket. Error was: {0}", ex.Message));
                 }
             }
-
-            //if (_semaphore != null)
-            //{
-            //    _semaphore.Dispose();
-            //    _semaphore = null;
-            //}
         }
 
         /// <summary>
@@ -298,7 +293,7 @@ namespace InacS7Core
             {
                 var readLength = Math.Min(ItemReadSlice, packageLength);
                 var reqMsg = S7MessageCreator.CreateReadRequest(id, area, dbNr, offset + j, readLength, type);
-                Log(string.Format("ReadAny: ProtocolDataUnitReference is {0}", id));
+                Log($"ReadAny: ProtocolDataUnitReference is {id}");
                 var currentData = PerformeDataExchange(id, reqMsg, policy, (cbh) =>
                 {
                     var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
@@ -310,9 +305,9 @@ namespace InacS7Core
                             var result = new List<object>();
                             for (var i = 0; i < items; i++)
                             {
-                                var returnCode = cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemReturnCode", i), (byte)0);
+                                var returnCode = cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemReturnCode", (byte)0);
                                 if (returnCode == 0xFF)
-                                    result.Add(cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemData", i), new byte[0]));
+                                    result.Add(cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemData", new byte[0]));
                                 else
                                     throw new InacS7ReturnCodeException(returnCode, i);
                             }
@@ -465,7 +460,7 @@ namespace InacS7Core
             {
                 var writeLength = Math.Min(ItemWriteSlice, packageLength);
                 var reqMsg = S7MessageCreator.CreateWriteRequest(id, area, dbNr, offset + j, writeLength, isToExtract ? ExtractData(value, j, writeLength) : value);
-                Log(string.Format("WriteAny: ProtocolDataUnitReference is {0}", id));
+                Log($"WriteAny: ProtocolDataUnitReference is {id}");
                 PerformeDataExchange(id, reqMsg, policy, (cbh) =>
                 {
                     var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
@@ -474,7 +469,7 @@ namespace InacS7Core
                         var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
                         for (var i = 0; i < items; i++)
                         {
-                            var returnCode = cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemReturnCode", i), (byte)0);
+                            var returnCode = cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemReturnCode", (byte)0);
                             if (returnCode != 0xff)
                                 throw new InacS7ContentException(returnCode, i);
                         }
@@ -591,7 +586,7 @@ namespace InacS7Core
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateBlocksCountRequest(id);
             var policy = new S7UserDataProtocolPolicy();
-            Log(string.Format("GetBlocksCount: ProtocolDataUnitReference is {0}", id));
+            Log($"GetBlocksCount: ProtocolDataUnitReference is {id}");
             return PerformeDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0);
@@ -669,7 +664,7 @@ namespace InacS7Core
             var blocks = new List<IPlcBlocks>();
             var lastUnit = false;
             var sequenceNumber = (byte)0x00;
-            Log(string.Format("GetBlocksOfType: ProtocolDataUnitReference is {0}", id));
+            Log($"GetBlocksOfType: ProtocolDataUnitReference is {id}");
 
             do
             {
@@ -690,7 +685,7 @@ namespace InacS7Core
                                 {
                                     result.Add(new PlcBlocks
                                     {
-                                        Number = sslData.GetSwap<UInt16>(i),
+                                        Number = sslData.GetSwap<ushort>(i),
                                         Flags = sslData[i + 2],
                                         Language = PlcBlockInfo.GetLanguage(sslData[i + 3])
                                     });
@@ -736,7 +731,7 @@ namespace InacS7Core
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateBlockInfoRequest(id, blockType, blocknumber);
             var policy = new S7UserDataProtocolPolicy();
-            Log(string.Format("ReadBlockInfo: ProtocolDataUnitReference is {0}", id));
+            Log($"ReadBlockInfo: ProtocolDataUnitReference is {id}");
             return PerformeDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0);
@@ -790,7 +785,7 @@ namespace InacS7Core
             var id = GetNextReferenceId();
 
             var policy = new S7JobUploadProtocolPolicy();
-            Log(string.Format("ReadBlockInfo: ProtocolDataUnitReference is {0}", id));
+            Log("ReadBlockInfo: ProtocolDataUnitReference is {id}");
 
             //Start Upload
             var reqMsg = S7MessageCreator.CreateStartUploadRequest(id, blockType, blocknumber);
@@ -874,11 +869,14 @@ namespace InacS7Core
         /// <returns></returns>
         public bool DownloadPlcBlock(PlcBlockType blockType, int blocknumber, byte[] data)
         {
-            throw new NotImplementedException();
+            //TODO: Implement it correct
+            throw new NotImplementedException(); 
+
+
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateStartDownloadRequest(id, blockType, blocknumber, data);  //Start Download
             var policy = new S7UserDataProtocolPolicy();
-            Log(string.Format("DownloadPlcBlock: ProtocolDataUnitReference is {0}", id));
+            Log($"DownloadPlcBlock: ProtocolDataUnitReference is {id}");
             return (bool)PerformeDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0xff);
@@ -952,7 +950,7 @@ namespace InacS7Core
             var alarms = new List<IPlcAlarm>();
             var lastUnit = false;
             var sequenceNumber = (byte)0x00;
-            Log(string.Format("ReadBlockInfo: ProtocolDataUnitReference is {0}", id));
+            Log($"ReadBlockInfo: ProtocolDataUnitReference is {id}");
 
             do
             {
@@ -969,18 +967,18 @@ namespace InacS7Core
                             var result = new List<IPlcAlarm>();
                             for (var i = 0; i < numberOfAlarms; i++)
                             {
-                                var subItemName = string.Format("Alarm[{0}].", i) + "{0}";
+                                var subItemName = $"Alarm[{i}]." + "{0}";
                                 var isComing = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "IsComing"), false);
                                 var isAck = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "IsAck"), false);
                                 var ack = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "Ack"), false);
                                 result.Add(new PlcAlarm
                                 {
-                                    Id = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "Id"), (UInt16)0),
-                                    MsgNumber = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "MsgNumber"), (UInt32)0),
+                                    Id = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "Id"), (ushort)0),
+                                    MsgNumber = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "MsgNumber"), (uint)0),
                                     IsComing = isComing,
                                     IsAck = isAck,
                                     Ack = ack,
-                                    AlarmSource = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "AlarmSource"), (UInt16)0),
+                                    AlarmSource = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "AlarmSource"), (ushort)0),
                                     Timestamp = ExtractTimestamp(cbh.ResponseMessage, i, !isComing && !isAck && ack ? 1 : 0),
                                     AssotiatedValue = ExtractAssotiatedValue(cbh.ResponseMessage, i)
                                 });
@@ -1025,7 +1023,7 @@ namespace InacS7Core
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateAlarmCallbackRequest(id);
             var policy = new S7UserDataProtocolPolicy();
-            Log(string.Format("RegisterAlarmUpdateCallback: ProtocolDataUnitReference is {0}", id));
+            Log($"RegisterAlarmUpdateCallback: ProtocolDataUnitReference is {id}");
             return (ushort)PerformeDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0xff);
@@ -1049,16 +1047,16 @@ namespace InacS7Core
                                         var dataLength = msg.GetAttribute("UserDataLength", (UInt16)0);
                                         if (dataLength > 0)
                                         {
-                                            var subItemName = string.Format("Alarm[{0}].", 0) + "{0}";
+                                            var subItemName = "Alarm[0].{0}";
                                             var isComing = msg.GetAttribute(string.Format(subItemName, "IsComing"), false);
                                             onAlarmUpdate(new PlcAlarm
                                             {
-                                                Id = msg.GetAttribute(string.Format(subItemName, "Id"), (UInt16)0),
-                                                MsgNumber = msg.GetAttribute(string.Format(subItemName, "MsgNumber"), (UInt32)0),
+                                                Id = msg.GetAttribute(string.Format(subItemName, "Id"), (ushort)0),
+                                                MsgNumber = msg.GetAttribute(string.Format(subItemName, "MsgNumber"), (uint)0),
                                                 IsComing = isComing,
                                                 IsAck = msg.GetAttribute(string.Format(subItemName, "IsAck"), false),
                                                 Ack = msg.GetAttribute(string.Format(subItemName, "Ack"), false),
-                                                AlarmSource = msg.GetAttribute(string.Format(subItemName, "AlarmSource"), (UInt16)0),
+                                                AlarmSource = msg.GetAttribute(string.Format(subItemName, "AlarmSource"), (ushort)0),
                                                 Timestamp = ExtractTimestamp(msg, 0),
                                                 AssotiatedValue = ExtractAssotiatedValue(msg, 0)
                                             });
@@ -1109,7 +1107,7 @@ namespace InacS7Core
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateReadClockRequest(id);
             var policy = new S7UserDataProtocolPolicy();
-            Log(string.Format("GetPlcTime: ProtocolDataUnitReference is {0}", id));
+            Log($"GetPlcTime: ProtocolDataUnitReference is {id}");
             return (DateTime)PerformeDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0);
@@ -1161,11 +1159,11 @@ namespace InacS7Core
                     var b = buffer.ToArray();
                     foreach (var array in _upperProtocolHandlerFactory.RemoveUpperProtocolFrame(b, b.Length).Where(payload => payload != null))
                     {
-                        Log(string.Format("OnRawDataReceived: Received Data size was {0}", array.Length));
+                        Log($"OnRawDataReceived: Received Data size was {array.Length}");
                         var policy = GetProtocolPolicy(array);
                         if (policy != null)
                         {
-                            Log(string.Format("OnRawDataReceived: determined policy is {0}", policy.GetType().Name));
+                            Log($"OnRawDataReceived: determined policy is {policy.GetType().Name}");
                             var extractionResult = policy.ExtractRawMessages(array);
                             foreach (var msg in policy.Normalize(socketHandle, extractionResult.GetExtractedRawMessages()))
                             {
@@ -1188,7 +1186,7 @@ namespace InacS7Core
                                     }
                                     else
                                     {
-                                        Log(string.Format("OnRawDataReceived: message with id {0} has no waiter!", id));
+                                        Log($"OnRawDataReceived: message with id {id} has no waiter!");
                                     }
                                 }
                                 finally
@@ -1204,7 +1202,7 @@ namespace InacS7Core
             }
             catch (Exception ex)
             {
-                Log(string.Format("OnRawDataReceived: Exception was {0} -{1}", ex.Message, ex.StackTrace));
+                Log($"OnRawDataReceived: Exception was {ex.Message} -{ex.StackTrace}");
                 //Set the Exception to all pending Calls
                 List<CallbackHandler> snapshot;
                 _callbackLockSlim.EnterReadLock();
@@ -1236,7 +1234,6 @@ namespace InacS7Core
             _maxParallelJobs = _parameter.GetParameter("Maximum Parallel Jobs", (ushort)1);  //Used by simatic manager -> best performance with 1
             _maxParallelCalls = _parameter.GetParameter("Maximum Parallel Calls", (ushort)4); //Used by InacS7
             _taskCreationOptions = _parameter.GetParameter("Use Threads", true) ? TaskCreationOptions.LongRunning : TaskCreationOptions.None; //Used by InacS7
-            //_semaphore = new SemaphoreSlim(_maxParallelCalls, _maxParallelCalls);
             _sleeptimeAfterMaxPendingCallsReached = _parameter.GetParameter("Sleeptime After Max Pending Calls Reached", 5);
 
             var config = new ClientSocketConfiguration
@@ -1427,7 +1424,7 @@ namespace InacS7Core
                 try
                 {
                     _eventQueue.Enqueue(cbh.Event);
-                    Log(String.Format("Number of queued events {0}", _eventQueue.Count));
+                    Log($"Number of queued events {_eventQueue.Count}");
                 }
                 finally
                 {
@@ -1463,8 +1460,7 @@ namespace InacS7Core
 
         private static byte[] ExtractAssotiatedValue(IMessage msg, int alarmindex)
         {
-            var subItemName = string.Format("Alarm[{0}].ExtendedData[{1}].", alarmindex, 0) + "{0}";
-
+            var subItemName = $"Alarm[{alarmindex}].ExtendedData[0]." + "{0}";
             if (msg.GetAttribute(string.Format(subItemName, "NumberOfAssotiatedValues"), 0) > 0)
             {
                 return msg.GetAttribute(string.Format(subItemName, "AssotiatedValue"), new byte[0]);
@@ -1474,7 +1470,7 @@ namespace InacS7Core
 
         private static DateTime ExtractTimestamp(IMessage msg, int alarmindex, int tsIdx = 0)
         {
-            var subItemName = string.Format("Alarm[{0}].ExtendedData[{1}].", alarmindex, tsIdx) + "{0}";
+            var subItemName = $"Alarm[{alarmindex}].ExtendedData[{tsIdx}]." + "{0}";
             return msg.GetAttribute(string.Format(subItemName, "Timestamp"), DateTime.MinValue);
         }
 
