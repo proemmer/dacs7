@@ -10,6 +10,7 @@ using InacS7Core.Protocols.RFC1006;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -1449,9 +1450,7 @@ namespace InacS7Core
 
         private async Task Send(IEnumerable<byte> msg)
         {
-            var dataToSend = _upperProtocolHandlerFactory.AddUpperProtocolFrame(msg.ToArray());
-            var ret = await _clientSocket.Send(dataToSend);
-
+            var ret = await _clientSocket.Send(_upperProtocolHandlerFactory.AddUpperProtocolFrame(msg.ToArray()));
             if (ret != SocketError.Success)
                 throw new SocketException((int)ret);
         }
@@ -1524,42 +1523,42 @@ namespace InacS7Core
                 return new DateTime(1900, 01, 01, 00, 00, 00);
 
             int bt = data[offset];
-            //BCD Umwandlung
+            //BCD
             bt = (((bt >> 4)) * 10) + ((bt & 0x0f));
             var jahr = bt < 90 ? 2000 : 1900;
             jahr += bt;
 
-            //Monat
+            //month
             bt = data[offset + 1];
             var monat = (((bt >> 4)) * 10) + ((bt & 0x0f));
 
-            //Tag
+            //day
             bt = data[offset + 2];
             var tag = (((bt >> 4)) * 10) + ((bt & 0x0f));
 
-            //Stunde
+            //hour
             bt = data[offset + 3];
             var stunde = (((bt >> 4)) * 10) + ((bt & 0x0f));
 
-            //Minute
+            //minutes
             bt = data[offset + 4];
             var minute = (((bt >> 4)) * 10) + ((bt & 0x0f));
 
-            //Sekunde
+            //second
             bt = data[offset + 5];
             var sekunde = (((bt >> 4)) * 10) + ((bt & 0x0f));
 
-            //Milisekunden
+            //millisecond
             //Byte 6 BCD + MSB (Byte 7)
             bt = data[offset + 6];
             int bt1 = data[offset + 7];
             var mili = (((bt >> 4)) * 10) + ((bt & 0x0f));
             mili = mili * 10 + (bt1 >> 4);
 
-            //Wochentag
+            //week day
             //LSB (Byte 7) 1=Sunday
             //bt = b[pos + 7];
-            //wochentag = (bt1 & 0x0f); 
+            //week day = (bt1 & 0x0f); 
             try
             {
                 return new DateTime(jahr, monat, tag, stunde, minute, sekunde, mili);
@@ -1597,9 +1596,9 @@ namespace InacS7Core
             var fieldInfo = e.GetType().GetField(e.ToString());
             if (fieldInfo != null)
             {
-                //var enumAttributes = fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false) as DescriptionAttribute[];
-                //if (enumAttributes != null && enumAttributes.Length > 0)
-                //    return enumAttributes[0].Description;
+                var enumAttributes = fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false) as DescriptionAttribute[];
+                if (enumAttributes != null && enumAttributes.Length > 0)
+                    return enumAttributes[0].Description;
             }
             return e.ToString();
         }

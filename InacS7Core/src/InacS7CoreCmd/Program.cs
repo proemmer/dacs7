@@ -1,10 +1,7 @@
 ﻿using InacS7Core;
 using InacS7Core.Domain;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace InacS7CoreCmd
 {

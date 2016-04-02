@@ -1,5 +1,6 @@
 ﻿using InacS7Core.Domain;
 using System;
+using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
 
@@ -41,15 +42,15 @@ namespace InacS7Core
             return s;
         }
 
-        internal static string GetEnumDescription(object e)
+        private static string GetEnumDescription(object e)
         {
 
             var fieldInfo = e.GetType().GetField(e.ToString());
             if (fieldInfo != null)
             {
-                //var enumAttributes = fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false) as DescriptionAttribute[];
-                //if (enumAttributes != null && enumAttributes.Length > 0)
-                //    return enumAttributes[0].Description;
+                var enumAttributes = fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false) as DescriptionAttribute[];
+                if (enumAttributes != null && enumAttributes.Length > 0)
+                    return enumAttributes[0].Description;
             }
             return e.ToString();
         }
