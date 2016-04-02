@@ -293,9 +293,7 @@ namespace InacS7Core
             FillCommHeader(msg, (byte)PduType.UserData, 4, 8, unitId);
             AddUserDataParameter(msg, 4, UserDataFunctionType.Request, UserDataFunctionGroup.Block, (byte)UserDataSubFunctionBlock.List);
 
-            var b = new List<byte>();
-
-            AddData(msg, b.ToArray());
+            AddData(msg, new byte[0]);
             return msg;
         }
 
@@ -304,13 +302,13 @@ namespace InacS7Core
             var msg = Message.Create();
             FillCommHeader(msg, (byte)PduType.UserData, sequenceNumber == 0x00 ? (ushort)6 : (ushort)4, sequenceNumber == 0x00 ? (ushort)8 : (ushort)12, unitId);
             AddUserDataParameter(msg, sequenceNumber == 0x00 ? (byte)4 : (byte)8, UserDataFunctionType.Request, UserDataFunctionGroup.Block, (byte)UserDataSubFunctionBlock.ListType, sequenceNumber);
-            AddData(msg, sequenceNumber == 0 ? 
-                new Byte[]
+            AddData(msg, sequenceNumber == 0 ?
+                new byte[]
                 {
                     0x30,  // ??
                     (byte)blockType //Block Type
-                } : 
-                new Byte[0]);
+                } :
+                new byte[0]);
             return msg;
         }
 
@@ -320,9 +318,7 @@ namespace InacS7Core
             FillCommHeader(msg, (byte)PduType.UserData, 4, 8, unitId);
             AddUserDataParameter(msg, 4, UserDataFunctionType.Request, UserDataFunctionGroup.Time, (byte)UserDataSubFunctionTime.Read);
 
-            var b = new List<byte>();
-
-            AddData(msg, b.ToArray());
+            AddData(msg, new byte[0]);
             return msg;
         }
 

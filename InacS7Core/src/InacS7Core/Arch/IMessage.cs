@@ -5,7 +5,7 @@ namespace InacS7Core.Arch
     public interface IMessage
     {
         string GetID();
-        object GetRawMessage();
+        IEnumerable<byte> GetRawMessage();
         object GetPayload();
         int GetAge();
         string GetOrigin();

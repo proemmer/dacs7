@@ -1438,29 +1438,18 @@ namespace InacS7Core
             Interlocked.Decrement(ref _currentNumberOfPendingCalls);
         }
 
-        private void SendMessages(IMessage msg, IProtocolPolicy policy)
+
+        private async void SendMessages(IMessage msg, IProtocolPolicy policy)
         {
-            var msgs = policy.TranslateToRawMessage(msg);
-            if (msgs is IEnumerable<byte>)
+            foreach (var data in policy.TranslateToRawMessage(msg))
             {
-                Send(msgs);
+                await Send(data);
             }
-            else if (msgs is IEnumerable)
-            {
-                foreach (var dataToSend in (msgs as IEnumerable)
-                        .OfType<IEnumerable<byte>>()
-                        .Select(rawMsg => rawMsg.ToArray()))
-                {
-                    Send(dataToSend);
-                }
-            }
-            else
-                throw new ArgumentException("Invalid data to send!");
         }
 
-        private async void Send(object msgs)
+        private async Task Send(IEnumerable<byte> msg)
         {
-            var dataToSend = _upperProtocolHandlerFactory.AddUpperProtocolFrame((msgs as IEnumerable<byte>).ToArray());
+            var dataToSend = _upperProtocolHandlerFactory.AddUpperProtocolFrame(msg.ToArray());
             var ret = await _clientSocket.Send(dataToSend);
 
             if (ret != SocketError.Success)

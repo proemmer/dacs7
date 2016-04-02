@@ -213,12 +213,15 @@ namespace InacS7Core.Helper
             return (byte)(data & (~(1U << bit)));
         }
 
-        public static T[] SubArray<T>(this T[] data, int index, int length = -1)
+        public static T[] SubArray<T>(this T[] data, int skip, int length = -1, bool realloc = false)
         {
+            var dataLength = data.Length;
             if (length == -1)
-                length = data.Length - index;
+                length = dataLength - skip;
+            if (skip == 0 && length == dataLength && !realloc) //No manipulation and no copying
+                return data;
             var result = new T[length];
-            Array.Copy(data, index, result, 0, length);
+            Array.Copy(data, skip, result, 0, length);
             return result;
         }
 

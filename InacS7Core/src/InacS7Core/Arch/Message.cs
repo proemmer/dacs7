@@ -14,7 +14,7 @@ namespace InacS7Core.Arch
         private readonly DateTime _creationTime;
         private readonly Dictionary<string, object> _attributes = new Dictionary<string, object>();
         public Dictionary<string, object> Attributes { get { return new Dictionary<string, object>(_attributes); } }
-        private object _rawMessage;
+        private IEnumerable<byte> _rawMessage;
         private IProtocolPolicy _protocolPolicy;
 
 
@@ -39,7 +39,7 @@ namespace InacS7Core.Arch
             return new Message();
         }
 
-        public static IMessage CreateFromRawMessage(string origin, IProtocolPolicy protocolPolicy, object rawMessage)
+        public static IMessage CreateFromRawMessage(string origin, IProtocolPolicy protocolPolicy, IEnumerable<byte> rawMessage)
         {
             var message = new Message { _protocolPolicy = protocolPolicy, _rawMessage = rawMessage };
             return message;
@@ -79,7 +79,7 @@ namespace InacS7Core.Arch
             return _origin;
         }
 
-        public object GetRawMessage()
+        public IEnumerable<byte> GetRawMessage()
         {
             return _rawMessage;
         }

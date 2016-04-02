@@ -11,7 +11,8 @@ namespace InacS7CoreCmd
     public class Program
     {
         private static readonly InacS7CoreClient _client = new InacS7CoreClient();
-        private const string Ip = "192.168.0.147";
+        //private const string Ip = "192.168.0.147";
+        private const string Ip = "127.0.0.1";
         private const string ConnectionString = "Data Source=" + Ip + ":102,0,2"; //"Data Source=192.168.0.145:102,0,2";
         private const int TestDbNr = 250;
         private const int TestByteOffset = 524;

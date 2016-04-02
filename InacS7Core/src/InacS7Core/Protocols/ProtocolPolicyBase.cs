@@ -174,7 +174,7 @@ namespace InacS7Core.Helper
             return new ExtractionResult(dataLength - bytesLeft, bytesLeft != 0 ? GetMinimumCountDataBytes() : 0, rawMessageList);
         }
 
-        public IEnumerable<IMessage> Normalize(string origin, IEnumerable<object> rawMessages)
+        public IEnumerable<IMessage> Normalize(string origin, IEnumerable<IEnumerable<byte>> rawMessages)
         {
             foreach (var message in rawMessages.Select(rawMessage => Message.CreateFromRawMessage(origin, this, rawMessage)))
             {
@@ -184,16 +184,19 @@ namespace InacS7Core.Helper
         }
 
 
-        public object TranslateToRawMessage(IMessage message)
+        public IEnumerable<IEnumerable<byte>> TranslateToRawMessage(IMessage message, bool withoutCheck = false)
         {
-            if (message.GetRawMessage() is IEnumerable<byte>)
-                return message.GetRawMessage() as IEnumerable<byte>;
+            var raw = message.GetRawMessage();
+            if (raw != null)
+                return new List<IEnumerable<byte>> { raw };
             //create RawMessage from Attributes
-            var raw = CreateRawMessage(message);
+            raw = CreateRawMessage(message);
 
             //recheck creation
-            var rawMessageList = InspectAndExtract(raw);
+            if (withoutCheck)
+                return new List<IEnumerable<byte>> { raw };
 
+            var rawMessageList = InspectAndExtract(raw);
             if (rawMessageList.Any())
                 return rawMessageList;
             throw new Exception("RawMessage could be Translated from Attributes.");
@@ -207,7 +210,7 @@ namespace InacS7Core.Helper
                 var rawMsg = reply.GetRawMessage();
                 if (rawMsg == null)
                 {
-                    reply = Message.CreateFromRawMessage(message.GetOrigin(), this, TranslateToRawMessage(reply));
+                    reply = Message.CreateFromRawMessage(message.GetOrigin(), this, TranslateToRawMessage(reply).FirstOrDefault());
                 }
                 return ReplyMessage.Create(reply);
             }
@@ -303,11 +306,11 @@ namespace InacS7Core.Helper
             var asString = Encoding.ASCII.GetString(data.ToArray(), 0, minCount);
         }
 
-        private List<object> InspectAndExtract(IEnumerable<byte> data)
+        private IEnumerable<IEnumerable<byte>> InspectAndExtract(IEnumerable<byte> data)
         {
             var processingState = EProcessingState.SyncingOffset;
             var originData = data as List<byte>;
-            var messages = new List<object>();
+            var messages = new List<List<byte>>();
             Marker offsetMarker = null;
             Marker lengthMarker = null;
 
@@ -390,21 +393,6 @@ namespace InacS7Core.Helper
                                 if (foundMarker != null && foundMarker.Result != null)
                                 {
                                     lengthMarker = foundMarker.MetaData;
-                                    // Find the marker in the marker list by it's byte sequence.
-                                    //lengthMarker = _markers.Find(m =>
-                                    //{
-                                    //    var fmarker = foundMarker.Marker;
-                                    //    if (m.ByteSequence.Count() != fmarker.Count())
-                                    //        return false;
-                                    //    for (var i = 0; i < m.ByteSequence.Count(); ++i)
-                                    //    {
-                                    //        if (m.ByteSequence.ElementAt(i) != fmarker.ElementAt(i))
-                                    //            return false;
-                                    //    }
-                                    //    return true;
-                                    //}
-                                    //);
-
                                     if (foundMarker.Result.FullMatch)
                                         datagramLength = foundMarker.Result.MatchPos + lengthMarker.SequenceLength;
                                 }

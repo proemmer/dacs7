@@ -1,4 +1,5 @@
-﻿using System;
+﻿using InacS7Core.Helper;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -41,7 +42,7 @@ namespace InacS7Core.Arch
 
         public IEnumerable<byte[]> RemoveUpperProtocolFrame(byte[] rxData, int count)
         {
-            return new List<byte[]> { rxData.Take(count).ToArray() };
+            return new List<byte[]> { rxData.SubArray(0, count) };
         }
 
         public bool Connected { get { return false; } }
