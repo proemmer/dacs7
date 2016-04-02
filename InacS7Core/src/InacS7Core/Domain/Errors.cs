@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+﻿using InacS7Core.Helper;
 
 namespace InacS7Core.Domain
 {

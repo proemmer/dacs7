@@ -7,7 +7,9 @@
 
 /*
  */
-namespace System.ComponentModel
+using System;
+
+namespace InacS7Core.Helper
 {
 
     /// <devdoc>
@@ -70,12 +72,8 @@ namespace System.ComponentModel
         public override bool Equals(object obj)
         {
             if (obj == this)
-            {
                 return true;
-            }
-
-            DescriptionAttribute other = obj as DescriptionAttribute;
-
+            var other = obj as DescriptionAttribute;
             return (other != null) && other.Description == Description;
         }
 

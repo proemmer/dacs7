@@ -98,11 +98,6 @@ namespace InacS7Core.Helper
         }
 
         #region Public Methods (for setup of the class)
-        //public ILogger Logger
-        //{
-        //    get { return logger; }
-        //    set { logger = value; }
-        //}
 
         protected void AddMarker(IEnumerable<byte> aByteSequence, int aOffsetInStream, bool aEndMarker, bool aExclusiveMarker = false)
         {

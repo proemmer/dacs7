@@ -16,7 +16,7 @@ namespace InacS7Core.Protocols
             if (!UpperProtocolHandler.ContainsKey(protName))
                 UpperProtocolHandler.Add(protName, handler);
             else
-                throw new ArgumentException("A Protocol with this name already exits!");
+                throw new ArgumentException("A protocol with this name already exits!");
         }
 
         public bool RemoveProtocolHandler(string name)

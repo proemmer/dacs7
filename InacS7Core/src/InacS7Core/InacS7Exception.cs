@@ -1,6 +1,6 @@
 ﻿using InacS7Core.Domain;
 using System;
-using System.ComponentModel;
+using InacS7Core.Helper;
 using System.Globalization;
 using System.Reflection;
 
