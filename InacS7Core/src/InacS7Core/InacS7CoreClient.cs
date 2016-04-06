@@ -60,10 +60,10 @@ namespace InacS7Core
 
         #region Properties
 
-        private UInt16 PduSize
+        public UInt16 PduSize
         {
             get { return _receivedPduSize <= 0 ? _parameter.GetParameter("PduSize", PduSizeDefault) : _receivedPduSize; }
-            set
+            private set
             {
                 if (value < _parameter.GetParameter("PduSize", PduSizeDefault))  //PDUSize is the maximum pdu size
                     _receivedPduSize = value;

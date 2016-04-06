@@ -23,6 +23,10 @@ namespace InacS7Core.Arch
         /// <returns></returns>
         bool IsConnected { get; }
 
+        /// <summary>
+        /// Get the determined PDU Size
+        /// </summary>
+        UInt16 PduSize { get; }
 
         /// <summary>
         /// Connect to the plc.

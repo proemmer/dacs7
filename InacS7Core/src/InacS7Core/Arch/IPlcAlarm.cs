@@ -5,7 +5,7 @@ namespace InacS7Core.Arch
     public interface IPlcAlarm
     {
         int Id { get; }
-        UInt32 MsgNumber { get; }
+        uint MsgNumber { get; }
         byte[] AssotiatedValue { get; }
         int CountAlarms { get; }
         //Update is Coming update

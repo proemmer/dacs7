@@ -17,7 +17,7 @@ namespace InacS7Core.Domain
     public class PlcAlarm :  IPlcAlarm
     {
         public int Id { get; set; }
-        public UInt32 MsgNumber { get; set; }
+        public uint MsgNumber { get; set; }
         public byte[] AssotiatedValue { get; set; }
         public int CountAlarms { get; set; }
 
