@@ -2,6 +2,7 @@
 using InacS7Core.Domain;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace InacS7CoreCmd
 {

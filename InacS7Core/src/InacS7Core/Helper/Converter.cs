@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -478,7 +479,10 @@ namespace InacS7Core.Helper
                 data.ToHexString("", offset + 6, 1),
                 data.ToHexString("", offset + 7, 1));
 
-            return DateTime.Parse(str);
+            DateTime parsedDate;
+            if (DateTime.TryParseExact(str, "dd/MM/yy HH:mm:ss.ffff", null, DateTimeStyles.None, out parsedDate))
+                return parsedDate;
+            return DateTime.MinValue;
         }
 
         /// <summary>
