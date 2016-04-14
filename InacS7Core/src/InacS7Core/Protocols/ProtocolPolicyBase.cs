@@ -12,6 +12,10 @@ namespace InacS7Core.Helper
     public abstract class ProtocolPolicyBase : IProtocolPolicy
     {
         #region HelperClass
+
+        /// <summary>
+        /// This class is used to store temporary matching results to use it later.
+        /// </summary>
         private class FoundMarker
         {
             internal FoundMarker(byte[] marker, PatternMatch<byte>.Result result, Marker metaData)
@@ -24,7 +28,9 @@ namespace InacS7Core.Helper
             public Marker MetaData { get; private set; }
         }
 
-
+        /// <summary>
+        /// This is a binding helper class, if necessary we can store more data for the binding
+        /// </summary>
         private class ProtocolBinding
         {
             public ProtocolPolicyBase ProtocolPolicy { get; set; }
@@ -44,6 +50,13 @@ namespace InacS7Core.Helper
         #endregion
 
         #region Policy Factory 
+
+        /// <summary>
+        /// This method tries to find the correct protocol policy for the given data.
+        /// This process uses the registered bindings from an static dictionary, so we have the access to all available types.
+        /// </summary>
+        /// <param name="data">this should be the payload to parse</param>
+        /// <returns>The found protocol policy or null if nothing was found</returns>
         public static IProtocolPolicy FindPolicyByPayload(IEnumerable<byte> data)
         {
             CacheLock.EnterUpgradeableReadLock();
@@ -74,6 +87,9 @@ namespace InacS7Core.Helper
 
         #endregion
 
+        /// <summary>
+        /// This constructor calls a self registration to the bindings, if the type isn't exist. 
+        /// </summary>
         protected ProtocolPolicyBase()
         {
             if (!Bindings.ContainsKey(GetType()))
@@ -99,11 +115,23 @@ namespace InacS7Core.Helper
 
         #region Public Methods (for setup of the class)
 
+        /// <summary>
+        /// Add a marker to the marker list of that protocol policy
+        /// </summary>
+        /// <param name="aByteSequence">matching sequence</param>
+        /// <param name="aOffsetInStream">offset to the matching test</param>
+        /// <param name="aEndMarker">true if it is of type end marker</param>
+        /// <param name="aExclusiveMarker">true if the marker should be exclusive 
+        /// (e.g. STX[inclusive]ETX   STX and ETX should be exclusive)</param>
         protected void AddMarker(IEnumerable<byte> aByteSequence, int aOffsetInStream, bool aEndMarker, bool aExclusiveMarker = false)
         {
             AddMarker(new Marker(aByteSequence, aOffsetInStream, aEndMarker, aExclusiveMarker));
         }
 
+        /// <summary>
+        /// Add a marker to the marker list of that protocol policy
+        /// </summary>
+        /// <param name="aMarker">the configured marker</param>
         protected void AddMarker(Marker aMarker)
         {
             _markers.Add(aMarker);
@@ -118,6 +146,9 @@ namespace InacS7Core.Helper
 
         }
 
+        /// <summary>
+        /// Calculate the number of registered begin markers
+        /// </summary>
         public int NumberOfBeginMarkers
         {
             get
@@ -126,6 +157,9 @@ namespace InacS7Core.Helper
             }
         }
 
+        /// <summary>
+        /// Sum all begin markers, to get the minimum begin marker length
+        /// </summary>
         public int BeginMarkerLength
         {
             get
@@ -134,6 +168,9 @@ namespace InacS7Core.Helper
             }
         }
 
+        /// <summary>
+        /// Get the first byte after the last begin marker
+        /// </summary>
         public int BeginMarkerEnd
         {
             get
@@ -142,6 +179,9 @@ namespace InacS7Core.Helper
             }
         }
 
+        /// <summary>
+        /// Sum all end markers, to get the minimum end marker length
+        /// </summary>
         public int EndMarkerLength
         {
             get
@@ -229,6 +269,12 @@ namespace InacS7Core.Helper
 
         #region Private Methods
 
+        /// <summary>
+        /// Find all markers in the datagram
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="markers"></param>
+        /// <returns></returns>
         private static FoundMarker FindDatagramMarker(IEnumerable<byte> data, IEnumerable<Tuple<byte[], Marker>> markers)
         {
             var patternMatchResults = new List<FoundMarker>();
@@ -267,6 +313,12 @@ namespace InacS7Core.Helper
             return patternMatchResults.First();
         }
 
+        /// <summary>
+        /// remove data due to offsetNextValid 
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="offsetNextValid"></param>
+        /// <returns></returns>
         private static int Eat(List<byte> data, int offsetNextValid)
         {
             var length = data.Count;
@@ -276,7 +328,6 @@ namespace InacS7Core.Helper
             }
             else
             {
-                //LogEaten(data, offsetNextValid);
                 if (length <= offsetNextValid)
                     data.Clear();
                 else
@@ -285,22 +336,11 @@ namespace InacS7Core.Helper
             return length - data.Count;
         }
 
-        private void LogEaten(List<byte> data, int count)
-        {
-            if (count == 0)
-                return;
-
-            var minCount = Math.Min(data.Count(), count);
-            var sb = new StringBuilder();
-            foreach (var item in data.Take(minCount))
-                sb.AppendFormat("{0:X2} ", item);
-
-            if (minCount > 0)
-                sb.Length = sb.Length - 1;
-
-            var asString = Encoding.ASCII.GetString(data.ToArray(), 0, minCount);
-        }
-
+        /// <summary>
+        /// inspect given data to extract messages
+        /// </summary>
+        /// <param name="data">incoming byte stream</param>
+        /// <returns></returns>
         private IEnumerable<IEnumerable<byte>> InspectAndExtract(IEnumerable<byte> data)
         {
             var processingState = EProcessingState.SyncingOffset;
@@ -322,8 +362,6 @@ namespace InacS7Core.Helper
 
                                 if (foundMarker != null && foundMarker.Result != null)
                                 {
-                                    // Find the marker in the marker list by it's byte sequence.
-                                    //offsetMarker = _markers.Find(m => !m.ByteSequence.SequenceEqual(foundMarker.Marker));
                                     offsetMarker = foundMarker.MetaData;
                                     var offsetInStream = offsetMarker.OffsetInStream;
 
@@ -346,10 +384,7 @@ namespace InacS7Core.Helper
                                         ready = true;
                                     }
                                     else
-                                    {
-                                        Debug.Assert(false);
                                         ready = true;
-                                    }
                                 }
                                 else
                                 {
@@ -368,9 +403,7 @@ namespace InacS7Core.Helper
                     case EProcessingState.SyncingLength:
                         {
                             if (originData != null && originData.Count >= GetMinimumCountDataBytes())
-                            {
                                 processingState = EProcessingState.Collecting;
-                            }
                             else
                                 ready = true;
                         }
@@ -383,7 +416,6 @@ namespace InacS7Core.Helper
 
                             if (_endMarkerSequences.Count > 0)
                             {
-                                //Logger.DebugFormat("InspectAndExtract '{0}': Collecting data with the usage of EndMarker", protocolName);
                                 var foundMarker = FindDatagramMarker(originData, _endMarkerSequences);
                                 if (foundMarker != null && foundMarker.Result != null)
                                 {
@@ -393,12 +425,8 @@ namespace InacS7Core.Helper
                                 }
                             }
                             else
-                            {
                                 datagramLength = GetDatagramLength(originData);
-                            }
 
-
-                            //Logger.DebugFormat("InspectAndExtract '{0}': Collecting data for DatagramLength <{1}>", protocolName, datagramLength);
                             if (originData != null && datagramLength > 0 && datagramLength <= length)
                             {
                                 try
@@ -436,11 +464,14 @@ namespace InacS7Core.Helper
                         break;
                 }
             }
-
-            //Logger.DebugFormat("InspectAndExtract '{0}': finished with {1} extracted messages", protocolName, messages.Count);
             return messages;
         }
 
+        /// <summary>
+        /// Test if given data are from current protocol policy
+        /// </summary>
+        /// <param name="data">data to test</param>
+        /// <returns>true if current protocol is matching</returns>
         private bool Test(IEnumerable<byte> data)
         {
             var payload = data.ToArray();
@@ -458,45 +489,6 @@ namespace InacS7Core.Helper
 
             return true;
         }
-
-        private static IEnumerable<Type> FindDerivedTypesFromAssembly(Assembly assembly, Type baseType, bool classOnly)
-        {
-            if (assembly == null)
-                throw new ArgumentNullException("assembly", "Assembly must be defined");
-
-            if (baseType == null)
-                throw new ArgumentNullException("baseType", "Parent Type must be defined");
-
-
-            // get all the types
-            var types = assembly.GetTypes();
-            var bti = baseType.GetTypeInfo();
-
-            // works out the derived types
-            foreach (var type in types)
-            {
-                var ti = type.GetTypeInfo();
-                // if classOnly, it must be a class
-                // useful when you want to create instance
-                if (classOnly && !ti.IsClass)
-                    continue;
-
-                if (bti.IsInterface)
-                {
-                    var it = type.GetInterfaces().FirstOrDefault(x => x.Name == baseType.FullName);
-
-                    if (it != null)
-                        // add it to result list
-                        yield return type;
-                }
-                else if (type.GetTypeInfo().IsSubclassOf(baseType))
-                {
-                    // add it to result list
-                    yield return type;
-                }
-            }
-        }
-
 
         #endregion
     }

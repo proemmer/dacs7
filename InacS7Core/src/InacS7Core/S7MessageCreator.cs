@@ -11,6 +11,10 @@ namespace InacS7Core
 {
     internal static class S7MessageCreator
     {
+        /// <summary>
+        /// This constructor search all occurrences of IProtocolPolicy and 
+        /// creates an instance of it to register them in the Policy factory
+        /// </summary>
         static S7MessageCreator()
         {
             var type = typeof(IProtocolPolicy);
@@ -31,6 +35,16 @@ namespace InacS7Core
             }
         }
 
+        /// <summary>
+        /// Fill the communication header attributes with the given variables
+        /// </summary>
+        /// <param name="message">message to assign</param>
+        /// <param name="pduType">type of S7Pdu  e.g. Job</param>
+        /// <param name="lengthOfPayload">number of bytes after the header</param>
+        /// <param name="lengthOfParam">number of bytes for parameters</param>
+        /// <param name="duRef">ProtocolDataUnitReference is used to find correct pending message to an ack</param>
+        /// <param name="identifier"></param>
+        /// <param name="protocolId">Most of the time  0x32</param>
         private static void FillCommHeader(IMessage message, byte pduType, ushort lengthOfPayload = 0, ushort lengthOfParam = 4, ushort duRef = 0, ushort identifier = 0, byte protocolId = 0x32 )
         {
             message.SetAttribute("ProtocolId", protocolId);
@@ -41,6 +55,17 @@ namespace InacS7Core
             message.SetAttribute("DataLength", lengthOfPayload);
         }
 
+        /// <summary>
+        /// Add parameter for user data datagram.
+        /// </summary>
+        /// <param name="message">message to assign to</param>
+        /// <param name="length"></param>
+        /// <param name="type"></param>
+        /// <param name="group"></param>
+        /// <param name="subfunction"></param>
+        /// <param name="sequenceNumber"></param>
+        /// <param name="reference"></param>
+        /// <param name="lastDataUnit"></param>
         private static void AddUserDataParameter(IMessage message, byte length, UserDataFunctionType type, UserDataFunctionGroup group , byte subfunction, byte sequenceNumber = 0, byte reference = 0, bool lastDataUnit = true)
         {
             message.SetAttribute("ParamHeader",new byte[]
@@ -64,6 +89,13 @@ namespace InacS7Core
             }
         }
 
+        /// <summary>
+        /// Add parameter for job datagram.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="function"></param>
+        /// <param name="parallelJobs"></param>
+        /// <param name="length"></param>
         private static void AddJobParameter(IMessage message, byte function, ushort parallelJobs, ushort length)
         {
             message.SetAttribute("Function", function);
@@ -73,6 +105,15 @@ namespace InacS7Core
             message.SetAttribute("PduLength", length);
         }
 
+        /// <summary>
+        /// Add parameter for upload datagram.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="function"></param>
+        /// <param name="blockType"></param>
+        /// <param name="blockNumber"></param>
+        /// <param name="length"></param>
+        /// <param name="controlId"></param>
         private static void AddUploadParameter(IMessage message, byte function, PlcBlockType blockType, int blockNumber, byte length = 0, uint controlId = 0)
         {
             message.SetAttribute("Function", function);
@@ -90,6 +131,16 @@ namespace InacS7Core
             }
         }
 
+        /// <summary>
+        /// Add parameters for download datagram
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="function"></param>
+        /// <param name="blockType"></param>
+        /// <param name="blockNumber"></param>
+        /// <param name="loadMemSize"></param>
+        /// <param name="Mc7Size"></param>
+        /// <param name="lastDu"></param>
         private static void AddDownloadParameter(IMessage message, byte function, PlcBlockType blockType, int blockNumber, int loadMemSize, int Mc7Size, bool lastDu = false)
         {
             message.SetAttribute("Function", function);

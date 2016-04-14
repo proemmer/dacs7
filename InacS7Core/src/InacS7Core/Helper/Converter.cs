@@ -11,6 +11,12 @@ namespace InacS7Core.Helper
     {
         private const string HexDigits = "0123456789ABCDEF";
 
+        /// <summary>
+        /// Convert a Numeric type to a byte array and swap bytes
+        /// </summary>
+        /// <typeparam name="T">can be of type Byte,UInt16,Int16,UInt32,Int32,Single</typeparam>
+        /// <param name="value">value to convert</param>
+        /// <returns></returns>
         public static byte[] SetSwap<T>(this T value)
         {
             byte[] buffer = null;
@@ -43,6 +49,12 @@ namespace InacS7Core.Helper
             return buffer;
         }
 
+        /// <summary>
+        /// Convert a Numeric type to a byte array
+        /// </summary>
+        /// <typeparam name="T">can be of type Byte,UInt16,Int16,UInt32,Int32,Single</typeparam>
+        /// <param name="value">value to convert</param>
+        /// <returns></returns>
         public static byte[] SetNoSwap<T>(this T value)
         {
             byte[] buffer = null;
