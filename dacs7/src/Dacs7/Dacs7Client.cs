@@ -307,14 +307,14 @@ namespace Dacs7
                                 if (returnCode == 0xFF)
                                     result.Add(cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemData", new byte[0]));
                                 else
-                                    throw new InacS7ReturnCodeException(returnCode, i);
+                                    throw new Dacs7ReturnCodeException(returnCode, i);
                             }
                             return result;
                         }
                         var firstReturnCode = cbh.ResponseMessage.GetAttribute("Item[0].ItemReturnCode", (byte)0);
                         if (firstReturnCode == 0xFF)
                             return cbh.ResponseMessage.GetAttribute("Item[0].ItemData", new byte[0]);
-                        throw new InacS7ContentException(firstReturnCode, 0);
+                        throw new Dacs7ContentException(firstReturnCode, 0);
                     }
                     var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
                     throw new Dacs7Exception(errorClass, errorCode);
@@ -469,7 +469,7 @@ namespace Dacs7
                         {
                             var returnCode = cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemReturnCode", (byte)0);
                             if (returnCode != 0xff)
-                                throw new InacS7ContentException(returnCode, i);
+                                throw new Dacs7ContentException(returnCode, i);
                         }
                         //all write operations are successfully
                         return;
@@ -635,9 +635,9 @@ namespace Dacs7
                         }
                         throw new InvalidDataException("SSL Data are empty!");
                     }
-                    throw new InacS7ReturnCodeException(returnCode);
+                    throw new Dacs7ReturnCodeException(returnCode);
                 }
-                throw new InacS7ParameterException(errorCode);
+                throw new Dacs7ParameterException(errorCode);
             }) as IPlcBlocksCount;
         }
 
@@ -697,9 +697,9 @@ namespace Dacs7
                             throw new InvalidDataException("SSL Data are empty!");
 
                         }
-                        throw new InacS7ReturnCodeException(returnCode);
+                        throw new Dacs7ReturnCodeException(returnCode);
                     }
-                    throw new InacS7ParameterException(errorCode);
+                    throw new Dacs7ParameterException(errorCode);
                 }) as IEnumerable<IPlcBlocks>;
 
                 if (blocksPart != null)
@@ -766,9 +766,9 @@ namespace Dacs7
                         }
                         throw new InvalidDataException("SSL Data are empty!");
                     }
-                    throw new InacS7ReturnCodeException(returnCode);
+                    throw new Dacs7ReturnCodeException(returnCode);
                 }
-                throw new InacS7ParameterException(errorCode);
+                throw new Dacs7ParameterException(errorCode);
             }) as IPlcBlockInfo;
         }
 
@@ -906,7 +906,7 @@ namespace Dacs7
                                         }
                                         throw new InvalidDataException("SSL Data are empty!");
                                     }
-                                    throw new InacS7ReturnCodeException(returnCodeCb);
+                                    throw new Dacs7ReturnCodeException(returnCodeCb);
                                 }
                                 catch (Exception ex)
                                 {
@@ -920,9 +920,9 @@ namespace Dacs7
                         };
                         return callbackId;
                     }
-                    throw new InacS7ReturnCodeException(returnCode);
+                    throw new Dacs7ReturnCodeException(returnCode);
                 }
-                throw new InacS7ParameterException(errorCode);
+                throw new Dacs7ParameterException(errorCode);
             });
         }
 
@@ -987,9 +987,9 @@ namespace Dacs7
 
                             return result;
                         }
-                        throw new InacS7ReturnCodeException(returnCode);
+                        throw new Dacs7ReturnCodeException(returnCode);
                     }
-                    throw new InacS7ParameterException(errorCode);
+                    throw new Dacs7ParameterException(errorCode);
                 }) as IEnumerable<IPlcAlarm>;
 
                 if (alarmPart != null)
@@ -1062,7 +1062,7 @@ namespace Dacs7
                                         }
                                         throw new InvalidDataException("SSL Data are empty!");
                                     }
-                                    throw new InacS7ReturnCodeException(returnCodeCb);
+                                    throw new Dacs7ReturnCodeException(returnCodeCb);
                                 }
                                 catch (Exception ex)
                                 {
@@ -1080,9 +1080,9 @@ namespace Dacs7
                         };
                         return callbackId;
                     }
-                    throw new InacS7ReturnCodeException(returnCode);
+                    throw new Dacs7ReturnCodeException(returnCode);
                 }
-                throw new InacS7ParameterException(errorCode);
+                throw new Dacs7ParameterException(errorCode);
             });
         }
 
@@ -1121,9 +1121,9 @@ namespace Dacs7
                         }
                         throw new InvalidDataException("SSL Data are empty!");
                     }
-                    throw new InacS7ReturnCodeException(returnCode);
+                    throw new Dacs7ReturnCodeException(returnCode);
                 }
-                throw new InacS7ParameterException(errorCode);
+                throw new Dacs7ParameterException(errorCode);
             });
         }
 
@@ -1230,8 +1230,8 @@ namespace Dacs7
         {
             _timeout = _parameter.GetParameter("Receive Timeout", 5000);
             _maxParallelJobs = _parameter.GetParameter("Maximum Parallel Jobs", (ushort)1);  //Used by simatic manager -> best performance with 1
-            _maxParallelCalls = _parameter.GetParameter("Maximum Parallel Calls", (ushort)4); //Used by InacS7
-            _taskCreationOptions = _parameter.GetParameter("Use Threads", true) ? TaskCreationOptions.LongRunning : TaskCreationOptions.None; //Used by InacS7
+            _maxParallelCalls = _parameter.GetParameter("Maximum Parallel Calls", (ushort)4); //Used by Dacs7
+            _taskCreationOptions = _parameter.GetParameter("Use Threads", true) ? TaskCreationOptions.LongRunning : TaskCreationOptions.None; //Used by Dacs7
             _sleeptimeAfterMaxPendingCallsReached = _parameter.GetParameter("Sleeptime After Max Pending Calls Reached", 5);
 
             var config = new ClientSocketConfiguration

@@ -57,12 +57,12 @@ namespace Dacs7
         #endregion
     }
 
-    public class InacS7ContentException : Exception
+    public class Dacs7ContentException : Exception
     {
         public int ErrorIndex { get; private set; }
         public ItemResponseRetVaulue ErrorCode { get; private set; }
 
-        public InacS7ContentException(byte errorCode, int itemIndex) : 
+        public Dacs7ContentException(byte errorCode, int itemIndex) : 
             base(string.Format("No success return code form item {0}: <{1}>", itemIndex, Dacs7Exception.ResolveErrorCode<ItemResponseRetVaulue>(errorCode)))
         {
             ErrorCode = (ItemResponseRetVaulue) errorCode;
@@ -70,23 +70,23 @@ namespace Dacs7
         }
     }
 
-    public class InacS7ParameterException : Exception
+    public class Dacs7ParameterException : Exception
     {
         public ErrorParameter ErrorCode { get; private set; }
 
-        public InacS7ParameterException(ushort errorCode) :
+        public Dacs7ParameterException(ushort errorCode) :
             base(string.Format("No success error code: <{0}>", Dacs7Exception.ResolveErrorCode<ErrorParameter>(errorCode)))
         {
             ErrorCode = (ErrorParameter)errorCode;
         }
     }
 
-    public class InacS7ReturnCodeException : Exception
+    public class Dacs7ReturnCodeException : Exception
     {
         public byte ReturnCode { get; private set; }
         public int ItemNumber { get; set; }
 
-        public InacS7ReturnCodeException(byte returnCode, int itemNumber = -1) :
+        public Dacs7ReturnCodeException(byte returnCode, int itemNumber = -1) :
             base(string.Format("No success return code{1}: <{0}>", returnCode, itemNumber != -1 ? string.Format(" for item {0}",itemNumber) : ""))
         {
             ReturnCode = returnCode;

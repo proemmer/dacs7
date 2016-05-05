@@ -17,7 +17,7 @@ namespace Dacs7Cmd
         private const int TestByteOffset2 = 525;
         private const int TestBitOffset = 16 * 8; // DBX16.0
         private const int TestBitOffset2 = 16 * 8 + 1; // DBX16.1
-        private const int LongDbNumer = 558;
+        private const int LongDbNumer = 560;
 
         public static void Main(string[] args)
         {

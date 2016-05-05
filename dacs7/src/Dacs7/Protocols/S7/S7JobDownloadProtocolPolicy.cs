@@ -4,9 +4,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Dacs7.Helper;
 using Dacs7.Arch;
-using Dacs7.Helper;
 
-namespace INACS7.Protocol
+namespace Dacs7.Protocol
 {
     public class S7JobDownloadProtocolPolicy : S7ProtocolPolicy
     {
