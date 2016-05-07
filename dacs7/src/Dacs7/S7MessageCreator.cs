@@ -17,21 +17,28 @@ namespace Dacs7
         /// </summary>
         static S7MessageCreator()
         {
-            var type = typeof(IProtocolPolicy);
-            foreach (var t in PlatformServices.Default.LibraryManager.GetLibraries()
-                .SelectMany(l => l.Assemblies)
-                .Select(info => Assembly.Load(new AssemblyName(info.Name)))
-                .SelectMany(s => s.GetTypes())
-                .Where(type.IsAssignableFrom))
+            try
             {
-                try
+                var type = typeof(IProtocolPolicy);
+                foreach (var t in PlatformServices.Default.LibraryManager.GetLibraries()
+                    .SelectMany(l => l.Assemblies)
+                    .Select(info => Assembly.Load(new AssemblyName(info.Name)))
+                    .SelectMany(s => s.GetTypes())
+                    .Where(type.IsAssignableFrom))
                 {
-                    Activator.CreateInstance(t);
-                }
-                catch(Exception)
-                {
+                    try
+                    {
+                        Activator.CreateInstance(t);
+                    }
+                    catch (Exception)
+                    {
 
+                    }
                 }
+            }
+            catch (Exception)
+            {
+
             }
         }
 
