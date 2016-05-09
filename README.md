@@ -1,4 +1,4 @@
-# InacS7Core
+# dacs7
 
 library to access s7 plcs to read and write data.
 
@@ -9,6 +9,6 @@ NuGet
 Description
 ==============================
 
-Insite Access S7 Core is used to connect to a SIEMENS Plc by usin the RFC1006 connection an perform operations.
+dacs7 is used to connect to a SIEMENS Plc by usin the RFC1006 connection an perform operations.
 
 
