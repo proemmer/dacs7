@@ -38,10 +38,43 @@
           <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
         </div>
 
-        <h3>
-<a id="welcome" class="anchor" href="#welcome" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Welcome</h3>
+        <h1>
+<a id="dacs7" class="anchor" href="#dacs7" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>dacs7</h1>
 
-<p>dacs7 is a library written in c# to access siemens plc data.</p>
+<p>Data access S7 is a library to connect to S7 plcs for reading and writing data.</p>
+
+<h1>
+<a id="nuget" class="anchor" href="#nuget" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>NuGet</h1>
+
+<p>PM&gt;  Install-Package Dacs7 -Pre </p>
+
+<h1>
+<a id="description" class="anchor" href="#description" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Description</h1>
+
+<p>Dacs7 is used to connect to a SIEMENS Plc by usin the RFC1006 connection an perform operations.</p>
+
+<h1>
+<a id="sample-code" class="anchor" href="#sample-code" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Sample-Code</h1>
+
+<p>The following code should show you the fundamental usage:</p>
+
+<pre><code>
+var connectionString = "Data Source=128.0.0.1:102,0,2";
+var client = new Dacs7Client();
+
+client.Connect(connectionString);
+
+var length = 500;
+var testData = new byte[length];
+var offset = 0;
+var dbNumber = 560;
+
+_client.WriteAny(PlcArea.DB, offset, testData, new[] { length, dbNumber });
+
+var red = _client.ReadAny(PlcArea.DB, offset, typeof(byte), new[] { length, dbNumber }) as byte[];
+
+client.Disconnect();
+</code></pre>
       </section>
 
     </div>

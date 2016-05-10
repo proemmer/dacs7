@@ -1,6 +1,6 @@
 {
   "name": "dacs7",
   "tagline": "dnx app for s7 plc connection",
-  "body": "### Welcome\r\ndacs7 is a library written in c# to access siemens plc data.\r\n",
+  "body": "# dacs7\r\n\r\nData access S7 is a library to connect to S7 plcs for reading and writing data.\r\n\r\nNuGet\r\n=====\r\nPM>  Install-Package Dacs7 -Pre \r\n\r\nDescription\r\n==============================\r\n\r\nDacs7 is used to connect to a SIEMENS Plc by usin the RFC1006 connection an perform operations.\r\n\r\nSample-Code\r\n==============================\r\n\r\nThe following code should show you the fundamental usage:\r\n\r\n<pre><code>\r\nvar connectionString = \"Data Source=128.0.0.1:102,0,2\";\r\nvar client = new Dacs7Client();\r\n\r\nclient.Connect(connectionString);\r\n\r\nvar length = 500;\r\nvar testData = new byte[length];\r\nvar offset = 0;\r\nvar dbNumber = 560;\r\n\r\n_client.WriteAny(PlcArea.DB, offset, testData, new[] { length, dbNumber });\r\n\r\nvar red = _client.ReadAny(PlcArea.DB, offset, typeof(byte), new[] { length, dbNumber }) as byte[];\r\n\r\nclient.Disconnect();\r\n</code></pre>\r\n",
   "note": "Don't delete this file! It's used internally to help with page regeneration."
 }
