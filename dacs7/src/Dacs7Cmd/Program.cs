@@ -9,8 +9,8 @@ namespace Dacs7Cmd
     public class Program
     {
         private static readonly Dacs7Client _client = new Dacs7Client();
-        private const string Ip = "192.168.0.146";
-        //private const string Ip = "127.0.0.1";
+        //private const string Ip = "192.168.0.146";
+        private const string Ip = "127.0.0.1";
         private const string ConnectionString = "Data Source=" + Ip + ":102,0,2"; //"Data Source=192.168.0.145:102,0,2";
         private const int TestDbNr = 250;
         private const int TestByteOffset = 524;

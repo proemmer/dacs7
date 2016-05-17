@@ -508,17 +508,10 @@ namespace Dacs7
         public void WriteAny<T>(int dbNumber, int offset, T value, int length = -1)
         {
             if (value is Array && length < 0)
-            {
-                var t = typeof(T);
-                
-                length = (value as Array).Length * TransportSizeHelper.DataTypeToSizeByte(t.GetElementType(), PlcArea.DB);
-            }
-            
+                length = (value as Array).Length * TransportSizeHelper.DataTypeToSizeByte(typeof(T).GetElementType(), PlcArea.DB);
             var size = length < 0 ? TransportSizeHelper.DataTypeToSizeByte(typeof(T),PlcArea.DB) : length;
             WriteAny(PlcArea.DB, offset, value, new int[] { size, dbNumber });
         }
-
-
 
 
         /// <summary>

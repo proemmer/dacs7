@@ -241,15 +241,21 @@ namespace Dacs7
             var msg = Message.Create();
             var isArray = data is Array;
             var isBool = isArray ? (data as Array).GetValue(0) is bool : data is bool;  // Handle Array of bools
-            FillCommHeader(msg, (byte)PduType.Job, (ushort)(!isBool ? length + 4 : length * 6 -1 /*=we need a fillbyte*/), (ushort)(!isBool ? 14 : 2 + 12 * length), unitId);
-            AddReadWriteParameter(msg, (byte)FunctionCode.WriteVar, (!isBool ? (byte)0x01 : Convert.ToByte(length)));
+            var numberOfItems = !isBool ? 1 : length;
+            var itemLength = isBool ? (ushort)1 : length;
+            var payloadLength = (ushort)(!isBool ? length + 4 : length * 6 - 1); //=we need a fillbyte between each item has to be a fill byte if the length is odd.
+            var paramLength = (ushort)(!isBool ? 14 : 2 + 12 * numberOfItems);
+
+            FillCommHeader(msg, (byte)PduType.Job, payloadLength, paramLength, unitId);
+            AddReadWriteParameter(msg, (byte)FunctionCode.WriteVar, Convert.ToByte(numberOfItems));
             var t = data.GetType();
             var enumerable = ConvertDataToByteArray(data);
-
-
-            for (var i = 0; i < (!isBool ? 1 : length); i++)
+            
+            var typeLength = TransportSizeHelper.DataTypeToSizeByte(t, area);
+            for (var i = 0; i < numberOfItems; i++)
             {
                 var size = area == PlcArea.CT || area == PlcArea.TM ? 0x01 : TransportSizeHelper.DataTypeToTransportSize(t);
+                var addr = i * typeLength + offset;
                 // We convert all to one array, so we use only byte or bit as transport type
                 if (size > 0x02) size = 0x02;
 
@@ -259,36 +265,33 @@ namespace Dacs7
                 msg.SetAttribute(prefix + "LengthOfAddressSpecification", specLength);
                 msg.SetAttribute(prefix + "SyntaxId", (byte)ItemSyntaxId.S7Any);
                 msg.SetAttribute(prefix + "TransportSize", (byte)size);
-                msg.SetAttribute(prefix + "ItemSpecLength", length);
+                msg.SetAttribute(prefix + "ItemSpecLength", itemLength);
                 msg.SetAttribute(prefix + "DbNumber", dbnr);
                 msg.SetAttribute(prefix + "Area", area);
 
-
-                offset = isBool ? offset+i : (offset * 8);
+                var offsetAddress = size == 0x01 ? addr : addr * 8;
                 var address = new byte[3];
-                address[2] = (byte)(offset & 0x000000FF);
-                offset = offset >> 8;
-                address[1] = (byte)(offset & 0x000000FF);
-                offset = offset >> 8;
-                address[0] = (byte)(offset & 0x000000FF);
+                address[2] = (byte)(offsetAddress & 0x000000FF);
+                offsetAddress = offsetAddress >> 8;
+                address[1] = (byte)(offsetAddress & 0x000000FF);
+                offsetAddress = offsetAddress >> 8;
+                address[0] = (byte)(offsetAddress & 0x000000FF);
 
                 msg.SetAttribute(prefix + "Address", address);
-                offset += specLength + 2;
             }
 
 
-
-            for (var i = 0; i < (!isBool ? 1 : length); i++)
+            for (var i = 0; i < numberOfItems; i++)
             {
                 var size = TransportSizeHelper.DataTypeToResultTransportSize(t);
+                // We convert all to one array, so we use only byte or bit as transport type
                 if (size == 0 || size > 4) size = 4;
+
                 var prefix = $"DataItem[{i}].";
                 msg.SetAttribute(prefix + "ItemDataReturnCode", (byte)0x00);      
                 msg.SetAttribute(prefix + "ItemDataTransportSize", (byte)size);
-                msg.SetAttribute(prefix + "ItemDataLength", isBool ? (ushort)1 : length);
+                msg.SetAttribute(prefix + "ItemDataLength", itemLength);
                 msg.SetAttribute(prefix + "ItemData", isBool ? new byte[] { enumerable[i] } : enumerable);
-
-                offset += length + 4;
             }
 
             return msg;
