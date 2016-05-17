@@ -207,7 +207,7 @@ namespace Dacs7
             {
                 var size = area == PlcArea.CT || area == PlcArea.TM ? 0x01 : TransportSizeHelper.DataTypeToTransportSize(t);
                 // We convert all to one array, so we use only byte or bit as transport type
-                if (size > 0x02) size = 0x02;
+                if (size > 0x03) size = 0x03;
 
                 var prefix = $"Item[{i}].";
                 msg.SetAttribute(prefix + "VariableSpecification", (byte)0x12);
@@ -241,17 +241,18 @@ namespace Dacs7
             var msg = Message.Create();
             var isArray = data is Array;
             var isBool = isArray ? (data as Array).GetValue(0) is bool : data is bool;  // Handle Array of bools
-            FillCommHeader(msg, (byte)PduType.Job, (ushort)(!isBool ? length + 4 : length * 5), 14, unitId);
+            FillCommHeader(msg, (byte)PduType.Job, (ushort)(!isBool ? length + 4 : length * 6 -1 /*=we need a fillbyte*/), (ushort)(!isBool ? 14 : 2 + 12 * length), unitId);
             AddReadWriteParameter(msg, (byte)FunctionCode.WriteVar, (!isBool ? (byte)0x01 : Convert.ToByte(length)));
             var t = data.GetType();
             var enumerable = ConvertDataToByteArray(data);
-            var size = area == PlcArea.CT || area == PlcArea.TM ? 0x01 : TransportSizeHelper.DataTypeToTransportSize(t);
 
-            // We convert all to one array, so we use only byte or bit as transport type
-            if (size > 0x02) size = 0x02;
 
-            for (var i = 0; i < 1; i++)
+            for (var i = 0; i < (!isBool ? 1 : length); i++)
             {
+                var size = area == PlcArea.CT || area == PlcArea.TM ? 0x01 : TransportSizeHelper.DataTypeToTransportSize(t);
+                // We convert all to one array, so we use only byte or bit as transport type
+                if (size > 0x02) size = 0x02;
+
                 var prefix = $"Item[{i}].";
                 msg.SetAttribute(prefix + "VariableSpecification", (byte)0x12);
                 const byte specLength = 0x0a;
@@ -263,7 +264,7 @@ namespace Dacs7
                 msg.SetAttribute(prefix + "Area", area);
 
 
-                offset = isBool ? offset : (offset * 8);
+                offset = isBool ? offset+i : (offset * 8);
                 var address = new byte[3];
                 address[2] = (byte)(offset & 0x000000FF);
                 offset = offset >> 8;
@@ -275,11 +276,14 @@ namespace Dacs7
                 offset += specLength + 2;
             }
 
+
+
             for (var i = 0; i < (!isBool ? 1 : length); i++)
             {
+                var size = TransportSizeHelper.DataTypeToResultTransportSize(t);
+                if (size == 0 || size > 4) size = 4;
                 var prefix = $"DataItem[{i}].";
-                msg.SetAttribute(prefix + "ItemDataReturnCode", (byte)0x00);
-              
+                msg.SetAttribute(prefix + "ItemDataReturnCode", (byte)0x00);      
                 msg.SetAttribute(prefix + "ItemDataTransportSize", (byte)size);
                 msg.SetAttribute(prefix + "ItemDataLength", isBool ? (ushort)1 : length);
                 msg.SetAttribute(prefix + "ItemData", isBool ? new byte[] { enumerable[i] } : enumerable);

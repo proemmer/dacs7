@@ -99,6 +99,8 @@ namespace Dacs7.Helper
 
                 message.SetAttribute(prefix + "ItemDataLength", (ushort)dataLength);
                 message.SetAttribute(prefix + "ItemData", msg.Skip(offset + OffsetInPayload("S7WriteJobDataItem.ItemData")).Take(dataLength));
+
+                offset++;
             }
         }
 
@@ -136,6 +138,9 @@ namespace Dacs7.Helper
                     dataLength = dataLength * 8;
                 msg.AddRange(((ushort)dataLength).SetSwap<ushort>());
                 msg.AddRange(message.GetAttribute(prefix + "ItemData", new byte[0]));
+
+                if (itemCount > 1)
+                    msg.Add(0x00);
             }
 
             return msg;
