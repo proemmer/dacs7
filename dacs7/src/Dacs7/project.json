@@ -2,8 +2,8 @@
   "version": "1.0.2-beta",
   "description": "Dacs7 Class Library",
   "authors": [ "Benjamin Proemmer" ],
-  "tags": [ "" ],
-  "projectUrl": "",
+  "tags": [ "siemens S7" ],
+  "projectUrl": "http://proemmer.github.io/dacs7",
   "licenseUrl": "",
   "frameworks": {
     "dnxcore50": {
