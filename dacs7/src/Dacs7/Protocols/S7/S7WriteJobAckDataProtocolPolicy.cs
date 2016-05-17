@@ -51,7 +51,7 @@ namespace Dacs7.Helper
             var offset = parentOffset + 2;
             for (var i = 0; i < itemCount; i++)
             {
-                var prefix = string.Format("Item[{0}].", i);
+                var prefix = $"Item[{i}].";
                 message.SetAttribute(prefix + "ItemReturnCode", msg[offset + OffsetInPayload("S7WriteJobItemData.ItemReturnCode")]);
                 offset += 1;
             }
@@ -66,7 +66,7 @@ namespace Dacs7.Helper
 
             for (var i = 0; i < itemCount; i++)
             {
-                var prefix = string.Format("Item[{0}].", i);
+                var prefix = $"Item[{i}].";
                 msg.Add(message.GetAttribute(prefix + "ItemReturnCode", (byte)0));
             }
             return msg;

@@ -12,6 +12,8 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -271,6 +273,55 @@ namespace Dacs7
             return Task.Factory.StartNew(Disconnect, TaskCreationOptions.LongRunning);
         }
 
+
+        public object ReadAny<T>(int dbNumber, int offset, int length = -1)
+        {
+            int elementLength = 0;
+            var t = typeof(T);
+            elementLength = t == typeof(bool) ? 1 : Marshal.SizeOf(t);
+
+            if (length >= 0)
+                length = length * elementLength;
+            else
+                length = 1;
+
+            var data = ReadAny(PlcArea.DB, offset, typeof(byte), new[] { length, dbNumber }) as byte[];
+
+            if (t != typeof(byte) && t != typeof(char) && length > 0)
+            {
+                var result = new List<T>();
+                for (int i = 0; i < length; i += elementLength)
+                    result.Add((T)ConvertTo<T>(t, data, i));
+                return result.ToArray<T>();
+            }
+            return ConvertTo<T>(t, data, 0);
+        }
+
+
+        private object ConvertTo<T>(Type t, byte[] data, int offset)
+        {
+            if (t == typeof(bool))
+            {
+                return data[offset] != 0x00;
+            }
+            else if (t == typeof(byte))
+            {
+                return data;
+            }
+            else if (t == typeof(char))
+            {
+                return Encoding.ASCII.GetChars(data, offset, data.Length - offset);
+            }
+            else if (t == typeof(DateTime))
+            {
+                return data.ToDateTime(offset);
+            }
+            else
+                return data.GetSwap<T>(offset);
+        }
+
+
+
         /// <summary>
         /// Read data from the plc and convert it to the given .Net type.
         /// </summary>
@@ -437,6 +488,38 @@ namespace Dacs7
                 ReadAnyPartsAsync(area, offset, type, args),
                 _taskCreationOptions);
         }
+
+
+        public void WriteAny<T>(PlcArea area, int offset, T value, int length = -1)
+        {
+            if (area == PlcArea.DB)
+                throw new ArgumentException("The argument area could not be DB.");
+            var size = length < 0 ? System.Runtime.InteropServices.Marshal.SizeOf<T>() : length;
+            WriteAny(area, offset, value, new int[] { size });
+        }
+
+        /// <summary>
+        /// Write DB data to connected PLc
+        /// </summary>
+        /// <param name="dbNumber">Number of the target data block</param>
+        /// <param name="offset">Offset in byte</param>
+        /// <param name="length">Length in byte</param>
+        /// <param name="value">value to write</param>
+        public void WriteAny<T>(int dbNumber, int offset, T value, int length = -1)
+        {
+            if (value is Array && length < 0)
+            {
+                var t = typeof(T);
+                
+                length = (value as Array).Length * TransportSizeHelper.DataTypeToSizeByte(t.GetElementType(), PlcArea.DB);
+            }
+            
+            var size = length < 0 ? TransportSizeHelper.DataTypeToSizeByte(typeof(T),PlcArea.DB) : length;
+            WriteAny(PlcArea.DB, offset, value, new int[] { size, dbNumber });
+        }
+
+
+
 
         /// <summary>
         /// Write data to the connected plc.

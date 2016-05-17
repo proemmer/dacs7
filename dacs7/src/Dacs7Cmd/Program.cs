@@ -22,6 +22,12 @@ namespace Dacs7Cmd
         public static void Main(string[] args)
         {
             _client.Connect(ConnectionString);
+            var red = _client.ReadAny(PlcArea.DB, 0, typeof(int), new[] { 2, LongDbNumer });
+            red = _client.ReadAny<bool>(LongDbNumer, 0, 2);
+            _client.WriteAny(LongDbNumer, 0, new bool[] { true });
+            red = _client.ReadAny<int>(LongDbNumer, 0,2);
+            _client.WriteAny(LongDbNumer, 0, new int[] { 1, 2 });
+            ReadWriteAnyTest(_client);
             ReadWriteMoreThanOnePduTest();
             ReadWriteMoreThanOnePduParallelTest();
             _client.Disconnect();
@@ -31,7 +37,7 @@ namespace Dacs7Cmd
 
             //Assert.AreEqual(true, _client.IsConnected);
 
-            const int length = 24000;
+            const int length = 240;
 
             var testData = new byte[length];
             for (var i = 0; i < testData.Length; i++)
@@ -39,7 +45,8 @@ namespace Dacs7Cmd
 
             var sw = new Stopwatch();
             sw.Start();
-            _client.WriteAny(PlcArea.DB, 0, testData, new[] { length, LongDbNumer });
+            //_client.WriteAny(PlcArea.DB, 0, testData, new[] { length, LongDbNumer });
+            _client.WriteAny(LongDbNumer, 0, testData);
             sw.Stop();
             Console.WriteLine("Write time: {0}ms", sw.ElapsedMilliseconds);
 
@@ -86,6 +93,56 @@ namespace Dacs7Cmd
         }
 
         public static void ReadWriteAnyTest(Dacs7Client client)
+        {
+            client.Connect(ConnectionString);
+            //Assert.AreEqual(true, _client.IsConnected);
+
+            client.WriteAny(TestDbNr, TestByteOffset, (byte)0x05);
+            var bytes = client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
+            //Assert.IsNotNull(bytes);
+            //Assert.AreEqual((byte)0x05, bytes[0]);
+
+            client.WriteAny(TestDbNr, TestByteOffset, (byte)0x00);
+            bytes = client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
+            //Assert.IsNotNull(bytes);
+            //Assert.AreEqual((byte)0x00, bytes[0]);
+
+            client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x05, new int[] { 1, TestDbNr });
+            bytes = client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
+            //Assert.IsNotNull(bytes);
+            //Assert.AreEqual((byte)0x05, bytes[0]);
+
+            client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x00, new int[] { 1, TestDbNr });
+            bytes = client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
+            //Assert.IsNotNull(bytes);
+            //Assert.AreEqual((byte)0x00, bytes[0]);
+
+            client.WriteAny(PlcArea.DB, TestBitOffset, true, new int[] { 1, TestDbNr });
+            var state = client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
+            //Assert.IsNotNull(state);
+            //Assert.AreEqual((byte)0x01, state[0]);
+
+            client.WriteAny(PlcArea.DB, TestBitOffset, false, new int[] { 1, TestDbNr });
+            state = client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
+            //Assert.IsNotNull(state);
+            //Assert.AreEqual((byte)0x00, state[0]);
+
+            client.WriteAny(PlcArea.DB, TestBitOffset, true, new int[] { 1, TestDbNr });
+            state = client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
+            //Assert.IsNotNull(state);
+            //Assert.AreEqual((byte)0x01, state[0]);
+
+            client.WriteAny(PlcArea.DB, TestBitOffset, false, new int[] { 1, TestDbNr });
+            state = client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
+            //Assert.IsNotNull(state);
+            //Assert.AreEqual((byte)0x00, state[0]);
+
+
+            client.Disconnect();
+            //Assert.AreEqual(true, !_client.IsConnected);
+        }
+
+        public static void ReadWriteAnyTest2(Dacs7Client client)
         {
             client.Connect(ConnectionString);
             //Assert.AreEqual(true, _client.IsConnected);

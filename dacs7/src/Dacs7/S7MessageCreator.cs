@@ -1,5 +1,6 @@
 ﻿using Dacs7.Arch;
 using Dacs7.Domain;
+using Dacs7.Helper;
 using Microsoft.Extensions.PlatformAbstractions;
 using System;
 using System.Collections.Generic;
@@ -205,7 +206,10 @@ namespace Dacs7
             for (var i = 0; i < 1; i++)
             {
                 var size = area == PlcArea.CT || area == PlcArea.TM ? 0x01 : TransportSizeHelper.DataTypeToTransportSize(t);
-                var prefix = string.Format("Item[{0}].", i);
+                // We convert all to one array, so we use only byte or bit as transport type
+                if (size > 0x02) size = 0x02;
+
+                var prefix = $"Item[{i}].";
                 msg.SetAttribute(prefix + "VariableSpecification", (byte)0x12);
                 const byte specLength = 0x0a;
                 msg.SetAttribute(prefix + "LengthOfAddressSpecification", specLength);
@@ -231,18 +235,24 @@ namespace Dacs7
             return msg;
         }
 
+        //TODO:  Handle array of bool correct!!!!
         public static IMessage CreateWriteRequest(ushort unitId, PlcArea area, ushort dbnr, int offset, ushort length, object data)
         {
             var msg = Message.Create();
-            var isBool = data is bool;
-            FillCommHeader(msg, (byte)PduType.Job, (ushort)(length + 4), 14, unitId);
-            AddReadWriteParameter(msg, (byte)FunctionCode.WriteVar, 1);
+            var isArray = data is Array;
+            var isBool = isArray ? (data as Array).GetValue(0) is bool : data is bool;  // Handle Array of bools
+            FillCommHeader(msg, (byte)PduType.Job, (ushort)(!isBool ? length + 4 : length * 5), 14, unitId);
+            AddReadWriteParameter(msg, (byte)FunctionCode.WriteVar, (!isBool ? (byte)0x01 : Convert.ToByte(length)));
             var t = data.GetType();
             var enumerable = ConvertDataToByteArray(data);
+            var size = area == PlcArea.CT || area == PlcArea.TM ? 0x01 : TransportSizeHelper.DataTypeToTransportSize(t);
+
+            // We convert all to one array, so we use only byte or bit as transport type
+            if (size > 0x02) size = 0x02;
+
             for (var i = 0; i < 1; i++)
             {
-                var size = area == PlcArea.CT || area == PlcArea.TM ? 0x01 : TransportSizeHelper.DataTypeToTransportSize(t);
-                var prefix = string.Format("Item[{0}].", i);
+                var prefix = $"Item[{i}].";
                 msg.SetAttribute(prefix + "VariableSpecification", (byte)0x12);
                 const byte specLength = 0x0a;
                 msg.SetAttribute(prefix + "LengthOfAddressSpecification", specLength);
@@ -265,15 +275,14 @@ namespace Dacs7
                 offset += specLength + 2;
             }
 
-            for (var i = 0; i < 1; i++)
+            for (var i = 0; i < (!isBool ? 1 : length); i++)
             {
-                var size = TransportSizeHelper.DataTypeToResultTransportSize(t);
-                var prefix = string.Format("DataItem[{0}].", i);
+                var prefix = $"DataItem[{i}].";
                 msg.SetAttribute(prefix + "ItemDataReturnCode", (byte)0x00);
               
                 msg.SetAttribute(prefix + "ItemDataTransportSize", (byte)size);
-                msg.SetAttribute(prefix + "ItemDataLength", length);
-                msg.SetAttribute(prefix + "ItemData", enumerable.ToArray());
+                msg.SetAttribute(prefix + "ItemDataLength", isBool ? (ushort)1 : length);
+                msg.SetAttribute(prefix + "ItemData", isBool ? new byte[] { enumerable[i] } : enumerable);
 
                 offset += length + 4;
             }
@@ -392,6 +401,16 @@ namespace Dacs7
                         return new byte[] {(bool) data ? (byte) 0x01 : (byte) 0x00};
                     if (data is byte || data is char)
                         return new byte[] {(byte) data};
+                    if(data is Array)
+                    {
+                        var result = new List<byte>();
+                        var arr = data as Array;
+                        foreach (var item in arr)
+                        {
+                            result.AddRange(item.SetNoSwap());
+                        }
+                        return result.ToArray();
+                    }
                     throw new ArgumentException("Unsupported Type!");
                 }
                 return boolEnum.Select(b => (bool) b ? (byte) 0x01 : (byte) 0x00).ToArray();
