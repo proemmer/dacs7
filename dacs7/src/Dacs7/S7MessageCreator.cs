@@ -21,19 +21,22 @@ namespace Dacs7
             try
             {
                 var type = typeof(IProtocolPolicy);
-                foreach (var t in PlatformServices.Default.LibraryManager.GetLibraries()
-                    .SelectMany(l => l.Assemblies)
-                    .Select(info => Assembly.Load(new AssemblyName(info.Name)))
-                    .SelectMany(s => s.GetTypes())
-                    .Where(type.IsAssignableFrom))
+                var assembly = Assembly.GetEntryAssembly();
+                if (assembly != null)
                 {
-                    try
+                    foreach (var t in assembly.GetReferencedAssemblies()
+                        .Select(info => Assembly.Load(new AssemblyName(info.Name)))
+                        .SelectMany(s => s.GetTypes())
+                        .Where(type.IsAssignableFrom))
                     {
-                        Activator.CreateInstance(t);
-                    }
-                    catch (Exception)
-                    {
+                        try
+                        {
+                            Activator.CreateInstance(t);
+                        }
+                        catch (Exception)
+                        {
 
+                        }
                     }
                 }
             }
