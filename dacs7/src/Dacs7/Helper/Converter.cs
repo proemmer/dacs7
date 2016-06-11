@@ -591,5 +591,89 @@ namespace Dacs7.Helper
 
             return bytes;
         }
+
+        /// <summary>
+        /// Convert a byte list to a Datetime 
+        /// given byte array hast the following format
+        /// year month, day hour minutes millisecond
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="offset"></param>
+        /// <returns></returns>
+        public static DateTime ConvertToDateTime(this IList<byte> data, int offset = 0)
+        {
+            if (data == null || !data.Any())
+                return new DateTime(1900, 01, 01, 00, 00, 00);
+
+            int bt = data[offset];
+            //BCD
+            bt = (((bt >> 4)) * 10) + ((bt & 0x0f));
+            var year = bt < 90 ? 2000 : 1900;
+            year += bt;
+
+            //month
+            bt = data[offset + 1];
+            var month = (((bt >> 4)) * 10) + ((bt & 0x0f));
+
+            //day
+            bt = data[offset + 2];
+            var day = (((bt >> 4)) * 10) + ((bt & 0x0f));
+
+            //hour
+            bt = data[offset + 3];
+            var hour = (((bt >> 4)) * 10) + ((bt & 0x0f));
+
+            //minutes
+            bt = data[offset + 4];
+            var minute = (((bt >> 4)) * 10) + ((bt & 0x0f));
+
+            //second
+            bt = data[offset + 5];
+            var second = (((bt >> 4)) * 10) + ((bt & 0x0f));
+
+            //millisecond
+            //Byte 6 BCD + MSB (Byte 7)
+            bt = data[offset + 6];
+            int bt1 = data[offset + 7];
+            var milli = (((bt >> 4)) * 10) + ((bt & 0x0f));
+            milli = milli * 10 + (bt1 >> 4);
+
+            //week day
+            //LSB (Byte 7) 1=Sunday
+            //bt = b[pos + 7];
+            //week day = (bt1 & 0x0f); 
+            try
+            {
+                return new DateTime(year, month, day, hour, minute, second, milli);
+            }
+            catch (Exception)
+            {
+                return new DateTime(1900, 01, 01, 00, 00, 00);
+            }
+        }
+
+
+        internal static object ConvertTo<T>(this byte[] data, int offset = 0)
+        {
+            var t = typeof(T);
+            if (t == typeof(bool))
+            {
+                return data[offset] != 0x00;
+            }
+            else if (t == typeof(byte))
+            {
+                return data;
+            }
+            else if (t == typeof(char))
+            {
+                return Encoding.ASCII.GetChars(data, offset, data.Length - offset);
+            }
+            else if (t == typeof(DateTime))
+            {
+                return data.ToDateTime(offset);
+            }
+            else
+                return data.GetSwap<T>(offset);
+        }
     }
 }

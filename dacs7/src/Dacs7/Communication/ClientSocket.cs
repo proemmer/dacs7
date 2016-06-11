@@ -47,19 +47,24 @@ namespace Dacs7.Communication
         #endregion
 
         #region Properties
-        public override string Identity { get
+        public override string Identity
+        {
+            get
             {
-                if (_socket != null)
+
+                if (_identity == null)
                 {
-                    var epLocal = _socket.LocalEndPoint as IPEndPoint;
-                    var epRemote = _socket.RemoteEndPoint as IPEndPoint;
-                    return _identity ?? (_identity = string.Format("{0}:{1}-{2}:{3}",
-                        epLocal.Address.ToString(),
-                        epLocal.Port,
-                        epRemote.Address.ToString(),
-                        epRemote.Port));
+                    if (_socket != null)
+                    {
+                        var epLocal = _socket.LocalEndPoint as IPEndPoint;
+                        IPEndPoint epRemote = null;
+                        try { epRemote = _socket.RemoteEndPoint as IPEndPoint; } catch (Exception) { };
+                        _identity = $"{epLocal.Address}:{epLocal.Port}-{(epRemote != null ? epRemote.Address.ToString() : _configuration.Hostname)}:{(epRemote != null ? epRemote.Port : _configuration.ServiceName)}";
+                    }
+                    else
+                        return string.Empty;
                 }
-                return string.Empty;
+                return _identity;
             }
         }
         public DateTime LastUsage { get; private set; }
@@ -100,6 +105,7 @@ namespace Dacs7.Communication
         {
             try
             {
+                _identity = null;
                 _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 _socket.ConnectAsync(_configuration.Hostname, _configuration.ServiceName).Wait();
                 if (IsReallyConnected())
@@ -112,7 +118,7 @@ namespace Dacs7.Communication
                 else
                     HandleSocketDown();
             }
-            catch(Exception)
+            catch (Exception)
             {
                 HandleSocketDown();
                 return false;
@@ -135,9 +141,10 @@ namespace Dacs7.Communication
                 {
                     _socket.Dispose();
                 }
-                catch(ObjectDisposedException) { }
+                catch (ObjectDisposedException) { }
                 _socket = null;
             }
+
         }
         private async void StartReceive()
         {

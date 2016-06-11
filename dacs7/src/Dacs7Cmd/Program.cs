@@ -3,6 +3,7 @@ using Dacs7.Domain;
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading;
 
 namespace Dacs7Cmd
 {
@@ -21,6 +22,7 @@ namespace Dacs7Cmd
 
         public static void Main(string[] args)
         {
+            _client.OnConnectionChange += _client_OnConnectionChange;
             _client.Connect(ConnectionString);
             var red = _client.ReadAny(PlcArea.DB, 0, typeof(int), new[] { 2, LongDbNumer });
             red = _client.ReadAny<bool>(LongDbNumer, 0, 2);
@@ -33,12 +35,25 @@ namespace Dacs7Cmd
             _client.WriteAny(LongDbNumer, 0, new int[] { 1, 2 });
 
 
+            
 
-            ReadWriteAnyTest(_client);
+
+            ReadWriteAnyTest();
             ReadWriteMoreThanOnePduTest();
             ReadWriteMoreThanOnePduParallelTest();
+
+
+
             _client.Disconnect();
+
+            Thread.Sleep(1000);
         }
+
+        private static void _client_OnConnectionChange(object sender, PlcConnectionNotificationEventArgs e)
+        {
+            Console.WriteLine($"ConnectionState: {e.From} = {e.IsConnected}");
+        }
+
         public static void ReadWriteMoreThanOnePduTest()
         {
 
@@ -96,106 +111,108 @@ namespace Dacs7Cmd
 
             //Assert.IsNotNull(red);
             //Assert.IsTrue(testData.SequenceEqual(red));
+            //client.Disconnect();
+            
 
         }
 
-        public static void ReadWriteAnyTest(Dacs7Client client)
+        public static void ReadWriteAnyTest()
         {
-            client.Connect(ConnectionString);
+            //client.Connect(ConnectionString);
             //Assert.AreEqual(true, _client.IsConnected);
 
-            client.WriteAny(TestDbNr, TestByteOffset, (byte)0x05);
-            var bytes = client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(TestDbNr, TestByteOffset, (byte)0x05);
+            var bytes = _client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(bytes);
             //Assert.AreEqual((byte)0x05, bytes[0]);
 
-            client.WriteAny(TestDbNr, TestByteOffset, (byte)0x00);
-            bytes = client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(TestDbNr, TestByteOffset, (byte)0x00);
+            bytes = _client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(bytes);
             //Assert.AreEqual((byte)0x00, bytes[0]);
 
-            client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x05, new int[] { 1, TestDbNr });
-            bytes = client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x05, new int[] { 1, TestDbNr });
+            bytes = _client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(bytes);
             //Assert.AreEqual((byte)0x05, bytes[0]);
 
-            client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x00, new int[] { 1, TestDbNr });
-            bytes = client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x00, new int[] { 1, TestDbNr });
+            bytes = _client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(bytes);
             //Assert.AreEqual((byte)0x00, bytes[0]);
 
-            client.WriteAny(PlcArea.DB, TestBitOffset, true, new int[] { 1, TestDbNr });
-            var state = client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(PlcArea.DB, TestBitOffset, true, new int[] { 1, TestDbNr });
+            var state = _client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(state);
             //Assert.AreEqual((byte)0x01, state[0]);
 
-            client.WriteAny(PlcArea.DB, TestBitOffset, false, new int[] { 1, TestDbNr });
-            state = client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(PlcArea.DB, TestBitOffset, false, new int[] { 1, TestDbNr });
+            state = _client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(state);
             //Assert.AreEqual((byte)0x00, state[0]);
 
-            client.WriteAny(PlcArea.DB, TestBitOffset, true, new int[] { 1, TestDbNr });
-            state = client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(PlcArea.DB, TestBitOffset, true, new int[] { 1, TestDbNr });
+            state = _client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(state);
             //Assert.AreEqual((byte)0x01, state[0]);
 
-            client.WriteAny(PlcArea.DB, TestBitOffset, false, new int[] { 1, TestDbNr });
-            state = client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(PlcArea.DB, TestBitOffset, false, new int[] { 1, TestDbNr });
+            state = _client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(state);
             //Assert.AreEqual((byte)0x00, state[0]);
 
 
-            client.Disconnect();
+            //client.Disconnect();
             //Assert.AreEqual(true, !_client.IsConnected);
         }
 
-        public static void ReadWriteAnyTest2(Dacs7Client client)
+        public static void ReadWriteAnyTest2()
         {
-            client.Connect(ConnectionString);
+            //client.Connect(ConnectionString);
             //Assert.AreEqual(true, _client.IsConnected);
 
-            client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x05, new int[] { 1, TestDbNr });
-            var bytes = client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x05, new int[] { 1, TestDbNr });
+            var bytes = _client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(bytes);
             //Assert.AreEqual((byte)0x05, bytes[0]);
 
-            client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x00, new int[] { 1, TestDbNr });
-            bytes = client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x00, new int[] { 1, TestDbNr });
+            bytes = _client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(bytes);
             //Assert.AreEqual((byte)0x00, bytes[0]);
 
-            client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x05, new int[] { 1, TestDbNr });
-            bytes = client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x05, new int[] { 1, TestDbNr });
+            bytes = _client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(bytes);
             //Assert.AreEqual((byte)0x05, bytes[0]);
 
-            client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x00, new int[] { 1, TestDbNr });
-            bytes = client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x00, new int[] { 1, TestDbNr });
+            bytes = _client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(bytes);
             //Assert.AreEqual((byte)0x00, bytes[0]);
 
-            client.WriteAny(PlcArea.DB, TestBitOffset, true, new int[] { 1, TestDbNr });
-            var state = client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(PlcArea.DB, TestBitOffset, true, new int[] { 1, TestDbNr });
+            var state = _client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(state);
             //Assert.AreEqual((byte)0x01, state[0]);
 
-            client.WriteAny(PlcArea.DB, TestBitOffset, false, new int[] { 1, TestDbNr });
-            state = client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(PlcArea.DB, TestBitOffset, false, new int[] { 1, TestDbNr });
+            state = _client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(state);
             //Assert.AreEqual((byte)0x00, state[0]);
 
-            client.WriteAny(PlcArea.DB, TestBitOffset, true, new int[] { 1, TestDbNr });
-            state = client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(PlcArea.DB, TestBitOffset, true, new int[] { 1, TestDbNr });
+            state = _client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(state);
             //Assert.AreEqual((byte)0x01, state[0]);
 
-            client.WriteAny(PlcArea.DB, TestBitOffset, false, new int[] { 1, TestDbNr });
-            state = client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
+            _client.WriteAny(PlcArea.DB, TestBitOffset, false, new int[] { 1, TestDbNr });
+            state = _client.ReadAny(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }) as byte[];
             //Assert.IsNotNull(state);
             //Assert.AreEqual((byte)0x00, state[0]);
 
 
-            client.Disconnect();
+            //client.Disconnect();
             //Assert.AreEqual(true, !_client.IsConnected);
         }
     }

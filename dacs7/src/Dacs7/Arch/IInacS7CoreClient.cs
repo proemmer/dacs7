@@ -5,11 +5,12 @@ using System.Threading.Tasks;
 
 namespace Dacs7.Arch
 {
+    public delegate void OnConnectionChangeEventHandler(object sender, PlcConnectionNotificationEventArgs e);
+
     public interface IDacs7Client
     {
         UInt16 ReadItemMaxLength { get; }
         UInt16 WriteItemMaxLength { get; }
-
 
         /// <summary>
         /// Setup the connection.
@@ -51,6 +52,11 @@ namespace Dacs7.Arch
         /// </summary>
         /// <returns></returns>
         Task DisconnectAsync();
+
+        /// <summary>
+        /// This event is call if the connection to plc was changed
+        /// </summary>
+        event OnConnectionChangeEventHandler OnConnectionChange;
 
         /// <summary>
         /// Read data from the plc

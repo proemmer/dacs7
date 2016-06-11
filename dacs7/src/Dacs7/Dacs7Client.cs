@@ -13,7 +13,6 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -57,10 +56,30 @@ namespace Dacs7
         private int _referenceId;
         private readonly object _idLock = new object();
         private ushort _receivedPduSize;
-
+        private readonly object _eventHandlerLock = new object();
+        private event OnConnectionChangeEventHandler EventHandler;
         #endregion
 
         #region Properties
+        public event OnConnectionChangeEventHandler OnConnectionChange
+        {
+            add
+            {
+                if (value != null)
+                {
+                    lock (_eventHandlerLock)
+                        EventHandler += value;
+                }
+            }
+            remove
+            {
+                if (value != null)
+                {
+                    lock (_eventHandlerLock)
+                        EventHandler -= value;
+                }
+            }
+        }
 
         public UInt16 PduSize
         {
@@ -164,7 +183,7 @@ namespace Dacs7
                 if (!string.IsNullOrEmpty(connectionString))
                     ConnectionString = connectionString;
 
-                if (IsConnected)
+                if (!IsConnected)
                     Disconnect();
 
                 AssigneParameter();
@@ -273,12 +292,21 @@ namespace Dacs7
             return Task.Factory.StartNew(Disconnect, TaskCreationOptions.LongRunning);
         }
 
-
+        /// <summary>
+        /// Read data form the given data block number and  address and try convert it to the given dataType
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="dbNumber"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
         public object ReadAny<T>(int dbNumber, int offset, int length = -1)
         {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
             int elementLength = 0;
             var t = typeof(T);
-            elementLength = t == typeof(bool) ? 1 : Marshal.SizeOf(t);
+            elementLength = t == typeof(bool) ? 1 : Marshal.SizeOf<T>();
 
             if (length >= 0)
                 length = length * elementLength;
@@ -291,35 +319,11 @@ namespace Dacs7
             {
                 var result = new List<T>();
                 for (int i = 0; i < length; i += elementLength)
-                    result.Add((T)ConvertTo<T>(t, data, i));
+                    result.Add((T)data.ConvertTo<T>(i));
                 return result.ToArray<T>();
             }
-            return ConvertTo<T>(t, data, 0);
+            return data.ConvertTo<T>();
         }
-
-
-        private object ConvertTo<T>(Type t, byte[] data, int offset)
-        {
-            if (t == typeof(bool))
-            {
-                return data[offset] != 0x00;
-            }
-            else if (t == typeof(byte))
-            {
-                return data;
-            }
-            else if (t == typeof(char))
-            {
-                return Encoding.ASCII.GetChars(data, offset, data.Length - offset);
-            }
-            else if (t == typeof(DateTime))
-            {
-                return data.ToDateTime(offset);
-            }
-            else
-                return data.GetSwap<T>(offset);
-        }
-
 
 
         /// <summary>
@@ -332,6 +336,8 @@ namespace Dacs7
         /// <returns></returns>
         public object ReadAny(PlcArea area, int offset, Type type, params int[] args)
         {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
             var id = GetNextReferenceId();
             var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
             var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
@@ -391,6 +397,8 @@ namespace Dacs7
         /// http://www.tugberkugurlu.com/archive/how-and-where-concurrent-asynchronous-io-with-asp-net-web-api
         private object ReadAnyPartsAsync(PlcArea area, int offset, Type type, params int[] args)
         {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
             try
             {
                 var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
@@ -437,6 +445,8 @@ namespace Dacs7
         /// http://www.tugberkugurlu.com/archive/how-and-where-concurrent-asynchronous-io-with-asp-net-web-api
         public object ReadAnyParallel(PlcArea area, int offset, Type type, params int[] args)
         {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
             try
             {
                 var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
@@ -489,7 +499,14 @@ namespace Dacs7
                 _taskCreationOptions);
         }
 
-
+        /// <summary>
+        /// Write data to the given plc area
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="area"></param>
+        /// <param name="offset"></param>
+        /// <param name="value"></param>
+        /// <param name="length"></param>
         public void WriteAny<T>(PlcArea area, int offset, T value, int length = -1)
         {
             if (area == PlcArea.DB)
@@ -513,7 +530,6 @@ namespace Dacs7
             WriteAny(PlcArea.DB, offset, value, new int[] { size, dbNumber });
         }
 
-
         /// <summary>
         /// Write data to the connected plc.
         /// </summary>
@@ -524,6 +540,9 @@ namespace Dacs7
         /// <returns></returns>
         public void WriteAny(PlcArea area, int offset, object value, params int[] args)
         {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
+
             var id = GetNextReferenceId();
             var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
             var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
@@ -567,7 +586,8 @@ namespace Dacs7
         /// <returns></returns>
         public void WriteAnyParallel(PlcArea area, int offset, object value, params int[] args)
         {
-
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
             try
             {
                 var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
@@ -657,6 +677,8 @@ namespace Dacs7
         /// <returns></returns>
         public IPlcBlocksCount GetBlocksCount()
         {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateBlocksCountRequest(id);
             var policy = new S7UserDataProtocolPolicy();
@@ -733,6 +755,8 @@ namespace Dacs7
         /// <returns>Return a list off all blocks of this type</returns>
         public IEnumerable<IPlcBlocks> GetBlocksOfType(PlcBlockType type)
         {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
             var id = GetNextReferenceId();
             var policy = new S7UserDataProtocolPolicy();
             var blocks = new List<IPlcBlocks>();
@@ -802,6 +826,8 @@ namespace Dacs7
         /// <returns></returns>
         public IPlcBlockInfo ReadBlockInfo(PlcBlockType blockType, int blocknumber)
         {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateBlockInfoRequest(id, blockType, blocknumber);
             var policy = new S7UserDataProtocolPolicy();
@@ -856,8 +882,9 @@ namespace Dacs7
         /// <returns></returns>
         public byte[] UploadPlcBlock(PlcBlockType blockType, int blocknumber)
         {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
             var id = GetNextReferenceId();
-
             var policy = new S7JobUploadProtocolPolicy();
             Log("ReadBlockInfo: ProtocolDataUnitReference is {id}");
 
@@ -944,9 +971,10 @@ namespace Dacs7
         public bool DownloadPlcBlock(PlcBlockType blockType, int blocknumber, byte[] data)
         {
             //TODO: Implement it correct
-            throw new NotImplementedException(); 
+            throw new NotImplementedException();
 
-
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateStartDownloadRequest(id, blockType, blocknumber, data);  //Start Download
             var policy = new S7UserDataProtocolPolicy();
@@ -1094,6 +1122,9 @@ namespace Dacs7
             if (_alarmUpdateId != 0)
                 throw new Exception("There is already an update callback registered. Only one alarm update callback is allowed!");
 
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
+
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateAlarmCallbackRequest(id);
             var policy = new S7UserDataProtocolPolicy();
@@ -1178,6 +1209,8 @@ namespace Dacs7
         /// <returns></returns>
         public DateTime GetPlcTime()
         {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateReadClockRequest(id);
             var policy = new S7UserDataProtocolPolicy();
@@ -1192,9 +1225,7 @@ namespace Dacs7
                     {
                         var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
                         if (sslData.Any())
-                        {
-                            return ConvertToDateTime(sslData);
-                        }
+                            return sslData.ConvertToDateTime(2);
                         throw new InvalidDataException("SSL Data are empty!");
                     }
                     throw new Dacs7ReturnCodeException(returnCode);
@@ -1218,9 +1249,8 @@ namespace Dacs7
         private void OnClientStateChanged(string socketHandle, bool connected)
         {
             if (connected)
-            {
                 _upperProtocolHandlerFactory.OnConnected();
-            }
+            EventHandler?.Invoke(this, new PlcConnectionNotificationEventArgs(socketHandle, connected));
             Log(string.Format("OnClientStateChanged to {0}.", connected ? "connected" : "disconnected"));
         }
 
@@ -1361,8 +1391,7 @@ namespace Dacs7
 
         private void Log(string message)
         {
-            if (OnLogEntry != null)
-                OnLogEntry(message);
+            OnLogEntry?.Invoke(message);
         }
 
         private object PerformeDataExchange(ushort id, IMessage msg, IProtocolPolicy policy, Func<CallbackHandler, object> func)
@@ -1510,7 +1539,6 @@ namespace Dacs7
             Interlocked.Decrement(ref _currentNumberOfPendingCalls);
         }
 
-
         private async void SendMessages(IMessage msg, IProtocolPolicy policy)
         {
             foreach (var data in policy.TranslateToRawMessage(msg))
@@ -1548,25 +1576,25 @@ namespace Dacs7
             return msg.GetAttribute(string.Format(subItemName, "Timestamp"), DateTime.MinValue);
         }
 
-        private static object ConvertTo<T>(byte[] data, T instance, int length, int offset = 0)
-        {
-            if (length == 0)
-            {
-                if (instance is bool)
-                    return data[0] == 0x01;
+        //private static object ConvertTo<T>(byte[] data, T instance, int length, int offset = 0)
+        //{
+        //    if (length == 0)
+        //    {
+        //        if (instance is bool)
+        //            return data[0] == 0x01;
 
-                if (instance is byte)
-                    return data[0];
+        //        if (instance is byte)
+        //            return data[0];
 
-                return data;
-            }
+        //        return data;
+        //    }
 
-            const int typeSize = 1;
-            var result = new List<T>();
-            for (var i = 0; i < data.Length; i += typeSize)
-                result.Add((T)ConvertTo(data, instance, 0, i));
-            return result.ToArray<T>();
-        }
+        //    const int typeSize = 1;
+        //    var result = new List<T>();
+        //    for (var i = 0; i < data.Length; i += typeSize)
+        //        result.Add((T)ConvertTo(data, instance, 0, i));
+        //    return result.ToArray<T>();
+        //}
 
         private static object ExtractData(object data, int offset = 0, int length = Int32.MaxValue)
         {
@@ -1587,57 +1615,6 @@ namespace Dacs7
             return enumerable.SubArray(offset, length);
         }
 
-        private static DateTime ConvertToDateTime(IList<byte> data, int offset = 2)
-        {
-            if (data == null || !data.Any())
-                return new DateTime(1900, 01, 01, 00, 00, 00);
-
-            int bt = data[offset];
-            //BCD
-            bt = (((bt >> 4)) * 10) + ((bt & 0x0f));
-            var jahr = bt < 90 ? 2000 : 1900;
-            jahr += bt;
-
-            //month
-            bt = data[offset + 1];
-            var monat = (((bt >> 4)) * 10) + ((bt & 0x0f));
-
-            //day
-            bt = data[offset + 2];
-            var tag = (((bt >> 4)) * 10) + ((bt & 0x0f));
-
-            //hour
-            bt = data[offset + 3];
-            var stunde = (((bt >> 4)) * 10) + ((bt & 0x0f));
-
-            //minutes
-            bt = data[offset + 4];
-            var minute = (((bt >> 4)) * 10) + ((bt & 0x0f));
-
-            //second
-            bt = data[offset + 5];
-            var sekunde = (((bt >> 4)) * 10) + ((bt & 0x0f));
-
-            //millisecond
-            //Byte 6 BCD + MSB (Byte 7)
-            bt = data[offset + 6];
-            int bt1 = data[offset + 7];
-            var mili = (((bt >> 4)) * 10) + ((bt & 0x0f));
-            mili = mili * 10 + (bt1 >> 4);
-
-            //week day
-            //LSB (Byte 7) 1=Sunday
-            //bt = b[pos + 7];
-            //week day = (bt1 & 0x0f); 
-            try
-            {
-                return new DateTime(jahr, monat, tag, stunde, minute, sekunde, mili);
-            }
-            catch (Exception)
-            {
-                return new DateTime(1900, 01, 01, 00, 00, 00);
-            }
-        }
         private static string ResolveErrorCode<T>(byte b) where T : struct
         {
             return Enum.IsDefined(typeof(T), b) ? ResolveErrorCode<T>(Enum.GetName(typeof(T), b)) : b.ToString(CultureInfo.InvariantCulture);
@@ -1662,7 +1639,6 @@ namespace Dacs7
 
         private static string GetEnumDescription(object e)
         {
-
             var fieldInfo = e.GetType().GetField(e.ToString());
             if (fieldInfo != null)
             {

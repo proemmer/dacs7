@@ -13,7 +13,7 @@ namespace Dacs7
 
 
         public Dacs7Exception(byte eClass, byte code) : 
-            base(string.Format("No success error class and code: class: <{0}>, code: <{1}>", ResolveErrorCode<ErrorClass>(eClass), code))
+            base("No success error class and code: class: <{ResolveErrorCode<ErrorClass>(eClass)}>, code: <{code}>")
         {
             ErrorClass = (ErrorClass)eClass;
             ErrorCode = code;
@@ -63,7 +63,7 @@ namespace Dacs7
         public ItemResponseRetVaulue ErrorCode { get; private set; }
 
         public Dacs7ContentException(byte errorCode, int itemIndex) : 
-            base(string.Format("No success return code form item {0}: <{1}>", itemIndex, Dacs7Exception.ResolveErrorCode<ItemResponseRetVaulue>(errorCode)))
+            base($"No success return code form item {itemIndex}: <{Dacs7Exception.ResolveErrorCode<ItemResponseRetVaulue>(errorCode)}>")
         {
             ErrorCode = (ItemResponseRetVaulue) errorCode;
             ErrorIndex = itemIndex;
@@ -75,7 +75,7 @@ namespace Dacs7
         public ErrorParameter ErrorCode { get; private set; }
 
         public Dacs7ParameterException(ushort errorCode) :
-            base(string.Format("No success error code: <{0}>", Dacs7Exception.ResolveErrorCode<ErrorParameter>(errorCode)))
+            base($"No success error code: <{Dacs7Exception.ResolveErrorCode<ErrorParameter>(errorCode)}>")
         {
             ErrorCode = (ErrorParameter)errorCode;
         }
@@ -87,9 +87,18 @@ namespace Dacs7
         public int ItemNumber { get; set; }
 
         public Dacs7ReturnCodeException(byte returnCode, int itemNumber = -1) :
-            base(string.Format("No success return code{1}: <{0}>", returnCode, itemNumber != -1 ? string.Format(" for item {0}",itemNumber) : ""))
+            base(string.Format($"No success return code{returnCode}: <{(itemNumber != -1 ? string.Format(" for item { 0}",itemNumber) : "")}>" ))
         {
             ReturnCode = returnCode;
+        }
+    }
+
+    public class Dacs7NotConnectedException : Exception
+    {
+
+        public Dacs7NotConnectedException() :
+            base("Dacs7 has no connection to the plc!")
+        {
         }
     }
 }
