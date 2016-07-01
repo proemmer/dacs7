@@ -1,7 +1,6 @@
 ﻿using Dacs7.Arch;
 using Dacs7.Domain;
 using Dacs7.Helper;
-using Microsoft.Extensions.PlatformAbstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;

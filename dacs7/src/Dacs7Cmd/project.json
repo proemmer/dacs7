@@ -13,7 +13,7 @@
       "type": "platform",
       "version": "1.0.0"
     },
-    "Dacs7": "1.0.1-beta3",
+    "Dacs7": "1.0.2",
     "Microsoft.CSharp": "4.0.1",
     "System.Collections": "4.0.11",
     "System.Console": "4.0.0",
