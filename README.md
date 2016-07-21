@@ -29,7 +29,7 @@ Dacs7 is used to connect to a SIEMENS Plc by usin the RFC1006 connection an perf
 
 ## Principial Usage:
 
-<pre><code>
+```cs
 var connectionString = "Data Source=128.0.0.1:102,0,2";
 var client = new Dacs7Client();
 
@@ -45,12 +45,12 @@ _client.WriteAny(PlcArea.DB, offset, testData, new[] { length, dbNumber });
 var red = _client.ReadAny(PlcArea.DB, offset, typeof(byte), new[] { length, dbNumber }) as byte[];
 
 client.Disconnect();
-</code></pre>
+```
 
 
 ## Generic Sample:
 
-<pre><code>
+```cs
 public static void GenericsSample()
 {
     var boolValue = _client.ReadAny<bool>(TestDbNr, TestBitOffset);
@@ -60,11 +60,11 @@ public static void GenericsSample()
     var boolEnumValue = _client.ReadAny<bool>(TestDbNr, TestBitOffset, numberOfArrayElements);
     var intEnumValue = _client.ReadAny<int>(TestDbNr, TestByteOffset, numberOfArrayElements);
 }
-</code></pre>
+```
 
 ## Read/Write multiple variables in one call:
 
-<pre><code>
+```cs
 public static void MultiValuesSample()
 {
     var operations = new List<ReadOperationParameter>
@@ -88,7 +88,7 @@ public static void MultiValuesSample()
     _client.WriteAny(writeOperations);
 
 }
-</code></pre>
+```
 
 
 # Release Notes
