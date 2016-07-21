@@ -26,8 +26,8 @@ namespace Dacs7Cmd
             _client.OnConnectionChange += _client_OnConnectionChange;
             _client.Connect(ConnectionString);
 
-            TestGeneric();
-            TestMulti();
+            GenericsSample();
+            MultiValuesSample();
 
             var red = _client.ReadAny(PlcArea.DB, 0, typeof(int), new[] { 2, LongDbNumer });
             var boolValue = _client.ReadAny<bool>(LongDbNumer, 0, 2);
@@ -51,23 +51,26 @@ namespace Dacs7Cmd
             Thread.Sleep(1000);
         }
 
-        public static void TestGeneric()
+        public static void GenericsSample()
         {
             var boolValue = _client.ReadAny<bool>(TestDbNr, TestBitOffset);
             var intValue = _client.ReadAny<int>(TestDbNr, TestByteOffset);
 
-            var boolEnumValue = _client.ReadAny<bool>(TestDbNr, TestBitOffset, 2);
-            var intEnumValue = _client.ReadAny<int>(TestDbNr, TestByteOffset, 2);
+            const int numberOfArrayElements = 2;
+            var boolEnumValue = _client.ReadAny<bool>(TestDbNr, TestBitOffset, numberOfArrayElements);
+            var intEnumValue = _client.ReadAny<int>(TestDbNr, TestByteOffset, numberOfArrayElements);
         }
 
 
-        public static void TestMulti()
+        public static void MultiValuesSample()
         {
             var operations = new List<ReadOperationParameter>
             {
                 new ReadOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, Type=typeof(byte), Args = new int[]{1, TestDbNr}},
                 new ReadOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}}
             };
+
+            var result = _client.ReadAny(operations); //result is IEnumerable<byte[]>
 
             var writeOperations = new List<WriteOperationParameter>
             {
@@ -76,7 +79,6 @@ namespace Dacs7Cmd
             };
 
             _client.WriteAny(writeOperations);
-            var result = _client.ReadAny(operations);
 
         }
 

@@ -93,6 +93,15 @@ namespace Dacs7
         }
     }
 
+
+    public class Dacs7ToMuchDataPerCallException : Exception
+    {
+        public Dacs7ToMuchDataPerCallException(int expected, int actual) :
+            base(string.Format("There are to much data ({0} bytes) for a single job, please split jobs to a maximum of {1} per call!", actual, expected))
+        {
+        }
+    }
+
     public class Dacs7NotConnectedException : Exception
     {
 

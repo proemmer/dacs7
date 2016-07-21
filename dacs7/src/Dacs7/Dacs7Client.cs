@@ -416,7 +416,11 @@ namespace Dacs7
             var id = GetNextReferenceId();
             var policy = new S7JobReadProtocolPolicy();
             var packageLength = parameters.Sum(x => x.Length);
-            var readLength = Math.Min(ItemReadSlice, packageLength);
+            var numOfItems = parameters.Count();
+
+            if ((PduSize < (12 + packageLength + numOfItems * 4))) // 12 = header  4 header per Item
+                throw new Dacs7ToMuchDataPerCallException(ItemReadSlice, packageLength);
+
             var reqMsg = S7MessageCreator.CreateReadRequests(id, parameters);
             Log(string.Format("ReadAny: ProtocolDataUnitReference is {0}", id));
             var currentData = PerformeDataExchange(id, reqMsg, policy, (cbh) =>
@@ -748,6 +752,11 @@ namespace Dacs7
         {
             var id = GetNextReferenceId();
             var policy = new S7JobWriteProtocolPolicy();
+
+            var numOfItems = parameters.Count();
+            var packageLength = parameters.Sum(x => x.Length);
+            if (PduSize < (12 + packageLength + numOfItems * 15)) // 12 = header  15 header per Item
+                throw new Dacs7ToMuchDataPerCallException(ItemReadSlice, packageLength);
 
             var reqMsg = S7MessageCreator.CreateWriteRequests(id, parameters);
             Log(string.Format("WriteAny: ProtocolDataUnitReference is {0}", id));
