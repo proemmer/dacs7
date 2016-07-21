@@ -43,6 +43,26 @@
 
 <p>Data access S7 is a library to connect to S7 plcs for reading and writing data.</p>
 
+
+
+<ul>
+<li><a href="#dacs7">dacs7</a></li>
+<li><a href="#nuget">NuGet</a></li>
+<li><a href="#description">Description</a></li>
+<li>
+<a href="#sample-code">Sample-Code</a>
+
+<ul>
+<li><a href="#principial-usage">Principial Usage:</a></li>
+<li><a href="#generic-sample">Generic Sample:</a></li>
+<li><a href="#readwrite-multiple-variables-in-one-call">Read/Write multiple variables in one call:</a></li>
+</ul>
+</li>
+<li><a href="#release-notes">Release Notes</a></li>
+</ul>
+
+
+
 <h1>
 <a id="nuget" class="anchor" href="#nuget" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>NuGet</h1>
 
@@ -56,25 +76,78 @@
 <h1>
 <a id="sample-code" class="anchor" href="#sample-code" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Sample-Code</h1>
 
-<p>The following code should show you the fundamental usage:</p>
+<h2>
+<a id="principial-usage" class="anchor" href="#principial-usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Principial Usage:</h2>
 
-<pre><code>
-var connectionString = "Data Source=128.0.0.1:102,0,2";
-var client = new Dacs7Client();
+<div class="highlight highlight-source-cs"><pre><span class="pl-k">var</span> connectionString = <span class="pl-s"><span class="pl-pds">"</span>Data Source=128.0.0.1:102,0,2<span class="pl-pds">"</span></span>;
+<span class="pl-k">var</span> client = <span class="pl-k">new</span> Dacs7Client();
 
 client.Connect(connectionString);
 
-var length = 500;
-var testData = new byte[length];
-var offset = 0;
-var dbNumber = 560;
+<span class="pl-k">var</span> length = <span class="pl-c1">500</span>;
+<span class="pl-k">var</span> testData = <span class="pl-k">new</span> <span class="pl-k">byte</span>[length];
+<span class="pl-k">var</span> offset = <span class="pl-c1">0</span>;
+<span class="pl-k">var</span> dbNumber = <span class="pl-c1">560</span>;
 
-_client.WriteAny(PlcArea.DB, offset, testData, new[] { length, dbNumber });
+_client.WriteAny(PlcArea.DB, offset, testData, <span class="pl-k">new</span>[] { length, dbNumber });
 
-var red = _client.ReadAny(PlcArea.DB, offset, typeof(byte), new[] { length, dbNumber }) as byte[];
+<span class="pl-k">var</span> red = _client.ReadAny(PlcArea.DB, offset, <span class="pl-k">typeof</span>(<span class="pl-k">byte</span>), <span class="pl-k">new</span>[] { length, dbNumber }) <span class="pl-k">as</span> <span class="pl-k">byte</span>[];
 
-client.Disconnect();
-</code></pre>
+client.Disconnect();</pre></div>
+
+<h2>
+<a id="generic-sample" class="anchor" href="#generic-sample" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Generic Sample:</h2>
+
+<div class="highlight highlight-source-cs"><pre><span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-k">void</span> GenericsSample()
+{
+    <span class="pl-k">var</span> boolValue = _client.ReadAny&lt;<span class="pl-k">bool</span>&gt;(TestDbNr, TestBitOffset);
+    <span class="pl-k">var</span> intValue = _client.ReadAny&lt;<span class="pl-k">int</span>&gt;(TestDbNr, TestByteOffset);
+
+    <span class="pl-k">const</span> <span class="pl-k">int</span> numberOfArrayElements = <span class="pl-c1">2</span>;
+    <span class="pl-k">var</span> boolEnumValue = _client.ReadAny&lt;<span class="pl-k">bool</span>&gt;(TestDbNr, TestBitOffset, numberOfArrayElements);
+    <span class="pl-k">var</span> intEnumValue = _client.ReadAny&lt;<span class="pl-k">int</span>&gt;(TestDbNr, TestByteOffset, numberOfArrayElements);
+}</pre></div>
+
+<h2>
+<a id="readwrite-multiple-variables-in-one-call" class="anchor" href="#readwrite-multiple-variables-in-one-call" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Read/Write multiple variables in one call:</h2>
+
+<div class="highlight highlight-source-cs"><pre><span class="pl-k">public</span> <span class="pl-k">static</span> <span class="pl-k">void</span> MultiValuesSample()
+{
+    <span class="pl-k">var</span> operations = <span class="pl-k">new</span> List&lt;ReadOperationParameter&gt;
+    {
+        <span class="pl-k">new</span> ReadOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, 
+                                   Type=<span class="pl-k">typeof</span>(<span class="pl-k">byte</span>), Args = <span class="pl-k">new</span> <span class="pl-k">int</span>[]{<span class="pl-c1">1</span>, TestDbNr}},
+        <span class="pl-k">new</span> ReadOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, 
+                                  Type=<span class="pl-k">typeof</span>(<span class="pl-k">bool</span>), Args = <span class="pl-k">new</span> <span class="pl-k">int</span>[]{<span class="pl-c1">1</span>, TestDbNr}}
+    };
+
+    <span class="pl-k">var</span> result = _client.ReadAny(operations); <span class="pl-c">//result is IEnumerable&lt;byte[]&gt;</span>
+
+    <span class="pl-k">var</span> writeOperations = <span class="pl-k">new</span> List&lt;WriteOperationParameter&gt;
+    {
+        <span class="pl-k">new</span> WriteOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, 
+                                    Type=<span class="pl-k">typeof</span>(<span class="pl-k">byte</span>), Args = <span class="pl-k">new</span> <span class="pl-k">int</span>[]{<span class="pl-c1">1</span>, TestDbNr}, Data = (<span class="pl-k">byte</span>)<span class="pl-c1">0x05</span>},
+        <span class="pl-k">new</span> WriteOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, 
+                                    Type=<span class="pl-k">typeof</span>(<span class="pl-k">bool</span>), Args = <span class="pl-k">new</span> <span class="pl-k">int</span>[]{<span class="pl-c1">1</span>, TestDbNr}, Data = <span class="pl-c1">true</span>}
+    };
+
+    _client.WriteAny(writeOperations);
+
+}</pre></div>
+
+<h1>
+<a id="release-notes" class="anchor" href="#release-notes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Release Notes</h1>
+
+<ul>
+<li>1.0.4:<br>
+
+<ul>
+<li>change ReadAny results from object to byte[] and add some generic methods for ReadAny.</li>
+<li>implement ReadAny and Write any for multible variables in one call job. (for now there is no automatic splitting<br>
+implemented if the size of the pdu is to large. To large pdu's result in an Dacs7ToMuchDataPerCallException )</li>
+</ul>
+</li>
+</ul>
       </section>
 
     </div>
