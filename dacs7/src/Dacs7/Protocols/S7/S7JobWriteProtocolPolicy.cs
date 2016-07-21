@@ -139,7 +139,7 @@ namespace Dacs7.Helper
                 msg.AddRange(((ushort)dataLength).SetSwap<ushort>());
                 msg.AddRange(message.GetAttribute(prefix + "ItemData", new byte[0]));
 
-                if (itemCount > 1)
+                if (i != itemCount - 1 && msg.Count % 2 != 0)
                     msg.Add(0x00);
             }
 

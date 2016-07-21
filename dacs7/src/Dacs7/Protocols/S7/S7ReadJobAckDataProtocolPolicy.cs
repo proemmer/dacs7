@@ -66,8 +66,12 @@ namespace Dacs7.Helper
                     dataLength = dataLength >> 3;
 
                 message.SetAttribute(prefix + "ItemSpecLength", (ushort)dataLength);
-                message.SetAttribute(prefix + "ItemData", msg.Skip(offset + OffsetInPayload("S7ReadJobItemData.ItemData")).Take((ushort)dataLength).ToArray());
+                var dataOffset = offset + OffsetInPayload("S7ReadJobItemData.ItemData");
+                message.SetAttribute(prefix + "ItemData", msg.SubArray(dataOffset, (ushort)dataLength));
                 offset += dataLength + 4;
+                //Fillbyte check
+                if (offset % 2 != 0)
+                    offset++;
             }
         }
 

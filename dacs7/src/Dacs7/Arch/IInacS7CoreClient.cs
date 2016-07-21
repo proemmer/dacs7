@@ -66,7 +66,7 @@ namespace Dacs7.Arch
         /// <param name="type">data type to read</param>
         /// <param name="args">arguments e.g. array length</param>
         /// <returns></returns>
-        object ReadAny(PlcArea area, int offset, Type type, params int[] args);
+        byte[] ReadAny(PlcArea area, int offset, Type type, params int[] args);
 
         /// <summary>
         /// Read data from the plc asynchronous.
@@ -76,7 +76,7 @@ namespace Dacs7.Arch
         /// <param name="type">data type to read</param>
         /// <param name="args">arguments e.g. array length</param>
         /// <returns></returns>
-        Task<object> ReadAnyAsync(PlcArea area, int offset, Type type, params int[] args);
+        Task<byte[]> ReadAnyAsync(PlcArea area, int offset, Type type, params int[] args);
 
         /// <summary>
         /// Write data to the plc.

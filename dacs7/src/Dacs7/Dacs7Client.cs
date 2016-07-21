@@ -293,14 +293,34 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Read data form the given data block number and  address and try convert it to the given dataType
+        /// Read data form the given data block number and  address return the red value or the types default
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="dbNumber"></param>
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <returns></returns>
-        public object ReadAny<T>(int dbNumber, int offset, int length = -1)
+        public T ReadAny<T>(int dbNumber, int offset)
+        {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
+            var t = typeof(T);
+            var elementLength = t == typeof(bool) ? 1 : Marshal.SizeOf<T>();
+            var data = ReadAny(PlcArea.DB, offset, typeof(byte), new[] { elementLength, dbNumber });
+            if (data != null && data.Any())
+                return (T)data.ConvertTo<T>();
+            return default(T);
+        }
+
+        /// <summary>
+        /// Read data form the given data block number and  address and try convert it to the given dataType
+        /// </summary>
+        /// <typeparam name="T">Elementtype of the resulting enumerable</typeparam>
+        /// <param name="dbNumber"></param>
+        /// <param name="offset"></param>
+        /// <param name="numberOfItems"></param>
+        /// <returns></returns>
+        public IEnumerable<T> ReadAny<T>(int dbNumber, int offset, int numberOfItems)
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
@@ -308,33 +328,33 @@ namespace Dacs7
             var t = typeof(T);
             elementLength = t == typeof(bool) ? 1 : Marshal.SizeOf<T>();
 
-            if (length >= 0)
-                length = length * elementLength;
+            if (numberOfItems >= 0)
+                numberOfItems = numberOfItems * elementLength;
             else
-                length = 1;
+                numberOfItems = 1;
 
-            var data = ReadAny(PlcArea.DB, offset, typeof(byte), new[] { length, dbNumber }) as byte[];
+            var data = ReadAny(PlcArea.DB, offset, typeof(byte), new[] { numberOfItems, dbNumber });
 
-            if (t != typeof(byte) && t != typeof(char) && length > 0)
+            if (t != typeof(byte) && t != typeof(char) && numberOfItems > 0)
             {
                 var result = new List<T>();
-                for (int i = 0; i < length; i += elementLength)
+                for (int i = 0; i < numberOfItems; i += elementLength)
                     result.Add((T)data.ConvertTo<T>(i));
-                return result.ToArray<T>();
+                return (IEnumerable<T>)result;
             }
-            return data.ConvertTo<T>();
+            return (IEnumerable<T>)data.ConvertTo<T>();
         }
 
 
         /// <summary>
-        /// Read data from the plc and convert it to the given .Net type.
+        /// Read data from the plc.
         /// </summary>
         /// <param name="area">Specify the plc area to read.  e.g. IB InputByte</param>
         /// <param name="offset">Specify the read offset</param>
         /// <param name="type">Specify the .Net data type for the red data</param>
         /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
         /// <returns></returns>
-        public object ReadAny(PlcArea area, int offset, Type type, params int[] args)
+        public byte[] ReadAny(PlcArea area, int offset, Type type, params int[] args)
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
@@ -387,7 +407,55 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Read data from the plc as parallel and convert it to the given .Net type.
+        /// Reade multible variables with one call from the plc
+        /// </summary>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        public IEnumerable<byte[]> ReadAny(IEnumerable<ReadOperationParameter> parameters)
+        {
+            var id = GetNextReferenceId();
+            var policy = new S7JobReadProtocolPolicy();
+            var packageLength = parameters.Sum(x => x.Length);
+            var readLength = Math.Min(ItemReadSlice, packageLength);
+            var reqMsg = S7MessageCreator.CreateReadRequests(id, parameters);
+            Log(string.Format("ReadAny: ProtocolDataUnitReference is {0}", id));
+            var currentData = PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+            {
+                var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
+                if (errorClass == 0)
+                {
+                    var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
+                    if (items > 1)
+                    {
+                        var result = new List<byte[]>();
+                        for (var i = 0; i < items; i++)
+                        {
+                            var item = new List<byte>();
+                            var returnCode = cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemReturnCode", i), (byte)0);
+                            if (returnCode == 0xFF)
+                                result.Add(cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemData", i), new byte[0]));
+                            else
+                                throw new Dacs7ReturnCodeException(returnCode, i);
+                        }
+                        return result;
+                    }
+                    var firstReturnCode = cbh.ResponseMessage.GetAttribute("Item[0].ItemReturnCode", (byte)0);
+                    if (firstReturnCode == 0xFF)
+                        return new List<byte[]> { cbh.ResponseMessage.GetAttribute("Item[0].ItemData", new byte[0]) };
+                    throw new Dacs7ContentException(firstReturnCode, 0);
+                }
+                var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
+                throw new Dacs7Exception(errorClass, errorCode);
+            }) as List<byte[]>;
+
+            if (currentData == null)
+                throw new InvalidDataException("Returned data are null");
+            return currentData;
+        }
+
+
+        /// <summary>
+        /// Read data from the plc by using Tasks.
         /// </summary>
         /// <param name="area">Specify the plc area to read.  e.g. IB InputByte</param>
         /// <param name="offset">Specify the read offset</param>
@@ -395,7 +463,7 @@ namespace Dacs7
         /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
         /// <returns></returns>
         /// http://www.tugberkugurlu.com/archive/how-and-where-concurrent-asynchronous-io-with-asp-net-web-api
-        private object ReadAnyPartsAsync(PlcArea area, int offset, Type type, params int[] args)
+        private byte[] ReadAnyPartsAsync(PlcArea area, int offset, Type type, params int[] args)
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
@@ -405,7 +473,7 @@ namespace Dacs7
                 var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
                 var packageLength = length;
                 var readResult = new List<byte>();
-                var requests = new List<Task<object>>();
+                var requests = new List<Task<byte[]>>();
                 for (var j = 0; j < length; j += ItemReadSlice)
                 {
                     while (_currentNumberOfPendingCalls >= _maxParallelCalls)
@@ -435,7 +503,7 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Read data from the plc as parallel and convert it to the given .Net type.
+        /// Read data from the plc as parallel.
         /// </summary>
         /// <param name="area">Specify the plc area to read.  e.g. IB InputByte</param>
         /// <param name="offset">Specify the read offset</param>
@@ -483,14 +551,14 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Read data from the plc asynchronous and convert it to the given .Net type.
+        /// Read data from the plc asynchronous.
         /// </summary>
         /// <param name="area">Specify the plc area to read.  e.g. IB InputByte</param>
         /// <param name="offset">Specify the read offset</param>
         /// <param name="type">Specify the .Net data type for the red data</param>
         /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
         /// <returns></returns>
-        public Task<object> ReadAnyAsync(PlcArea area, int offset, Type type, params int[] args)
+        public Task<byte[]> ReadAnyAsync(PlcArea area, int offset, Type type, params int[] args)
         {
             return Task.Factory.StartNew(() =>
                 _maxParallelCalls <= 1 ?
@@ -670,6 +738,39 @@ namespace Dacs7
             _taskCreationOptions);
 
         }
+
+
+        /// <summary>
+        /// Write multiple variables with one call to the plc
+        /// </summary>
+        /// <param name="parameters"></param>
+        public void WriteAny(IEnumerable<WriteOperationParameter> parameters)
+        {
+            var id = GetNextReferenceId();
+            var policy = new S7JobWriteProtocolPolicy();
+
+            var reqMsg = S7MessageCreator.CreateWriteRequests(id, parameters);
+            Log(string.Format("WriteAny: ProtocolDataUnitReference is {0}", id));
+            PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+            {
+                var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
+                if (errorClass == 0x00)
+                {
+                    var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
+                    for (var i = 0; i < items; i++)
+                    {
+                        var returnCode = cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemReturnCode", i), (byte)0);
+                        if (returnCode != 0xff)
+                            throw new Dacs7ContentException(returnCode, i);
+                    }
+                    //all write operations are successfully
+                    return;
+                }
+                var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
+                throw new Dacs7Exception(errorClass, errorCode);
+            });
+        }
+
 
         /// <summary>
         /// Read the number of blocks in the plc per type

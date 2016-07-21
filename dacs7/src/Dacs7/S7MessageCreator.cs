@@ -237,6 +237,23 @@ namespace Dacs7
             return msg;
         }
 
+        public static IMessage CreateReadRequests(ushort unitId, IEnumerable<ReadOperationParameter> parameters)
+        {
+            var msg = Message.Create();
+            var numOfitems = parameters.Count();
+
+            FillCommHeader(msg, (byte)PduType.Job, 0, (ushort)(2 + numOfitems * 12), unitId);
+            AddReadWriteParameter(msg, (byte)FunctionCode.ReadVar, (byte)numOfitems);
+            var index = 0;
+            foreach (var opParam in parameters)
+            {
+                CreateAddressSpecification(msg, index, opParam);
+                index++;
+            }
+
+            return msg;
+        }
+
         //TODO:  Handle array of bool correct!!!!
         public static IMessage CreateWriteRequest(ushort unitId, PlcArea area, ushort dbnr, int offset, ushort length, object data)
         {
@@ -294,6 +311,47 @@ namespace Dacs7
                 msg.SetAttribute(prefix + "ItemDataTransportSize", (byte)size);
                 msg.SetAttribute(prefix + "ItemDataLength", itemLength);
                 msg.SetAttribute(prefix + "ItemData", isBool ? new byte[] { enumerable[i] } : enumerable);
+            }
+
+            return msg;
+        }
+
+        public static IMessage CreateWriteRequests(ushort unitId, IEnumerable<WriteOperationParameter> parameters)
+        {
+            var msg = Message.Create();
+            var numOfitems = parameters.Count();
+            var fullLength = 0;
+
+            foreach (var item in parameters)
+            {
+                if ((fullLength % 2) != 0)  fullLength++;
+                fullLength += item.Length;
+            }
+
+
+            FillCommHeader(msg, (byte)PduType.Job, (ushort)(fullLength + numOfitems * 4), (ushort)(2 + numOfitems * 12), unitId);
+            AddReadWriteParameter(msg, (byte)FunctionCode.WriteVar, (byte)numOfitems);
+
+
+            var index = 0;
+            foreach (var opParam in parameters)
+            {
+                CreateAddressSpecification(msg, index, opParam);
+                index++;
+            }
+
+            index = 0;
+            foreach (var opParam in parameters)
+            {
+                var size = TransportSizeHelper.DataTypeToResultTransportSize(opParam.Type);
+                var prefix = string.Format("DataItem[{0}].", index);
+                msg.SetAttribute(prefix + "ItemDataReturnCode", (byte)0x00);
+
+                msg.SetAttribute(prefix + "ItemDataTransportSize", size);
+                msg.SetAttribute(prefix + "ItemDataLength", (ushort)opParam.Length);
+                msg.SetAttribute(prefix + "ItemData", ConvertDataToByteArray(opParam.Data));
+
+                index++;
             }
 
             return msg;
@@ -426,5 +484,37 @@ namespace Dacs7
             }
             return enumerable;
         }
+
+        private static void CreateAddressSpecification(IMessage msg, int index, OperationParameter opParam)
+        {
+            var isBit = opParam.Type == typeof(bool);
+
+            var offset = opParam.Offset;
+            var length = Convert.ToUInt16(opParam.Args.Any() ? opParam.Args[0] : 0);
+            var dbnr = Convert.ToUInt16(opParam.Args.Length > 1 ? opParam.Args[1] : 0);
+            var size = opParam.Area == PlcArea.CT || opParam.Area == PlcArea.TM ? 0x01 : TransportSizeHelper.DataTypeToTransportSize(opParam.Type);
+            var prefix = string.Format("Item[{0}].", index);
+            msg.SetAttribute(prefix + "VariableSpecification", (byte)0x12);
+            const byte specLength = 0x0a;
+            msg.SetAttribute(prefix + "LengthOfAddressSpecification", specLength);
+            msg.SetAttribute(prefix + "SyntaxId", (byte)ItemSyntaxId.S7Any);
+            msg.SetAttribute(prefix + "TransportSize", (byte)size);
+            msg.SetAttribute(prefix + "ItemSpecLength", length);
+            msg.SetAttribute(prefix + "DbNumber", dbnr);
+            msg.SetAttribute(prefix + "Area", opParam.Area);
+
+
+            offset = isBit ? offset : (offset * 8);
+            var address = new byte[3];
+            address[2] = (byte)(offset & 0x000000FF);
+            offset = offset >> 8;
+            address[1] = (byte)(offset & 0x000000FF);
+            offset = offset >> 8;
+            address[0] = (byte)(offset & 0x000000FF);
+
+            msg.SetAttribute(prefix + "Address", address);
+            offset += specLength + 2;
+        }
+
     }
 }

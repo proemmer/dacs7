@@ -1,6 +1,7 @@
 ﻿using Dacs7;
 using Dacs7.Domain;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
@@ -10,8 +11,8 @@ namespace Dacs7Cmd
     public class Program
     {
         private static readonly Dacs7Client _client = new Dacs7Client();
-        //private const string Ip = "192.168.0.146";
-        private const string Ip = "127.0.0.1";
+        private const string Ip = "192.168.0.146";
+        //private const string Ip = "127.0.0.1";
         private const string ConnectionString = "Data Source=" + Ip + ":102,0,2"; //"Data Source=192.168.0.145:102,0,2";
         private const int TestDbNr = 250;
         private const int TestByteOffset = 524;
@@ -24,18 +25,19 @@ namespace Dacs7Cmd
         {
             _client.OnConnectionChange += _client_OnConnectionChange;
             _client.Connect(ConnectionString);
+
+            TestGeneric();
+            TestMulti();
+
             var red = _client.ReadAny(PlcArea.DB, 0, typeof(int), new[] { 2, LongDbNumer });
-            red = _client.ReadAny<bool>(LongDbNumer, 0, 2);
+            var boolValue = _client.ReadAny<bool>(LongDbNumer, 0, 2);
 
 
             _client.WriteAny(LongDbNumer, 0, new bool[] { true, true });
 
 
-            red = _client.ReadAny<int>(LongDbNumer, 0,2);
+            var intValue = _client.ReadAny<int>(LongDbNumer, 0,2);
             _client.WriteAny(LongDbNumer, 0, new int[] { 1, 2 });
-
-
-            
 
 
             ReadWriteAnyTest();
@@ -47,6 +49,35 @@ namespace Dacs7Cmd
             _client.Disconnect();
 
             Thread.Sleep(1000);
+        }
+
+        public static void TestGeneric()
+        {
+            var boolValue = _client.ReadAny<bool>(TestDbNr, TestBitOffset);
+            var intValue = _client.ReadAny<int>(TestDbNr, TestByteOffset);
+
+            var boolEnumValue = _client.ReadAny<bool>(TestDbNr, TestBitOffset, 2);
+            var intEnumValue = _client.ReadAny<int>(TestDbNr, TestByteOffset, 2);
+        }
+
+
+        public static void TestMulti()
+        {
+            var operations = new List<ReadOperationParameter>
+            {
+                new ReadOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, Type=typeof(byte), Args = new int[]{1, TestDbNr}},
+                new ReadOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}}
+            };
+
+            var writeOperations = new List<WriteOperationParameter>
+            {
+                new WriteOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, Type=typeof(byte), Args = new int[]{1, TestDbNr}, Data = (byte)0x05},
+                new WriteOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}, Data = true}
+            };
+
+            _client.WriteAny(writeOperations);
+            var result = _client.ReadAny(operations);
+
         }
 
         private static void _client_OnConnectionChange(object sender, PlcConnectionNotificationEventArgs e)
