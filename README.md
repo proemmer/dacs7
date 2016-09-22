@@ -92,7 +92,8 @@ public static void MultiValuesSample()
 
 
 # Release Notes
-
+* 1.0.5:
+    * fix a bug in generic read methods when reading bits.
 * 1.0.4:  
     * change ReadAny results from object to byte[] and add some generic methods for ReadAny.
     * implement ReadAny and Write any for multible variables in one call job. (for now there is no automatic splitting        
