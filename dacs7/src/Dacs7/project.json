@@ -1,5 +1,5 @@
 {
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Dacs7 (Data Access S7)",
   "authors": [ "Benjamin Proemmer" ],
   "title": "dacs7",
@@ -8,7 +8,7 @@
     "tags": [ "siemens plc S7" ],
     "projectUrl": "http://proemmer.github.io/dacs7",
     "licenseUrl": "https://opensource.org/licenses/Apache-2.0",
-    "releaseNotes": "change ReadAny results from object to byte[], add some generic methods for ReadAny, implement ReadAny and Write any for multible variables in one call job",
+    "releaseNotes": "fix a bug in generic read methods for reading bits",
     "requireLicenseAcceptance": true
   },
   "frameworks": {

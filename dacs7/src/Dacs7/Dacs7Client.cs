@@ -305,8 +305,9 @@ namespace Dacs7
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
             var t = typeof(T);
+            var readType = t == typeof(bool) ? typeof(bool) : typeof(byte);
             var elementLength = t == typeof(bool) ? 1 : Marshal.SizeOf<T>();
-            var data = ReadAny(PlcArea.DB, offset, typeof(byte), new[] { elementLength, dbNumber });
+            var data = ReadAny(PlcArea.DB, offset, readType, new[] { elementLength, dbNumber });
             if (data != null && data.Any())
                 return (T)data.ConvertTo<T>();
             return default(T);
@@ -326,6 +327,7 @@ namespace Dacs7
                 throw new Dacs7NotConnectedException();
             int elementLength = 0;
             var t = typeof(T);
+            var readType = t == typeof(bool) ? typeof(bool) : typeof(byte);
             elementLength = t == typeof(bool) ? 1 : Marshal.SizeOf<T>();
 
             if (numberOfItems >= 0)
@@ -333,7 +335,7 @@ namespace Dacs7
             else
                 numberOfItems = 1;
 
-            var data = ReadAny(PlcArea.DB, offset, typeof(byte), new[] { numberOfItems, dbNumber });
+            var data = ReadAny(PlcArea.DB, offset, readType, new[] { numberOfItems, dbNumber });
 
             if (t != typeof(byte) && t != typeof(char) && numberOfItems > 0)
             {
