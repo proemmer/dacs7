@@ -22,7 +22,7 @@ PM>  Install-Package Dacs7 -Pre
 # Description
 
 
-Dacs7 is used to connect to a SIEMENS Plc by using the RFC1006 connection an perform operations.
+Dacs7 is used to connect to a SIEMENS Plc by using the RFC1006 protocol to perform operations.
 
 # Sample-Code
 
