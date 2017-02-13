@@ -343,7 +343,7 @@ namespace Dacs7
                 var prefix = string.Format("DataItem[{0}].", index);
                 msg.SetAttribute(prefix + "ItemDataReturnCode", (byte)0x00);
 
-                var data = ConvertDataToByteArray(opParam.Data));
+                var data = ConvertDataToByteArray(opParam.Data);
                 msg.SetAttribute(prefix + "ItemDataTransportSize", size);
                 msg.SetAttribute(prefix + "ItemDataLength", (ushort)data.Length);
                 msg.SetAttribute(prefix + "ItemData", data);
