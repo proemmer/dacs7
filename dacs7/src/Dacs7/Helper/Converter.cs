@@ -238,6 +238,21 @@ namespace Dacs7.Helper
             return result;
         }
 
+        /// <summary>
+        /// Creates a new array with the merged data in it
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="data1">fist block</param>
+        /// <param name="data2">second block</param>
+        /// <returns></returns>
+        public static T[] Concat<T>(this T[] data1, T[] data2)
+        {
+            var result = new T[data1.Length + data2.Length];
+            data1.CopyTo(result, 0);
+            data2.CopyTo(result, data1.Length);
+            return result;
+        }
+
 
         public static byte[] ToByteArray<T>(this T value, int maxLength)
         {
@@ -674,6 +689,58 @@ namespace Dacs7.Helper
             }
             else
                 return data.GetSwap<T>(offset);
+        }
+
+
+        internal static object ConvertTo(this byte[] data, Type t, int offset = 0)
+        {
+            if (t == typeof(bool))
+            {
+                return data[offset] != 0x00;
+            }
+            else if (t == typeof(byte))
+            {
+                return data;
+            }
+            else if (t == typeof(char))
+            {
+                return Encoding.ASCII.GetChars(data, offset, data.Length - offset);
+            }
+            else if (t == typeof(DateTime))
+            {
+                return data.ToDateTime(offset);
+            }
+            else if (t == typeof(UInt32))
+            {
+                return SwapDWord(BitConverter.ToUInt32(data, offset));
+            }
+            else if (t == typeof(Int32))
+            {
+                return (Int32)SwapDWord(BitConverter.ToUInt32(data, offset));
+            }
+            else if (t == typeof(Byte))
+            {
+                return data[offset];
+            }
+            else if (t == typeof(UInt16))
+            {
+                return SwapWord(BitConverter.ToUInt16(data, offset));
+            }
+            else if (t == typeof(Int16))
+            {
+                return (Int16)SwapWord(BitConverter.ToUInt16(data, offset));
+            }
+            else if (t == typeof(Single))
+            {
+                var tmp = new byte[4];
+                tmp[0] = data[offset + 3];
+                tmp[1] = data[offset + 2];
+                tmp[2] = data[offset + 1];
+                tmp[3] = data[offset];
+                return BitConverter.ToSingle(tmp, offset);
+            }
+
+            return data;
         }
     }
 }
