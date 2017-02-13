@@ -325,24 +325,53 @@ namespace Dacs7
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
-            int elementLength = 0;
             var t = typeof(T);
-            var readType = t == typeof(bool) ? typeof(bool) : typeof(byte);
-            elementLength = t == typeof(bool) ? 1 : Marshal.SizeOf<T>();
+            var isBool = t == typeof(bool);
+            var isString = t == typeof(string);
+            var readType = (isBool && numberOfItems <= 1) ? typeof(bool) : typeof(byte);
+            var elementLength = isBool ? (((numberOfItems + offset % 8) / 8) + 1) : (isString ? numberOfItems + 2 : Marshal.SizeOf<T>());
+            var originOffset = offset;
+            var bytesToRead = 1;
 
             if (numberOfItems >= 0)
-                numberOfItems = numberOfItems * elementLength;
-            else
-                numberOfItems = 1;
+            {
+                if (isBool)
+                {
+                    offset /= 8;
+                    var bitOffset = originOffset % 8;
+                    bytesToRead = elementLength;
+                }
+                else if (isString)
+                    bytesToRead = elementLength;
+                else
+                    bytesToRead = numberOfItems * elementLength;
+            }
 
-            var data = ReadAny(PlcArea.DB, offset, readType, new[] { numberOfItems, dbNumber });
-
-            if (t != typeof(byte) && t != typeof(char) && numberOfItems > 0)
+            var data = ReadAny(PlcArea.DB, offset, readType, new[] { bytesToRead, dbNumber });
+            if (isString)
             {
                 var result = new List<T>();
-                for (int i = 0; i < numberOfItems; i += elementLength)
-                    result.Add((T)data.ConvertTo<T>(i));
-                return (IEnumerable<T>)result;
+                string s = string.Empty;
+                if (data.Length > 2)
+                {
+                    var length = (int)data[1];
+                    s = new String(data.Skip(2).Select(x => Convert.ToChar(x)).ToArray()).Substring(0, length);
+                }
+                result.Add((T)Convert.ChangeType(s, t));
+                return result;
+            }
+            else if (t != typeof(byte) && t != typeof(char) && numberOfItems > 0)
+            {
+                var result = new List<T>();
+                var array = data as byte[];
+                var bitOffset = originOffset % 8;
+                for (int i = 0; i < Math.Max(numberOfItems, bytesToRead); i += elementLength)
+                {
+                    result.Add(isBool ?
+                        (T)Convert.ChangeType(array.GetBit(bitOffset + i), t) :
+                        (T)data.ConvertTo<T>(i));
+                }
+                return result;
             }
             return (IEnumerable<T>)data.ConvertTo<T>();
         }

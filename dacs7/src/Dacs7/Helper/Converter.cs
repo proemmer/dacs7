@@ -267,6 +267,23 @@ namespace Dacs7.Helper
         }
 
         /// <summary>
+        /// Determine the state of a bit in a byte array
+        /// </summary>
+        /// <param name="data">byte to check</param>
+        /// <param name="bit">bit number  0..7</param>
+        /// <returns>the state of the bit</returns>
+        public static bool GetBit(this byte[] data, int bit)
+        {
+            var byteOffset = bit / 8;
+            var bitOffset = bit - (byteOffset * 8);
+            // Shift the bit to the first location
+            var d = (byte)(data[byteOffset] >> bitOffset);
+
+            // Isolate the value
+            return (d & 1) == 1;
+        }
+
+        /// <summary>
         /// Determine the state of a bit in a byte
         /// </summary>
         /// <param name="data">byte to check</param>

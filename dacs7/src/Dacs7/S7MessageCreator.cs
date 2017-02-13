@@ -297,11 +297,10 @@ namespace Dacs7
 
 
             for (var i = 0; i < numberOfItems; i++)
-            {
-                var size = isBool ? (byte)DataTransportSize.Bit : (byte)DataTransportSize.Byte;
+            { 
                 var prefix = $"DataItem[{i}].";
                 msg.SetAttribute(prefix + "ItemDataReturnCode", (byte)0x00);      
-                msg.SetAttribute(prefix + "ItemDataTransportSize", (byte)size);
+                msg.SetAttribute(prefix + "ItemDataTransportSize", isBool ? (byte)DataTransportSize.Bit : (byte)DataTransportSize.Byte);
                 msg.SetAttribute(prefix + "ItemDataLength", itemLength);
                 msg.SetAttribute(prefix + "ItemData", isBool ? new byte[] { enumerable[i] } : enumerable);
             }
