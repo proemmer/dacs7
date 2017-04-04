@@ -9,21 +9,15 @@ namespace Dacs7.Communication
 {
     public class ClientSocketConfiguration : ISocketConfiguration
     {
-        public string Hostname { get; set; }
-        public int ServiceName { get; set; }
-        public int ReceiveBufferSize { get; set; }
-        public bool Autoconnect { get; set; }
+        public string Hostname { get; set; } = "localhost";
+        public int ServiceName { get; set; } = 22112;
+        public int ReceiveBufferSize { get; set; } = 65536;  // buffer size to use for each socket I/O operation 
+        public bool Autoconnect { get; set; } = true;
         public string NetworkAdapter { get; set; }
-        public bool KeepAlive { get; set; }
+        public bool KeepAlive { get; set; } = false;
 
         public ClientSocketConfiguration()
         {
-            NetworkAdapter = null;
-            Hostname = "localhost";
-            ServiceName = 22112;
-            ReceiveBufferSize = 65536;  // buffer size to use for each socket I/O operation 
-            Autoconnect = true;
-            KeepAlive = false;
         }
 
         public static ClientSocketConfiguration FromSocket(Socket socket)

@@ -1576,8 +1576,8 @@ namespace Dacs7
             {
                 Hostname = _parameter.GetParameter("Ip", "127.0.0.1"),
                 ServiceName = _parameter.GetParameter("Port", 102),
-                ReceiveBufferSize = _parameter.GetParameter("ReceiveBufferSize", 65536)
-                //                _parameter.GetParameter("Reconnect", false),
+                ReceiveBufferSize = _parameter.GetParameter("ReceiveBufferSize", 65536),
+                Autoconnect = _parameter.GetParameter("Reconnect", false),
                 //_parameter.GetParameter("KeepAliveTime", default(uint)),
                 //_parameter.GetParameter("KeepAliveInterval", default(uint))
             };
