@@ -484,7 +484,7 @@ namespace Dacs7
                 var isString = t == typeof(string);
                 var readType = typeof(byte);
                 var numberOfItems = param.Args != null && param.Args.Length > 0 ? param.Args[0] : 1;
-                var elementLength = isBool ? 1 : (isString ? numberOfItems + 2 : Marshal.SizeOf(t));
+                var elementLength = isBool ? 1 : (isString ? numberOfItems + 2 : Marshal.SizeOf(t));  //TODO:  change this
                 var originOffset = param.Offset;
 
 
@@ -575,14 +575,16 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Read data from the plc as parallel.
+        /// Read data from the PLC as parallel. The size of a message to and from the PLC is limited by the PDU-Size. This method splits the message
+        /// and recombine it after receiving them. And this is done in parallel.
         /// </summary>
-        /// <param name="area">Specify the plc area to read.  e.g. IB InputByte</param>
-        /// <param name="offset">Specify the read offset</param>
-        /// <param name="type">Specify the .Net data type for the red data</param>
-        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
-        /// <returns></returns>
-        /// http://www.tugberkugurlu.com/archive/how-and-where-concurrent-asynchronous-io-with-asp-net-web-api
+        /// <param name="area">The target <see cref="PlcArea"></see> from which we want to read.</param>
+        /// <param name="offset">This is the offset to the data you want to read.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="type">Specify the .Net data type for the read data. This parameter is used to determine the correct data length we have to read</param>
+        /// <param name="args">Arguments depending on the area. First argument is the number of items multiplied by the size of an item to read. If area is DB, second parameter is the db number.
+        /// For example if you will read 500 bytes,  then you have to pass type = typeof(byte) and as first arg you have to pass 500.</param>
+        /// <returns>read <see cref="T:byte[]"/></returns>
         public object ReadAnyParallel(PlcArea area, int offset, Type type, params int[] args)
         {
             if (!IsConnected)
@@ -623,12 +625,15 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Read data from the plc asynchronous.
+        /// Read data from the PLC asynchronous and convert it to the given .Net type.
+        /// This method wraps the call in a task.
         /// </summary>
-        /// <param name="area">Specify the plc area to read.  e.g. IB InputByte</param>
-        /// <param name="offset">Specify the read offset</param>
-        /// <param name="type">Specify the .Net data type for the red data</param>
-        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
+        /// <param name="area">The target <see cref="PlcArea"></see> from which we want to read.</param>
+        /// <param name="offset">This is the offset to the data you want to read.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="type">Specify the .Net data type for the read data</param>
+        /// <param name="args">Arguments depending on the area. First argument is the number of items multiplied by the size of an item to read. If area is DB, second parameter is the db number.
+        /// For example if you will read 500 bytes,  then you have to pass type = typeof(byte) and as first arg you have to pass 500.</param>
         /// <returns></returns>
         public Task<byte[]> ReadAnyAsync(PlcArea area, int offset, Type type, params int[] args)
         {
@@ -640,43 +645,55 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Write data to the given plc area
+        /// Write data to the given PLC area.
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="area"></param>
-        /// <param name="offset"></param>
-        /// <param name="value"></param>
-        /// <param name="length"></param>
+        /// <param name="area">The target <see cref="PlcArea"></see> we want to write.</param>
+        /// <param name="offset">This is the offset to the data you want to write.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="value">Should be the value you want to write.</param>
+        /// <param name="length">the length of data in bytes you want to write  e.g. if you have a value byte[500] and you want to write
+        /// only the first 100 bytes, you have to set length to 100. If length is not set, the correct size will be determined by the value size.</param>
         public void WriteAny<T>(PlcArea area, int offset, T value, int length = -1)
         {
             if (area == PlcArea.DB)
                 throw new ArgumentException("The argument area could not be DB.");
-            var size = length < 0 ? System.Runtime.InteropServices.Marshal.SizeOf<T>() : length;
+            Type elementType;
+            var size = CalculateSizeForGenericWriteOperation<T>(area, value, length, out elementType);
             WriteAny(area, offset, value, new int[] { size });
         }
 
         /// <summary>
-        /// Write DB data to connected PLc
+        /// Write data to the given PLC data block with offset and length.
         /// </summary>
-        /// <param name="dbNumber">Number of the target data block</param>
-        /// <param name="offset">Offset in byte</param>
-        /// <param name="length">Length in byte</param>
-        /// <param name="value">value to write</param>
+        /// <param name="dbNumber">This parameter specifies the number of the data block in the PLC</param>
+        /// <param name="offset">This is the offset to the data you want to write.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="value">Should be the value you want to write.</param>
+        /// <param name="length">the length of data in bytes you want to write  e.g. if you have a value byte[500] and you want to write
+        /// only the first 100 bytes, you have to set length to 100. If length is not set, the correct size will be determined by the value size.</param>
         public void WriteAny<T>(int dbNumber, int offset, T value, int length = -1)
         {
-            if (value is Array && length < 0)
-                length = (value as Array).Length * TransportSizeHelper.DataTypeToSizeByte(typeof(T).GetElementType(), PlcArea.DB);
-            var size = length < 0 ? TransportSizeHelper.DataTypeToSizeByte(typeof(T),PlcArea.DB) : length;
+            Type elementType;
+            var size = CalculateSizeForGenericWriteOperation<T>(PlcArea.DB, value, length, out elementType);
+            if (elementType == typeof(bool))
+            {
+                //with bool's we have to create a multi write request
+                WriteAny((value as IEnumerable<bool>).Select((element, i) => WriteOperationParameter.Create(dbNumber, offset + i, element)));
+                return;
+            }
             WriteAny(PlcArea.DB, offset, value, new int[] { size, dbNumber });
         }
 
         /// <summary>
-        /// Write data to the connected plc.
+        /// Write data to the given PLC area.
         /// </summary>
-        /// <param name="area">Specify the plc area to write to.  e.g. OB OutputByte</param>
-        /// <param name="offset">Specify the write offset</param>
-        /// <param name="value">Value to write</param>
-        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
+        /// <param name="area">The target <see cref="PlcArea"></see> we want to write.</param>
+        /// <param name="offset">This is the offset to the data you want to write.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="value">Should be the value you want to write.</param>
+        /// <param name="args">Arguments depending on the area. First argument is the number of items multiplied by the size of an item to write. If area is DB, second parameter is the db number.
+        /// For example if you will write 500 bytes, then you have to pass type = typeof(byte) and as first arg you have to pass 500.</param>
         /// <returns></returns>
         public void WriteAny(PlcArea area, int offset, object value, params int[] args)
         {
@@ -717,12 +734,15 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Write data parallel to the connected plc.
+        /// Write data parallel to the given PLC area.The size of a message to and from the PLC is limited by the PDU-Size. This method splits the message
+        /// and recombine it after receiving them. And this is done in parallel.
         /// </summary>
-        /// <param name="area">Specify the plc area to write to.  e.g. OB OutputByte</param>
-        /// <param name="offset">Specify the write offset</param>
-        /// <param name="value">Value to write</param>
-        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
+        /// <param name="area">The target <see cref="PlcArea"></see> we want to write.</param>
+        /// <param name="offset">This is the offset to the data you want to write.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="value">Should be the value you want to write.</param>
+        /// <param name="args">Arguments depending on the area. First argument is the number of items multiplied by the size of an item to write. If area is DB, second parameter is the db number.
+        /// For example if you will write 500 bytes, then you have to pass type = typeof(byte) and as first arg you have to pass 500.</param>
         /// <returns></returns>
         public void WriteAnyParallel(PlcArea area, int offset, object value, params int[] args)
         {
@@ -749,6 +769,25 @@ namespace Dacs7
                 //Throw only the first exception
                 throw exception.InnerExceptions.First();
             }
+        }
+
+
+        internal static int CalculateSizeForGenericWriteOperation<T>(PlcArea area, T value, int length, out Type elementType)
+        {
+            elementType = null;
+            if (value is Array && length < 0)
+            {
+                elementType = typeof(T).GetElementType();
+                length = (value as Array).Length * TransportSizeHelper.DataTypeToSizeByte(elementType, area);
+            }
+            var size = length < 0 ? TransportSizeHelper.DataTypeToSizeByte(typeof(T), PlcArea.DB) : length;
+            var stringValue = value as string;
+            if (stringValue != null)
+            {
+                if (length < 0) size = stringValue.Length;
+                size += 2;
+            }
+            return size;
         }
 
 
@@ -791,13 +830,15 @@ namespace Dacs7
 
 
         /// <summary>
-        /// Write data asynchronous to the connected plc.
+        /// Write data asynchronous to the given PLC area.
         /// </summary>
-        /// <param name="area">Specify the plc area to write to.  e.g. OB OutputByte</param>
-        /// <param name="offset">Specify the write offset</param>
-        /// <param name="value">Value to write</param>
-        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
-        /// <returns></returns>
+        /// <param name="area">The target <see cref="PlcArea"></see> we want to write.</param>
+        /// <param name="offset">This is the offset to the data you want to write.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="value">>Should be the value you want to write.</param>
+        /// <param name="args">Arguments depending on the area. First argument is the number of items multiplied by the size of an item to write. If area is DB, second parameter is the db number.
+        /// For example if you will write 500 bytes, then you have to pass type = typeof(byte) and as first arg you have to pass 500.</param>
+        /// <returns><see cref="Task"/></returns>
         public Task WriteAnyAsync(PlcArea area, int offset, object value, params int[] args)
         {
             return Task.Factory.StartNew(() =>
@@ -813,9 +854,9 @@ namespace Dacs7
 
 
         /// <summary>
-        /// Write multiple variables with one call to the plc
+        /// Write multiple variables with one call to the PLC.
         /// </summary>
-        /// <param name="parameters"></param>
+        /// <param name="parameters">A list of <see cref="WriteOperationParameter"/>, so multiple write requests can be handled in one message</param>
         public void WriteAny(IEnumerable<WriteOperationParameter> parameters)
         {
             var id = GetNextReferenceId();
@@ -850,9 +891,9 @@ namespace Dacs7
 
 
         /// <summary>
-        /// Read the number of blocks in the plc per type
+        /// Read the number of blocks in the PLC per type
         /// </summary>
-        /// <returns></returns>
+        /// <returns><see cref="IPlcBlocksCount"/> where you have access to the count of all the block types.</returns>
         public IPlcBlocksCount GetBlocksCount()
         {
             if (!IsConnected)
@@ -918,9 +959,9 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Read the number of blocks in the plc per type asynchronous.
+        /// Read the number of blocks in the PLC per type asynchronous. This means the call is wrapped in a Task.
         /// </summary>
-        /// <returns>Return a structure with all Counts of blocks</returns>
+        /// <returns><see cref="IPlcBlocksCount"/> where you have access to the count of all the block types.</returns>
         public Task<IPlcBlocksCount> GetBlocksCountAsync()
         {
             return Task.Factory.StartNew(() => GetBlocksCount(), _taskCreationOptions);
@@ -929,8 +970,8 @@ namespace Dacs7
         /// <summary>
         /// Get all blocks of the specified type.
         /// </summary>
-        /// <param name="type">Block type to read.</param>
-        /// <returns>Return a list off all blocks of this type</returns>
+        /// <param name="type">Block type to read. <see cref="PlcBlockType"/></param>
+        /// <returns>Return a list off all blocks <see cref="IPlcBlock"/> of this type</returns>
         public IEnumerable<IPlcBlocks> GetBlocksOfType(PlcBlockType type)
         {
             if (!IsConnected)
@@ -987,21 +1028,21 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Get all blocks of the specified type asynchronous.
+        /// Get all blocks of the specified type asynchronous.This means the call is wrapped in a Task.
         /// </summary>
-        /// <param name="type">Block type to read.</param>
-        /// <returns>Return a list off all blocks of this type</returns>
+        /// <param name="type">Block type to read. <see cref="PlcBlockType"/></param>
+        /// <returns>Return a list off all blocks <see cref="IPlcBlock"/> of this type</returns>
         public Task<IEnumerable<IPlcBlocks>> GetBlocksOfTypeAsync(PlcBlockType type)
         {
             return Task.Factory.StartNew(() => GetBlocksOfType(type), _taskCreationOptions);
         }
 
         /// <summary>
-        /// Read the meta data of a block from the plc.
+        /// Read the meta data of a block from the PLC.
         /// </summary>
-        /// <param name="blockType">Specify the block type to read. e.g. DB</param>
+        /// <param name="blockType">Specify the block type to read. e.g. DB   <see cref="PlcBlockType"/></param>
         /// <param name="blocknumber">Specify the Number of the block</param>
-        /// <returns></returns>
+        /// <returns><see cref="IPlcBlockInfo"/> where you have access tho the detailed meta data of the block.</returns>
         public IPlcBlockInfo ReadBlockInfo(PlcBlockType blockType, int blocknumber)
         {
             if (!IsConnected)
@@ -1053,11 +1094,11 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Read the full data of a block from the plc.
+        /// Read the full data of a block from the PLC.
         /// </summary>
-        /// <param name="blockType">Specify the block type to read. e.g. DB</param>
+        /// <param name="blockType">Specify the block type to read. e.g. DB  <see cref="PlcBlockType"/></param>
         /// <param name="blocknumber">Specify the Number of the block</param>
-        /// <returns></returns>
+        /// <returns>returns the see  <see cref="T:byte[]"/> of the block.</returns>
         public byte[] UploadPlcBlock(PlcBlockType blockType, int blocknumber)
         {
             if (!IsConnected)
@@ -1209,18 +1250,18 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Read the meta data of a block asynchronous from the plc.
+        /// Read the meta data of a block asynchronous from the PLC.This means the call is wrapped in a Task.
         /// </summary>
-        /// <param name="blockType">Specify the block type to read. e.g. DB</param>
+        /// <param name="blockType">Specify the block type to read. e.g. DB  <see cref="PlcBlockType"/></param>
         /// <param name="blocknumber">Specify the Number of the block</param>
-        /// <returns></returns>
+        /// <returns>a <see cref="Task"/> of <see cref="IPlcBlockInfo"/> where you have access tho the detailed meta data of the block.</returns>
         public Task<IPlcBlockInfo> ReadBlockInfoAsync(PlcBlockType blockType, int blocknumber)
         {
             return Task.Factory.StartNew(() => ReadBlockInfo(blockType, blocknumber), _taskCreationOptions);
         }
 
         /// <summary>
-        /// Read the current pending alarms from the plc.
+        /// Read the current pending alarms from the PLC.
         /// </summary>
         /// <returns>returns a list of all pending alarms</returns>
         public IEnumerable<IPlcAlarm> ReadPendingAlarms()
@@ -1281,7 +1322,7 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Read the current pending alarms asynchronous from the plc.
+        /// Read the current pending alarms asynchronous from the PLC.
         /// </summary>
         /// <returns>returns a list of all pending alarms</returns>
         public Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync()
@@ -1382,9 +1423,9 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Read the number of blocks in the plc per type
+        /// Read the number of blocks in the PLC per type
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The current <see cref="DateTime"/> from the PLC.</returns>
         public DateTime GetPlcTime()
         {
             if (!IsConnected)
@@ -1413,9 +1454,9 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Read the number of blocks in the plc per type
+        /// Read the number of blocks in the PLC per type
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The current <see cref="DateTime"/> from the PLC as a <see cref="Task"/></returns>
         public Task<DateTime> GetPlcTimeAsync()
         {
             return Task.Factory.StartNew(() => GetPlcTime(), _taskCreationOptions);
