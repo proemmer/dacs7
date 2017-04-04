@@ -4,7 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Dacs7.Helper;
 
-namespace Dacs7.Helper
+namespace Dacs7.Protocols.S7
 {
     public class S7JobUploadProtocolPolicy : S7ProtocolPolicy
     {

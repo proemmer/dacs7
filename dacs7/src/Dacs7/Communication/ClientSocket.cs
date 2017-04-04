@@ -130,7 +130,7 @@ namespace Dacs7.Communication
             if (_socket != null)
             {
                 try
-                {
+                { 
                     _socket.Dispose();
                 }
                 catch (ObjectDisposedException) { }

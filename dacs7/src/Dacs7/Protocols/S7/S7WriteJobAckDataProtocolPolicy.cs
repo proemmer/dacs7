@@ -1,10 +1,9 @@
-﻿using Dacs7.Helper.S7;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace Dacs7.Helper
+namespace Dacs7.Protocols.S7
 {
     public class S7WriteJobAckDataProtocolPolicy : S7AckDataProtocolPolicy
     {

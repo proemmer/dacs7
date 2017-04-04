@@ -21,6 +21,11 @@ namespace Dacs7Cmd
         private const int TestBitOffset2 = 16 * 8 + 1; // DBX16.1
         private const int LongDbNumer = 560;
 
+
+        public Program()
+        {
+        }
+
         public static void Main(string[] args)
         {
             _client.OnConnectionChange += _client_OnConnectionChange;

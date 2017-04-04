@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Dacs7.Helper.S7;
 using Dacs7.Domain;
 using Dacs7.Helper;
 
-namespace Dacs7.Helper
+namespace Dacs7.Protocols.S7
 {
     public class S7ReadJobAckDataProtocolPolicy : S7AckDataProtocolPolicy
     {
@@ -93,23 +92,23 @@ namespace Dacs7.Helper
             return msg;
         }
 
+
         private static int OffsetInPayload(string aStructMemberName)
         {
             var parts = aStructMemberName.Split('.');
-            var dot = aStructMemberName.Contains('.');
-            if (!dot || parts.Length == 2 && parts[0] == "S7CommHeader")
+            if (parts.Length == 2)
             {
-                return (int)Marshal.OffsetOf<S7CommHeader>( dot ? parts[1] : aStructMemberName);
+                if (parts[0] == "S7CommHeader")
+                    return (int)Marshal.OffsetOf<S7CommHeader>(parts[1]);
+                if (parts[0] == "S7ReadJobParameter")
+                    return (int)Marshal.OffsetOf<S7ReadJobParameter>(parts[1]);
+                if (parts[0] == "S7ReadJobItemData")
+                    return (int)Marshal.OffsetOf<S7ReadJobItemData>(parts[1]);
             }
-            if (parts.Length == 2 && parts[0] == "S7ReadJobParameter")
-            {
-                return (int)Marshal.OffsetOf<S7ReadJobParameter>(parts[1]);
-            }
-            if (parts.Length == 2 && parts[0] == "S7ReadJobItemData")
-            {
-                return (int)Marshal.OffsetOf<S7ReadJobItemData>(parts[1]);
-            }
+            else if(!aStructMemberName.Contains('.'))
+                return (int)Marshal.OffsetOf<S7CommHeader>(aStructMemberName);
             throw new ArgumentException("Argument must be in format <Classname.Property>", aStructMemberName);
         }
+
     }
 }

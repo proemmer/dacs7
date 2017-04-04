@@ -4,7 +4,7 @@ using System.Linq;
 using Dacs7.Helper;
 using Dacs7.Domain;
 
-namespace Dacs7.Helper
+namespace Dacs7.Protocols.S7
 {
     public class S7UserDataAckAlarmUpdateProtocolPolicy : S7UserDataProtocolPolicy
     {

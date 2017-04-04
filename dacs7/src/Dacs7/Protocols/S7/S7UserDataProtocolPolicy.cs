@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Dacs7.Helper;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace Dacs7.Helper
+namespace Dacs7.Protocols.S7
 {
     public class S7UserDataProtocolPolicy : S7ProtocolPolicy
     {

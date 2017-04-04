@@ -1,9 +1,9 @@
 ﻿using Dacs7.Communication;
 using Dacs7.Domain;
 using Dacs7.Helper;
-using Dacs7.Helper.S7;
 using Dacs7.Protocols;
 using Dacs7.Protocols.RFC1006;
+using Dacs7.Protocols.S7;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -116,7 +116,7 @@ namespace Dacs7
         /// Plc is connected or not.
         /// </summary>
         /// <returns></returns>
-        public bool IsConnected { get { return _clientSocket != null && _clientSocket.IsConnected; } }
+        public bool IsConnected { get { return _clientSocket != null && _clientSocket.IsConnected && !_clientSocket.Shutdown; } }
 
         /// <summary>
         /// Connection parameter for the plc connection separated by ';'. 

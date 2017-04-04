@@ -31,6 +31,7 @@ namespace Dacs7.Communication
         #region Properties
         public string CycleId { get { return _cycleId; } }
         public bool IsConnected { get; protected set; }
+        public bool Shutdown => _shutdown;
         public int ReceiveBufferSize { get { return _configuration.ReceiveBufferSize; } }
         public event OnConnectionStateChangedHandler OnConnectionStateChanged;
         public event OnDataReceivedHandler OnRawDataReceived;
