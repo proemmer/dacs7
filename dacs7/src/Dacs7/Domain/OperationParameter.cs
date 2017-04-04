@@ -240,8 +240,7 @@ namespace Dacs7.Domain
 
         private static int CalculateSizeForGenericWriteOperation<T>(PlcArea area, T value, int length = -1)
         {
-            Type elementType;
-            var size = Dacs7Client.CalculateSizeForGenericWriteOperation<T>(area, value, length, out elementType);
+            var size = Dacs7Client.CalculateSizeForGenericWriteOperation(area, value, length, out Type elementType);
             if (typeof(T) == typeof(string)) size -= 2;
             return size;
         }

@@ -96,8 +96,7 @@ namespace Dacs7.Heper
             {
                 if (!_threadRunning)
                     return false;
-                Execution exec = null;
-                if(_timers.TryGetValue(name, out exec) && exec != null)
+                if (_timers.TryGetValue(name, out Execution exec) && exec != null)
                     return exec.Enabled;
                 return false;
             }
@@ -121,8 +120,7 @@ namespace Dacs7.Heper
             {
                 if (!_threadRunning)
                     return;
-                Execution exec = null;
-                if (_timers.TryGetValue(name, out exec) && exec != null)
+                if (_timers.TryGetValue(name, out Execution exec) && exec != null)
                 {
                     exec.Enabled = state;
                     if (state && startImmediately)
@@ -147,8 +145,7 @@ namespace Dacs7.Heper
             {
                 if (!_threadRunning)
                     return;
-                Execution exec = null;
-                if (_timers.TryGetValue(name, out exec) && exec != null)
+                if (_timers.TryGetValue(name, out Execution exec) && exec != null)
                 {
                     exec.Milliseconds = milliseconds;
                 }

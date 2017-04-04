@@ -1,4 +1,4 @@
-﻿namespace Dacs7.Arch
+﻿namespace Dacs7
 {
     public interface IReplyMessage
     {

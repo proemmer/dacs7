@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Dacs7.Arch
+namespace Dacs7
 {
     public class EventPublisher : IEventPublisher
     {
@@ -34,8 +34,7 @@ namespace Dacs7.Arch
 
         public void NotifySubscribers(IEventPublisher source, Event evt)
         {
-            if (PublisherEvent != null)
-                PublisherEvent(source, evt);
+            PublisherEvent?.Invoke(source, evt);
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using Dacs7.Arch;
-using Dacs7.Domain;
+﻿using Dacs7.Domain;
 using Dacs7.Helper;
 using System;
 using System.Collections.Generic;
@@ -467,11 +466,9 @@ namespace Dacs7
                     var result = Converter.SetSwap(data);
                     if (result != null)
                         return result;
-                    var charEnum = data as char[];
-                    if (charEnum != null)
+                    if (data is char[] charEnum)
                         return charEnum.Select(x => Convert.ToByte(x)).ToArray();
-                    var stringEnum = data as string;
-                    if (stringEnum != null)
+                    if (data is string stringEnum)
                         return (new byte[] { (byte)stringEnum.Length, (byte)stringEnum.Length }).Concat(stringEnum.ToCharArray().Select(x => Convert.ToByte(x)).ToArray());
                     if (data is Array)
                     {

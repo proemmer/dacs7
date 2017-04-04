@@ -30,8 +30,7 @@ namespace Dacs7.Heper
 
         protected static void Init(T newInstance)
         {
-            if (newInstance == null) throw new ArgumentNullException();
-            _instance = newInstance;
+            _instance = newInstance ?? throw new ArgumentNullException(nameof(newInstance));
         }
 
         class SingletonCreator

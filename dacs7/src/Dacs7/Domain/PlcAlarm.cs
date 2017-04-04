@@ -1,5 +1,4 @@
 ﻿using System;
-using Dacs7.Arch;
 using Dacs7.Helper;
 
 namespace Dacs7.Domain

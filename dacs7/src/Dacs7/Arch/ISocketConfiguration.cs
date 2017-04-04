@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 
-namespace Dacs7.Arch
+namespace Dacs7
 {
     public interface ISocketConfiguration
     {

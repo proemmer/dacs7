@@ -76,9 +76,7 @@ namespace Dacs7.Communication
             OnDataReceivedHandler dataReceive
             ) : base(ClientSocketConfiguration.FromSocket(socket))
         {
-            if (socket == null)
-                throw new ArgumentNullException("socket");
-            _socket = socket;
+            _socket = socket ?? throw new ArgumentNullException(nameof(socket));
             OnConnectionStateChanged += connectionStateChanged;
             OnSocketShutdown += shutdown;
             OnSendFinished += sendfinished;
@@ -156,7 +154,7 @@ namespace Dacs7.Communication
                 }
 
             }
-            catch (Exception exception)
+            catch (Exception)
             {
                 //TODO
                 // If this is an unknown status it means that the error is fatal and retry will likely fail.
@@ -178,7 +176,7 @@ namespace Dacs7.Communication
             {
                 var result = await _socket.SendAsync(new ArraySegment<byte>(data.ToArray()), SocketFlags.None);
             }
-            catch (Exception exception)
+            catch (Exception)
             {
                 //TODO
                 // If this is an unknown status it means that the error if fatal and retry will likely fail.

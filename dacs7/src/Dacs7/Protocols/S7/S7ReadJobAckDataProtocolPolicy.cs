@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Dacs7.Helper.S7;
-using Dacs7.Arch;
 using Dacs7.Domain;
 using Dacs7.Helper;
 

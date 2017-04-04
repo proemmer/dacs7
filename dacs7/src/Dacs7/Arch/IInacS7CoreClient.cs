@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Dacs7.Arch
+namespace Dacs7
 {
     public delegate void OnConnectionChangeEventHandler(object sender, PlcConnectionNotificationEventArgs e);
 
@@ -113,14 +113,14 @@ namespace Dacs7.Arch
         byte[] UploadPlcBlock(PlcBlockType blockType, int blocknumber);
 
 
-        /// <summary>
-        /// Write the full data of a block to the plc.
-        /// </summary>
-        /// <param name="blockType">Specify the block type to read. e.g. DB</param>
-        /// <param name="blocknumber">Specify the Number of the block</param>
-        /// <param name="data">Plc block in byte</param>
-        /// <returns></returns>
-        bool DownloadPlcBlock(PlcBlockType blockType, int blocknumber, byte[] data);
+        ///// <summary>
+        ///// Write the full data of a block to the plc.
+        ///// </summary>
+        ///// <param name="blockType">Specify the block type to read. e.g. DB</param>
+        ///// <param name="blocknumber">Specify the Number of the block</param>
+        ///// <param name="data">Plc block in byte</param>
+        ///// <returns></returns>
+        //bool DownloadPlcBlock(PlcBlockType blockType, int blocknumber, byte[] data);
 
         /// <summary>
         /// Read Meta information of a plc block asynchronous.

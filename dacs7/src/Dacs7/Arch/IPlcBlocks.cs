@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Dacs7.Arch
+namespace Dacs7
 {
 
     public interface IPlcBlocks

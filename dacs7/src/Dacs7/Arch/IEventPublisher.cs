@@ -1,9 +1,9 @@
-﻿namespace Dacs7.Arch
+﻿namespace Dacs7
 {
     public delegate void PublisherEventHandlerDelegate(IEventPublisher source, Event evt);
     public interface IEventPublisher
     {
-        event PublisherEventHandlerDelegate PublisherEvent;
+        //event PublisherEventHandlerDelegate PublisherEvent;
 
         int GetSubscriberCount();
         bool Subscribe(IEventSubscriber subscriber);

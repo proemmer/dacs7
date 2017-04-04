@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Dacs7.Arch
+namespace Dacs7
 {
     internal class ConnectionParameters
     {
@@ -28,8 +28,7 @@ namespace Dacs7.Arch
         {
             foreach (var connEntry in ConvertConnectionStringToDict(connectionString))
             {
-                Tuple<bool, Func<ConnectionParameters,string, bool>> valEntry;
-                if (_validationDictionary.TryGetValue(connEntry.Key, out valEntry))
+                if (_validationDictionary.TryGetValue(connEntry.Key, out Tuple<bool, Func<ConnectionParameters, string, bool>> valEntry))
                 {
                     if (!valEntry.Item2(this, connEntry.Value) && valEntry.Item1)
                         throw new ArgumentException(string.Format("Invalid Connection string on parameter {0}", connEntry.Key));
@@ -79,8 +78,7 @@ namespace Dacs7.Arch
 
         private static bool ValidateConnectionType(ConnectionParameters parameters, string value)
         {
-            PlcConnectionType conType;
-            if( Enum.TryParse(value, out conType))
+            if (Enum.TryParse(value, out PlcConnectionType conType))
             {
                 parameters.SetParameter("Connection Type", conType);
                 return true;

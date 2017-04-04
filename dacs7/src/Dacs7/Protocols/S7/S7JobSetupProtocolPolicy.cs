@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Dacs7.Arch;
-using Dacs7.Helper;
 
 namespace Dacs7.Helper
 {

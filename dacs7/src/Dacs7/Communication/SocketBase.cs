@@ -1,5 +1,4 @@
-﻿using Dacs7.Arch;
-using Dacs7.Heper;
+﻿using Dacs7.Heper;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
@@ -37,7 +36,7 @@ namespace Dacs7.Communication
         public event OnDataReceivedHandler OnRawDataReceived;
         public event OnSendFinishedHandler OnSendFinished;
         public event OnSocketShutdownHandler OnSocketShutdown;
-        public event PublisherEventHandlerDelegate PublisherEvent;
+        //public event PublisherEventHandlerDelegate PublisherEvent;
 
         public abstract string Identity { get; }
         #endregion

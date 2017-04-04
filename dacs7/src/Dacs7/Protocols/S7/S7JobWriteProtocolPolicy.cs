@@ -1,5 +1,4 @@
-﻿using Dacs7.Arch;
-using Dacs7.Domain;
+﻿using Dacs7.Domain;
 using Dacs7.Helper;
 using System;
 using System.Collections.Generic;
@@ -152,19 +151,19 @@ namespace Dacs7.Helper
             var dot = aStructMemberName.Contains('.');
             if (!dot || parts.Length == 2 && parts[0] == "S7CommHeader")
             {
-                return (int)Marshal.OffsetOf(typeof(S7CommHeader), dot ? parts[1] : aStructMemberName);
+                return (int)Marshal.OffsetOf<S7CommHeader>(dot ? parts[1] : aStructMemberName);
             }
             if (parts.Length == 2 && parts[0] == "S7WriteJobParameter")
             {
-                return (int)Marshal.OffsetOf(typeof(S7WriteJobParameter), parts[1]);
+                return (int)Marshal.OffsetOf<S7WriteJobParameter>(parts[1]);
             }
             if (parts.Length == 2 && parts[0] == "S7WriteJobItem")
             {
-                return (int)Marshal.OffsetOf(typeof(S7WriteJobItem), parts[1]);
+                return (int)Marshal.OffsetOf<S7WriteJobItem>(parts[1]);
             }
             if (parts.Length == 2 && parts[0] == "S7WriteJobDataItem")
             {
-                return (int)Marshal.OffsetOf(typeof(S7WriteJobDataItem), parts[1]);
+                return (int)Marshal.OffsetOf<S7WriteJobDataItem>(parts[1]);
             }
 
             
