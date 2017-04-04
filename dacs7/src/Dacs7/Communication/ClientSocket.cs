@@ -9,21 +9,15 @@ namespace Dacs7.Communication
 {
     public class ClientSocketConfiguration : ISocketConfiguration
     {
-        public string Hostname { get; set; }
-        public int ServiceName { get; set; }
-        public int ReceiveBufferSize { get; set; }
-        public bool Autoconnect { get; set; }
+        public string Hostname { get; set; } = "localhost";
+        public int ServiceName { get; set; } = 22112;
+        public int ReceiveBufferSize { get; set; } = 65536;  // buffer size to use for each socket I/O operation 
+        public bool Autoconnect { get; set; } = true;
         public string NetworkAdapter { get; set; }
-        public bool KeepAlive { get; set; }
+        public bool KeepAlive { get; set; } = false;
 
         public ClientSocketConfiguration()
         {
-            NetworkAdapter = null;
-            Hostname = "localhost";
-            ServiceName = 22112;
-            ReceiveBufferSize = 65536;  // buffer size to use for each socket I/O operation 
-            Autoconnect = true;
-            KeepAlive = false;
         }
 
         public static ClientSocketConfiguration FromSocket(Socket socket)
@@ -82,9 +76,7 @@ namespace Dacs7.Communication
             OnDataReceivedHandler dataReceive
             ) : base(ClientSocketConfiguration.FromSocket(socket))
         {
-            if (socket == null)
-                throw new ArgumentNullException("socket");
-            _socket = socket;
+            _socket = socket ?? throw new ArgumentNullException(nameof(socket));
             OnConnectionStateChanged += connectionStateChanged;
             OnSocketShutdown += shutdown;
             OnSendFinished += sendfinished;
@@ -138,7 +130,7 @@ namespace Dacs7.Communication
             if (_socket != null)
             {
                 try
-                {
+                { 
                     _socket.Dispose();
                 }
                 catch (ObjectDisposedException) { }
@@ -162,7 +154,7 @@ namespace Dacs7.Communication
                 }
 
             }
-            catch (Exception exception)
+            catch (Exception)
             {
                 //TODO
                 // If this is an unknown status it means that the error is fatal and retry will likely fail.
@@ -184,7 +176,7 @@ namespace Dacs7.Communication
             {
                 var result = await _socket.SendAsync(new ArraySegment<byte>(data.ToArray()), SocketFlags.None);
             }
-            catch (Exception exception)
+            catch (Exception)
             {
                 //TODO
                 // If this is an unknown status it means that the error if fatal and retry will likely fail.

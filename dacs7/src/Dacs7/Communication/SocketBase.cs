@@ -1,5 +1,4 @@
-﻿using Dacs7.Arch;
-using Dacs7.Heper;
+﻿using Dacs7.Heper;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
@@ -32,12 +31,13 @@ namespace Dacs7.Communication
         #region Properties
         public string CycleId { get { return _cycleId; } }
         public bool IsConnected { get; protected set; }
+        public bool Shutdown => _shutdown;
         public int ReceiveBufferSize { get { return _configuration.ReceiveBufferSize; } }
         public event OnConnectionStateChangedHandler OnConnectionStateChanged;
         public event OnDataReceivedHandler OnRawDataReceived;
         public event OnSendFinishedHandler OnSendFinished;
         public event OnSocketShutdownHandler OnSocketShutdown;
-        public event PublisherEventHandlerDelegate PublisherEvent;
+        //public event PublisherEventHandlerDelegate PublisherEvent;
 
         public abstract string Identity { get; }
         #endregion
@@ -50,7 +50,7 @@ namespace Dacs7.Communication
                 CyclicExecutor.Instance.Add(_cycleId, _cycleId, 5000, () =>
                 {
                     CyclicExecutor.Instance.Enabled(_cycleId, false);
-                    if(!IsConnected)
+                    if(!IsConnected && !_shutdown)
                         Open();
                 });
             }

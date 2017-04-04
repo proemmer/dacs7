@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Text;
 
-namespace Dacs7.Helper
+namespace Dacs7.Protocols
 {
     public class Marker
     {

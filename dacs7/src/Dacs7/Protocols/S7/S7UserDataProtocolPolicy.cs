@@ -1,11 +1,10 @@
-﻿using System;
+﻿using Dacs7.Helper;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using Dacs7.Arch;
-using Dacs7.Helper;
 
-namespace Dacs7.Helper
+namespace Dacs7.Protocols.S7
 {
     public class S7UserDataProtocolPolicy : S7ProtocolPolicy
     {
@@ -83,7 +82,7 @@ namespace Dacs7.Helper
 
                 message.SetAttribute("SequenceNumber", msg[parentOffset + OffsetInPayload("S7UserDataParameter.SequenceNumber")]);
 
-                offset = parentOffset + Marshal.SizeOf(typeof (S7UserDataParameter));
+                offset = parentOffset + Marshal.SizeOf<S7UserDataParameter>();
                 if (paramLength == 8)
                 {
                     message.SetAttribute("DataUnitReferenceNumber", msg[offset + OffsetInPayload("S7UserDataParameterExt.DataUnitReferenceNumber")]);

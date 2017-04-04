@@ -12,11 +12,12 @@ namespace Dacs7.Helper
         private const string HexDigits = "0123456789ABCDEF";
 
         /// <summary>
-        /// Convert a Numeric type to a byte array and swap bytes
+        /// Converts a number to a byte array  from byte ... Single
+        /// With swapped bytes
         /// </summary>
-        /// <typeparam name="T">can be of type Byte,UInt16,Int16,UInt32,Int32,Single</typeparam>
-        /// <param name="value">value to convert</param>
-        /// <returns></returns>
+        /// <typeparam name="T">byte ... Single</typeparam>
+        /// <param name="value">Value to convert</param>
+        /// <returns>The value as <see cref="T:byte[]"/></returns>
         public static byte[] SetSwap<T>(this T value)
         {
             byte[] buffer = null;
@@ -50,11 +51,12 @@ namespace Dacs7.Helper
         }
 
         /// <summary>
-        /// Convert a Numeric type to a byte array
+        /// Converts a number to a byte array  from byte ... Single
+        /// With not swapped bytes
         /// </summary>
-        /// <typeparam name="T">can be of type Byte,UInt16,Int16,UInt32,Int32,Single</typeparam>
-        /// <param name="value">value to convert</param>
-        /// <returns></returns>
+        /// <typeparam name="T">byte ... Single</typeparam>
+        /// <param name="value">Value to convert</param>
+        /// <returns>The value as <see cref="T:byte[]"/></returns>
         public static byte[] SetNoSwap<T>(this T value)
         {
             byte[] buffer = null;
@@ -88,11 +90,25 @@ namespace Dacs7.Helper
             return buffer;
         }
 
+        /// <summary>
+        /// Converts a give <see cref="T:IEnumerable{byte}"/> to T - with swapped bytes
+        /// </summary>
+        /// <typeparam name="T">byte ... Single</typeparam>
+        /// <param name="buffer">buffer to extract the value</param>
+        /// <param name="offset">offset to the first byte if the value</param>
+        /// <returns>The value of type T</returns>
         public static T GetSwap<T>(this IEnumerable<byte> buffer, int offset = 0)
         {
             return buffer.Skip(offset).Take(sizeof(Single)).ToArray().GetSwap<T>();
         }
 
+        /// <summary>
+        /// Converts a give <see cref="T:byte[]"/> to T- with swapped bytes
+        /// </summary>
+        /// <typeparam name="T">byte ... Single</typeparam>
+        /// <param name="buffer">buffer to extract the value</param>
+        /// <param name="offset">offset to the first byte if the value</param>
+        /// <returns>The value of type T</returns>
         public static T GetSwap<T>(this byte[] buffer, int offset = 0)
         {
             object value = default(T);
@@ -125,11 +141,26 @@ namespace Dacs7.Helper
             return (T)value;
         }
 
+        /// <summary>
+        /// Converts a give <see cref="T:IEnumerable{byte}"/> to T- with not swapped bytes
+        /// </summary>
+        /// <typeparam name="T">byte ... Single</typeparam>
+        /// <param name="buffer">buffer to extract the value</param>
+        /// <param name="offset">offset to the first byte if the value</param>
+        /// <returns>The value  of type T</returns>
         public static T GetNoSwap<T>(this IEnumerable<byte> buffer, int offset = 0)
         {
             return buffer.Skip(offset).Take(sizeof(Single)).ToArray().GetNoSwap<T>();
         }
 
+
+        /// <summary>
+        /// Converts a give <see cref="T:byte[]"/>  to T- with not swapped bytes
+        /// </summary>
+        /// <typeparam name="T">byte ... Single</typeparam>
+        /// <param name="buffer">buffer to extract the value</param>
+        /// <param name="offset">offset to the first byte if the value</param>
+        /// <returns>The value  of type T</returns>
         public static T GetNoSwap<T>(this byte[] buffer, int offset = 0)
         {
             object value = default(T);
@@ -162,6 +193,11 @@ namespace Dacs7.Helper
             return (T)value;
         }
 
+        /// <summary>
+        /// Swap a word
+        /// </summary>
+        /// <param name="word">given word to swap</param>
+        /// <returns>swapped word</returns>
         public static UInt16 SwapWord(this UInt16 word)
         {
             return (UInt16)(
@@ -169,6 +205,11 @@ namespace Dacs7.Helper
                     ((word & 0xFF00U) >> 8));
         }
 
+        /// <summary>
+        /// Swap a dword
+        /// </summary>
+        /// <param name="dword">given dword to swap</param>
+        /// <returns>swapped dword</returns>
         public static UInt32 SwapDWord(this UInt32 dword)
         {
             return (
@@ -179,6 +220,11 @@ namespace Dacs7.Helper
                     );
         }
 
+        /// <summary>
+        /// Swap an short integer (16bit)
+        /// </summary>
+        /// <param name="dword">given shortint to swap</param>
+        /// <returns>swapped shortint</returns>
         public static Int16 SwapInt(this Int16 intVal)
         {
             var buffer = new byte[2];
@@ -188,6 +234,11 @@ namespace Dacs7.Helper
             return BitConverter.ToInt16(buffer, 0);
         }
 
+        /// <summary>
+        /// Swap an integer (32bit)
+        /// </summary>
+        /// <param name="dword">given int to swap</param>
+        /// <returns>swapped int</returns>
         public static Int32 SwapDInt(this Int32 intVal)
         {
             var buffer = new byte[4];
@@ -199,6 +250,11 @@ namespace Dacs7.Helper
             return BitConverter.ToInt32(buffer, 0);
         }
 
+        /// <summary>
+        /// Swap an single (32bit float)
+        /// </summary>
+        /// <param name="dword">given int to swap</param>
+        /// <returns>swapped int</returns>
         public static Single SwapSingle(this Single intVal)
         {
             var buffer = new byte[4];
@@ -210,6 +266,29 @@ namespace Dacs7.Helper
             return BitConverter.ToSingle(buffer, 0);
         }
 
+        /// <summary>
+        /// Determine the state of a bit in a byte array
+        /// </summary>
+        /// <param name="data">byte to check</param>
+        /// <param name="bit">bit number  0..7</param>
+        /// <returns>the state of the bit</returns>
+        public static bool GetBit(this byte[] data, int bit)
+        {
+            var byteOffset = bit / 8;
+            var bitOffset = bit - (byteOffset * 8);
+            // Shift the bit to the first location
+            var d = (byte)(data[byteOffset] >> bitOffset);
+
+            // Isolate the value
+            return (d & 1) == 1;
+        }
+
+        /// <summary>
+        /// Determine the state of a bit in a byte
+        /// </summary>
+        /// <param name="data">byte to check</param>
+        /// <param name="bit">bit number  0..7</param>
+        /// <returns>the state of the bit</returns>
         public static bool GetBit(this byte data, int bit)
         {
             // Shift the bit to the first location
@@ -219,6 +298,13 @@ namespace Dacs7.Helper
             return (data & 1) == 1;
         }
 
+        /// <summary>
+        /// Set or reset s bit in a byte
+        /// </summary>
+        /// <param name="data">byte to change</param>
+        /// <param name="bit">bit number  0..7</param>
+        /// <param name="value">value to apply</param>
+        /// <returns>the changed byte</returns>
         public static byte SetBit(this byte data, int bit, bool value)
         {
             if (value)
@@ -226,6 +312,15 @@ namespace Dacs7.Helper
             return (byte)(data & (~(1U << bit)));
         }
 
+        /// <summary>
+        /// Retrieves a sub array from this instance.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="data">array instance to extract the sub array</param>
+        /// <param name="index">offset to the first byte</param>
+        /// <param name="length">length of the sub array</param>
+        /// <param name="realloc">if the sub array is equal to the array the sub array will be returned</param>
+        /// <returns>a copy of this sub array</returns>
         public static T[] SubArray<T>(this T[] data, int skip, int length = -1, bool realloc = false)
         {
             var dataLength = data.Length;
@@ -235,6 +330,21 @@ namespace Dacs7.Helper
                 return data;
             var result = new T[length];
             Array.Copy(data, skip, result, 0, length);
+            return result;
+        }
+
+        /// <summary>
+        /// Creates a new array with the merged data in it
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="data1">fist block</param>
+        /// <param name="data2">second block</param>
+        /// <returns></returns>
+        public static T[] Concat<T>(this T[] data1, T[] data2)
+        {
+            var result = new T[data1.Length + data2.Length];
+            data1.CopyTo(result, 0);
+            data2.CopyTo(result, data1.Length);
             return result;
         }
 
@@ -398,12 +508,22 @@ namespace Dacs7.Helper
             return sb.ToString(0, sb.Length - separator.Length);
         }
 
+        /// <summary>
+        /// Converts a hex string to a byte array
+        /// </summary>
+        /// <param name="hexString"></param>
+        /// <returns></returns>
         public static byte[] HexGetBytes(this string hexString)
         {
-            int discarded;
-            return (HexGetBytes(hexString, out discarded));
+            return (HexGetBytes(hexString, out int discarded));
         }
 
+        /// <summary>
+        /// Extract a value from the hex string
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="hexString"></param>
+        /// <returns></returns>
         public static T HexGet<T>(this string hexString)
         {
             object value = default(T);
@@ -446,12 +566,22 @@ namespace Dacs7.Helper
             return (T)value;
         }
 
+        /// <summary>
+        /// Creates a byte array from the binary string.
+        /// </summary>
+        /// <param name="binString"></param>
+        /// <returns></returns>
         public static byte[] BinGetBytes(this string binString)
         {
-            int discarded;
-            return (BinGetBytes(binString, out discarded));
+            return (BinGetBytes(binString, out int discarded));
         }
 
+        /// <summary>
+        /// Converts a binary string to a value of T
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="binString">e.g. 0110</param>
+        /// <returns></returns>
         public static T BinGet<T>(this string binString)
         {
             object value = default(T);
@@ -479,6 +609,12 @@ namespace Dacs7.Helper
             return (T)value;
         }
 
+        /// <summary>
+        /// converts the given byte array to an DateTime, if the value is not in range, DateTime.MinValue will be returned
+        /// </summary>
+        /// <param name="data">minimum 8 byte - offset</param>
+        /// <param name="offset">offset to first byte</param>
+        /// <returns>DateTime</returns>
         public static DateTime ToDateTime(this byte[] data, int offset = 0)
         {
             var str = string.Format("{2}/{1}/{0} {3}:{4}:{5}.{6}{7}",
@@ -491,8 +627,7 @@ namespace Dacs7.Helper
                 data.ToHexString("", offset + 6, 1),
                 data.ToHexString("", offset + 7, 1));
 
-            DateTime parsedDate;
-            if (DateTime.TryParseExact(str, "dd/MM/yy HH:mm:ss.ffff", null, DateTimeStyles.None, out parsedDate))
+            if (DateTime.TryParseExact(str, "dd/MM/yy HH:mm:ss.ffff", null, DateTimeStyles.None, out DateTime parsedDate))
                 return parsedDate;
             return DateTime.MinValue;
         }
@@ -674,6 +809,58 @@ namespace Dacs7.Helper
             }
             else
                 return data.GetSwap<T>(offset);
+        }
+
+
+        internal static object ConvertTo(this byte[] data, Type t, int offset = 0)
+        {
+            if (t == typeof(bool))
+            {
+                return data[offset] != 0x00;
+            }
+            else if (t == typeof(byte))
+            {
+                return data;
+            }
+            else if (t == typeof(char))
+            {
+                return Encoding.ASCII.GetChars(data, offset, data.Length - offset);
+            }
+            else if (t == typeof(DateTime))
+            {
+                return data.ToDateTime(offset);
+            }
+            else if (t == typeof(UInt32))
+            {
+                return SwapDWord(BitConverter.ToUInt32(data, offset));
+            }
+            else if (t == typeof(Int32))
+            {
+                return (Int32)SwapDWord(BitConverter.ToUInt32(data, offset));
+            }
+            else if (t == typeof(Byte))
+            {
+                return data[offset];
+            }
+            else if (t == typeof(UInt16))
+            {
+                return SwapWord(BitConverter.ToUInt16(data, offset));
+            }
+            else if (t == typeof(Int16))
+            {
+                return (Int16)SwapWord(BitConverter.ToUInt16(data, offset));
+            }
+            else if (t == typeof(Single))
+            {
+                var tmp = new byte[4];
+                tmp[0] = data[offset + 3];
+                tmp[1] = data[offset + 2];
+                tmp[2] = data[offset + 1];
+                tmp[3] = data[offset];
+                return BitConverter.ToSingle(tmp, offset);
+            }
+
+            return data;
         }
     }
 }

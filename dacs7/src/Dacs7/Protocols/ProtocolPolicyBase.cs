@@ -1,13 +1,10 @@
-﻿using Dacs7.Arch;
+﻿using Dacs7.Helper;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Threading;
 
-namespace Dacs7.Helper
+namespace Dacs7.Protocols
 {
     public abstract class ProtocolPolicyBase : IProtocolPolicy
     {

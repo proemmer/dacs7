@@ -15,12 +15,12 @@ namespace Dacs7
         /// <summary>
         /// Could be a mapping name or an Area
         /// </summary>
-        public string From { get { return _from; } }
+        public string From => _from;
 
         /// <summary>
         /// Contains the state of the connection
         /// </summary>
-        public bool IsConnected { get { return _isConnected; } }
+        public bool IsConnected => _isConnected;
 
     }
 }

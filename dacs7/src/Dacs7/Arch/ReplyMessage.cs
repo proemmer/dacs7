@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Dacs7.Arch
+namespace Dacs7
 {
     public class ReplyMessage : Message, IReplyMessage
     {

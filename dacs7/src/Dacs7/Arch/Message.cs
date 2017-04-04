@@ -4,13 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
-namespace Dacs7.Arch
+namespace Dacs7
 {
     public class Message : IMessage
     {
         private static int _idSeqGen;
         private readonly string _id;
-        private string _origin;
+        private string _origin = string.Empty;
         private readonly DateTime _creationTime;
         private readonly Dictionary<string, object> _attributes = new Dictionary<string, object>();
         public Dictionary<string, object> Attributes { get { return new Dictionary<string, object>(_attributes); } }
@@ -53,8 +53,7 @@ namespace Dacs7.Arch
 
         public T GetAttribute<T>(string attributeName, T defaultValue)
         {
-            object value;
-            if (_attributes.TryGetValue(attributeName, out value))
+            if (_attributes.TryGetValue(attributeName, out object value))
                 return (T)value;
             return defaultValue;
         }
@@ -89,14 +88,11 @@ namespace Dacs7.Arch
             var data = (_rawMessage as IEnumerable<byte>);
             if (data == null)
             {
-                object obj;
-                if (_attributes.TryGetValue("$$Payload", out obj))
+                if (_attributes.TryGetValue("$$Payload", out object obj))
                     data = (obj as IEnumerable<byte>);
                 return data == null ? new List<byte>() : new List<byte>(data);
             }
-            object offset;
-            object length;
-            if (_attributes.TryGetValue("$$PayloadOffset", out offset) && _attributes.TryGetValue("$$PayloadLength", out length))
+            if (_attributes.TryGetValue("$$PayloadOffset", out object offset) && _attributes.TryGetValue("$$PayloadLength", out object length))
                 return new List<byte>(data.Skip((int)offset).Take((int)length));
 
             return new List<byte>();

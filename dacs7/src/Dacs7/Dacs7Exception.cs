@@ -32,8 +32,7 @@ namespace Dacs7
 
         internal static string ResolveErrorCode<T>(string s) where T : struct
         {
-            T result;
-            if (Enum.TryParse(s, out result))
+            if (Enum.TryParse(s, out T result))
             {
                 var r = GetEnumDescription(result);
                 if (!string.IsNullOrWhiteSpace(r))
@@ -48,8 +47,7 @@ namespace Dacs7
             var fieldInfo = e.GetType().GetField(e.ToString());
             if (fieldInfo != null)
             {
-                var enumAttributes = fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false) as DescriptionAttribute[];
-                if (enumAttributes != null && enumAttributes.Length > 0)
+                if (fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false) is DescriptionAttribute[] enumAttributes && enumAttributes.Length > 0)
                     return enumAttributes[0].Description;
             }
             return e.ToString();

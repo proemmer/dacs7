@@ -11,8 +11,8 @@ namespace Dacs7Cmd
     public class Program
     {
         private static readonly Dacs7Client _client = new Dacs7Client();
-        private const string Ip = "192.168.0.146";
-        //private const string Ip = "127.0.0.1";
+        //private const string Ip = "192.168.0.146";
+        private const string Ip = "127.0.0.1";
         private const string ConnectionString = "Data Source=" + Ip + ":102,0,2"; //"Data Source=192.168.0.145:102,0,2";
         private const int TestDbNr = 250;
         private const int TestByteOffset = 524;
@@ -20,6 +20,11 @@ namespace Dacs7Cmd
         private const int TestBitOffset = 16 * 8; // DBX16.0
         private const int TestBitOffset2 = 16 * 8 + 1; // DBX16.1
         private const int LongDbNumer = 560;
+
+
+        public Program()
+        {
+        }
 
         public static void Main(string[] args)
         {
@@ -57,7 +62,7 @@ namespace Dacs7Cmd
             var intValue = _client.ReadAny<int>(TestDbNr, TestByteOffset);
 
             const int numberOfArrayElements = 2;
-            var boolEnumValue = _client.ReadAny<bool>(TestDbNr, TestBitOffset, numberOfArrayElements);
+            //var boolEnumValue = _client.ReadAny<bool>(TestDbNr, TestBitOffset, numberOfArrayElements);
             var intEnumValue = _client.ReadAny<int>(TestDbNr, TestByteOffset, numberOfArrayElements);
         }
 
@@ -70,7 +75,7 @@ namespace Dacs7Cmd
                 new ReadOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}}
             };
 
-            var result = _client.ReadAny(operations); //result is IEnumerable<byte[]>
+            var result = _client.ReadAnyRaw(operations); //result is IEnumerable<byte[]>
 
             var writeOperations = new List<WriteOperationParameter>
             {

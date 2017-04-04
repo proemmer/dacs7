@@ -1,10 +1,9 @@
-﻿using Dacs7.Arch;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace Dacs7.Helper.S7
+namespace Dacs7.Protocols.S7
 {
     public class S7AckDataProtocolPolicy : S7ProtocolPolicy
     {

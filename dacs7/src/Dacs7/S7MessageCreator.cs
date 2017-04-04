@@ -1,5 +1,4 @@
-﻿using Dacs7.Arch;
-using Dacs7.Domain;
+﻿using Dacs7.Domain;
 using Dacs7.Helper;
 using System;
 using System.Collections.Generic;
@@ -102,10 +101,10 @@ namespace Dacs7
         /// <summary>
         /// Add parameter for job datagram.
         /// </summary>
-        /// <param name="message"></param>
-        /// <param name="function"></param>
-        /// <param name="parallelJobs"></param>
-        /// <param name="length"></param>
+        /// <param name="message">Message on which the parameter are set</param>
+        /// <param name="function">Function to set</param>
+        /// <param name="parallelJobs">Number of parallel jobs handled by the plc</param>
+        /// <param name="length">PDU length</param>
         private static void AddJobParameter(IMessage message, byte function, ushort parallelJobs, ushort length)
         {
             message.SetAttribute("Function", function);
@@ -118,12 +117,12 @@ namespace Dacs7
         /// <summary>
         /// Add parameter for upload datagram.
         /// </summary>
-        /// <param name="message"></param>
-        /// <param name="function"></param>
-        /// <param name="blockType"></param>
-        /// <param name="blockNumber"></param>
-        /// <param name="length"></param>
-        /// <param name="controlId"></param>
+        /// <param name="message">Message on which the parameter are set</param>
+        /// <param name="function">Function to set</param>
+        /// <param name="blockType"><see cref="PlcBlockType"/></param>
+        /// <param name="blockNumber">number of plc block</param>
+        /// <param name="length">LengthPart1</param>
+        /// <param name="controlId">Reserved2</param>
         private static void AddUploadParameter(IMessage message, byte function, PlcBlockType blockType, int blockNumber, byte length = 0, uint controlId = 0)
         {
             message.SetAttribute("Function", function);
@@ -144,13 +143,13 @@ namespace Dacs7
         /// <summary>
         /// Add parameters for download datagram
         /// </summary>
-        /// <param name="message"></param>
-        /// <param name="function"></param>
-        /// <param name="blockType"></param>
-        /// <param name="blockNumber"></param>
-        /// <param name="loadMemSize"></param>
-        /// <param name="Mc7Size"></param>
-        /// <param name="lastDu"></param>
+        /// <param name="message">Message on which the parameter are set</param>
+        /// <param name="function">Function to set</param>
+        /// <param name="blockType"><see cref="PlcBlockType"/></param>
+        /// <param name="blockNumber">number of plc block</param>
+        /// <param name="loadMemSize">LoadMemLength</param>
+        /// <param name="Mc7Size">Size of mc7Code</param>
+        /// <param name="lastDu">Is last data unit</param>
         private static void AddDownloadParameter(IMessage message, byte function, PlcBlockType blockType, int blockNumber, int loadMemSize, int Mc7Size, bool lastDu = false)
         {
             message.SetAttribute("Function", function);
@@ -207,9 +206,7 @@ namespace Dacs7
             AddReadWriteParameter(msg, (byte)FunctionCode.ReadVar, 1);
             for (var i = 0; i < 1; i++)
             {
-                var size = area == PlcArea.CT || area == PlcArea.TM ? 0x01 : TransportSizeHelper.DataTypeToTransportSize(t);
-                // We convert all to one array, so we use only byte or bit as transport type
-                if (size > 0x03) size = 0x03;
+                var size = isBit || area == PlcArea.CT || area == PlcArea.TM ? (byte)ItemDataTransportSize.Bit : (byte)ItemDataTransportSize.Byte;
 
                 var prefix = $"Item[{i}].";
                 msg.SetAttribute(prefix + "VariableSpecification", (byte)0x12);
@@ -269,14 +266,12 @@ namespace Dacs7
             AddReadWriteParameter(msg, (byte)FunctionCode.WriteVar, Convert.ToByte(numberOfItems));
             var t = data.GetType();
             var enumerable = ConvertDataToByteArray(data);
-            
             var typeLength = TransportSizeHelper.DataTypeToSizeByte(t, area);
+
             for (var i = 0; i < numberOfItems; i++)
             {
-                var size = area == PlcArea.CT || area == PlcArea.TM ? 0x01 : TransportSizeHelper.DataTypeToTransportSize(t);
+                var size = isBool || area == PlcArea.CT || area == PlcArea.TM ? (byte)ItemDataTransportSize.Bit : (byte)ItemDataTransportSize.Byte;
                 var addr = i * typeLength + offset;
-                // We convert all to one array, so we use only byte or bit as transport type
-                if (size > 0x02) size = 0x02;
 
                 var prefix = $"Item[{i}].";
                 msg.SetAttribute(prefix + "VariableSpecification", (byte)0x12);
@@ -301,14 +296,10 @@ namespace Dacs7
 
 
             for (var i = 0; i < numberOfItems; i++)
-            {
-                var size = TransportSizeHelper.DataTypeToResultTransportSize(t);
-                // We convert all to one array, so we use only byte or bit as transport type
-                if (size == 0 || size > 4) size = 4;
-
+            { 
                 var prefix = $"DataItem[{i}].";
                 msg.SetAttribute(prefix + "ItemDataReturnCode", (byte)0x00);      
-                msg.SetAttribute(prefix + "ItemDataTransportSize", (byte)size);
+                msg.SetAttribute(prefix + "ItemDataTransportSize", isBool ? (byte)DataTransportSize.Bit : (byte)DataTransportSize.Byte);
                 msg.SetAttribute(prefix + "ItemDataLength", itemLength);
                 msg.SetAttribute(prefix + "ItemData", isBool ? new byte[] { enumerable[i] } : enumerable);
             }
@@ -326,6 +317,9 @@ namespace Dacs7
             {
                 if ((fullLength % 2) != 0)  fullLength++;
                 fullLength += item.Length;
+
+                //Add string meta data max and current to the length
+                if (item.Type == typeof(string)) fullLength += 2;
             }
 
 
@@ -343,13 +337,14 @@ namespace Dacs7
             index = 0;
             foreach (var opParam in parameters)
             {
-                var size = TransportSizeHelper.DataTypeToResultTransportSize(opParam.Type);
+                var size = opParam.Data is bool ? (byte)DataTransportSize.Bit : (byte)DataTransportSize.Byte;
                 var prefix = string.Format("DataItem[{0}].", index);
                 msg.SetAttribute(prefix + "ItemDataReturnCode", (byte)0x00);
 
+                var data = ConvertDataToByteArray(opParam.Data);
                 msg.SetAttribute(prefix + "ItemDataTransportSize", size);
-                msg.SetAttribute(prefix + "ItemDataLength", (ushort)opParam.Length);
-                msg.SetAttribute(prefix + "ItemData", ConvertDataToByteArray(opParam.Data));
+                msg.SetAttribute(prefix + "ItemDataLength", (ushort)data.Length);
+                msg.SetAttribute(prefix + "ItemData", data);
 
                 index++;
             }
@@ -468,15 +463,22 @@ namespace Dacs7
                         return new byte[] {(bool) data ? (byte) 0x01 : (byte) 0x00};
                     if (data is byte || data is char)
                         return new byte[] {(byte) data};
-                    if(data is Array)
+                    var result = Converter.SetSwap(data);
+                    if (result != null)
+                        return result;
+                    if (data is char[] charEnum)
+                        return charEnum.Select(x => Convert.ToByte(x)).ToArray();
+                    if (data is string stringEnum)
+                        return (new byte[] { (byte)stringEnum.Length, (byte)stringEnum.Length }).Concat(stringEnum.ToCharArray().Select(x => Convert.ToByte(x)).ToArray());
+                    if (data is Array)
                     {
-                        var result = new List<byte>();
+                        var resultL = new List<byte>();
                         var arr = data as Array;
                         foreach (var item in arr)
                         {
-                            result.AddRange(item.SetNoSwap());
+                            resultL.AddRange(item.SetNoSwap());
                         }
-                        return result.ToArray();
+                        return resultL.ToArray();
                     }
                     throw new ArgumentException("Unsupported Type!");
                 }
@@ -488,11 +490,13 @@ namespace Dacs7
         private static void CreateAddressSpecification(IMessage msg, int index, OperationParameter opParam)
         {
             var isBit = opParam.Type == typeof(bool);
+            var isString = opParam.Type == typeof(string);
 
             var offset = opParam.Offset;
             var length = Convert.ToUInt16(opParam.Args.Any() ? opParam.Args[0] : 0);
+            if (isString) length += 2;
             var dbnr = Convert.ToUInt16(opParam.Args.Length > 1 ? opParam.Args[1] : 0);
-            var size = opParam.Area == PlcArea.CT || opParam.Area == PlcArea.TM ? 0x01 : TransportSizeHelper.DataTypeToTransportSize(opParam.Type);
+            var size = isBit || opParam.Area == PlcArea.CT || opParam.Area == PlcArea.TM ? (byte)ItemDataTransportSize.Bit : (byte)ItemDataTransportSize.Byte;
             var prefix = string.Format("Item[{0}].", index);
             msg.SetAttribute(prefix + "VariableSpecification", (byte)0x12);
             const byte specLength = 0x0a;

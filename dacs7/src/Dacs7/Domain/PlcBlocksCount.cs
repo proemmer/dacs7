@@ -1,6 +1,5 @@
 ﻿
 
-using Dacs7.Arch;
 
 namespace Dacs7.Domain
 {

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 
 
-namespace Dacs7.Arch
+namespace Dacs7
 {
     public interface IProtocolPolicy
     {

@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dacs7.Arch;
 using Dacs7.Domain;
 using Dacs7.Helper;
 
-namespace Dacs7.Helper
+namespace Dacs7.Protocols.S7
 {
     public class S7UserDataAckPendingRequestProtocolPolicy : S7UserDataProtocolPolicy
     {
