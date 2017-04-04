@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DCFBD9E3-6789-487F-8392-5E73ACE85648}"
 EndProject
@@ -13,6 +13,8 @@ EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "dacs7", "src\Dacs7\dacs7.xproj", "{7CEF0389-09B9-4F5E-9B1B-8D58B6259BC2}"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "dacs7Cmd", "src\Dacs7Cmd\dacs7Cmd.xproj", "{FCA8366A-56DE-48B1-B985-2BE673CB333B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{AB2DBA20-91FE-498F-9550-F35A8995C453}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

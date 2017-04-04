@@ -50,7 +50,7 @@ namespace Dacs7.Communication
                 CyclicExecutor.Instance.Add(_cycleId, _cycleId, 5000, () =>
                 {
                     CyclicExecutor.Instance.Enabled(_cycleId, false);
-                    if(!IsConnected)
+                    if(!IsConnected && !_shutdown)
                         Open();
                 });
             }

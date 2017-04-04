@@ -70,7 +70,7 @@ namespace Dacs7Cmd
                 new ReadOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}}
             };
 
-            var result = _client.ReadAny(operations); //result is IEnumerable<byte[]>
+            var result = _client.ReadAnyRaw(operations); //result is IEnumerable<byte[]>
 
             var writeOperations = new List<WriteOperationParameter>
             {

@@ -36,6 +36,8 @@ namespace Dacs7
         #region Fields
 
         private readonly object _syncRoot = new object();
+        private Exception _lastConnectException = null;
+        private readonly AutoResetEvent _waitingForPlcConfiguration = new AutoResetEvent(false);
         private readonly UpperProtocolHandlerFactory _upperProtocolHandlerFactory = new UpperProtocolHandlerFactory();
         private readonly Queue<AutoResetEvent> _eventQueue = new Queue<AutoResetEvent>();
         private readonly ReaderWriterLockSlim _queueLockSlim = new ReaderWriterLockSlim();
@@ -52,6 +54,7 @@ namespace Dacs7
         private readonly Dictionary<int, CallbackHandler> _callbacks = new Dictionary<int, CallbackHandler>();
         private string _connectionString = string.Empty;
         private int _timeout = 5000;
+        private int _connectTimeout = 5000;
         private const ushort PduSizeDefault = 960;
         private int _referenceId;
         private readonly object _idLock = new object();
@@ -191,43 +194,13 @@ namespace Dacs7
                 _clientSocket.OnRawDataReceived += OnRawDataReceived;
                 if (_clientSocket.Open())
                 {
-                    //Socket was Connected wait for Upper Protocol
-                    const int sliceSize = 10;
-                    var slice = (_timeout / sliceSize);
-                    for (var i = 0; i < slice; i += sliceSize)
-                    {
-                        Thread.Sleep(sliceSize);
-                        if (_clientSocket.IsConnected)
-                            break;
-                    }
-
-                    //Upper Protocol was connected
-                    if (_clientSocket.IsConnected)
-                    {
-                        var id = GetNextReferenceId();
-                        var reqMsg = S7MessageCreator.CreateCommunicationSetup(id, _maxParallelJobs, PduSize);
-                        var policy = new S7JobSetupProtocolPolicy();
-                        Log(string.Format("Connect: ProtocolDataUnitReference is {0}", id));
-                        PerformeDataExchange(id, reqMsg, policy, (cbh) =>
-                        {
-                            var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
-                            if (errorClass == 0)
-                            {
-                                var data = cbh.ResponseMessage.GetAttribute("ParameterData", new byte[0]);
-                                if (data.Length >= 7)
-                                {
-                                    PduSize = data.GetSwap<UInt16>(5);
-                                    Log(string.Format("Connected: PduSize is {0}", PduSize));
-                                }
-                                return;
-                            }
-                            var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
-                            throw new Dacs7Exception(errorClass, errorCode);
-                        });
-                    }
-                    else
-                        throw new TimeoutException("Timeout while waiting for connection confirmation");
+                    if (!_waitingForPlcConfiguration.WaitOne(_connectTimeout * 2))
+                        throw new TimeoutException("Timeout while waiting for connection established signal");
+                    if (_lastConnectException != null)
+                        throw _lastConnectException;
                 }
+                else
+                    throw new TimeoutException("Timeout while waiting for upper protocol");
             }
         }
 
@@ -293,13 +266,14 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Read data form the given data block number and  address return the red value or the types default
+        /// Read data from the given data block number at the given offset.
+        /// The length of the data will be extracted from the generic parameter.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="dbNumber"></param>
-        /// <param name="offset"></param>
-        /// <param name="length"></param>
-        /// <returns></returns>
+        /// <typeparam name="T">Type of the return value</typeparam>
+        /// <param name="dbNumber">This parameter specifies the number of the data block in the PLC</param>
+        /// <param name="offset">This is the offset to the data you want to read.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <returns>The read value or the default value of the type if the data could not be read.</returns>
         public T ReadAny<T>(int dbNumber, int offset)
         {
             if (!IsConnected)
@@ -314,13 +288,15 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Read data form the given data block number and  address and try convert it to the given dataType
+        /// Read a number of items from the given generic type form the given data block number at the given offset and try convert it to the given dataType.
         /// </summary>
-        /// <typeparam name="T">Elementtype of the resulting enumerable</typeparam>
-        /// <param name="dbNumber"></param>
-        /// <param name="offset"></param>
-        /// <param name="numberOfItems"></param>
-        /// <returns></returns>
+        /// <typeparam name="TElement">Element type of the resulting enumerable</typeparam>
+        /// <param name="dbNumber">This parameter specifies the number of the data block in the PLC</param>
+        /// <param name="offset">This is the offset to the data you want to read.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="numberOfItems">Number of items of the T to read. This could be the string length for a string, or the number of bytes/int for an array and so on. 
+        /// The default value is always 1.</param>
+        /// <returns>A list of TElement</returns>
         public IEnumerable<T> ReadAny<T>(int dbNumber, int offset, int numberOfItems)
         {
             if (!IsConnected)
@@ -378,13 +354,15 @@ namespace Dacs7
 
 
         /// <summary>
-        /// Read data from the plc.
+        /// Read data from the PLC and return them as an array of byte.
         /// </summary>
-        /// <param name="area">Specify the plc area to read.  e.g. IB InputByte</param>
-        /// <param name="offset">Specify the read offset</param>
-        /// <param name="type">Specify the .Net data type for the red data</param>
-        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
-        /// <returns></returns>
+        /// <param name="area">The target <see cref="PlcArea"></see> from which we want to read.</param>
+        /// <param name="offset">This is the offset to the data you want to read.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="type">Specify the .Net data type for the read data, to determine the data size to read</param>
+        /// <param name="args">Arguments depending on the area. First argument is the number of items multiplied by the size of an item to read. If area is DB, second parameter is the db number.
+        /// For example if you will read 500 bytes,  then you have to pass type = typeof(byte) and as first arg you have to pass 500.</param>
+        /// <returns>The read <see cref="T:byte[]"/></returns>
         public byte[] ReadAny(PlcArea area, int offset, Type type, params int[] args)
         {
             if (!IsConnected)
@@ -438,11 +416,11 @@ namespace Dacs7
         }
 
         /// <summary>
-        /// Reade multible variables with one call from the plc
+        /// Read multiple variables with one call from the PLC and return them as a list of the correct read types.
         /// </summary>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        public IEnumerable<byte[]> ReadAny(IEnumerable<ReadOperationParameter> parameters)
+        /// <param name="parameters">A list of <see cref="ReadOperationParameter"/>, so multiple read requests can be handled in one message</param>
+        /// <returns>A list of <see cref="T:object"/> where every list entry contains the read value in order of the given parameter order</returns>
+        public IEnumerable<byte[]> ReadAnyRaw(IEnumerable<ReadOperationParameter> parameters)
         {
             var id = GetNextReferenceId();
             var policy = new S7JobReadProtocolPolicy();
@@ -486,6 +464,65 @@ namespace Dacs7
             if (currentData == null)
                 throw new InvalidDataException("Returned data are null");
             return currentData;
+        }
+
+        /// <summary>
+        /// Read multiple variables with one call from the PLC and return them as a list of the correct read types.
+        /// </summary>
+        /// <param name="parameters">A list of <see cref="ReadOperationParameter"/>, so multiple read requests can be handled in one message</param>
+        /// <returns>A list of <see cref="T:object"/> where every list entry contains the read value in order of the given parameter order</returns>
+        public IEnumerable<object> ReadAny(IEnumerable<ReadOperationParameter> parameters)
+        {
+            var readResult = ReadAnyRaw(parameters).ToArray();
+            var resultList = new List<object>();
+            int current = 0;
+            foreach (var param in parameters)
+            {
+                var data = readResult[current++];
+                var t = param.Type;
+                var isBool = t == typeof(bool);
+                var isString = t == typeof(string);
+                var readType = typeof(byte);
+                var numberOfItems = param.Args != null && param.Args.Length > 0 ? param.Args[0] : 1;
+                var elementLength = isBool ? 1 : (isString ? numberOfItems + 2 : Marshal.SizeOf(t));
+                var originOffset = param.Offset;
+
+
+                if (isString)
+                {
+                    string s = string.Empty;
+                    if (data.Length > 2)
+                    {
+                        var length = (int)data[1];
+                        if (length > data.Length - 2)
+                            s = string.Empty; // INVALID DATA
+                        else
+                            s = new String(data.Skip(2).Select(x => Convert.ToChar(x)).ToArray()).Substring(0, length);
+                    }
+                    resultList.Add(Convert.ChangeType(s, t));
+                }
+                else if (t != typeof(byte) && t != typeof(char) && numberOfItems > 1)
+                {
+                    var result = new List<object>();
+                    var array = data as byte[];
+                    var byteOffet = 0;
+                    var bitOffset = originOffset % 8;
+                    for (int i = 0; i < numberOfItems; i += elementLength)
+                    {
+                        result.Add(isBool ?
+                            Convert.ChangeType(array[byteOffet].GetBit(bitOffset + i), t) :
+                            data.ConvertTo(t, i));
+                    }
+                    resultList.Add(result);
+                }
+                else if (t == typeof(byte) || t == typeof(char))
+                {
+                    resultList.Add(Convert.ChangeType(data[0], t));
+                }
+                else
+                    resultList.Add(data.ConvertTo(t));
+            }
+            return resultList;
         }
 
 
@@ -1389,11 +1426,65 @@ namespace Dacs7
 
         private void OnClientStateChanged(string socketHandle, bool connected)
         {
-            if (connected)
-                _upperProtocolHandlerFactory.OnConnected();
             EventHandler?.Invoke(this, new PlcConnectionNotificationEventArgs(socketHandle, connected));
             Log(string.Format("OnClientStateChanged to {0}.", connected ? "connected" : "disconnected"));
+            if (connected)
+                Task.Factory.StartNew(() => ConfigurePlcConnection());
         }
+
+
+        private void ConfigurePlcConnection()
+        {
+            try
+            {
+                _lastConnectException = null;
+                _upperProtocolHandlerFactory.OnConnected();
+
+                //Socket was Connected wait for Upper Protocol
+                const int sliceSize = 10;
+                var slice = (_timeout / sliceSize);
+                for (var i = 0; i < slice; i += sliceSize)
+                {
+                    Thread.Sleep(sliceSize);
+                    if (_clientSocket.IsConnected)
+                        break;
+                }
+
+                //Upper Protocol was connected
+                if (_clientSocket.IsConnected)
+                {
+                    var id = GetNextReferenceId();
+                    var reqMsg = S7MessageCreator.CreateCommunicationSetup(id, _maxParallelJobs, PduSize);
+                    var policy = new S7JobSetupProtocolPolicy();
+                    Log(string.Format("Connect: ProtocolDataUnitReference is {0}", id));
+                    PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+                    {
+                        var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
+                        if (errorClass == 0)
+                        {
+                            var data = cbh.ResponseMessage.GetAttribute("ParameterData", new byte[0]);
+                            if (data.Length >= 7)
+                            {
+                                PduSize = data.GetSwap<UInt16>(5);
+                                Log(string.Format("Connected: PduSize is {0}", PduSize));
+                            }
+                            return;
+                        }
+                        var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
+                        throw new Dacs7Exception(errorClass, errorCode);
+                    });
+                }
+                else
+                    throw new TimeoutException("Timeout while waiting for connection confirmation");
+            }
+            catch (Exception ex)
+            {
+                _lastConnectException = ex;
+                Log(string.Format("ConfigurePlcConnection: Exception occurred {0}", ex.Message));
+            }
+            _waitingForPlcConfiguration.Set();
+        }
+
 
         private void OnRawDataReceived(string socketHandle, IEnumerable<byte> buffer)
         {
@@ -1504,6 +1595,7 @@ namespace Dacs7
                     _parameter.GetParameter("Rack", ConnectionParameters.DefaultRack),
                     _parameter.GetParameter("Slot", ConnectionParameters.DefaultSlot)),
                  PduSize));
+            _lastConnectException = null;
         }
 
         private UInt16 GetNextReferenceId()
