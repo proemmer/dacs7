@@ -1,3 +1,5 @@
+[![insite MyGet Build Status](https://www.myget.org/BuildSource/Badge/insite?identifier=1f729347-9ff3-4bb4-bcad-5be664a807c9)](https://www.myget.org/)
+
 # dacs7
 
 Data access S7 is a library to connect to S7 plcs for reading and writing data.
