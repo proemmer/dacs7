@@ -92,6 +92,10 @@ public static void MultiValuesSample()
 
 
 # Release Notes
+* 1.0.6:
+    * migrated to VS2017 and C#7.
+    * Fixed a bug in auto reconnect.
+    * Refactoring
 * 1.0.5:
     * fix a bug in generic read methods when reading bits.
 * 1.0.4:  
