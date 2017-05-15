@@ -227,7 +227,7 @@ Assert.AreEqual("TEST", result[2]);
 
 ## Additional TIA Settings (1200 and 1500 CPUs)
 
-###DB Properties
+### DB Properties
 
 Select the DB in the left pane under 'Program blocks' and click 'Properties' in the context menu.
 
