@@ -10,6 +10,8 @@ using Xunit;
 
 namespace Dacs7Tests
 {
+
+#if TEST_PLC
     public class PerformanceTest
     {
 
@@ -57,4 +59,6 @@ namespace Dacs7Tests
             client.Disconnect();
         }
     }
+
+#endif
 }

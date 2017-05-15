@@ -12,6 +12,9 @@ using Dacs7.Protocols.S7;
 
 namespace Dacs7Tests
 {
+
+#if TEST_PLC
+
     public class Dacs7ClientTests
     {
         //private const string Ip = "127.0.0.1";//"127.0.0.1";
@@ -647,7 +650,7 @@ namespace Dacs7Tests
         }
 
 
-#if REAL_PLC 
+#if REAL_PLC
 
         
         [Fact]
@@ -818,4 +821,6 @@ namespace Dacs7Tests
 
 
     }
+
+#endif
 }
