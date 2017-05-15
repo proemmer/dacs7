@@ -421,46 +421,54 @@ namespace Dacs7
         {
             var id = GetNextReferenceId();
             var policy = new S7JobReadProtocolPolicy();
-            var packageLength = parameters.Sum(x => x.Length);
-            var numOfItems = parameters.Count();
+            var readResult = new List<byte[]>();
 
-            if ((PduSize < (12 + packageLength + numOfItems * 4))) // 12 = header  4 header per Item
-                throw new Dacs7ToMuchDataPerCallException(ItemReadSlice, packageLength);
-
-            var reqMsg = S7MessageCreator.CreateReadRequests(id, parameters);
-            Log(string.Format("ReadAny: ProtocolDataUnitReference is {0}", id));
-            var currentData = PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+            foreach (var part in GetOperationParts(parameters))
             {
-                var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
-                if (errorClass == 0)
-                {
-                    var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
-                    if (items > 1)
-                    {
-                        var result = new List<byte[]>();
-                        for (var i = 0; i < items; i++)
-                        {
-                            var item = new List<byte>();
-                            var returnCode = cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemReturnCode", i), (byte)0);
-                            if (returnCode == 0xFF)
-                                result.Add(cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemData", i), new byte[0]));
-                            else
-                                throw new Dacs7ReturnCodeException(returnCode, i);
-                        }
-                        return result;
-                    }
-                    var firstReturnCode = cbh.ResponseMessage.GetAttribute("Item[0].ItemReturnCode", (byte)0);
-                    if (firstReturnCode == 0xFF)
-                        return new List<byte[]> { cbh.ResponseMessage.GetAttribute("Item[0].ItemData", new byte[0]) };
-                    throw new Dacs7ContentException(firstReturnCode, 0);
-                }
-                var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
-                throw new Dacs7Exception(errorClass, errorCode);
-            }) as List<byte[]>;
+                var reqMsg = S7MessageCreator.CreateReadRequests(id, part);
 
-            if (currentData == null)
+                //check the created message size!
+                var currentPackageSize = reqMsg.GetAttribute("ParamLength", (ushort)0) + reqMsg.GetAttribute("DataLength", (ushort)0);
+                if (PduSize < currentPackageSize)
+                    throw new Dacs7ToMuchDataPerCallException(ItemReadSlice, currentPackageSize);
+
+                Log(string.Format("ReadAny: ProtocolDataUnitReference is {0}", id));
+
+                if (PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+                {
+                    var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
+                    if (errorClass == 0)
+                    {
+                        var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
+                        if (items > 1)
+                        {
+                            var result = new List<byte[]>();
+                            for (var i = 0; i < items; i++)
+                            {
+                                var item = new List<byte>();
+                                var returnCode = cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemReturnCode", i), (byte)0);
+                                if (returnCode == 0xFF)
+                                    result.Add(cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemData", i), new byte[0]));
+                                else
+                                    throw new Dacs7ReturnCodeException(returnCode, i);
+                            }
+                            return result;
+                        }
+                        var firstReturnCode = cbh.ResponseMessage.GetAttribute("Item[0].ItemReturnCode", (byte)0);
+                        if (firstReturnCode == 0xFF)
+                            return new List<byte[]> { cbh.ResponseMessage.GetAttribute("Item[0].ItemData", new byte[0]) };
+                        throw new Dacs7ContentException(firstReturnCode, 0);
+                    }
+                    var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
+                    throw new Dacs7Exception(errorClass, errorCode);
+                }) is List<byte[]> currentData)
+                    readResult.AddRange(currentData);
+                else
+                    throw new InvalidDataException("Returned data are null");
+            }
+            if (readResult == null || !readResult.Any())
                 throw new InvalidDataException("Returned data are null");
-            return currentData;
+            return readResult;
         }
 
         /// <summary>
@@ -858,32 +866,36 @@ namespace Dacs7
         {
             var id = GetNextReferenceId();
             var policy = new S7JobWriteProtocolPolicy();
-
-            var numOfItems = parameters.Count();
-            var packageLength = parameters.Sum(x => x.Length);
-            if (PduSize < (12 + packageLength + numOfItems * 15)) // 12 = header  15 header per Item
-                throw new Dacs7ToMuchDataPerCallException(ItemReadSlice, packageLength);
-
-            var reqMsg = S7MessageCreator.CreateWriteRequests(id, parameters);
-            Log(string.Format("WriteAny: ProtocolDataUnitReference is {0}", id));
-            PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+            foreach (var item in GetOperationParts(parameters))
             {
-                var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
-                if (errorClass == 0x00)
+                var reqMsg = S7MessageCreator.CreateWriteRequests(id, item);
+
+                //check the created message size!
+                var currentPackageSize = reqMsg.GetAttribute("ParamLength", (ushort)0) + reqMsg.GetAttribute("DataLength", (ushort)0);
+                if (PduSize < currentPackageSize)
+                    throw new Dacs7ToMuchDataPerCallException(ItemReadSlice, currentPackageSize);
+
+
+                Log(string.Format("WriteAny: ProtocolDataUnitReference is {0}", id));
+                PerformeDataExchange(id, reqMsg, policy, (cbh) =>
                 {
-                    var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
-                    for (var i = 0; i < items; i++)
+                    var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
+                    if (errorClass == 0x00)
                     {
-                        var returnCode = cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemReturnCode", i), (byte)0);
-                        if (returnCode != 0xff)
-                            throw new Dacs7ContentException(returnCode, i);
-                    }
+                        var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
+                        for (var i = 0; i < items; i++)
+                        {
+                            var returnCode = cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemReturnCode", i), (byte)0);
+                            if (returnCode != 0xff)
+                                throw new Dacs7ContentException(returnCode, i);
+                        }
                     //all write operations are successfully
                     return;
-                }
-                var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
-                throw new Dacs7Exception(errorClass, errorCode);
-            });
+                    }
+                    var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
+                    throw new Dacs7Exception(errorClass, errorCode);
+                });
+            }
         }
 
 
@@ -1840,25 +1852,43 @@ namespace Dacs7
             return msg.GetAttribute(string.Format(subItemName, "Timestamp"), DateTime.MinValue);
         }
 
-        //private static object ConvertTo<T>(byte[] data, T instance, int length, int offset = 0)
-        //{
-        //    if (length == 0)
-        //    {
-        //        if (instance is bool)
-        //            return data[0] == 0x01;
 
-        //        if (instance is byte)
-        //            return data[0];
+        /// <summary>
+        /// Splits the operations into parts if necessary
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="parameters">All parameters requested</param>
+        /// <returns></returns>
+        private List<IEnumerable<T>> GetOperationParts<T>(IEnumerable<T> parameters) where T : OperationParameter
+        {
+            const int headerSize = 12; // 10 Job header + 2 Parameter //  12 item header size
+            var currentSize = headerSize;
+            var currentPackage = new List<T>();
+            var result = new List<IEnumerable<T>> { currentPackage };
+            foreach (var parameter in parameters)
+            {
+                var itemSize = headerSize;
 
-        //        return data;
-        //    }
+                if (parameter is WriteOperationParameter)
+                {
+                    itemSize += 4 + parameter.Length;  // Data header = 4
+                    if (parameter.Type == typeof(string))
+                        itemSize += 2;
 
-        //    const int typeSize = 1;
-        //    var result = new List<T>();
-        //    for (var i = 0; i < data.Length; i += typeSize)
-        //        result.Add((T)ConvertTo(data, instance, 0, i));
-        //    return result.ToArray<T>();
-        //}
+                    if (itemSize % 2 != 0) itemSize++;
+                }
+
+                currentSize = currentSize + itemSize;
+                if (PduSize <= currentSize)
+                {
+                    currentSize = headerSize + itemSize; // reset size
+                    currentPackage = new List<T>(); // create new package
+                    result.Add(currentPackage); // add it to result
+                }
+                currentPackage.Add(parameter);
+            }
+            return result;
+        }
 
         private static object ExtractData(object data, int offset = 0, int length = Int32.MaxValue)
         {

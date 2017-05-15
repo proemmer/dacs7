@@ -14,7 +14,8 @@ namespace Dacs7Tests
 {
     public class Dacs7ClientTests
     {
-        private const string Ip = "127.0.0.1";//"127.0.0.1";
+        //private const string Ip = "127.0.0.1";//"127.0.0.1";
+        private const string Ip = "192.168.0.148";
         //private const string Ip = "192.168.1.10";//"127.0.0.1";
         private const string ConnectionString = "Data Source=" + Ip + ":102,0,2"; //"Data Source=192.168.1.10:102,0,2";
         private const int TestDbNr = 250;
@@ -81,6 +82,75 @@ namespace Dacs7Tests
             client.Connect(ConnectionString);
             client.WriteAny(writeOperations);
             var result = client.ReadAnyRaw(operations);
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+
+        [Fact]
+        public void TestaBunchOfMultiReads()
+        {
+            var db = 10;
+            var operations = new List<ReadOperationParameter>
+            {
+                new ReadOperationParameter{Area = PlcArea.DB, Offset= 0, Type=typeof(byte), Args = new int[]{1, db}},
+                new ReadOperationParameter{Area = PlcArea.DB, Offset= 1, Type=typeof(bool), Args = new int[]{1, db}},
+            };
+
+            for (int i = 0; i < 100; i++)
+            {
+                operations.Add(new ReadOperationParameter { Area = PlcArea.DB, Offset = 1 + i, Type = typeof(bool), Args = new int[] { 1, db } });
+            }
+
+            var client = new Dacs7Client();
+            client.Connect(ConnectionString);
+            var result = client.ReadAnyRaw(operations);
+            Assert.Equal(operations.Count(), result.Count());
+
+            operations.RemoveAt(0);
+            result = client.ReadAnyRaw(operations);
+            Assert.Equal(operations.Count(), result.Count());
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public void TestaBunchOfMultiWrites()
+        {
+            var db = 11;
+            var operations = new List<WriteOperationParameter>();
+            var readOperations = new List<ReadOperationParameter>();
+
+
+            for (int i = 0; i < 100; i++)
+            {
+                operations.Add(new WriteOperationParameter { Area = PlcArea.DB, Offset = i, Type = typeof(bool), Args = new int[] { 1, db }, Data = false });
+                readOperations.Add(new ReadOperationParameter { Area = PlcArea.DB, Offset = i, Type = typeof(bool), Args = new int[] { 1, db } });
+            }
+
+            var client = new Dacs7Client();
+            client.Connect(ConnectionString);
+
+
+            //Reset to false
+            client.WriteAny(operations);
+            var result = client.ReadAny(readOperations).ToList();
+            for (int i = 0; i < operations.Count; i++)
+            {
+                operations[i].Data = !((bool)result[i]);
+            }
+
+            client.WriteAny(operations);
+            result = client.ReadAny(readOperations).ToList();
+            for (int i = 0; i < operations.Count; i++)
+            {
+                Assert.Equal((bool)operations[i].Data, ((bool)result[i]));
+            }
+
+
+            operations.RemoveAt(0);
+            client.WriteAny(operations);
+
             client.Disconnect();
             Assert.False(client.IsConnected);
         }
