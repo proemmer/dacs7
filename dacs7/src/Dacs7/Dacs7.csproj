@@ -10,7 +10,8 @@
     <AssemblyName>Dacs7</AssemblyName>
     <PackageId>Dacs7</PackageId>
     <PackageTags>siemens plc S7</PackageTags>
-    <PackageReleaseNotes>Migrate to VS2017 and refactor the lib according to C#7</PackageReleaseNotes>
+    <PackageReleaseNotes>* Fixed a bug in Alarm Ack detection, because of transport size calculation
+* Improved multi read and write with auto adjustment of data size.</PackageReleaseNotes>
     <PackageProjectUrl>http://proemmer.github.io/dacs7</PackageProjectUrl>
     <PackageLicenseUrl>https://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
@@ -23,7 +24,7 @@
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
     <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>1.0.6</Version>
+    <Version>1.0.7</Version>
   </PropertyGroup>
 
   <ItemGroup>

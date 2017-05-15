@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("insite GmbH")]
 [assembly: AssemblyProduct("Dacs7")]
-[assembly: AssemblyCopyright("Copyright © insite GmbH 2016")]
+[assembly: AssemblyCopyright("Copyright © insite GmbH 2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
