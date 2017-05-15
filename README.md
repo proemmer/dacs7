@@ -249,6 +249,9 @@ Select the CPU in the left pane and click 'Properties' in the context menu and g
 
 
 # Release Notes
+* 1.0.7:
+	* Fixed a bug in Alarm Ack detection, because of transport size calculation
+	* Improved multi read and write with auto adjustment of data size.
 * 1.0.6:
     * migrated to VS2017 and C#7.
     * Fixed a bug in auto reconnect.
