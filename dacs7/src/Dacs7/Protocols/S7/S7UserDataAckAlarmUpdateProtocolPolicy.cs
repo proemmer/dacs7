@@ -54,7 +54,7 @@ namespace Dacs7.Protocols.S7
                         var transportSize = sslData[offset += 1];
                         var subItemLength = sslData.GetSwap<UInt16>(offset += 1);
                         offset += 2;
-                        var lengthInByte = transportSize == 3 || transportSize == 4 ? subItemLength/8 : subItemLength;
+                        var lengthInByte = transportSize <= (int)DataTransportSize.Int ? subItemLength / 8 : subItemLength;
 
                         message.SetAttribute(string.Format(subItemExtended, "TransportSize"), transportSize);
                         message.SetAttribute(string.Format(subItemExtended, "AssotiatedValueLength"), lengthInByte);
