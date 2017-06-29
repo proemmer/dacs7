@@ -95,7 +95,7 @@ namespace Dacs7.Domain
         L7InvalidReqStatus =    0xD803
     }
 
-    public enum ItemResponseRetVaulue : byte
+    public enum ItemResponseRetValue : byte
     {
         Reserved = 0x00,
         [Description("Hardware error")]

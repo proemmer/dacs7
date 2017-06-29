@@ -58,12 +58,12 @@ namespace Dacs7
     public class Dacs7ContentException : Exception
     {
         public int ErrorIndex { get; private set; }
-        public ItemResponseRetVaulue ErrorCode { get; private set; }
+        public ItemResponseRetValue ErrorCode { get; private set; }
 
         public Dacs7ContentException(byte errorCode, int itemIndex) : 
-            base($"No success return code form item {itemIndex}: <{Dacs7Exception.ResolveErrorCode<ItemResponseRetVaulue>(errorCode)}>")
+            base($"No success return code from item {itemIndex}: <{Dacs7Exception.ResolveErrorCode<ItemResponseRetValue>(errorCode)}>")
         {
-            ErrorCode = (ItemResponseRetVaulue) errorCode;
+            ErrorCode = (ItemResponseRetValue) errorCode;
             ErrorIndex = itemIndex;
         }
     }
@@ -95,7 +95,7 @@ namespace Dacs7
     public class Dacs7ToMuchDataPerCallException : Exception
     {
         public Dacs7ToMuchDataPerCallException(int expected, int actual) :
-            base(string.Format("There are to much data ({0} bytes) for a single job, please split jobs to a maximum of {1} per call!", actual, expected))
+            base(string.Format("There is too much data ({0} bytes) for a single job, please split jobs to a maximum of {1} bytes per call!", actual, expected))
         {
         }
     }

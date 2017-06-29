@@ -184,7 +184,7 @@ namespace Dacs7
 
         private static void AddData(IMessage message, byte[] data)
         {
-            message.SetAttribute("ReturnCode", data.Length > 0 ? (byte)ItemResponseRetVaulue.DataOk : (byte)ItemResponseRetVaulue.DataError);
+            message.SetAttribute("ReturnCode", data.Length > 0 ? (byte)ItemResponseRetValue.DataOk : (byte)ItemResponseRetValue.DataError);
             message.SetAttribute("TransportSize", data.Length > 0 ? (byte)DataTransportSize.OctetString : (byte)DataTransportSize.Null);
             message.SetAttribute("UserDataLength", (ushort)data.Length);
             message.SetAttribute("SSLData", data);
