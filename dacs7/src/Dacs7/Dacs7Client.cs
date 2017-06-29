@@ -146,6 +146,19 @@ namespace Dacs7
         #endregion
 
         /// <summary>
+        /// Client constructor to register acknowledge policies.
+        /// </summary>
+        public Dacs7Client()
+        {
+            // Register needed ack policies
+            new S7AckDataProtocolPolicy();
+            new S7ReadJobAckDataProtocolPolicy();
+            new S7WriteJobAckDataProtocolPolicy();
+            new S7UserDataAckAlarmUpdateProtocolPolicy();
+            new S7UserDataAckPendingRequestProtocolPolicy();
+        }
+
+        /// <summary>
         /// Finalizer to free the locks
         /// </summary>
         ~Dacs7Client()
