@@ -187,7 +187,7 @@ namespace Dacs7
                 if (!IsConnected)
                     Disconnect();
 
-                AssigneParameter();
+                AssignParameters();
                 _clientSocket.OnConnectionStateChanged += OnClientStateChanged;
                 _clientSocket.OnRawDataReceived += OnRawDataReceived;
                 if (_clientSocket.Open())
@@ -377,7 +377,7 @@ namespace Dacs7
                 var reqMsg = S7MessageCreator.CreateReadRequest(id, area, dbNr, offset + j, readLength, type);
                 Log($"ReadAny: ProtocolDataUnitReference is {id}");
 
-                if (PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+                if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
                     var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
                     if (errorClass == 0)
@@ -434,7 +434,7 @@ namespace Dacs7
 
                 Log(string.Format("ReadAny: ProtocolDataUnitReference is {0}", id));
 
-                if (PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+                if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
                     var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
                     if (errorClass == 0)
@@ -716,7 +716,7 @@ namespace Dacs7
                 var writeLength = Math.Min(ItemWriteSlice, packageLength);
                 var reqMsg = S7MessageCreator.CreateWriteRequest(id, area, dbNr, offset + j, writeLength, isToExtract ? ExtractData(value, j, writeLength) : value);
                 Log($"WriteAny: ProtocolDataUnitReference is {id}");
-                PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+                PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
                     var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
                     if (errorClass == 0x00)
@@ -877,7 +877,7 @@ namespace Dacs7
 
 
                 Log(string.Format("WriteAny: ProtocolDataUnitReference is {0}", id));
-                PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+                PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
                     var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
                     if (errorClass == 0x00)
@@ -911,7 +911,7 @@ namespace Dacs7
             var reqMsg = S7MessageCreator.CreateBlocksCountRequest(id);
             var policy = new S7UserDataProtocolPolicy();
             Log($"GetBlocksCount: ProtocolDataUnitReference is {id}");
-            return PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+            return PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0);
                 if (errorCode == 0)
@@ -996,7 +996,7 @@ namespace Dacs7
             {
                 var reqMsg = S7MessageCreator.CreateBlocksOfTypeRequest(id, type, sequenceNumber);
 
-                if (PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+                if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
                     var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0);
                     if (errorCode == 0)
@@ -1059,7 +1059,7 @@ namespace Dacs7
             var reqMsg = S7MessageCreator.CreateBlockInfoRequest(id, blockType, blocknumber);
             var policy = new S7UserDataProtocolPolicy();
             Log($"ReadBlockInfo: ProtocolDataUnitReference is {id}");
-            return PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+            return PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0);
                 if (errorCode == 0)
@@ -1118,7 +1118,7 @@ namespace Dacs7
             //Start Upload
             var reqMsg = S7MessageCreator.CreateStartUploadRequest(id, blockType, blocknumber);
             uint controlId = 0;
-            PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+            PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
                 if (errorClass == 0x00)
@@ -1145,7 +1145,7 @@ namespace Dacs7
             do
             {
                 hasNext = false;
-                PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+                PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
                     var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
                     if (errorClass == 0x00)
@@ -1169,7 +1169,7 @@ namespace Dacs7
 
 
             reqMsg = S7MessageCreator.CreateEndUploadRequest(id, blockType, blocknumber, controlId);
-            PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+            PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
                 if (errorClass == 0x00)
@@ -1285,7 +1285,7 @@ namespace Dacs7
             {
                 var reqMsg = S7MessageCreator.CreatePendingAlarmRequest(id, sequenceNumber);
 
-                if (PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+                if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
                     var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0);
                     if (errorCode == 0)
@@ -1355,7 +1355,7 @@ namespace Dacs7
             var reqMsg = S7MessageCreator.CreateAlarmCallbackRequest(id);
             var policy = new S7UserDataProtocolPolicy();
             Log($"RegisterAlarmUpdateCallback: ProtocolDataUnitReference is {id}");
-            return (ushort)PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+            return (ushort)PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0xff);
                 if (errorCode == 0)
@@ -1439,7 +1439,7 @@ namespace Dacs7
             var reqMsg = S7MessageCreator.CreateReadClockRequest(id);
             var policy = new S7UserDataProtocolPolicy();
             Log($"GetPlcTime: ProtocolDataUnitReference is {id}");
-            return (DateTime)PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+            return (DateTime)PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0);
                 if (errorCode == 0)
@@ -1503,7 +1503,7 @@ namespace Dacs7
                     var reqMsg = S7MessageCreator.CreateCommunicationSetup(id, _maxParallelJobs, PduSize);
                     var policy = new S7JobSetupProtocolPolicy();
                     Log(string.Format("Connect: ProtocolDataUnitReference is {0}", id));
-                    PerformeDataExchange(id, reqMsg, policy, (cbh) =>
+                    PerformDataExchange(id, reqMsg, policy, (cbh) =>
                     {
                         var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
                         if (errorClass == 0)
@@ -1607,7 +1607,7 @@ namespace Dacs7
             }
         }
 
-        private void AssigneParameter()
+        private void AssignParameters()
         {
             _timeout = _parameter.GetParameter("Receive Timeout", 5000);
             _maxParallelJobs = _parameter.GetParameter("Maximum Parallel Jobs", (ushort)1);  //Used by simatic manager -> best performance with 1
@@ -1670,7 +1670,7 @@ namespace Dacs7
             OnLogEntry?.Invoke(message);
         }
 
-        private object PerformeDataExchange(ushort id, IMessage msg, IProtocolPolicy policy, Func<CallbackHandler, object> func)
+        private object PerformDataExchange(ushort id, IMessage msg, IProtocolPolicy policy, Func<CallbackHandler, object> func)
         {
             try
             {
@@ -1686,7 +1686,7 @@ namespace Dacs7
                         throw new Exception("There was no response message created!");
                 }
                 else
-                    throw new TimeoutException("Timeout while waiting for Response.");
+                    throw new TimeoutException("Timeout while waiting for response.");
             }
             finally
             {
@@ -1694,7 +1694,7 @@ namespace Dacs7
             }
         }
 
-        private void PerformeDataExchange(ushort id, IMessage msg, IProtocolPolicy policy, Action<CallbackHandler> action)
+        private void PerformDataExchange(ushort id, IMessage msg, IProtocolPolicy policy, Action<CallbackHandler> action)
         {
             try
             {
@@ -1709,10 +1709,10 @@ namespace Dacs7
                     }
                     if (cbh.OccuredException != null)
                         throw cbh.OccuredException;
-                    throw new Exception("No Response message was been created!");
+                    throw new Exception("No response message was been created!");
                 }
                 else
-                    throw new TimeoutException("Timeout while waiting for Response.");
+                    throw new TimeoutException("Timeout while waiting for response.");
             }
             finally
             {
