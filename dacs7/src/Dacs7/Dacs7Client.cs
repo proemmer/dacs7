@@ -378,52 +378,16 @@ namespace Dacs7
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
-            var id = GetNextReferenceId();
-            var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
-            var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
-            var policy = new S7JobReadProtocolPolicy();
-            var packageLength = length;
+            SetupReadParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
             var readResult = new List<byte>();
-            for (var j = 0; j < length; j += ItemReadSlice)
+            GetReadOperations(offset, length).ForEach(item => 
             {
-                var readLength = Math.Min(ItemReadSlice, packageLength);
-                var reqMsg = S7MessageCreator.CreateReadRequest(id, area, dbNr, offset + j, readLength, type);
-                Log($"ReadAny: ProtocolDataUnitReference is {id}");
-
-                if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
-                {
-                    var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
-                    if (errorClass == 0)
-                    {
-                        var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
-                        if (items > 1)
-                        {
-                            var result = new List<object>();
-                            for (var i = 0; i < items; i++)
-                            {
-                                var returnCode = cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemReturnCode", (byte)0);
-                                if (returnCode == 0xFF)
-                                    result.Add(cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemData", new byte[0]));
-                                else
-                                    throw new Dacs7ReturnCodeException(returnCode, i);
-                            }
-                            return result;
-                        }
-                        var firstReturnCode = cbh.ResponseMessage.GetAttribute("Item[0].ItemReturnCode", (byte)0);
-                        if (firstReturnCode == 0xFF)
-                            return cbh.ResponseMessage.GetAttribute("Item[0].ItemData", new byte[0]);
-                        throw new Dacs7ContentException(firstReturnCode, 0);
-                    }
-                    var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
-                    throw new Dacs7Exception(errorClass, errorCode);
-                }) is byte[] currentData)
-                    readResult.AddRange(currentData);
-                else
-                    throw new InvalidDataException("Returned data are null");
-                packageLength -= ItemReadSlice;
-            }
+                ProcessReadOperation(area, offset, type, id, dbNr, policy, item);
+                readResult.AddRange(item.Data as byte[]);
+            });
             return readResult.ToArray<byte>();
         }
+
 
         /// <summary>
         /// Read multiple variables with one call from the PLC and return them as a list of the correct read types.
@@ -555,29 +519,29 @@ namespace Dacs7
         /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
         /// <returns></returns>
         /// http://www.tugberkugurlu.com/archive/how-and-where-concurrent-asynchronous-io-with-asp-net-web-api
-        private byte[] ReadAnyPartsAsync(PlcArea area, int offset, Type type, params int[] args)
+        private async Task<byte[]> ReadAnyPartsAsync(PlcArea area, int offset, Type type, params int[] args)
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
             try
             {
-                var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
-                var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
-                var packageLength = length;
-                var readResult = new List<byte>();
+                SetupReadParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
+                
                 var requests = new List<Task<byte[]>>();
-                for (var j = 0; j < length; j += ItemReadSlice)
+                GetReadOperations(offset, length).ForEach(item =>
                 {
-                    while (_currentNumberOfPendingCalls >= _maxParallelCalls)
-                        Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
-                    var readLength = Math.Min(ItemReadSlice, packageLength);
-                    var readOffset = offset + j;
-                    requests.Add(Task.Factory.StartNew(() => ReadAny(area, readOffset, type, new int[] { readLength, dbNr }), _taskCreationOptions));
-                    packageLength -= ItemReadSlice;
-                }
+                    requests.Add(Task.Factory.StartNew(() =>
+                    {
+                        while (_currentNumberOfPendingCalls >= _maxParallelCalls)
+                            Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
+                        ProcessReadOperation(area, offset, type, id, dbNr, policy, item);
+                        return item.Data as byte[];
+                    }, _taskCreationOptions));
+                });
 
-                Task.WaitAll(requests.ToArray());
+                await Task.WhenAll(requests.ToArray());
 
+                var readResult = new List<byte>();
                 foreach (var result in requests.Select(request => request.Result as byte[]))
                 {
                     if (result != null)
@@ -611,29 +575,18 @@ namespace Dacs7
                 throw new Dacs7NotConnectedException();
             try
             {
-                var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
-                var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
-                var packageLength = length;
-                var readResult = new List<byte>();
-                var results = new Dictionary<int, byte[]>();
-                var requests = new List<Tuple<int, int, int>>();
-                for (var j = 0; j < length; j += ItemReadSlice)
-                {
-                    var readLength = Math.Min(ItemReadSlice, packageLength);
-                    requests.Add(new Tuple<int, int, int>(j, offset + j, readLength));
-                    packageLength -= ItemReadSlice;
-                }
+                SetupReadParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
+                var items = GetReadOperations(offset, length);
+                Parallel.ForEach(items, item => ProcessReadOperation(area, offset, type, id, dbNr, policy, item));
 
-                foreach (var result in requests.AsParallel().Select(result => new KeyValuePair<int, byte[]>(result.Item1, ReadAny(area, result.Item2, type, new int[] { result.Item3, dbNr }) as byte[])))
+                var readResult = new List<byte>();
+                foreach (var result in items.OrderBy(x => x.DataOffset).Select(x => x.Data as byte[]))
                 {
-                    if (result.Value != null)
-                        results.Add(result.Key, result.Value);
+                    if (result != null)
+                        readResult.AddRange(result);
                     else
                         throw new InvalidDataException("Returned data are null");
                 }
-
-                foreach (var result in results.OrderBy(x => x.Key).Select(x => x.Value))
-                    readResult.AddRange(result);
 
                 return readResult.ToArray<byte>();
             }
@@ -657,11 +610,9 @@ namespace Dacs7
         /// <returns></returns>
         public Task<byte[]> ReadAnyAsync(PlcArea area, int offset, Type type, params int[] args)
         {
-            return Task.Factory.StartNew(() =>
-                _maxParallelCalls <= 1 ?
-                ReadAny(area, offset, type, args) :
-                ReadAnyPartsAsync(area, offset, type, args),
-                _taskCreationOptions);
+            return  _maxParallelCalls <= 1 ?
+                Task.Factory.StartNew(() => ReadAny(area, offset, type, args), _taskCreationOptions) :
+                ReadAnyPartsAsync(area, offset, type, args);
         }
 
         /// <summary>
@@ -718,37 +669,8 @@ namespace Dacs7
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
 
-            var id = GetNextReferenceId();
-            var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
-            var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
-            var policy = new S7JobWriteProtocolPolicy();
-            var packageLength = length;
-            var isToExtract = length > ItemWriteSlice;
-            for (var j = 0; j < length; j += ItemWriteSlice)
-            {
-                var writeLength = Math.Min(ItemWriteSlice, packageLength);
-                var reqMsg = S7MessageCreator.CreateWriteRequest(id, area, dbNr, offset + j, writeLength, isToExtract ? ExtractData(value, j, writeLength) : value);
-                Log($"WriteAny: ProtocolDataUnitReference is {id}");
-                PerformDataExchange(id, reqMsg, policy, (cbh) =>
-                {
-                    var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
-                    if (errorClass == 0x00)
-                    {
-                        var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
-                        for (var i = 0; i < items; i++)
-                        {
-                            var returnCode = cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemReturnCode", (byte)0);
-                            if (returnCode != 0xff)
-                                throw new Dacs7ContentException(returnCode, i);
-                        }
-                        //all write operations are successfully
-                        return;
-                    }
-                    var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
-                    throw new Dacs7Exception(errorClass, errorCode);
-                });
-                packageLength -= ItemWriteSlice;
-            }
+            SetupWriteParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
+            GetWriteOperations(offset, length, value).ForEach(item => ProcessWriteOperation(area, id, dbNr, policy, item));
         }
 
         /// <summary>
@@ -768,44 +690,14 @@ namespace Dacs7
                 throw new Dacs7NotConnectedException();
             try
             {
-                var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
-                var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
-                var packageLength = length;
-                var requests = new List<Tuple<int, int, int>>();
-                var isToExtract = length > ItemWriteSlice;
-                for (var j = 0; j < length; j += ItemReadSlice)
-                {
-                    var writeLength = Math.Min(ItemReadSlice, packageLength);
-                    requests.Add(new Tuple<int, int, int>(j, offset + j, writeLength));
-                    packageLength -= ItemReadSlice;
-                }
-
-                Parallel.ForEach(requests, (request) => WriteAny(area, request.Item2, isToExtract ? ExtractData(value, request.Item1, request.Item3) : value, new int[] { request.Item3, dbNr }));
+                SetupWriteParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
+                Parallel.ForEach(GetWriteOperations(offset, length, value), item => ProcessWriteOperation(area, id, dbNr, policy, item));
             }
             catch (AggregateException exception)
             {
                 //Throw only the first exception
                 throw exception.InnerExceptions.First();
             }
-        }
-
-
-        internal static int CalculateSizeForGenericWriteOperation<T>(PlcArea area, T value, int length, out Type elementType)
-        {
-            elementType = null;
-            if (value is Array && length < 0)
-            {
-                elementType = typeof(T).GetElementType();
-                length = (value as Array).Length * TransportSizeHelper.DataTypeToSizeByte(elementType, area);
-            }
-            var size = length < 0 ? TransportSizeHelper.DataTypeToSizeByte(typeof(T), PlcArea.DB) : length;
-            var stringValue = value as string;
-            if (stringValue != null)
-            {
-                if (length < 0) size = stringValue.Length;
-                size += 2;
-            }
-            return size;
         }
 
 
@@ -817,27 +709,26 @@ namespace Dacs7
         /// <param name="value">Value to write</param>
         /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
         /// <returns></returns>
-        private void WriteAnyPartsAsync(PlcArea area, int offset, object value, params int[] args)
+        private async Task WriteAnyPartsAsync(PlcArea area, int offset, object value, params int[] args)
         {
             try
             {
-                var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
-                var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
-                var packageLength = length;
+                if (!IsConnected)
+                    throw new Dacs7NotConnectedException();
+
                 var requests = new List<Task>();
-                var isToExtract = length > ItemWriteSlice;
-                for (var j = 0; j < length; j += ItemReadSlice)
+                SetupWriteParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
+                foreach (var item in GetWriteOperations(offset, length, value))
                 {
-                    while (_currentNumberOfPendingCalls >= _maxParallelCalls)
-                        Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
-                    var writeLength = Math.Min(ItemReadSlice, packageLength);
-                    var writeOffset = offset + j;
-                    var data = isToExtract ? ExtractData(value, j, writeLength) : value;
-                    requests.Add(Task.Factory.StartNew(() => WriteAny(area, writeOffset, data, new int[] { writeLength, dbNr }), TaskCreationOptions.LongRunning));
-                    packageLength -= ItemReadSlice;
+                    requests.Add(Task.Factory.StartNew(() =>
+                    {
+                        while (_currentNumberOfPendingCalls >= _maxParallelCalls)
+                            Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
+                        ProcessWriteOperation(area, id, dbNr, policy, item);
+                    }));
                 }
 
-                Task.WaitAll(requests.ToArray());
+                await Task.WhenAll(requests);
             }
             catch (AggregateException exception)
             {
@@ -859,12 +750,12 @@ namespace Dacs7
         /// <returns><see cref="Task"/></returns>
         public Task WriteAnyAsync(PlcArea area, int offset, object value, params int[] args)
         {
-            return Task.Factory.StartNew(() =>
+            return Task.Factory.StartNew(async () =>
             {
                 if (_maxParallelCalls <= 1)
                     WriteAny(area, offset, value, args);
                 else
-                    WriteAnyPartsAsync(area, offset, value, args);
+                    await WriteAnyPartsAsync(area, offset, value, args);
             },
             _taskCreationOptions);
 
@@ -1322,8 +1213,8 @@ namespace Dacs7
                                     IsAck = isAck,
                                     Ack = ack,
                                     AlarmSource = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "AlarmSource"), (ushort)0),
-                                    Timestamp = ExtractTimestamp(cbh.ResponseMessage, i, !isComing && !isAck && ack ? 1 : 0),
-                                    AssotiatedValue = ExtractAssotiatedValue(cbh.ResponseMessage, i)
+                                    Timestamp = PlcAlarm.ExtractTimestamp(cbh.ResponseMessage, i, !isComing && !isAck && ack ? 1 : 0),
+                                    AssotiatedValue = PlcAlarm.ExtractAssotiatedValue(cbh.ResponseMessage, i)
                                 });
                             }
 
@@ -1401,8 +1292,8 @@ namespace Dacs7
                                                 IsAck = msg.GetAttribute(string.Format(subItemName, "IsAck"), false),
                                                 Ack = msg.GetAttribute(string.Format(subItemName, "Ack"), false),
                                                 AlarmSource = msg.GetAttribute(string.Format(subItemName, "AlarmSource"), (ushort)0),
-                                                Timestamp = ExtractTimestamp(msg, 0),
-                                                AssotiatedValue = ExtractAssotiatedValue(msg, 0)
+                                                Timestamp = PlcAlarm.ExtractTimestamp(msg, 0),
+                                                AssotiatedValue = PlcAlarm.ExtractAssotiatedValue(msg, 0)
                                             });
                                             return;
                                         }
@@ -1481,7 +1372,11 @@ namespace Dacs7
         }
 
 
-        #region Helper
+
+
+
+
+        #region connection helper
 
         private void OnClientStateChanged(string socketHandle, bool connected)
         {
@@ -1544,6 +1439,46 @@ namespace Dacs7
             _waitingForPlcConfiguration.Set();
         }
 
+        #endregion
+
+        #region config
+
+        private void AssignParameters()
+        {
+            _timeout = _parameter.GetParameter("Receive Timeout", 5000);
+            _maxParallelJobs = _parameter.GetParameter("Maximum Parallel Jobs", (ushort)1);  //Used by simatic manager -> best performance with 1
+            _maxParallelCalls = _parameter.GetParameter("Maximum Parallel Calls", (ushort)4); //Used by Dacs7
+            _taskCreationOptions = _parameter.GetParameter("Use Threads", true) ? TaskCreationOptions.LongRunning : TaskCreationOptions.None; //Used by Dacs7
+            _sleeptimeAfterMaxPendingCallsReached = _parameter.GetParameter("Sleeptime After Max Pending Calls Reached", 5);
+
+            var config = new ClientSocketConfiguration
+            {
+                Hostname = _parameter.GetParameter("Ip", "127.0.0.1"),
+                ServiceName = _parameter.GetParameter("Port", 102),
+                ReceiveBufferSize = _parameter.GetParameter("ReceiveBufferSize", 65536),
+                Autoconnect = _parameter.GetParameter("Reconnect", false),
+                //_parameter.GetParameter("KeepAliveTime", default(uint)),
+                //_parameter.GetParameter("KeepAliveInterval", default(uint))
+            };
+
+            //Setup the socket
+            _clientSocket = new ClientSocket(config);
+
+            var name = typeof(Rfc1006ProtocolHandler).Name;
+            _upperProtocolHandlerFactory.RemoveProtocolHandler(name);
+            _upperProtocolHandlerFactory.AddUpperProtocolHandler(new Rfc1006ProtocolHandler(
+                _clientSocket.Send,
+               "0x0100",
+                CalcRemoteTsap(
+                    _parameter.GetParameter("Connection Type", PlcConnectionType.Pg),
+                    _parameter.GetParameter("Rack", ConnectionParameters.DefaultRack),
+                    _parameter.GetParameter("Slot", ConnectionParameters.DefaultSlot)),
+                 PduSize));
+            _lastConnectException = null;
+        }
+        #endregion
+
+        #region Communication
 
         private void OnRawDataReceived(string socketHandle, IEnumerable<byte> buffer)
         {
@@ -1555,7 +1490,7 @@ namespace Dacs7
                     foreach (var array in _upperProtocolHandlerFactory.RemoveUpperProtocolFrame(b, b.Length).Where(payload => payload != null))
                     {
                         Log($"OnRawDataReceived: Received Data size was {array.Length}");
-                        var policy = GetProtocolPolicy(array);
+                        var policy = ProtocolPolicyBase.FindPolicyByPayload<S7AckDataProtocolPolicy>(array);
                         if (policy != null)
                         {
                             Log($"OnRawDataReceived: determined policy is {policy.GetType().Name}");
@@ -1620,40 +1555,6 @@ namespace Dacs7
             }
         }
 
-        private void AssignParameters()
-        {
-            _timeout = _parameter.GetParameter("Receive Timeout", 5000);
-            _maxParallelJobs = _parameter.GetParameter("Maximum Parallel Jobs", (ushort)1);  //Used by simatic manager -> best performance with 1
-            _maxParallelCalls = _parameter.GetParameter("Maximum Parallel Calls", (ushort)4); //Used by Dacs7
-            _taskCreationOptions = _parameter.GetParameter("Use Threads", true) ? TaskCreationOptions.LongRunning : TaskCreationOptions.None; //Used by Dacs7
-            _sleeptimeAfterMaxPendingCallsReached = _parameter.GetParameter("Sleeptime After Max Pending Calls Reached", 5);
-
-            var config = new ClientSocketConfiguration
-            {
-                Hostname = _parameter.GetParameter("Ip", "127.0.0.1"),
-                ServiceName = _parameter.GetParameter("Port", 102),
-                ReceiveBufferSize = _parameter.GetParameter("ReceiveBufferSize", 65536),
-                Autoconnect = _parameter.GetParameter("Reconnect", false),
-                //_parameter.GetParameter("KeepAliveTime", default(uint)),
-                //_parameter.GetParameter("KeepAliveInterval", default(uint))
-            };
-
-            //Setup the socket
-            _clientSocket = new ClientSocket(config);
-
-            var name = typeof(Rfc1006ProtocolHandler).Name;
-            _upperProtocolHandlerFactory.RemoveProtocolHandler(name);
-            _upperProtocolHandlerFactory.AddUpperProtocolHandler(new Rfc1006ProtocolHandler(
-                _clientSocket.Send,
-               "0x0100",
-                CalcRemoteTsap(
-                    _parameter.GetParameter("Connection Type", PlcConnectionType.Pg),
-                    _parameter.GetParameter("Rack", ConnectionParameters.DefaultRack),
-                    _parameter.GetParameter("Slot", ConnectionParameters.DefaultSlot)),
-                 PduSize));
-            _lastConnectException = null;
-        }
-
         private UInt16 GetNextReferenceId()
         {
             var id = Interlocked.Increment(ref _referenceId);
@@ -1676,11 +1577,6 @@ namespace Dacs7
         {
             var value = ((ushort)connectionType << 8) + (rack * 0x20) + slot;
             return string.Format("0x{0:X4}", value);
-        }
-
-        private void Log(string message)
-        {
-            OnLogEntry?.Invoke(message);
         }
 
         private object PerformDataExchange(ushort id, IMessage msg, IProtocolPolicy policy, Func<CallbackHandler, object> func)
@@ -1843,26 +1739,15 @@ namespace Dacs7
                 throw new SocketException((int)ret);
         }
 
-        private static IProtocolPolicy GetProtocolPolicy(IEnumerable<byte> data)
-        {
-            var policy = ProtocolPolicyBase.FindPolicyByPayload(data);
-            return policy ?? new S7AckDataProtocolPolicy();
-        }
 
-        private static byte[] ExtractAssotiatedValue(IMessage msg, int alarmindex)
-        {
-            var subItemName = $"Alarm[{alarmindex}].ExtendedData[0]." + "{0}";
-            if (msg.GetAttribute(string.Format(subItemName, "NumberOfAssotiatedValues"), 0) > 0)
-            {
-                return msg.GetAttribute(string.Format(subItemName, "AssotiatedValue"), new byte[0]);
-            }
-            return new byte[0];
-        }
+        #endregion
 
-        private static DateTime ExtractTimestamp(IMessage msg, int alarmindex, int tsIdx = 0)
+        #region Helper
+
+
+        private void Log(string message)
         {
-            var subItemName = $"Alarm[{alarmindex}].ExtendedData[{tsIdx}]." + "{0}";
-            return msg.GetAttribute(string.Format(subItemName, "Timestamp"), DateTime.MinValue);
+            OnLogEntry?.Invoke(message);
         }
 
 
@@ -1903,55 +1788,132 @@ namespace Dacs7
             return result;
         }
 
-        private static object ExtractData(object data, int offset = 0, int length = Int32.MaxValue)
+        private void SetupParameter(int[] args, out ushort id, out ushort length, out ushort dbNr)
         {
-            var enumerable = data as byte[];
-            if (enumerable == null)
+            id = GetNextReferenceId();
+            length = Convert.ToUInt16(args.Any() ? args[0] : 0);
+            dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
+        }
+
+        private void SetupWriteParameter(int[] args, out ushort id, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy)
+        {
+            SetupParameter(args, out id, out length, out dbNr);
+            policy = new S7JobWriteProtocolPolicy();
+        }
+
+        private void SetupReadParameter(int[] args, out ushort id, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy)
+        {
+            SetupParameter(args, out id, out length, out dbNr);
+            policy = new S7JobReadProtocolPolicy();
+        }
+
+        private IEnumerable<WriteReference> GetWriteOperations(int offset, ushort length, object data)
+        {
+            var requests = new List<WriteReference>();
+            if (length > ItemWriteSlice)
             {
-                var boolEnum = data as bool[];
-                if (boolEnum == null)
+                var packageLength = length;
+                for (var j = 0; j < length; j += ItemWriteSlice)
                 {
-                    if (data is bool)
-                        return (bool)data;
-                    if (data is byte || data is char)
-                        return (byte)data;
-                    return null;
+                    var writeLength = Math.Min(ItemWriteSlice, packageLength);
+                    packageLength -= ItemWriteSlice;
+                    yield return new WriteReference(j, offset + j, writeLength, data);
                 }
-                return boolEnum.SubArray(offset, length);
             }
-            return enumerable.SubArray(offset, length);
+            else
+                yield return new WriteReference(0, offset, length, data, false);
         }
 
-        private static string ResolveErrorCode<T>(byte b) where T : struct
+        private IEnumerable<ReadReference> GetReadOperations(int offset, ushort length)
         {
-            return Enum.IsDefined(typeof(T), b) ? ResolveErrorCode<T>(Enum.GetName(typeof(T), b)) : b.ToString(CultureInfo.InvariantCulture);
-        }
-
-        private static string ResolveErrorCode<T>(ushort sh) where T : struct
-        {
-            return Enum.IsDefined(typeof(T), sh) ? ResolveErrorCode<T>(Enum.GetName(typeof(T), sh)) : sh.ToString(CultureInfo.InvariantCulture);
-        }
-
-        private static string ResolveErrorCode<T>(string s) where T : struct
-        {
-            if (Enum.TryParse(s, out T result))
+            var requests = new List<ReadReference>();
+            var packageLength = length;
+            var readResult = new List<byte>();
+            for (var j = 0; j < length; j += ItemReadSlice)
             {
-                var r = GetEnumDescription(result);
-                if (!r.IsNullOrEmpty())
-                    return r;
+                var readLength = Math.Min(ItemReadSlice, packageLength);
+                packageLength -= ItemReadSlice;
+                yield return new ReadReference(j, offset + j, readLength);
             }
-            return s;
         }
 
-        private static string GetEnumDescription(object e)
+        private void ProcessWriteOperation(PlcArea area, ushort id, ushort dbNr, S7JobWriteProtocolPolicy policy, WriteReference item)
         {
-            var fieldInfo = e.GetType().GetField(e.ToString());
-            if (fieldInfo != null)
+            var reqMsg = S7MessageCreator.CreateWriteRequest(id, area, dbNr, item.PlcOffset, item.Length, item.Data);
+            Log($"WriteAny: ProtocolDataUnitReference is {id}");
+            PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
-                if (fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false) is DescriptionAttribute[] enumAttributes && enumAttributes.Length > 0)
-                    return enumAttributes[0].Description;
+                var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
+                if (errorClass == 0x00)
+                {
+                    var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
+                    for (var i = 0; i < items; i++)
+                    {
+                        var returnCode = cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemReturnCode", (byte)0);
+                        if (returnCode != 0xff)
+                            throw new Dacs7ContentException(returnCode, i);
+                    }
+                    //all write operations are successfully
+                    return;
+                }
+                var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
+                throw new Dacs7Exception(errorClass, errorCode);
+            });
+        }
+
+        private void ProcessReadOperation(PlcArea area, int offset, Type type, ushort id, ushort dbNr, S7JobReadProtocolPolicy policy, ReadReference item)
+        {
+            var reqMsg = S7MessageCreator.CreateReadRequest(id, area, dbNr, item.PlcOffset, item.Length, type);
+            Log($"ReadAny: ProtocolDataUnitReference is {id}");
+
+            if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
+            {
+                var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
+                if (errorClass == 0)
+                {
+                    var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
+                    if (items > 1)
+                    {
+                        var result = new List<object>();
+                        for (var i = 0; i < items; i++)
+                        {
+                            var returnCode = cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemReturnCode", (byte)0);
+                            if (returnCode == 0xFF)
+                                result.Add(cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemData", new byte[0]));
+                            else
+                                throw new Dacs7ReturnCodeException(returnCode, i);
+                        }
+                        return result;
+                    }
+                    var firstReturnCode = cbh.ResponseMessage.GetAttribute("Item[0].ItemReturnCode", (byte)0);
+                    if (firstReturnCode == 0xFF)
+                        return cbh.ResponseMessage.GetAttribute("Item[0].ItemData", new byte[0]);
+                    throw new Dacs7ContentException(firstReturnCode, 0);
+                }
+                var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
+                throw new Dacs7Exception(errorClass, errorCode);
+            }) is byte[] currentData)
+                item.Data = currentData;
+            else
+                throw new InvalidDataException("Returned data are null");
+        }
+
+        internal static int CalculateSizeForGenericWriteOperation<T>(PlcArea area, T value, int length, out Type elementType)
+        {
+            elementType = null;
+            if (value is Array && length < 0)
+            {
+                elementType = typeof(T).GetElementType();
+                length = (value as Array).Length * TransportSizeHelper.DataTypeToSizeByte(elementType, area);
             }
-            return e.ToString();
+            var size = length < 0 ? TransportSizeHelper.DataTypeToSizeByte(typeof(T), PlcArea.DB) : length;
+            var stringValue = value as string;
+            if (stringValue != null)
+            {
+                if (length < 0) size = stringValue.Length;
+                size += 2;
+            }
+            return size;
         }
         #endregion
     }

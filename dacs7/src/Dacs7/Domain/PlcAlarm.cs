@@ -36,5 +36,25 @@ namespace Dacs7.Domain
         {
             return string.Format("{0}: AssotiatedValue = {1}, Timestamp = {2}", MsgNumber, AssotiatedValue.ToHexString(),Timestamp);
         }
+
+
+        internal static byte[] ExtractAssotiatedValue(IMessage msg, int alarmindex)
+        {
+            var subItemName = $"Alarm[{alarmindex}].ExtendedData[0]." + "{0}";
+            if (msg.GetAttribute(string.Format(subItemName, "NumberOfAssotiatedValues"), 0) > 0)
+            {
+                return msg.GetAttribute(string.Format(subItemName, "AssotiatedValue"), new byte[0]);
+            }
+            return new byte[0];
+        }
+
+        internal static DateTime ExtractTimestamp(IMessage msg, int alarmindex, int tsIdx = 0)
+        {
+            var subItemName = $"Alarm[{alarmindex}].ExtendedData[{tsIdx}]." + "{0}";
+            return msg.GetAttribute(string.Format(subItemName, "Timestamp"), DateTime.MinValue);
+        }
+
+
+
     }
 }

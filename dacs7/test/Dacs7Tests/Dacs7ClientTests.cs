@@ -1,3 +1,5 @@
+#define TEST_PLC
+
 using Dacs7;
 using Dacs7.Domain;
 using System;
@@ -13,14 +15,16 @@ using Dacs7.Protocols.S7;
 namespace Dacs7Tests
 {
 
+
+
 #if TEST_PLC
 
     public class Dacs7ClientTests
     {
-        //private const string Ip = "127.0.0.1";//"127.0.0.1";
-        private const string Ip = "192.168.0.148";
+        private const string Ip = "127.0.0.1";//"127.0.0.1";
+        //private const string Ip = "192.168.0.148";
         //private const string Ip = "192.168.1.10";//"127.0.0.1";
-        private const string ConnectionString = "Data Source=" + Ip + ":102,0,2"; //"Data Source=192.168.1.10:102,0,2";
+        private const string ConnectionString = "Data Source=" + Ip + ":102,0,2;PduSize=240"; //"Data Source=192.168.1.10:102,0,2";
         private const int TestDbNr = 250;
         private const int TestByteOffset = 524;
         private const int TestByteOffset2 = 525;
@@ -85,6 +89,31 @@ namespace Dacs7Tests
             client.Connect(ConnectionString);
             client.WriteAny(writeOperations);
             var result = client.ReadAnyRaw(operations);
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public async Task TestMultiBig()
+        {
+            var length = 6534;
+            var buffer = new byte[length];
+            for (int i = 0; i < length; i++)
+            {
+                buffer[i] = ((i % 2) == 0) ? (byte)0x05 : (byte)0x06;
+            }
+
+
+            var writeOperations = new List<WriteOperationParameter>
+            {
+                WriteOperationParameter.Create<byte[]>(TestDbNr,0, buffer)
+            };
+            var client = new Dacs7Client();
+            client.Connect(ConnectionString);
+
+            await client.WriteAnyAsync(PlcArea.DB, 0, buffer, new [] { length, TestDbNr });
+            //client.WriteAny(PlcArea.DB, 0, buffer, new[] { length, TestDbNr });
+            //client.WriteAny(writeOperations);
             client.Disconnect();
             Assert.False(client.IsConnected);
         }
