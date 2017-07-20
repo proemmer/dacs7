@@ -6,11 +6,9 @@ using Dacs7.Protocols.RFC1006;
 using Dacs7.Protocols.S7;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -379,13 +377,7 @@ namespace Dacs7
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
             SetupReadParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
-            var readResult = new List<byte>();
-            GetReadOperations(offset, length).ForEach(item => 
-            {
-                ProcessReadOperation(area, offset, type, id, dbNr, policy, item);
-                readResult.AddRange(item.Data as byte[]);
-            });
-            return readResult.ToArray<byte>();
+            return GetReadOperations(offset, length).SelectMany(item => ProcessReadOperation(area, offset, type, id, dbNr, policy, item)).ToArray();
         }
 
 
@@ -410,7 +402,6 @@ namespace Dacs7
                     throw new Dacs7ToMuchDataPerCallException(ItemReadSlice, currentPackageSize);
 
                 Log(string.Format("ReadAny: ProtocolDataUnitReference is {0}", id));
-
                 if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
                     var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
@@ -534,22 +525,13 @@ namespace Dacs7
                     {
                         while (_currentNumberOfPendingCalls >= _maxParallelCalls)
                             Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
-                        ProcessReadOperation(area, offset, type, id, dbNr, policy, item);
-                        return item.Data as byte[];
+                        return ProcessReadOperation(area, offset, type, id, dbNr, policy, item);
                     }, _taskCreationOptions));
                 });
 
                 await Task.WhenAll(requests.ToArray());
 
-                var readResult = new List<byte>();
-                foreach (var result in requests.Select(request => request.Result as byte[]))
-                {
-                    if (result != null)
-                        readResult.AddRange(result);
-                    else
-                        throw new InvalidDataException("Returned data are null");
-                }
-                return readResult.ToArray<byte>();
+                return requests.SelectMany(request =>request.Result as byte[] ?? throw new InvalidDataException("Returned data are null")).ToArray();
             }
             catch (AggregateException exception)
             {
@@ -1683,45 +1665,50 @@ namespace Dacs7
         private void ReleaseCallbackHandler(ushort id)
         {
             CallbackHandler cbh;
-
-            _callbackLockSlim.EnterUpgradeableReadLock();
             try
             {
-                if (_callbacks.TryGetValue(id, out cbh))
+
+                _callbackLockSlim.EnterUpgradeableReadLock();
+                try
                 {
-                    _callbackLockSlim.EnterWriteLock();
+                    if (_callbacks.TryGetValue(id, out cbh))
+                    {
+                        _callbackLockSlim.EnterWriteLock();
+                        try
+                        {
+                            _callbacks.Remove(id);
+                        }
+                        finally
+                        {
+                            _callbackLockSlim.ExitWriteLock();
+                        }
+                    }
+                }
+                finally
+                {
+                    _callbackLockSlim.ExitUpgradeableReadLock();
+                }
+
+
+                if (cbh != null && cbh.Event != null)
+                {
+                    _queueLockSlim.EnterWriteLock();
                     try
                     {
-                        _callbacks.Remove(id);
+                        _eventQueue.Enqueue(cbh.Event);
+                        Log($"Number of queued events {_eventQueue.Count}");
                     }
                     finally
                     {
-                        _callbackLockSlim.ExitWriteLock();
+                        _queueLockSlim.ExitWriteLock();
                     }
                 }
             }
             finally
             {
-                _callbackLockSlim.ExitUpgradeableReadLock();
+                Interlocked.Decrement(ref _currentNumberOfPendingCalls);
             }
 
-
-            if (cbh != null && cbh.Event != null)
-            {
-                _queueLockSlim.EnterWriteLock();
-                try
-                {
-                    _eventQueue.Enqueue(cbh.Event);
-                    Log($"Number of queued events {_eventQueue.Count}");
-                }
-                finally
-                {
-                    _queueLockSlim.ExitWriteLock();
-                }
-            }
-
-            //_semaphore.Release();
-            Interlocked.Decrement(ref _currentNumberOfPendingCalls);
         }
 
         private async void SendMessages(IMessage msg, IProtocolPolicy policy)
@@ -1861,7 +1848,7 @@ namespace Dacs7
             });
         }
 
-        private void ProcessReadOperation(PlcArea area, int offset, Type type, ushort id, ushort dbNr, S7JobReadProtocolPolicy policy, ReadReference item)
+        private byte[] ProcessReadOperation(PlcArea area, int offset, Type type, ushort id, ushort dbNr, S7JobReadProtocolPolicy policy, ReadReference item)
         {
             var reqMsg = S7MessageCreator.CreateReadRequest(id, area, dbNr, item.PlcOffset, item.Length, type);
             Log($"ReadAny: ProtocolDataUnitReference is {id}");
@@ -1893,7 +1880,10 @@ namespace Dacs7
                 var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
                 throw new Dacs7Exception(errorClass, errorCode);
             }) is byte[] currentData)
+            {
                 item.Data = currentData;
+                return currentData;
+            }
             else
                 throw new InvalidDataException("Returned data are null");
         }
