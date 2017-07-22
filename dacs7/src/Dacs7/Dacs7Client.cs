@@ -287,13 +287,27 @@ namespace Dacs7
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
-            var t = typeof(T);
-            var readType = t == typeof(bool) ? typeof(bool) : typeof(byte);
-            var elementLength = t == typeof(bool) ? 1 : Marshal.SizeOf<T>();
-            var data = ReadAny(PlcArea.DB, offset, readType, new[] { elementLength, dbNumber });
-            if (data != null && data.Any())
-                return (T)data.ConvertTo<T>();
-            return default(T);
+            SetupGenericReadData<T>(ref offset, out Type readType, out int elementLength, out int bytesToRead, out _, out _, out _, out _);
+            var data = ReadAny(PlcArea.DB, offset, readType, new[] { bytesToRead, dbNumber });
+            return data != null && data.Any() ? (T)data.ConvertTo<T>() : default(T);
+        }
+
+        /// <summary>
+        /// Read data async from the given data block number at the given offset.
+        /// The length of the data will be extracted from the generic parameter.
+        /// </summary>
+        /// <typeparam name="T">Type of the return value</typeparam>
+        /// <param name="dbNumber">This parameter specifies the number of the data block in the PLC</param>
+        /// <param name="offset">This is the offset to the data you want to read.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <returns>The read value or the default value of the type if the data could not be read.</returns>
+        public async Task<T> ReadAnyAsync<T>(int dbNumber, int offset)
+        {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
+            SetupGenericReadData<T>(ref offset,out Type readType, out int elementLength, out int bytesToRead, out _, out _, out _, out _);
+            var data = await ReadAnyAsync(PlcArea.DB, offset, readType, new[] { bytesToRead, dbNumber });
+            return data != null && data.Any() ? (T)data.ConvertTo<T>() : default(T);
         }
 
         /// <summary>
@@ -310,57 +324,34 @@ namespace Dacs7
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
-            var t = typeof(T);
-            var isBool = t == typeof(bool);
-            var isString = t == typeof(string);
-            var readType = (isBool && numberOfItems <= 1) ? typeof(bool) : typeof(byte);
-            var elementLength = isBool ? (((numberOfItems + offset % 8) / 8) + 1) : (isString ? numberOfItems + 2 : Marshal.SizeOf<T>());
-            var originOffset = offset;
-            var bytesToRead = 1;
 
-            if (numberOfItems >= 0)
-            {
-                if (isBool)
-                {
-                    offset /= 8;
-                    var bitOffset = originOffset % 8;
-                    bytesToRead = elementLength;
-                }
-                else if (isString)
-                    bytesToRead = elementLength;
-                else
-                    bytesToRead = numberOfItems * elementLength;
-            }
+            var originOffset = offset;
+            SetupGenericReadData<T>(ref offset, out Type readType, out int elementLength, out int bytesToRead, out int bitOffset, out Type t, out bool isBool, out bool isString, numberOfItems);
 
             var data = ReadAny(PlcArea.DB, offset, readType, new[] { bytesToRead, dbNumber });
-            if (isString)
-            {
-                var result = new List<T>();
-                string s = string.Empty;
-                if (data.Length > 2)
-                {
-                    var length = (int)data[1];
-                    s = new String(data.Skip(2).Select(x => Convert.ToChar(x)).ToArray()).Substring(0, length);
-                }
-                result.Add((T)Convert.ChangeType(s, t));
-                return result;
-            }
-            else if (t != typeof(byte) && t != typeof(char) && numberOfItems > 0)
-            {
-                var result = new List<T>();
-                var array = data as byte[];
-                var bitOffset = originOffset % 8;
-                for (int i = 0; i < Math.Max(numberOfItems, bytesToRead); i += elementLength)
-                {
-                    result.Add(isBool ?
-                        (T)Convert.ChangeType(array.GetBit(bitOffset + i), t) :
-                        (T)data.ConvertTo<T>(i));
-                }
-                return result;
-            }
-            return (IEnumerable<T>)data.ConvertTo<T>();
+            return ConvertToEnumerable<T>(numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data);
         }
 
+        /// <summary>
+        /// Read a number of items async from the given generic type form the given data block number at the given offset and try convert it to the given dataType.
+        /// </summary>
+        /// <typeparam name="TElement">Element type of the resulting enumerable</typeparam>
+        /// <param name="dbNumber">This parameter specifies the number of the data block in the PLC</param>
+        /// <param name="offset">This is the offset to the data you want to read.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="numberOfItems">Number of items of the T to read. This could be the string length for a string, or the number of bytes/int for an array and so on. 
+        /// The default value is always 1.</param>
+        /// <returns>A list of TElement</returns>
+        public async Task<IEnumerable<T>> ReadAnyAsync<T>(int dbNumber, int offset, int numberOfItems)
+        {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
+
+            SetupGenericReadData<T>(ref offset, out Type readType, out int elementLength, out int bytesToRead, out int bitOffset, out Type t, out bool isBool, out bool isString, numberOfItems);
+
+            var data = await ReadAnyAsync(PlcArea.DB, offset, readType, new[] { bytesToRead, dbNumber });
+            return ConvertToEnumerable<T>(numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data);
+        }
 
         /// <summary>
         /// Read data from the PLC and return them as an array of byte.
@@ -1773,6 +1764,62 @@ namespace Dacs7
                 currentPackage.Add(parameter);
             }
             return result;
+        }
+
+
+
+        private static void SetupGenericReadData<T>(ref int offset, out Type readType, out int elementLength, out int bytesToRead, out int bitOffset, out Type t, out bool isBool, out bool isString, int numberOfItems = 1)
+        {
+            t = typeof(T);
+            isBool = t == typeof(bool);
+            isString = t == typeof(string);
+            readType = (isBool && numberOfItems <= 1) ? typeof(bool) : typeof(byte);
+            elementLength = isBool ? (((numberOfItems + offset % 8) / 8) + 1) : (isString ? numberOfItems + 2 : Marshal.SizeOf<T>());
+            bytesToRead = 1;
+            bitOffset = 0;
+            var originOffset = offset;
+            if (numberOfItems >= 0)
+            {
+                if (isBool)
+                {
+                    offset /= 8;
+                    bitOffset = originOffset % 8;
+                    bytesToRead = elementLength;
+                }
+                else if (isString)
+                    bytesToRead = elementLength;
+                else
+                    bytesToRead = numberOfItems * elementLength;
+            }
+        }
+
+        private static IEnumerable<T> ConvertToEnumerable<T>(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
+        {
+            if (isString)
+            {
+                var result = new List<T>();
+                string s = string.Empty;
+                if (data.Length > 2)
+                {
+                    var length = (int)data[1];
+                    s = new String(data.Skip(2).Select(x => Convert.ToChar(x)).ToArray()).Substring(0, length);
+                }
+                result.Add((T)Convert.ChangeType(s, t));
+                return result;
+            }
+            else if (t != typeof(byte) && t != typeof(char) && numberOfItems > 0)
+            {
+                var result = new List<T>();
+                var array = data as byte[];
+                for (int i = 0; i < Math.Max(numberOfItems, bytesToRead); i += elementLength)
+                {
+                    result.Add(isBool ?
+                        (T)Convert.ChangeType(array.GetBit(bitOffset + i), t) :
+                        (T)data.ConvertTo<T>(i));
+                }
+                return result;
+            }
+            return (IEnumerable<T>)data.ConvertTo<T>();
         }
 
         private void SetupParameter(int[] args, out ushort id, out ushort length, out ushort dbNr)
