@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -287,8 +288,11 @@ namespace Dacs7
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
-            SetupGenericReadData<T>(ref offset, out Type readType, out int elementLength, out int bytesToRead, out _, out _, out _, out _);
-            var data = ReadAny(PlcArea.DB, offset, readType, new[] { bytesToRead, dbNumber });
+
+            var oringinOffset = offset;
+            SetupGenericReadData<T>(ref offset, out Type readType, out int bytesToRead);
+            var data = ReadAny(PlcArea.DB, oringinOffset, readType, new[] { bytesToRead, dbNumber });
+
             return data != null && data.Any() ? (T)data.ConvertTo<T>() : default(T);
         }
 
@@ -305,8 +309,10 @@ namespace Dacs7
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
-            SetupGenericReadData<T>(ref offset,out Type readType, out int elementLength, out int bytesToRead, out _, out _, out _, out _);
+
+            SetupGenericReadData<T>(ref offset,out Type readType, out int bytesToRead);
             var data = await ReadAnyAsync(PlcArea.DB, offset, readType, new[] { bytesToRead, dbNumber });
+
             return data != null && data.Any() ? (T)data.ConvertTo<T>() : default(T);
         }
 
@@ -325,10 +331,9 @@ namespace Dacs7
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
 
-            var originOffset = offset;
-            SetupGenericReadData<T>(ref offset, out Type readType, out int elementLength, out int bytesToRead, out int bitOffset, out Type t, out bool isBool, out bool isString, numberOfItems);
-
+            SetupGenericReadData<T>(ref offset, out Type readType, out int bytesToRead, out int elementLength, out int bitOffset, out Type t, out bool isBool, out bool isString, numberOfItems);
             var data = ReadAny(PlcArea.DB, offset, readType, new[] { bytesToRead, dbNumber });
+
             return ConvertToEnumerable<T>(numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data);
         }
 
@@ -347,9 +352,9 @@ namespace Dacs7
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
 
-            SetupGenericReadData<T>(ref offset, out Type readType, out int elementLength, out int bytesToRead, out int bitOffset, out Type t, out bool isBool, out bool isString, numberOfItems);
-
+            SetupGenericReadData<T>(ref offset, out Type readType, out int bytesToRead, out int elementLength, out int bitOffset, out Type t, out bool isBool, out bool isString, numberOfItems);
             var data = await ReadAnyAsync(PlcArea.DB, offset, readType, new[] { bytesToRead, dbNumber });
+
             return ConvertToEnumerable<T>(numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data);
         }
 
@@ -442,51 +447,23 @@ namespace Dacs7
             int current = 0;
             foreach (var param in parameters)
             {
+                //                var data = readResult[current++];
+                //                var t = param.Type;
+                //                var isBool = t == typeof(bool);
+                //                var isString = t == typeof(string);
+                //                var readType = typeof(byte);
+                //                var numberOfItems = param.Args != null && param.Args.Length > 0 ? param.Args[0] : 1;
+                //#pragma warning disable CS0618 // Type or member is obsolete
+                //                var elementLength = isBool ? 1 : (isString ? numberOfItems + 2 : Marshal.SizeOf(t));  //Will be supported: https://github.com/dotnet/corefx/pull/10541
+                //#pragma warning restore CS0618 // Type or member is obsolete
+                //                var originOffset = param.Offset;
+
                 var data = readResult[current++];
-                var t = param.Type;
-                var isBool = t == typeof(bool);
-                var isString = t == typeof(string);
-                var readType = typeof(byte);
                 var numberOfItems = param.Args != null && param.Args.Length > 0 ? param.Args[0] : 1;
-#pragma warning disable CS0618 // Type or member is obsolete
-                var elementLength = isBool ? 1 : (isString ? numberOfItems + 2 : Marshal.SizeOf(t));  //Will be supported: https://github.com/dotnet/corefx/pull/10541
-#pragma warning restore CS0618 // Type or member is obsolete
-                var originOffset = param.Offset;
-
-
-                if (isString)
-                {
-                    string s = string.Empty;
-                    if (data.Length > 2)
-                    {
-                        var length = (int)data[1];
-                        if (length > data.Length - 2)
-                            s = string.Empty; // INVALID DATA
-                        else
-                            s = new String(data.Skip(2).Select(x => Convert.ToChar(x)).ToArray()).Substring(0, length);
-                    }
-                    resultList.Add(Convert.ChangeType(s, t));
-                }
-                else if (t != typeof(byte) && t != typeof(char) && numberOfItems > 1)
-                {
-                    var result = new List<object>();
-                    var array = data as byte[];
-                    var byteOffet = 0;
-                    var bitOffset = originOffset % 8;
-                    for (int i = 0; i < numberOfItems; i += elementLength)
-                    {
-                        result.Add(isBool ?
-                            Convert.ChangeType(array[byteOffet].GetBit(bitOffset + i), t) :
-                            data.ConvertTo(t, i));
-                    }
-                    resultList.Add(result);
-                }
-                else if (t == typeof(byte) || t == typeof(char))
-                {
-                    resultList.Add(Convert.ChangeType(data[0], t));
-                }
-                else
-                    resultList.Add(data.ConvertTo(t));
+                var offset = param.Offset;
+                SetupGenericReadData(param.Type, ref offset, out Type readType, out int bytesToRead, out int elementLength, out int bitOffset, out Type t, out bool isBool, out bool isString, numberOfItems);
+                
+                resultList.Add(ConvertToType(numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data));
             }
             return resultList;
         }
@@ -1766,9 +1743,36 @@ namespace Dacs7
             return result;
         }
 
+        private static void SetupGenericReadData<T>(ref int offset, out Type readType, out int bytesToRead)
+        {
+            SetupGenericReadData<T>(ref offset, out readType, out bytesToRead, out _ ,out _, out _, out _, out _);
+        }
 
+        private static object SetupGenericReadData(Type genericType, ref int offset, out Type readType, out int bytesToRead, out int elementLength, out int bitOffset, out Type t, out bool isBool, out bool isString, int numberOfItems = 1)
+        {
+            var method = typeof(Dacs7Client).GetMethod("SetupGenericReadData");
+            var genericMethod = method.MakeGenericMethod(genericType);
+            readType = null; 
+            bytesToRead = 0;
+            elementLength = 0;
+            bitOffset = 0;
+            t = null;
+            isBool = false;
+            isString = false;
+            var parameters = new object[] { offset, readType, bytesToRead, elementLength, bitOffset, t, isBool, isString, numberOfItems };
+            var result =  genericMethod.Invoke(null, parameters);
+            offset = (int)parameters[1];
+            readType = (Type)parameters[2];
+            bytesToRead = (int)parameters[3];
+            elementLength = (int)parameters[4];
+            bitOffset = (int)parameters[5];
+            t = (Type)parameters[6];
+            isBool = (bool)parameters[7];
+            isString = (bool)parameters[8];
+            return result;
+        }
 
-        private static void SetupGenericReadData<T>(ref int offset, out Type readType, out int elementLength, out int bytesToRead, out int bitOffset, out Type t, out bool isBool, out bool isString, int numberOfItems = 1)
+        private static void SetupGenericReadData<T>(ref int offset, out Type readType, out int bytesToRead, out int elementLength, out int bitOffset, out Type t, out bool isBool, out bool isString, int numberOfItems = 1)
         {
             t = typeof(T);
             isBool = t == typeof(bool);
@@ -1793,7 +1797,14 @@ namespace Dacs7
             }
         }
 
-        private static IEnumerable<T> ConvertToEnumerable<T>(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
+        private static object ConvertToType(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
+        {
+            var method = typeof(Dacs7Client).GetMethod("ConvertTo");
+            var genericMethod = method.MakeGenericMethod(t);
+            return genericMethod.Invoke(null, new object[] { numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data });
+        }
+
+        private static object ConvertTo<T>(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
         {
             if (isString)
             {
@@ -1802,24 +1813,62 @@ namespace Dacs7
                 if (data.Length > 2)
                 {
                     var length = (int)data[1];
-                    s = new String(data.Skip(2).Select(x => Convert.ToChar(x)).ToArray()).Substring(0, length);
+                    if (length > data.Length - 2)
+                        s = string.Empty; // INVALID DATA
+                    else
+                        s = new String(data.Skip(2).Select(x => Convert.ToChar(x)).ToArray()).Substring(0, length);
                 }
                 result.Add((T)Convert.ChangeType(s, t));
                 return result;
             }
-            else if (t != typeof(byte) && t != typeof(char) && numberOfItems > 0)
+            else if (t != typeof(byte) && t != typeof(char) && numberOfItems > 1)
             {
                 var result = new List<T>();
                 var array = data as byte[];
-                for (int i = 0; i < Math.Max(numberOfItems, bytesToRead); i += elementLength)
+                var lengthInBits = array.Length * 8;
+                for (int i = 0; i < numberOfItems; i += elementLength)
                 {
-                    result.Add(isBool ?
-                        (T)Convert.ChangeType(array.GetBit(bitOffset + i), t) :
-                        (T)data.ConvertTo<T>(i));
+                    if (isBool)
+                    {
+                        var bitIdx = bitOffset + i;
+                        if (bitIdx >= lengthInBits)
+                        {
+                            throw new IndexOutOfRangeException($"Bit-Index {bitIdx} is not in the array!");
+                        }
+
+                        result.Add((T)Convert.ChangeType(array.GetBit(bitIdx), t));
+                    }
+                    else
+                    {
+                        if (i >= array.Length)
+                        {
+                            throw new IndexOutOfRangeException($"Index {i} is not in the array!");
+                        }
+
+                        result.Add((T)data.ConvertTo<T>(i));
+                    }
                 }
                 return result;
             }
-            return (IEnumerable<T>)data.ConvertTo<T>();
+            else if ((t == typeof(byte) || t == typeof(char)) && numberOfItems == 1)
+            {
+                return (T)Convert.ChangeType(data[0], t);
+            }
+            return data.ConvertTo<T>();
+        }
+
+        private static IEnumerable<T> ConvertToEnumerable<T>(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
+        {
+            var result = ConvertTo<T>(numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data);
+            if(result is IEnumerable<T>)
+            {
+                return (IEnumerable<T>)result;
+            }
+            var resultList = new List<T>
+            {
+                (T)result
+            };
+            return resultList;
         }
 
         private void SetupParameter(int[] args, out ushort id, out ushort length, out ushort dbNr)

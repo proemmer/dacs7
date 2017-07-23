@@ -24,10 +24,10 @@ namespace Dacs7.Domain
 
         public object Data { get; set; }
 
-        public ReadReference(int dataOffset, int writeOffset, ushort lenght)
+        public ReadReference(int dataOffset, int plcOffset, ushort lenght)
         {
             DataOffset = dataOffset;
-            PlcOffset = writeOffset;
+            PlcOffset = plcOffset;
             Length = lenght;
 
         }
