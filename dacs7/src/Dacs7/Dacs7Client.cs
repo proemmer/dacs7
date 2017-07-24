@@ -1750,25 +1750,20 @@ namespace Dacs7
 
         private static object SetupGenericReadData(Type genericType, ref int offset, out Type readType, out int bytesToRead, out int elementLength, out int bitOffset, out Type t, out bool isBool, out bool isString, int numberOfItems = 1)
         {
-            var method = typeof(Dacs7Client).GetMethod("SetupGenericReadData");
-            var genericMethod = method.MakeGenericMethod(genericType);
-            readType = null; 
-            bytesToRead = 0;
-            elementLength = 0;
-            bitOffset = 0;
-            t = null;
-            isBool = false;
-            isString = false;
+            readType = t = null; 
+            bytesToRead = elementLength = bitOffset = 0;
+            isBool = isString = false;
+
             var parameters = new object[] { offset, readType, bytesToRead, elementLength, bitOffset, t, isBool, isString, numberOfItems };
-            var result =  genericMethod.Invoke(null, parameters);
-            offset = (int)parameters[1];
-            readType = (Type)parameters[2];
-            bytesToRead = (int)parameters[3];
-            elementLength = (int)parameters[4];
-            bitOffset = (int)parameters[5];
-            t = (Type)parameters[6];
-            isBool = (bool)parameters[7];
-            isString = (bool)parameters[8];
+            var result = GenericHelper.InvokeGenericMethod<Dacs7Client>(genericType, nameof(SetupGenericReadData), parameters);
+            offset = (int)parameters[0];
+            readType = (Type)parameters[1];
+            bytesToRead = (int)parameters[2];
+            elementLength = (int)parameters[3];
+            bitOffset = (int)parameters[4];
+            t = (Type)parameters[5];
+            isBool = (bool)parameters[6];
+            isString = (bool)parameters[7];
             return result;
         }
 
