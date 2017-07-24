@@ -526,8 +526,8 @@ namespace Dacs7
             try
             {
                 SetupReadParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
-                var items = GetReadOperations(offset, length);
-                Parallel.ForEach(items, item => ProcessReadOperation(area, offset, type, id, dbNr, policy, item));
+                var items = GetReadOperations(offset, length).ToList();
+                Parallel.ForEach(items, item => ProcessReadOperation(area, offset, type, GetNextReferenceId(), dbNr, policy, item));
 
                 var readResult = new List<byte>();
                 foreach (var result in items.OrderBy(x => x.DataOffset).Select(x => x.Data as byte[]))
@@ -641,7 +641,7 @@ namespace Dacs7
             try
             {
                 SetupWriteParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
-                Parallel.ForEach(GetWriteOperations(offset, length, value), item => ProcessWriteOperation(area, id, dbNr, policy, item));
+                Parallel.ForEach(GetWriteOperations(offset, length, value), item => ProcessWriteOperation(area, GetNextReferenceId(), dbNr, policy, item));
             }
             catch (AggregateException exception)
             {
@@ -1743,6 +1743,15 @@ namespace Dacs7
             return result;
         }
 
+        public static object InvokeGenericMethod<T>(Type genericType, string methodName, object[] parameters)
+        {
+            var method = parameters.All(x => x != null)
+                                ? typeof(T).GetMethod(methodName, parameters.Select(x => x.GetType()).ToArray())
+                                : typeof(T).GetMethod(methodName);
+            var genericMethod = method.MakeGenericMethod(genericType);
+            return genericMethod.Invoke(null, parameters);
+        }
+
         private static void SetupGenericReadData<T>(ref int offset, out Type readType, out int bytesToRead)
         {
             SetupGenericReadData<T>(ref offset, out readType, out bytesToRead, out _ ,out _, out _, out _, out _);
@@ -1755,7 +1764,7 @@ namespace Dacs7
             isBool = isString = false;
 
             var parameters = new object[] { offset, readType, bytesToRead, elementLength, bitOffset, t, isBool, isString, numberOfItems };
-            var result = GenericHelper.InvokeGenericMethod<Dacs7Client>(genericType, nameof(SetupGenericReadData), parameters);
+            var result = InvokeGenericMethod<Dacs7Client>(genericType, nameof(SetupGenericReadData), parameters);
             offset = (int)parameters[0];
             readType = (Type)parameters[1];
             bytesToRead = (int)parameters[2];
@@ -1767,39 +1776,48 @@ namespace Dacs7
             return result;
         }
 
-        private static void SetupGenericReadData<T>(ref int offset, out Type readType, out int bytesToRead, out int elementLength, out int bitOffset, out Type t, out bool isBool, out bool isString, int numberOfItems = 1)
+        public static void SetupGenericReadData<T>(ref int offset, out Type readType, out int bytesToRead, out int elementLength, out int bitOffset, out Type t, out bool isBool, out bool isString, int numberOfItems = 1)
         {
             t = typeof(T);
             isBool = t == typeof(bool);
             isString = t == typeof(string);
             readType = (isBool && numberOfItems <= 1) ? typeof(bool) : typeof(byte);
-            elementLength = isBool ? (((numberOfItems + offset % 8) / 8) + 1) : (isString ? numberOfItems + 2 : Marshal.SizeOf<T>());
+            
             bytesToRead = 1;
             bitOffset = 0;
             var originOffset = offset;
-            if (numberOfItems >= 0)
+            if (numberOfItems > 0)
             {
                 if (isBool)
                 {
                     offset /= 8;
                     bitOffset = originOffset % 8;
+                    var bitsToRead = bitOffset + numberOfItems;
+                    elementLength = bitsToRead / 8 + (bitsToRead % 8 > 0 ? 1 : 0);
                     bytesToRead = elementLength;
                 }
                 else if (isString)
-                    bytesToRead = elementLength;
+                {
+                    bytesToRead = elementLength = numberOfItems + 2;
+                }
                 else
+                {
+                    elementLength = Marshal.SizeOf<T>();
                     bytesToRead = numberOfItems * elementLength;
+                }
             }
+            else
+                bytesToRead = elementLength = 0;
         }
 
         private static object ConvertToType(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
         {
-            var method = typeof(Dacs7Client).GetMethod("ConvertTo");
+            var method = typeof(Dacs7Client).GetMethod(nameof(ConvertTo));
             var genericMethod = method.MakeGenericMethod(t);
             return genericMethod.Invoke(null, new object[] { numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data });
         }
 
-        private static object ConvertTo<T>(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
+        public static object ConvertTo<T>(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
         {
             if (isString)
             {
