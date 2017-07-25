@@ -21,10 +21,11 @@ namespace Dacs7Tests
 
     public class Dacs7ClientTests
     {
-        private const string Ip = "127.0.0.1";//"127.0.0.1";
-        //private const string Ip = "192.168.0.148";
+        //private const string Ip = "127.0.0.1";//"127.0.0.1";
+        private const string Ip = "192.168.0.148";
         //private const string Ip = "192.168.1.17";//"127.0.0.1";
-        private const string ConnectionString = "Data Source=" + Ip + ":102,0,2;PduSize=240"; //"Data Source=192.168.1.10:102,0,2";
+        //private const string ConnectionString = "Data Source=" + Ip + ":102,0,2;PduSize=240"; //"Data Source=192.168.1.10:102,0,2";
+        private const string ConnectionString = "Data Source=" + Ip + ":102,0,2;Connect Timeout=10000"; //"Data Source=192.168.1.10:102,0,2";
         private const int TestDbNr = 250;
         private const int TestByteOffset = 524;
         private const int TestByteOffset2 = 525;
