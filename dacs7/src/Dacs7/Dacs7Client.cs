@@ -384,12 +384,13 @@ namespace Dacs7
         /// <returns>A list of <see cref="T:object"/> where every list entry contains the read value in order of the given parameter order</returns>
         public IEnumerable<byte[]> ReadAnyRaw(IEnumerable<ReadOperationParameter> parameters)
         {
-            var id = GetNextReferenceId();
+            
             var policy = new S7JobReadProtocolPolicy();
             var readResult = new List<byte[]>();
 
             foreach (var part in GetOperationParts(parameters))
             {
+                var id = GetNextReferenceId();
                 var reqMsg = S7MessageCreator.CreateReadRequests(id, part);
 
                 //check the created message size!
@@ -441,12 +442,11 @@ namespace Dacs7
             int current = 0;
             foreach (var param in parameters)
             {
-                var data = readResult[current++];
                 var numberOfItems = param.Args != null && param.Args.Length > 0 ? param.Args[0] : 1;
                 var offset = param.Offset;
                 SetupGenericReadData(param.Type, ref offset, out Type readType, out int bytesToRead, out int elementLength, out int bitOffset, out Type t, out bool isBool, out bool isString, numberOfItems);
                 
-                resultList.Add(ConvertToType(numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data));
+                resultList.Add(ConvertToType(numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, readResult[current++]));
             }
             return resultList;
         }
@@ -479,7 +479,7 @@ namespace Dacs7
                     }, _taskCreationOptions));
                 });
 
-                await Task.WhenAll(requests.ToArray());
+                await Task.WhenAll(requests);
 
                 return requests.SelectMany(request =>request.Result as byte[] ?? throw new InvalidDataException("Returned data are null")).ToArray();
             }
@@ -555,7 +555,10 @@ namespace Dacs7
             if (area == PlcArea.DB)
                 throw new ArgumentException("The argument area could not be DB.");
             var size = CalculateSizeForGenericWriteOperation<T>(area, value, length, out Type elementType);
-            WriteAny(area, offset, value, new int[] { size });
+            if (elementType == typeof(bool))
+                WriteAny((value as IEnumerable<bool>).Select((element, i) => WriteOperationParameter.Create(area, offset + i, element)));
+            else
+                WriteAny(area, offset, value, new int[] { size });
         }
 
         /// <summary>
@@ -571,12 +574,9 @@ namespace Dacs7
         {
             var size = CalculateSizeForGenericWriteOperation(PlcArea.DB, value, length, out Type elementType);
             if (elementType == typeof(bool))
-            {
-                //with bool's we have to create a multi write request
                 WriteAny((value as IEnumerable<bool>).Select((element, i) => WriteOperationParameter.Create(dbNumber, offset + i, element)));
-                return;
-            }
-            WriteAny(PlcArea.DB, offset, value, new int[] { size, dbNumber });
+            else
+                WriteAny(PlcArea.DB, offset, value, new int[] { size, dbNumber });
         }
 
         /// <summary>
@@ -636,11 +636,12 @@ namespace Dacs7
         /// <returns></returns>
         private async Task WriteAnyPartsAsync(PlcArea area, int offset, object value, params int[] args)
         {
+
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
+
             try
             {
-                if (!IsConnected)
-                    throw new Dacs7NotConnectedException();
-
                 var requests = new List<Task>();
                 SetupParameter(args, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
                 foreach (var item in GetWriteReferences(offset, length, value))
@@ -671,7 +672,7 @@ namespace Dacs7
         /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
         /// <param name="value">>Should be the value you want to write.</param>
         /// <param name="args">Arguments depending on the area. First argument is the number of items multiplied by the size of an item to write. If area is DB, second parameter is the db number.
-        /// For example if you will write 500 bytes, then you have to pass type = typeof(byte) and as first arg you have to pass 500.</param>
+        /// For example if you will write 500 bytes, then you have to pass type = typeof(byte) and as first argument you have to pass 500.</param>
         /// <returns><see cref="Task"/></returns>
         public Task WriteAnyAsync(PlcArea area, int offset, object value, params int[] args)
         {
@@ -715,8 +716,6 @@ namespace Dacs7
                         if (returnCode != 0xff)
                             throw new Dacs7ContentException(returnCode, i);
                     }
-                    //all write operations are successfully
-                    return;
                 });
             }
         }
@@ -731,58 +730,55 @@ namespace Dacs7
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
             var id = GetNextReferenceId();
-            var reqMsg = S7MessageCreator.CreateBlocksCountRequest(id);
-            var policy = new S7UserDataProtocolPolicy();
             Log($"GetBlocksCount: ProtocolDataUnitReference is {id}");
-            return PerformDataExchange(id, reqMsg, policy, (cbh) =>
+            return PerformDataExchange(id, 
+                                       S7MessageCreator.CreateBlocksCountRequest(id), 
+                                       new S7UserDataProtocolPolicy(), 
+                                       (cbh) =>
             {
                 EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
-                var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
-                if (returnCode == 0xff)
+                EnsureValidReturnCode(cbh.ResponseMessage, 0xff);
+                var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
+                if (sslData.Any())
                 {
-                    var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
-                    if (sslData.Any())
+                    var bc = new PlcBlocksCount();
+                    for (var i = 0; i < sslData.Length; i += 4)
                     {
-                        var bc = new PlcBlocksCount();
-                        for (var i = 0; i < sslData.Length; i += 4)
+                        if (sslData[i] == 0x30)
                         {
-                            if (sslData[i] == 0x30)
-                            {
-                                var type = (PlcBlockType)sslData[i + 1];
-                                var value = sslData.GetSwap<UInt16>(i + 2);
+                            var type = (PlcBlockType)sslData[i + 1];
+                            var value = sslData.GetSwap<UInt16>(i + 2);
 
-                                switch (type)
-                                {
-                                    case PlcBlockType.Ob:
-                                        bc.Ob = value;
-                                        break;
-                                    case PlcBlockType.Fb:
-                                        bc.Fb = value;
-                                        break;
-                                    case PlcBlockType.Fc:
-                                        bc.Fc = value;
-                                        break;
-                                    case PlcBlockType.Db:
-                                        bc.Db = value;
-                                        break;
-                                    case PlcBlockType.Sdb:
-                                        bc.Sdb = value;
-                                        break;
-                                    case PlcBlockType.Sfc:
-                                        bc.Sfc = value;
-                                        break;
-                                    case PlcBlockType.Sfb:
-                                        bc.Sfb = value;
-                                        break;
-                                }
+                            switch (type)
+                            {
+                                case PlcBlockType.Ob:
+                                    bc.Ob = value;
+                                    break;
+                                case PlcBlockType.Fb:
+                                    bc.Fb = value;
+                                    break;
+                                case PlcBlockType.Fc:
+                                    bc.Fc = value;
+                                    break;
+                                case PlcBlockType.Db:
+                                    bc.Db = value;
+                                    break;
+                                case PlcBlockType.Sdb:
+                                    bc.Sdb = value;
+                                    break;
+                                case PlcBlockType.Sfc:
+                                    bc.Sfc = value;
+                                    break;
+                                case PlcBlockType.Sfb:
+                                    bc.Sfb = value;
+                                    break;
                             }
                         }
-                        return bc;
-
                     }
-                    throw new InvalidDataException("SSL Data are empty!");
+                    return bc;
+
                 }
-                throw new Dacs7ReturnCodeException(returnCode); 
+                throw new InvalidDataException("SSL Data are empty!");
             }) as IPlcBlocksCount;
         }
 
@@ -804,11 +800,12 @@ namespace Dacs7
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
-            var id = GetNextReferenceId();
+            
             var policy = new S7UserDataProtocolPolicy();
             var blocks = new List<IPlcBlocks>();
             var lastUnit = false;
             var sequenceNumber = (byte)0x00;
+            var id = GetNextReferenceId();
             Log($"GetBlocksOfType: ProtocolDataUnitReference is {id}");
 
             do
@@ -818,32 +815,27 @@ namespace Dacs7
                 if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
                     EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
-                    var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
-                    if (returnCode == 0xff)
+                    EnsureValidReturnCode(cbh.ResponseMessage, 0xff);
+                    var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
+                    if (sslData.Any())
                     {
-                        var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
-                        if (sslData.Any())
+                        var result = new List<IPlcBlocks>();
+                        for (var i = 0; i < sslData.Length; i += 4)
                         {
-                            var result = new List<IPlcBlocks>();
-                            for (var i = 0; i < sslData.Length; i += 4)
+                            result.Add(new PlcBlocks
                             {
-                                result.Add(new PlcBlocks
-                                {
-                                    Number = sslData.GetSwap<ushort>(i),
-                                    Flags = sslData[i + 2],
-                                    Language = PlcBlockInfo.GetLanguage(sslData[i + 3])
-                                });
-                            }
-
-                            lastUnit = cbh.ResponseMessage.GetAttribute("LastDataUnit", true);
-                            sequenceNumber = cbh.ResponseMessage.GetAttribute("SequenceNumber", (byte)0x00);
-
-                            return result;
+                                Number = sslData.GetSwap<ushort>(i),
+                                Flags = sslData[i + 2],
+                                Language = PlcBlockInfo.GetLanguage(sslData[i + 3])
+                            });
                         }
-                        throw new InvalidDataException("SSL Data are empty!");
 
+                        lastUnit = cbh.ResponseMessage.GetAttribute("LastDataUnit", true);
+                        sequenceNumber = cbh.ResponseMessage.GetAttribute("SequenceNumber", (byte)0x00);
+
+                        return result;
                     }
-                    throw new Dacs7ReturnCodeException(returnCode);
+                    throw new InvalidDataException("SSL Data are empty!");
                 }) is IEnumerable<IPlcBlocks> blocksPart)
                     blocks.AddRange(blocksPart);
             } while (!lastUnit);
@@ -877,38 +869,34 @@ namespace Dacs7
             return PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
-                var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
-                if (returnCode == 0xff)
+                EnsureValidReturnCode(cbh.ResponseMessage, 0xff);
+                var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
+                if (sslData.Any())
                 {
-                    var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
-                    if (sslData.Any())
+                    var datalength = sslData[3];
+                    var authorOffset = sslData[5];
+
+                    return new PlcBlockInfo()
                     {
-                        var datalength = sslData[3];
-                        var authorOffset = sslData[5];
+                        BlockLanguage = PlcBlockInfo.GetLanguage(sslData[10]),
+                        BlockType = PlcBlockInfo.GetPlcBlockType(sslData[11]),
+                        BlockNumber = PlcBlockInfo.GetU16(sslData, 12),
+                        Length = PlcBlockInfo.GetU32(sslData, 14),
+                        Password = PlcBlockInfo.GetString(18, 4, sslData),
+                        LastCodeChange = PlcBlockInfo.GetDt(sslData[22], sslData[23], sslData[24], sslData[25], sslData[26], sslData[27]),
+                        LastInterfaceChange = PlcBlockInfo.GetDt(sslData[28], sslData[29], sslData[30], sslData[31], sslData[32], sslData[33]),
 
-                        return new PlcBlockInfo()
-                        {
-                            BlockLanguage = PlcBlockInfo.GetLanguage(sslData[10]),
-                            BlockType = PlcBlockInfo.GetPlcBlockType(sslData[11]),
-                            BlockNumber = PlcBlockInfo.GetU16(sslData, 12),
-                            Length = PlcBlockInfo.GetU32(sslData, 14),
-                            Password = PlcBlockInfo.GetString(18, 4, sslData),
-                            LastCodeChange = PlcBlockInfo.GetDt(sslData[22], sslData[23], sslData[24], sslData[25], sslData[26], sslData[27]),
-                            LastInterfaceChange = PlcBlockInfo.GetDt(sslData[28], sslData[29], sslData[30], sslData[31], sslData[32], sslData[33]),
+                        LocalDataSize = PlcBlockInfo.GetU16(sslData, 38),
+                        CodeSize = PlcBlockInfo.GetU16(sslData, 40),
 
-                            LocalDataSize = PlcBlockInfo.GetU16(sslData, 38),
-                            CodeSize = PlcBlockInfo.GetU16(sslData, 40),
-
-                            Author = PlcBlockInfo.GetString(42 + authorOffset, 8, sslData),
-                            Family = PlcBlockInfo.GetString(42 + 8 + authorOffset, 8, sslData),
-                            Name = PlcBlockInfo.GetString(42 + 16 + authorOffset, 8, sslData),
-                            VersionHeader = PlcBlockInfo.GetVersion(sslData[42 + 24 + authorOffset]),
-                            Checksum = PlcBlockInfo.GetCheckSum(42 + 26 + authorOffset, sslData)
-                        };
-                    }
-                    throw new InvalidDataException("SSL Data are empty!");
+                        Author = PlcBlockInfo.GetString(42 + authorOffset, 8, sslData),
+                        Family = PlcBlockInfo.GetString(42 + 8 + authorOffset, 8, sslData),
+                        Name = PlcBlockInfo.GetString(42 + 16 + authorOffset, 8, sslData),
+                        VersionHeader = PlcBlockInfo.GetVersion(sslData[42 + 24 + authorOffset]),
+                        Checksum = PlcBlockInfo.GetCheckSum(42 + 26 + authorOffset, sslData)
+                    };
                 }
-                throw new Dacs7ReturnCodeException(returnCode);
+                throw new InvalidDataException("SSL Data are empty!");
             }) as IPlcBlockInfo;
         }
 
@@ -1239,6 +1227,7 @@ namespace Dacs7
 
         private void AssignParameters()
         {
+            _connectTimeout = _parameter.GetParameter("Connect Timeout", 5000);
             _timeout = _parameter.GetParameter("Receive Timeout", 5000);
             _maxParallelJobs = _parameter.GetParameter("Maximum Parallel Jobs", (ushort)1);  //Used by simatic manager -> best performance with 1
             _maxParallelCalls = _parameter.GetParameter("Maximum Parallel Calls", (ushort)4); //Used by Dacs7
@@ -1382,7 +1371,10 @@ namespace Dacs7
                 if (cbh.Event.WaitOne(_timeout))
                 {
                     if (cbh.ResponseMessage != null)
+                    {
+                        EnsureValidErrorClass(cbh.ResponseMessage, 0x00);
                         return func(cbh);
+                    }
                     if (cbh.OccuredException != null)
                         throw cbh.OccuredException;
                     else
@@ -1591,18 +1583,14 @@ namespace Dacs7
             foreach (var parameter in parameters)
             {
                 var itemSize = headerSize;
+                itemSize += 4 + parameter.Length;  // Data header = 4
+                if (parameter.Type == typeof(string))
+                    itemSize += 2;
 
-                if (parameter is WriteOperationParameter)
-                {
-                    itemSize += 4 + parameter.Length;  // Data header = 4
-                    if (parameter.Type == typeof(string))
-                        itemSize += 2;
+                if (itemSize % 2 != 0) itemSize++;
 
-                    if (itemSize % 2 != 0) itemSize++;
-                }
-
-                currentSize = currentSize + itemSize;
-                if (PduSize <= currentSize)
+                currentSize+= itemSize;
+                if (currentSize >= ItemReadSlice)
                 {
                     currentSize = headerSize + itemSize; // reset size
                     currentPackage = new List<T>(); // create new package
