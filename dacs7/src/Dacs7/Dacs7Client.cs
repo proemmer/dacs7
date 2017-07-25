@@ -372,8 +372,8 @@ namespace Dacs7
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
-            SetupReadParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
-            return GetReadOperations(offset, length).SelectMany(item => ProcessReadOperation(area, offset, type, id, dbNr, policy, item)).ToArray();
+            SetupParameter(args, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
+            return GetReadReferences(offset, length).SelectMany(item => ProcessReadOperation(area, offset, type, dbNr, policy, item)).ToArray();
         }
 
 
@@ -400,7 +400,6 @@ namespace Dacs7
                 Log(string.Format("ReadAny: ProtocolDataUnitReference is {0}", id));
                 if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
-                    EnsureValidErrorClass(cbh.ResponseMessage, 0x00);
                     var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
                     if (items > 1)
                     {
@@ -467,16 +466,16 @@ namespace Dacs7
                 throw new Dacs7NotConnectedException();
             try
             {
-                SetupReadParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
+                SetupParameter(args, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
                 
                 var requests = new List<Task<byte[]>>();
-                GetReadOperations(offset, length).ForEach(item =>
+                GetReadReferences(offset, length).ForEach(item =>
                 {
                     requests.Add(Task.Factory.StartNew(() =>
                     {
                         while (_currentNumberOfPendingCalls >= _maxParallelCalls)
                             Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
-                        return ProcessReadOperation(area, offset, type, id, dbNr, policy, item);
+                        return ProcessReadOperation(area, offset, type, dbNr, policy, item);
                     }, _taskCreationOptions));
                 });
 
@@ -508,9 +507,9 @@ namespace Dacs7
                 throw new Dacs7NotConnectedException();
             try
             {
-                SetupReadParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
-                var items = GetReadOperations(offset, length).ToList();
-                Parallel.ForEach(items, item => ProcessReadOperation(area, offset, type, GetNextReferenceId(), dbNr, policy, item));
+                SetupParameter(args, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
+                var items = GetReadReferences(offset, length).ToList();
+                Parallel.ForEach(items, item => ProcessReadOperation(area, offset, type, dbNr, policy, item));
 
                 return items.OrderBy(x => x.DataOffset)
                             .SelectMany(request => request.Data as byte[] ?? throw new InvalidDataException("Returned data are null")).ToArray();
@@ -595,8 +594,8 @@ namespace Dacs7
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
 
-            SetupWriteParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
-            GetWriteOperations(offset, length, value).ForEach(item => ProcessWriteOperation(area, id, dbNr, policy, item));
+            SetupParameter(args, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
+            GetWriteReferences(offset, length, value).ForEach(item => ProcessWriteOperation(area, dbNr, policy, item));
         }
 
         /// <summary>
@@ -616,8 +615,8 @@ namespace Dacs7
                 throw new Dacs7NotConnectedException();
             try
             {
-                SetupWriteParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
-                Parallel.ForEach(GetWriteOperations(offset, length, value), item => ProcessWriteOperation(area, GetNextReferenceId(), dbNr, policy, item));
+                SetupParameter(args, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
+                Parallel.ForEach(GetWriteReferences(offset, length, value), item => ProcessWriteOperation(area, dbNr, policy, item));
             }
             catch (AggregateException exception)
             {
@@ -643,14 +642,14 @@ namespace Dacs7
                     throw new Dacs7NotConnectedException();
 
                 var requests = new List<Task>();
-                SetupWriteParameter(args, out ushort id, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
-                foreach (var item in GetWriteOperations(offset, length, value))
+                SetupParameter(args, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
+                foreach (var item in GetWriteReferences(offset, length, value))
                 {
                     requests.Add(Task.Factory.StartNew(() =>
                     {
                         while (_currentNumberOfPendingCalls >= _maxParallelCalls)
                             Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
-                        ProcessWriteOperation(area, id, dbNr, policy, item);
+                        ProcessWriteOperation(area, dbNr, policy, item);
                     }));
                 }
 
@@ -709,7 +708,6 @@ namespace Dacs7
                 Log(string.Format("WriteAny: ProtocolDataUnitReference is {0}", id));
                 PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
-                    EnsureValidErrorClass(cbh.ResponseMessage, 0x00);
                     var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
                     for (var i = 0; i < items; i++)
                     {
@@ -935,7 +933,6 @@ namespace Dacs7
             uint controlId = 0;
             PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
-                EnsureValidErrorClass(cbh.ResponseMessage, 0x00);
                 var function = cbh.ResponseMessage.GetAttribute("Function", (byte)0);
                 if (function == 0x1d)
                 {
@@ -957,7 +954,6 @@ namespace Dacs7
                 hasNext = false;
                 PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
-                    EnsureValidErrorClass(cbh.ResponseMessage, 0x00);
                     var function = cbh.ResponseMessage.GetAttribute("Function", (byte)0);
                     if (function == 0x1e)
                     {
@@ -976,7 +972,6 @@ namespace Dacs7
             reqMsg = S7MessageCreator.CreateEndUploadRequest(id, blockType, blocknumber, controlId);
             PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
-                EnsureValidErrorClass(cbh.ResponseMessage, 0x00);
                 var function = cbh.ResponseMessage.GetAttribute("Function", (byte)0);
                 if (function == 0x1f)
                 {
@@ -1217,7 +1212,6 @@ namespace Dacs7
                     Log(string.Format("Connect: ProtocolDataUnitReference is {0}", id));
                     PerformDataExchange(id, reqMsg, policy, (cbh) =>
                     {
-                        EnsureValidErrorClass(cbh.ResponseMessage, 0x00);
                         var data = cbh.ResponseMessage.GetAttribute("ParameterData", new byte[0]);
                         if (data.Length >= 7)
                         {
@@ -1413,6 +1407,7 @@ namespace Dacs7
                 {
                     if (cbh.ResponseMessage != null)
                     {
+                        EnsureValidErrorClass(cbh.ResponseMessage, 0x00);
                         action(cbh);
                         return;
                     }
@@ -1759,26 +1754,14 @@ namespace Dacs7
             return resultList;
         }
 
-        private void SetupParameter(int[] args, out ushort id, out ushort length, out ushort dbNr)
+        private void SetupParameter<T>(int[] args, out ushort length, out ushort dbNr, out T policy) where T : S7ProtocolPolicy, new()
         {
-            id = GetNextReferenceId();
             length = Convert.ToUInt16(args.Any() ? args[0] : 0);
             dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
+            policy = new T();
         }
 
-        private void SetupWriteParameter(int[] args, out ushort id, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy)
-        {
-            SetupParameter(args, out id, out length, out dbNr);
-            policy = new S7JobWriteProtocolPolicy();
-        }
-
-        private void SetupReadParameter(int[] args, out ushort id, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy)
-        {
-            SetupParameter(args, out id, out length, out dbNr);
-            policy = new S7JobReadProtocolPolicy();
-        }
-
-        private IEnumerable<WriteReference> GetWriteOperations(int offset, ushort length, object data)
+        private IEnumerable<WriteReference> GetWriteReferences(int offset, ushort length, object data)
         {
             var requests = new List<WriteReference>();
             if (length > ItemWriteSlice)
@@ -1795,7 +1778,7 @@ namespace Dacs7
                 yield return new WriteReference(0, offset, length, data, false);
         }
 
-        private IEnumerable<ReadReference> GetReadOperations(int offset, ushort length)
+        private IEnumerable<ReadReference> GetReadReferences(int offset, ushort length)
         {
             var requests = new List<ReadReference>();
             var packageLength = length;
@@ -1808,13 +1791,14 @@ namespace Dacs7
             }
         }
 
-        private void ProcessWriteOperation(PlcArea area, ushort id, ushort dbNr, S7JobWriteProtocolPolicy policy, WriteReference item)
+        private void ProcessWriteOperation(PlcArea area, ushort dbNr, S7JobWriteProtocolPolicy policy, WriteReference item)
         {
+            var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateWriteRequest(id, area, dbNr, item.PlcOffset, item.Length, item.Data);
             Log($"WriteAny: ProtocolDataUnitReference is {id}");
+
             PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
-                EnsureValidErrorClass(cbh.ResponseMessage, 0x00);
                 var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
                 for (var i = 0; i < items; i++)
                 {
@@ -1827,14 +1811,14 @@ namespace Dacs7
             });
         }
 
-        private byte[] ProcessReadOperation(PlcArea area, int offset, Type type, ushort id, ushort dbNr, S7JobReadProtocolPolicy policy, ReadReference item)
+        private byte[] ProcessReadOperation(PlcArea area, int offset, Type type, ushort dbNr, S7JobReadProtocolPolicy policy, ReadReference item)
         {
+            var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateReadRequest(id, area, dbNr, item.PlcOffset, item.Length, type);
             Log($"ReadAny: ProtocolDataUnitReference is {id}");
 
             if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
-                EnsureValidErrorClass(cbh.ResponseMessage, 0x00);
                 var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
                 if (items > 1)
                 {
@@ -1861,6 +1845,8 @@ namespace Dacs7
             else
                 throw new InvalidDataException("Returned data are null");
         }
+
+
 
         internal static int CalculateSizeForGenericWriteOperation<T>(PlcArea area, T value, int length, out Type elementType)
         {
