@@ -80,7 +80,6 @@ namespace Dacs7
         /// <returns>The read value or the default value of the type if the data could not be read.</returns>
         Task<T> ReadAnyAsync<T>(int dbNumber, int offset);
 
-
         /// <summary>
         /// Read a number of items from the given generic type form the given data block number at the given offset and try convert it to the given dataType.
         /// </summary>
@@ -132,6 +131,13 @@ namespace Dacs7
         IEnumerable<object> ReadAny(IEnumerable<ReadOperationParameter> parameters);
 
         /// <summary>
+        /// Read multiple variables with one call from the PLC and return them as a list of the correct read types.
+        /// </summary>
+        /// <param name="parameters">A list of <see cref="ReadOperationParameter"/>, so multiple read requests can be handled in one message</param>
+        /// <returns>A list of <see cref="T:object"/> where every list entry contains the read value in order of the given parameter order</returns>
+        Task<IEnumerable<object>> ReadAnyAsync(IEnumerable<ReadOperationParameter> parameters);
+
+        /// <summary>
         /// Read data from the PLC as parallel. The size of a message to and from the PLC is limited by the PDU-Size. This method splits the message
         /// and recombine it after receiving them. And this is done in parallel.
         /// </summary>
@@ -181,12 +187,15 @@ namespace Dacs7
         void WriteAny<T>(int dbNumber, int offset, T value, int length = -1);
 
         /// <summary>
-        /// Write data to the plc.
+        /// Write data to the given PLC area.
         /// </summary>
-        /// <param name="area">Specify the area of the plc, Input, Output, ....</param>
-        /// <param name="offset">Offset in the area</param>
-        /// <param name="value">value write</param>
-        /// <param name="args">arguments e.g. array length</param>
+        /// <param name="area">The target <see cref="PlcArea"></see> we want to write.</param>
+        /// <param name="offset">This is the offset to the data you want to write.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="value">Should be the value you want to write.</param>
+        /// <param name="args">Arguments depending on the area. First argument is the number of items multiplied by the size of an item to write. If area is DB, second parameter is the db number.
+        /// For example if you will write 500 bytes, then you have to pass type = typeof(byte) and as first arg you have to pass 500.</param>
+        /// <returns></returns>
         void WriteAny(PlcArea area, int offset, object value, params int[] args);
 
         /// <summary>
@@ -203,6 +212,29 @@ namespace Dacs7
         void WriteAnyParallel(PlcArea area, int offset, object value, params int[] args);
 
         /// <summary>
+        /// Write data async to the given PLC data block with offset and length.
+        /// </summary>
+        /// <param name="dbNumber">This parameter specifies the number of the data block in the PLC</param>
+        /// <param name="offset">This is the offset to the data you want to write.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="value">Should be the value you want to write.</param>
+        /// <param name="length">the length of data in bytes you want to write  e.g. if you have a value byte[500] and you want to write
+        /// only the first 100 bytes, you have to set length to 100. If length is not set, the correct size will be determined by the value size.</param>
+        Task WriteAnyAsync<T>(int dbNumber, int offset, T value, int length = -1);
+
+        /// <summary>
+        /// Write data async to the given PLC area.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="area">The target <see cref="PlcArea"></see> we want to write.</param>
+        /// <param name="offset">This is the offset to the data you want to write.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="value">Should be the value you want to write.</param>
+        /// <param name="length">the length of data in bytes you want to write  e.g. if you have a value byte[500] and you want to write
+        /// only the first 100 bytes, you have to set length to 100. If length is not set, the correct size will be determined by the value size.</param>
+        void WriteAnyAsync<T>(PlcArea area, int offset, T value, int length = -1);
+
+        /// <summary>
         /// Write data to the plc asynchronous.
         /// </summary>
         /// <param name="area">Specify the area of the plc, Input, Output, ....</param>
@@ -216,6 +248,12 @@ namespace Dacs7
         /// </summary>
         /// <param name="parameters">A list of <see cref="WriteOperationParameter"/>, so multiple write requests can be handled in one message</param>
         void WriteAny(IEnumerable<WriteOperationParameter> parameters);
+
+        /// <summary>
+        /// Write multiple variables async with one call to the PLC.
+        /// </summary>
+        /// <param name="parameters">A list of <see cref="WriteOperationParameter"/>, so multiple write requests can be handled in one message</param>
+        Task WriteAnyAsync(IEnumerable<WriteOperationParameter> parameters);
 
         /// <summary>
         /// Read the number of blocks in the PLC per type

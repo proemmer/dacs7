@@ -451,43 +451,15 @@ namespace Dacs7
             return resultList;
         }
 
-
         /// <summary>
-        /// Read data from the plc by using Tasks.
+        /// Read multiple variables with one call from the PLC and return them as a list of the correct read types.
         /// </summary>
-        /// <param name="area">Specify the plc area to read.  e.g. IB InputByte</param>
-        /// <param name="offset">Specify the read offset</param>
-        /// <param name="type">Specify the .Net data type for the red data</param>
-        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
-        /// <returns></returns>
-        private async Task<byte[]> ReadAnyPartsAsync(PlcArea area, int offset, Type type, params int[] args)
+        /// <param name="parameters">A list of <see cref="ReadOperationParameter"/>, so multiple read requests can be handled in one message</param>
+        /// <returns>A list of <see cref="T:object"/> where every list entry contains the read value in order of the given parameter order</returns>
+        public Task<IEnumerable<object>> ReadAnyAsync(IEnumerable<ReadOperationParameter> parameters)
         {
-            if (!IsConnected)
-                throw new Dacs7NotConnectedException();
-            try
-            {
-                SetupParameter(args, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
-                
-                var requests = new List<Task<byte[]>>();
-                GetReadReferences(offset, length).ForEach(item =>
-                {
-                    requests.Add(Task.Factory.StartNew(() =>
-                    {
-                        while (_currentNumberOfPendingCalls >= _maxParallelCalls)
-                            Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
-                        return ProcessReadOperation(area, offset, type, dbNr, policy, item);
-                    }, _taskCreationOptions));
-                });
-
-                await Task.WhenAll(requests.ToArray());
-
-                return requests.SelectMany(request =>request.Result as byte[] ?? throw new InvalidDataException("Returned data are null")).ToArray();
-            }
-            catch (AggregateException exception)
-            {
-                //Throw only the first exception
-                throw exception.InnerExceptions.First();
-            }
+            //TODO:  _maxParallelCalls <= 1 ?
+            return Task.Factory.StartNew(() => ReadAny(parameters), _taskCreationOptions);
         }
 
         /// <summary>
@@ -626,42 +598,37 @@ namespace Dacs7
         }
 
 
+
         /// <summary>
-        /// Write data parallel to the connected plc.
+        /// Write data async to the given PLC data block with offset and length.
         /// </summary>
-        /// <param name="area">Specify the plc area to write to.  e.g. OB OutputByte</param>
-        /// <param name="offset">Specify the write offset</param>
-        /// <param name="value">Value to write</param>
-        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
-        /// <returns></returns>
-        private async Task WriteAnyPartsAsync(PlcArea area, int offset, object value, params int[] args)
+        /// <param name="dbNumber">This parameter specifies the number of the data block in the PLC</param>
+        /// <param name="offset">This is the offset to the data you want to write.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="value">Should be the value you want to write.</param>
+        /// <param name="length">the length of data in bytes you want to write  e.g. if you have a value byte[500] and you want to write
+        /// only the first 100 bytes, you have to set length to 100. If length is not set, the correct size will be determined by the value size.</param>
+        public Task WriteAnyAsync<T>(int dbNumber, int offset, T value, int length = -1)
         {
-            try
-            {
-                if (!IsConnected)
-                    throw new Dacs7NotConnectedException();
-
-                var requests = new List<Task>();
-                SetupParameter(args, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
-                foreach (var item in GetWriteReferences(offset, length, value))
-                {
-                    requests.Add(Task.Factory.StartNew(() =>
-                    {
-                        while (_currentNumberOfPendingCalls >= _maxParallelCalls)
-                            Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
-                        ProcessWriteOperation(area, dbNr, policy, item);
-                    }));
-                }
-
-                await Task.WhenAll(requests);
-            }
-            catch (AggregateException exception)
-            {
-                //Throw only the first exception
-                throw exception.InnerExceptions.First();
-            }
+            return WriteAnyAsync(PlcArea.DB, offset, value, new[] { length, dbNumber });
         }
 
+        /// <summary>
+        /// Write data async to the given PLC area.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="area">The target <see cref="PlcArea"></see> we want to write.</param>
+        /// <param name="offset">This is the offset to the data you want to write.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="value">Should be the value you want to write.</param>
+        /// <param name="length">the length of data in bytes you want to write  e.g. if you have a value byte[500] and you want to write
+        /// only the first 100 bytes, you have to set length to 100. If length is not set, the correct size will be determined by the value size.</param>
+        public void WriteAnyAsync<T>(PlcArea area, int offset, T value, int length = -1)
+        {
+            if (area == PlcArea.DB)
+                throw new ArgumentException("The argument area could not be DB.");
+            WriteAnyAsync(area, offset, value, new[] { length });
+        }
 
         /// <summary>
         /// Write data asynchronous to the given PLC area.
@@ -721,6 +688,14 @@ namespace Dacs7
             }
         }
 
+        /// <summary>
+        /// Write multiple variables async with one call to the PLC.
+        /// </summary>
+        /// <param name="parameters">A list of <see cref="WriteOperationParameter"/>, so multiple write requests can be handled in one message</param>
+        public Task WriteAnyAsync(IEnumerable<WriteOperationParameter> parameters)
+        {
+            return Task.Factory.StartNew(() => WriteAny(parameters), _taskCreationOptions);
+        }
 
         /// <summary>
         /// Read the number of blocks in the PLC per type
@@ -1577,6 +1552,81 @@ namespace Dacs7
 
 
         /// <summary>
+        /// Read data from the plc by using Tasks.
+        /// </summary>
+        /// <param name="area">Specify the plc area to read.  e.g. IB InputByte</param>
+        /// <param name="offset">Specify the read offset</param>
+        /// <param name="type">Specify the .Net data type for the red data</param>
+        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
+        /// <returns></returns>
+        private async Task<byte[]> ReadAnyPartsAsync(PlcArea area, int offset, Type type, params int[] args)
+        {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
+            try
+            {
+                SetupParameter(args, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
+
+                var requests = new List<Task<byte[]>>();
+                GetReadReferences(offset, length).ForEach(item =>
+                {
+                    requests.Add(Task.Factory.StartNew(() =>
+                    {
+                        while (_currentNumberOfPendingCalls >= _maxParallelCalls)
+                            Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
+                        return ProcessReadOperation(area, offset, type, dbNr, policy, item);
+                    }, _taskCreationOptions));
+                });
+
+                await Task.WhenAll(requests.ToArray());
+
+                return requests.SelectMany(request => request.Result as byte[] ?? throw new InvalidDataException("Returned data are null")).ToArray();
+            }
+            catch (AggregateException exception)
+            {
+                //Throw only the first exception
+                throw exception.InnerExceptions.First();
+            }
+        }
+
+        /// <summary>
+        /// Write data parallel to the connected plc.
+        /// </summary>
+        /// <param name="area">Specify the plc area to write to.  e.g. OB OutputByte</param>
+        /// <param name="offset">Specify the write offset</param>
+        /// <param name="value">Value to write</param>
+        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
+        /// <returns></returns>
+        private async Task WriteAnyPartsAsync(PlcArea area, int offset, object value, params int[] args)
+        {
+            try
+            {
+                if (!IsConnected)
+                    throw new Dacs7NotConnectedException();
+
+                var requests = new List<Task>();
+                SetupParameter(args, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
+                foreach (var item in GetWriteReferences(offset, length, value))
+                {
+                    requests.Add(Task.Factory.StartNew(() =>
+                    {
+                        while (_currentNumberOfPendingCalls >= _maxParallelCalls)
+                            Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
+                        ProcessWriteOperation(area, dbNr, policy, item);
+                    }));
+                }
+
+                await Task.WhenAll(requests);
+            }
+            catch (AggregateException exception)
+            {
+                //Throw only the first exception
+                throw exception.InnerExceptions.First();
+            }
+        }
+
+
+        /// <summary>
         /// Splits the operations into parts if necessary
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -1687,7 +1737,8 @@ namespace Dacs7
             return genericMethod.Invoke(null, new object[] { numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data });
         }
 
-        public static object ConvertTo<T>(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
+
+        private static object ConvertTo<T>(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
         {
             if (isString)
             {

@@ -72,7 +72,7 @@ namespace Dacs7Tests
         }
 
         [Fact]
-        public void TestMulti()
+        public void TestMultipleReadAnyRaw()
         {
             var operations = new List<ReadOperationParameter>
             {
@@ -89,34 +89,132 @@ namespace Dacs7Tests
             client.Connect(ConnectionString);
             client.WriteAny(writeOperations);
             var result = client.ReadAnyRaw(operations);
+            Assert.Equal(operations.Count, result.Count());
+            Assert.Equal((byte)0x05, result.First()[0]);
+            Assert.Equal((byte)0x01, result.First()[0]);
             client.Disconnect();
             Assert.False(client.IsConnected);
         }
 
         [Fact]
-        public async Task TestMultiBig()
+        public void TestMultipleReadAny()
         {
-            var length = 6534;
-            var buffer = new byte[length];
-            for (int i = 0; i < length; i++)
+            var operations = new List<ReadOperationParameter>
             {
-                buffer[i] = ((i % 2) == 0) ? (byte)0x05 : (byte)0x06;
-            }
-
+                new ReadOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, Type=typeof(byte), Args = new int[]{1, TestDbNr}},
+                new ReadOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}}
+            };
 
             var writeOperations = new List<WriteOperationParameter>
             {
-                WriteOperationParameter.Create<byte[]>(TestDbNr,0, buffer)
+                new WriteOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, Type=typeof(byte), Args = new int[]{1, TestDbNr}, Data = (byte)0x05},
+                new WriteOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}, Data = true}
             };
             var client = new Dacs7Client();
             client.Connect(ConnectionString);
-
-            await client.WriteAnyAsync(PlcArea.DB, 0, buffer, new [] { length, TestDbNr });
-            //client.WriteAny(PlcArea.DB, 0, buffer, new[] { length, TestDbNr });
-            //client.WriteAny(writeOperations);
+            client.WriteAny(writeOperations);
+            var result = client.ReadAny(operations);
             client.Disconnect();
             Assert.False(client.IsConnected);
         }
+
+        [Fact]
+        public async Task TestReadWriteAnyAsyncBigData()
+        {
+            var client = new Dacs7Client();
+            client.Connect(ConnectionString);
+            var length = 6534;
+            var buffer = new byte[length];
+
+            //Write 0
+            await client.WriteAnyAsync(PlcArea.DB, 0, buffer, new[] { length, TestDbNr });
+            var result = await client.ReadAnyAsync(PlcArea.DB, 0, typeof(byte[]),new[] { length, TestDbNr });
+            Assert.True(buffer.SequenceEqual(result));
+
+            for (int i = 0; i < length; i++)
+                buffer[i] = ((i % 2) == 0) ? (byte)0x05 : (byte)0x06;
+
+            await client.WriteAnyAsync(PlcArea.DB, 0, buffer, new [] { length, TestDbNr });
+            result = await client.ReadAnyAsync(PlcArea.DB, 0, typeof(byte[]), new[] { length, TestDbNr });
+            Assert.True(buffer.SequenceEqual(result));
+
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public async Task TestMultipleReadWriteAnyAsyncBigData()
+        {
+            var client = new Dacs7Client();
+            client.Connect(ConnectionString);
+            var length = 6534;
+            var buffer = new byte[length];
+
+            //Write 0
+            await client.WriteAnyAsync(new List<WriteOperationParameter> { WriteOperationParameter.Create(TestDbNr, 0, buffer) });
+            var result = await client.ReadAnyAsync(new List<ReadOperationParameter> { ReadOperationParameter.Create<byte>(TestDbNr, 0, length) });
+            Assert.True(buffer.SequenceEqual(result.First() as byte[]));
+
+            for (int i = 0; i < length; i++)
+                buffer[i] = ((i % 2) == 0) ? (byte)0x05 : (byte)0x06;
+
+            await client.WriteAnyAsync(new List<WriteOperationParameter> { WriteOperationParameter.Create(TestDbNr, 0, buffer) });
+            result = await client.ReadAnyAsync(new List<ReadOperationParameter> { ReadOperationParameter.Create<byte>(TestDbNr, 0, length) });
+            Assert.True(buffer.SequenceEqual(result.First() as byte[]));
+
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+
+        [Fact]
+        public void TestReadWriteAnyBigData()
+        {
+            var client = new Dacs7Client();
+            client.Connect(ConnectionString);
+            var length = 6534;
+            var buffer = new byte[length];
+
+            //Write 0
+            client.WriteAny(PlcArea.DB, 0, buffer, new[] { length, TestDbNr });
+            var result =  client.ReadAny(PlcArea.DB, 0, typeof(byte[]), new[] { length, TestDbNr });
+            Assert.True(buffer.SequenceEqual(result));
+
+            for (int i = 0; i < length; i++)
+                buffer[i] = ((i % 2) == 0) ? (byte)0x05 : (byte)0x06;
+
+            client.WriteAny(PlcArea.DB, 0, buffer, new[] { length, TestDbNr });
+            result =  client.ReadAny(PlcArea.DB, 0, typeof(byte[]), new[] { length, TestDbNr });
+            Assert.True(buffer.SequenceEqual(result));
+
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public void TestMultipleReadWriteAnyBigData()
+        {
+            var client = new Dacs7Client();
+            client.Connect(ConnectionString);
+            var length = 6534;
+            var buffer = new byte[length];
+
+            //Write 0
+            client.WriteAny(new List<WriteOperationParameter> { WriteOperationParameter.Create(TestDbNr, 0, buffer) });
+            var result =  client.ReadAny(new List<ReadOperationParameter> { ReadOperationParameter.Create<byte>(TestDbNr, 0, length) });
+            Assert.True(buffer.SequenceEqual(result.First() as byte[]));
+
+            for (int i = 0; i < length; i++)
+                buffer[i] = ((i % 2) == 0) ? (byte)0x05 : (byte)0x06;
+
+            client.WriteAny(new List<WriteOperationParameter> { WriteOperationParameter.Create(TestDbNr, 0, buffer) });
+            result =  client.ReadAny(new List<ReadOperationParameter> { ReadOperationParameter.Create<byte>(TestDbNr, 0, length) });
+            Assert.True(buffer.SequenceEqual(result.First() as byte[]));
+
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
 
 
         [Fact]
