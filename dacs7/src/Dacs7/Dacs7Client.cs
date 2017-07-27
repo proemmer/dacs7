@@ -221,7 +221,7 @@ namespace Dacs7
         /// <returns></returns>
         public Task ConnectAsync(string connectionString = null)
         {
-            return Task.Factory.StartNew(() => Connect(connectionString), TaskCreationOptions.LongRunning);
+            return Task.Factory.StartNew(() => Connect(connectionString));
         }
 
         /// <summary>
@@ -272,7 +272,7 @@ namespace Dacs7
         /// </summary>
         public Task DisconnectAsync()
         {
-            return Task.Factory.StartNew(Disconnect, TaskCreationOptions.LongRunning);
+            return Task.Factory.StartNew(Disconnect);
         }
 
         /// <summary>
@@ -597,8 +597,6 @@ namespace Dacs7
             }
         }
 
-
-
         /// <summary>
         /// Write data async to the given PLC data block with offset and length.
         /// </summary>
@@ -652,7 +650,6 @@ namespace Dacs7
             _taskCreationOptions);
 
         }
-
 
         /// <summary>
         /// Write multiple variables with one call to the PLC.
@@ -887,8 +884,6 @@ namespace Dacs7
             }) as IPlcBlockInfo;
         }
 
-
-
         /// <summary>
         /// Read the full data of a block from the PLC.
         /// </summary>
@@ -958,7 +953,6 @@ namespace Dacs7
             return data.ToArray();
         }
         
-
         /// <summary>
         /// Read the meta data of a block asynchronous from the PLC.This means the call is wrapped in a Task.
         /// </summary>
@@ -1135,7 +1129,6 @@ namespace Dacs7
             });
         }
 
-
         /// <summary>
         /// Read the number of blocks in the PLC per type
         /// </summary>
@@ -1144,11 +1137,6 @@ namespace Dacs7
         {
             return Task.Factory.StartNew(() => GetPlcTime(), _taskCreationOptions);
         }
-
-
-
-
-
 
         #region connection helper
 
