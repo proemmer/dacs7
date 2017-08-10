@@ -1652,27 +1652,60 @@ namespace Dacs7
             var result = new List<IEnumerable<T>> { currentPackage };
             foreach (var parameter in parameters)
             {
-                var itemSize = headerSize;
+                var itemSize = UpdateWriteParameterSize(parameter, headerSize);
+                currentSize += itemSize;
 
-                if (parameter is WriteOperationParameter)
+                if (currentSize >= PduSize)
                 {
-                    itemSize += 4 + parameter.Length;  // Data header = 4
-                    if (parameter.Type == typeof(string))
-                        itemSize += 2;
+                    do
+                    {
+                        var origin = parameter;
+                        var tmpParam = origin;
+                        do
+                        {
+                            tmpParam = currentSize > PduSize ? (T)origin.Cut(GetItemLength(origin)) : origin;
+                            itemSize = UpdateWriteParameterSize(tmpParam, headerSize);
 
-                    if (itemSize % 2 != 0) itemSize++;
+                            if (currentPackage.Any())
+                            {
+                                currentSize = headerSize + itemSize; // reset size   
+                                currentPackage = new List<T>(); // create new package
+                                result.Add(currentPackage); // add it to result
+                            }
+                            currentPackage.Add(tmpParam);
+                        }
+                        while (origin.Length > GetItemLength(origin));
+                    }
+                    while (currentSize >= PduSize);
                 }
+                else if(parameter.Length > 0)
+                    currentPackage.Add(parameter);
 
-                currentSize = currentSize + itemSize;
-                if (PduSize <= currentSize)
-                {
-                    currentSize = headerSize + itemSize; // reset size
-                    currentPackage = new List<T>(); // create new package
-                    result.Add(currentPackage); // add it to result
-                }
-                currentPackage.Add(parameter);
+
             }
             return result;
+        }
+
+        private int GetItemLength<T>(T parameter) where T : OperationParameter
+        {
+            if (parameter is WriteOperationParameter)
+            {
+                return ItemWriteSlice;
+            }
+            return ItemReadSlice;
+        }
+
+        private static int UpdateWriteParameterSize<T>(T parameter, int itemSize) where T : OperationParameter
+        {
+            if (parameter is WriteOperationParameter)
+            {
+                itemSize += 4 + parameter.Length;  // Data header = 4
+                if (parameter.Type == typeof(string))
+                    itemSize += 2;
+
+                if (itemSize % 2 != 0) itemSize++;
+            }
+            return itemSize;
         }
 
         public static object InvokeGenericMethod<T>(Type genericType, string methodName, object[] parameters)

@@ -281,7 +281,7 @@ namespace Dacs7Tests
             var result = client.ReadAnyRaw(operations);
             Assert.Equal(operations.Count, result.Count());
             Assert.Equal((byte)0x05, result.First()[0]);
-            Assert.Equal((byte)0x01, result.First()[0]);
+            Assert.Equal((byte)0x01, result.Last()[0]);
             client.Disconnect();
             Assert.False(client.IsConnected);
         }
@@ -313,7 +313,7 @@ namespace Dacs7Tests
         {
             var client = new Dacs7Client();
             client.Connect(ConnectionString);
-            var length = 6534;
+            var length = 3534;
             var buffer = new byte[length];
 
             //Write 0
@@ -337,7 +337,7 @@ namespace Dacs7Tests
         {
             var client = new Dacs7Client();
             await client.ConnectAsync(ConnectionString);
-            var length = 6534;
+            var length = 3534;
             var buffer = new byte[length];
 
             //Write 0
