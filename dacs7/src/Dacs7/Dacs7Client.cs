@@ -310,8 +310,9 @@ namespace Dacs7
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
 
+            var oringinOffset = offset;
             SetupGenericReadData<T>(ref offset,out Type readType, out int bytesToRead);
-            var data = await ReadAnyAsync(PlcArea.DB, offset, readType, new[] { bytesToRead, dbNumber });
+            var data = await ReadAnyAsync(PlcArea.DB, oringinOffset, readType, new[] { bytesToRead, dbNumber });
 
             return data != null && data.Any() ? (T)data.ConvertTo<T>() : default(T);
         }
@@ -527,7 +528,15 @@ namespace Dacs7
             if (area == PlcArea.DB)
                 throw new ArgumentException("The argument area could not be DB.");
             var size = CalculateSizeForGenericWriteOperation<T>(area, value, length, out Type elementType);
-            WriteAny(area, offset, value, new int[] { size });
+            if (elementType == typeof(bool))
+            {
+                //with bool's we have to create a multi write request
+                WriteAny((value as IEnumerable<bool>).Select((element, i) => WriteOperationParameter.Create(area, offset + i, element)));
+            }
+            else
+            {
+                WriteAny(area, offset, value, new int[] { size });
+            }
         }
 
         /// <summary>
@@ -546,9 +555,12 @@ namespace Dacs7
             {
                 //with bool's we have to create a multi write request
                 WriteAny((value as IEnumerable<bool>).Select((element, i) => WriteOperationParameter.Create(dbNumber, offset + i, element)));
-                return;
             }
-            WriteAny(PlcArea.DB, offset, value, new int[] { size, dbNumber });
+            else
+            {
+                WriteAny(PlcArea.DB, offset, value, new int[] { size, dbNumber });
+            }
+            
         }
 
         /// <summary>
@@ -606,9 +618,15 @@ namespace Dacs7
         /// <param name="value">Should be the value you want to write.</param>
         /// <param name="length">the length of data in bytes you want to write  e.g. if you have a value byte[500] and you want to write
         /// only the first 100 bytes, you have to set length to 100. If length is not set, the correct size will be determined by the value size.</param>
-        public Task WriteAnyAsync<T>(int dbNumber, int offset, T value, int length = -1)
+        public async Task WriteAnyAsync<T>(int dbNumber, int offset, T value, int length = -1)
         {
-            return WriteAnyAsync(PlcArea.DB, offset, value, new[] { length, dbNumber });
+            var size = CalculateSizeForGenericWriteOperation(PlcArea.DB, value, length, out Type elementType);
+            if (elementType == typeof(bool))
+            {
+                //with bool's we have to create a multi write request
+                await WriteAnyAsync((value as IEnumerable<bool>).Select((element, i) => WriteOperationParameter.Create(dbNumber, offset + i, element)));
+            }
+            await WriteAnyAsync(PlcArea.DB, offset, value, new[] { size, dbNumber });
         }
 
         /// <summary>
@@ -621,11 +639,17 @@ namespace Dacs7
         /// <param name="value">Should be the value you want to write.</param>
         /// <param name="length">the length of data in bytes you want to write  e.g. if you have a value byte[500] and you want to write
         /// only the first 100 bytes, you have to set length to 100. If length is not set, the correct size will be determined by the value size.</param>
-        public void WriteAnyAsync<T>(PlcArea area, int offset, T value, int length = -1)
+        public Task WriteAnyAsync<T>(PlcArea area, int offset, T value, int length = -1)
         {
             if (area == PlcArea.DB)
                 throw new ArgumentException("The argument area could not be DB.");
-            WriteAnyAsync(area, offset, value, new[] { length });
+            var size = CalculateSizeForGenericWriteOperation(PlcArea.DB, value, length, out Type elementType);
+            if (elementType == typeof(bool))
+            {
+                //with bool's we have to create a multi write request
+                return WriteAnyAsync((value as IEnumerable<bool>).Select((element, i) => WriteOperationParameter.Create(area, offset + i, element)));
+            }
+            return WriteAnyAsync(area, offset, value, new[] { size });
         }
 
         /// <summary>
@@ -638,17 +662,17 @@ namespace Dacs7
         /// <param name="args">Arguments depending on the area. First argument is the number of items multiplied by the size of an item to write. If area is DB, second parameter is the db number.
         /// For example if you will write 500 bytes, then you have to pass type = typeof(byte) and as first arg you have to pass 500.</param>
         /// <returns><see cref="Task"/></returns>
-        public Task WriteAnyAsync(PlcArea area, int offset, object value, params int[] args)
+        public async Task WriteAnyAsync(PlcArea area, int offset, object value, params int[] args)
         {
-            return Task.Factory.StartNew(async () =>
+            if (_maxParallelCalls <= 1)
             {
-                if (_maxParallelCalls <= 1)
+                await Task.Factory.StartNew(() =>
+                {
                     WriteAny(area, offset, value, args);
-                else
-                    await WriteAnyPartsAsync(area, offset, value, args);
-            },
-            _taskCreationOptions);
-
+                }, _taskCreationOptions);
+            }
+            else
+                await WriteAnyPartsAsync(area, offset, value, args);
         }
 
         /// <summary>
@@ -1718,15 +1742,16 @@ namespace Dacs7
                 bytesToRead = elementLength = 0;
         }
 
-        private static object ConvertToType(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
+        private object ConvertToType(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
         {
-            var method = typeof(Dacs7Client).GetMethod(nameof(ConvertTo));
+            var m = typeof(Dacs7Client).GetMethods().ToList();
+            var method = this.GetType().GetMethod("ConvertTo");
             var genericMethod = method.MakeGenericMethod(t);
             return genericMethod.Invoke(null, new object[] { numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data });
         }
 
 
-        private static object ConvertTo<T>(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
+        public static object ConvertTo<T>(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
         {
             if (isString)
             {
@@ -1779,7 +1804,7 @@ namespace Dacs7
             return data.ConvertTo<T>();
         }
 
-        private static IEnumerable<T> ConvertToEnumerable<T>(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
+        private IEnumerable<T> ConvertToEnumerable<T>(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
         {
             var result = ConvertTo<T>(numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data);
             if(result is IEnumerable<T>)

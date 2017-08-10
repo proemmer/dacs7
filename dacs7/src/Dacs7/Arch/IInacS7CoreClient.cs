@@ -232,7 +232,7 @@ namespace Dacs7
         /// <param name="value">Should be the value you want to write.</param>
         /// <param name="length">the length of data in bytes you want to write  e.g. if you have a value byte[500] and you want to write
         /// only the first 100 bytes, you have to set length to 100. If length is not set, the correct size will be determined by the value size.</param>
-        void WriteAnyAsync<T>(PlcArea area, int offset, T value, int length = -1);
+        Task WriteAnyAsync<T>(PlcArea area, int offset, T value, int length = -1);
 
         /// <summary>
         /// Write data to the plc asynchronous.

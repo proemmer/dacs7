@@ -70,13 +70,6 @@ namespace Dacs7Tests
             client.Disconnect();
             Assert.False(client.IsConnected, $"NotDisconnected with PduSize={pduSize}");
 
-            pduSize /= 2;
-            connectionString = ConnectionString + $";PduSize={pduSize}";
-            client.Connect(connectionString);
-            Assert.True(client.IsConnected, $"NotConnected with PduSize={pduSize}");
-            Assert.Equal(pduSize, client.PduSize);
-            client.Disconnect();
-            Assert.False(client.IsConnected, $"NotDisconnected with PduSize={pduSize}");
         }
 
         [Fact]
@@ -99,13 +92,6 @@ namespace Dacs7Tests
             await client.DisconnectAsync();
             Assert.False(client.IsConnected, $"NotDisconnected with PduSize={pduSize}");
 
-            pduSize /= 2;
-            connectionString = ConnectionString + $";PduSize={pduSize}";
-            await client.ConnectAsync(connectionString);
-            Assert.True(client.IsConnected, $"NotConnected with PduSize={pduSize}");
-            Assert.Equal(pduSize, client.PduSize);
-            await client.DisconnectAsync();
-            Assert.False(client.IsConnected, $"NotDisconnected with PduSize={pduSize}");
         }
 
 
@@ -179,6 +165,8 @@ namespace Dacs7Tests
 
                 //Set to false and read
                 await client.WriteAnyAsync<bool>(TestDbNr, offset, false);
+
+
                 var boolValue1 = await client.ReadAnyAsync<bool>(TestDbNr, offset);
 
                 //Set to true and read
