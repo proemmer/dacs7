@@ -359,9 +359,6 @@ namespace Dacs7Tests
         [Fact]
         public void TestaBunchOfMultiReads()
         {
-            if (Ip == "127.0.0.1")
-                return;  // There is a bug in teh snap7 server!!
-
             var db = 10;
             var operations = new List<ReadOperationParameter>
             {
@@ -369,7 +366,8 @@ namespace Dacs7Tests
                 new ReadOperationParameter{Area = PlcArea.DB, Offset= 1, Type=typeof(bool), Args = new int[]{1, db}},
             };
 
-            for (int i = 0; i < 100; i++)
+            // There is a bug in the snap7 server!!
+            for (int i = 0; i < ((Ip == "127.0.0.1") ? 18 : 100); i++)
             {
                 operations.Add(new ReadOperationParameter { Area = PlcArea.DB, Offset = 1 + i, Type = typeof(bool), Args = new int[] { 1, db } });
             }
@@ -389,15 +387,13 @@ namespace Dacs7Tests
         [Fact]
         public void TestaBunchOfMultiWrites()
         {
-            if (Ip == "127.0.0.1")
-                return;  // There is a bug in teh snap7 server!!
-
             var db = 11;
             var operations = new List<WriteOperationParameter>();
             var readOperations = new List<ReadOperationParameter>();
 
 
-            for (int i = 0; i < 100; i++)
+            // There is a bug in the snap7 server!!
+            for (int i = 0; i < ((Ip == "127.0.0.1") ? 18 : 100); i++)
             {
                 operations.Add(new WriteOperationParameter { Area = PlcArea.DB, Offset = i, Type = typeof(bool), Args = new int[] { 1, db }, Data = false });
                 readOperations.Add(new ReadOperationParameter { Area = PlcArea.DB, Offset = i, Type = typeof(bool), Args = new int[] { 1, db } });
