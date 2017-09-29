@@ -51,6 +51,19 @@ namespace Dacs7.Protocols
         /// <summary>
         /// This method tries to find the correct protocol policy for the given data.
         /// This process uses the registered bindings from an static dictionary, so we have the access to all available types.
+        /// If no policy would be found an instance of the generic parameter will be returned.
+        /// </summary>
+        /// <param name="data">this should be the payload to parse</param>
+        /// <returns>The found protocol policy or null if nothing was found</returns>
+        public static IProtocolPolicy FindPolicyByPayload<T>(IEnumerable<byte> data) where T : ProtocolPolicyBase, new()
+        {
+            var policy = FindPolicyByPayload(data);
+            return policy ?? new T();
+        }
+
+        /// <summary>
+        /// This method tries to find the correct protocol policy for the given data.
+        /// This process uses the registered bindings from an static dictionary, so we have the access to all available types.
         /// </summary>
         /// <param name="data">this should be the payload to parse</param>
         /// <returns>The found protocol policy or null if nothing was found</returns>
@@ -231,7 +244,7 @@ namespace Dacs7.Protocols
             var rawMessageList = InspectAndExtract(raw);
             if (rawMessageList.Any())
                 return rawMessageList;
-            throw new Exception("RawMessage could be Translated from Attributes.");
+            throw new Exception("RawMessage could not be Translated from Attributes.");
         }
 
         public IMessage CreateReplyMessage(IMessage message)

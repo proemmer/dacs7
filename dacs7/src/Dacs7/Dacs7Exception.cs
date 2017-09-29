@@ -85,7 +85,7 @@ namespace Dacs7
         public int ItemNumber { get; set; }
 
         public Dacs7ReturnCodeException(byte returnCode, int itemNumber = -1) :
-            base(string.Format($"No success return code{returnCode}: <{(itemNumber != -1 ? string.Format(" for item { 0}",itemNumber) : "")}>" ))
+            base(string.Format($"No success return code{returnCode}: <{(itemNumber != -1 ? string.Format(" for item {0}",itemNumber) : "")}>" ))
         {
             ReturnCode = returnCode;
         }

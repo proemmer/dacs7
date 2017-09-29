@@ -1,5 +1,6 @@
 ﻿using Dacs7.Domain;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -43,6 +44,9 @@ namespace Dacs7.Domain
                 return Args != null && Args.Any() ? Args.First() : 0;
             }
         }
+
+
+        public abstract OperationParameter Cut(int size);
     }
 
 
@@ -152,6 +156,11 @@ namespace Dacs7.Domain
             else
                 numberOfItems = 1;
         }
+
+        public override OperationParameter Cut(int size)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     /// <summary>
@@ -243,6 +252,53 @@ namespace Dacs7.Domain
             var size = Dacs7Client.CalculateSizeForGenericWriteOperation(area, value, length, out Type elementType);
             if (typeof(T) == typeof(string)) size -= 2;
             return size;
+        }
+
+        public override OperationParameter Cut(int size)
+        {
+            if (Type.IsArray && Data is Array newData)
+            {
+                size = Math.Min(size, newData.Length);
+                var resultSize = size;
+                var newLength = newData.Length - size;
+                var data = new object[size];
+                var restData = new object[newData.Length-size];
+                for (int i = 0; i < newData.Length; i++)
+                {
+                    if (i < size)
+                    {
+                        data[i] = newData.GetValue(i);
+                    }
+                    else
+                    {
+                        restData[i - size] = newData.GetValue(i);
+                    }
+                }
+                var args = new int[Args.Length];
+                args[0] = size;
+                if(args.Length > 1)
+                {
+                    args[1] = Args[1];
+                }
+
+                
+
+                var result = new WriteOperationParameter
+                {
+                    Area = Area,
+                    Offset = Offset,
+                    Type = Type,
+                    Data = data,
+                    Args = args
+                };
+
+                Data = restData;
+                Args[0] = newLength;
+                Offset += size;
+
+                return result;
+            }
+            return null;
         }
     }
 }

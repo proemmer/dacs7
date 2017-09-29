@@ -6,7 +6,6 @@ using Dacs7.Protocols.RFC1006;
 using Dacs7.Protocols.S7;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -222,7 +221,7 @@ namespace Dacs7
         /// <returns></returns>
         public Task ConnectAsync(string connectionString = null)
         {
-            return Task.Factory.StartNew(() => Connect(connectionString), TaskCreationOptions.LongRunning);
+            return Task.Factory.StartNew(() => Connect(connectionString));
         }
 
         /// <summary>
@@ -273,7 +272,7 @@ namespace Dacs7
         /// </summary>
         public Task DisconnectAsync()
         {
-            return Task.Factory.StartNew(Disconnect, TaskCreationOptions.LongRunning);
+            return Task.Factory.StartNew(Disconnect);
         }
 
         /// <summary>
@@ -289,13 +288,33 @@ namespace Dacs7
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
-            var t = typeof(T);
-            var readType = t == typeof(bool) ? typeof(bool) : typeof(byte);
-            var elementLength = t == typeof(bool) ? 1 : Marshal.SizeOf<T>();
-            var data = ReadAny(PlcArea.DB, offset, readType, new[] { elementLength, dbNumber });
-            if (data != null && data.Any())
-                return (T)data.ConvertTo<T>();
-            return default(T);
+
+            var oringinOffset = offset;
+            SetupGenericReadData<T>(ref offset, out Type readType, out int bytesToRead);
+            var data = ReadAny(PlcArea.DB, oringinOffset, readType, new[] { bytesToRead, dbNumber });
+
+            return data != null && data.Any() ? (T)data.ConvertTo<T>() : default(T);
+        }
+
+        /// <summary>
+        /// Read data async from the given data block number at the given offset.
+        /// The length of the data will be extracted from the generic parameter.
+        /// </summary>
+        /// <typeparam name="T">Type of the return value</typeparam>
+        /// <param name="dbNumber">This parameter specifies the number of the data block in the PLC</param>
+        /// <param name="offset">This is the offset to the data you want to read.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <returns>The read value or the default value of the type if the data could not be read.</returns>
+        public async Task<T> ReadAnyAsync<T>(int dbNumber, int offset)
+        {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
+
+            var oringinOffset = offset;
+            SetupGenericReadData<T>(ref offset,out Type readType, out int bytesToRead);
+            var data = await ReadAnyAsync(PlcArea.DB, oringinOffset, readType, new[] { bytesToRead, dbNumber });
+
+            return data != null && data.Any() ? (T)data.ConvertTo<T>() : default(T);
         }
 
         /// <summary>
@@ -312,57 +331,33 @@ namespace Dacs7
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
-            var t = typeof(T);
-            var isBool = t == typeof(bool);
-            var isString = t == typeof(string);
-            var readType = (isBool && numberOfItems <= 1) ? typeof(bool) : typeof(byte);
-            var elementLength = isBool ? (((numberOfItems + offset % 8) / 8) + 1) : (isString ? numberOfItems + 2 : Marshal.SizeOf<T>());
-            var originOffset = offset;
-            var bytesToRead = 1;
 
-            if (numberOfItems >= 0)
-            {
-                if (isBool)
-                {
-                    offset /= 8;
-                    var bitOffset = originOffset % 8;
-                    bytesToRead = elementLength;
-                }
-                else if (isString)
-                    bytesToRead = elementLength;
-                else
-                    bytesToRead = numberOfItems * elementLength;
-            }
-
+            SetupGenericReadData<T>(ref offset, out Type readType, out int bytesToRead, out int elementLength, out int bitOffset, out Type t, out bool isBool, out bool isString, numberOfItems);
             var data = ReadAny(PlcArea.DB, offset, readType, new[] { bytesToRead, dbNumber });
-            if (isString)
-            {
-                var result = new List<T>();
-                string s = string.Empty;
-                if (data.Length > 2)
-                {
-                    var length = (int)data[1];
-                    s = new String(data.Skip(2).Select(x => Convert.ToChar(x)).ToArray()).Substring(0, length);
-                }
-                result.Add((T)Convert.ChangeType(s, t));
-                return result;
-            }
-            else if (t != typeof(byte) && t != typeof(char) && numberOfItems > 0)
-            {
-                var result = new List<T>();
-                var array = data as byte[];
-                var bitOffset = originOffset % 8;
-                for (int i = 0; i < Math.Max(numberOfItems, bytesToRead); i += elementLength)
-                {
-                    result.Add(isBool ?
-                        (T)Convert.ChangeType(array.GetBit(bitOffset + i), t) :
-                        (T)data.ConvertTo<T>(i));
-                }
-                return result;
-            }
-            return (IEnumerable<T>)data.ConvertTo<T>();
+
+            return ConvertToEnumerable<T>(numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data);
         }
 
+        /// <summary>
+        /// Read a number of items async from the given generic type form the given data block number at the given offset and try convert it to the given dataType.
+        /// </summary>
+        /// <typeparam name="TElement">Element type of the resulting enumerable</typeparam>
+        /// <param name="dbNumber">This parameter specifies the number of the data block in the PLC</param>
+        /// <param name="offset">This is the offset to the data you want to read.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="numberOfItems">Number of items of the T to read. This could be the string length for a string, or the number of bytes/int for an array and so on. 
+        /// The default value is always 1.</param>
+        /// <returns>A list of TElement</returns>
+        public async Task<IEnumerable<T>> ReadAnyAsync<T>(int dbNumber, int offset, int numberOfItems)
+        {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
+
+            SetupGenericReadData<T>(ref offset, out Type readType, out int bytesToRead, out int elementLength, out int bitOffset, out Type t, out bool isBool, out bool isString, numberOfItems);
+            var data = await ReadAnyAsync(PlcArea.DB, offset, readType, new[] { bytesToRead, dbNumber });
+
+            return ConvertToEnumerable<T>(numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data);
+        }
 
         /// <summary>
         /// Read data from the PLC and return them as an array of byte.
@@ -378,52 +373,10 @@ namespace Dacs7
         {
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
-            var id = GetNextReferenceId();
-            var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
-            var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
-            var policy = new S7JobReadProtocolPolicy();
-            var packageLength = length;
-            var readResult = new List<byte>();
-            for (var j = 0; j < length; j += ItemReadSlice)
-            {
-                var readLength = Math.Min(ItemReadSlice, packageLength);
-                var reqMsg = S7MessageCreator.CreateReadRequest(id, area, dbNr, offset + j, readLength, type);
-                Log($"ReadAny: ProtocolDataUnitReference is {id}");
-
-                if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
-                {
-                    var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
-                    if (errorClass == 0)
-                    {
-                        var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
-                        if (items > 1)
-                        {
-                            var result = new List<object>();
-                            for (var i = 0; i < items; i++)
-                            {
-                                var returnCode = cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemReturnCode", (byte)0);
-                                if (returnCode == 0xFF)
-                                    result.Add(cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemData", new byte[0]));
-                                else
-                                    throw new Dacs7ReturnCodeException(returnCode, i);
-                            }
-                            return result;
-                        }
-                        var firstReturnCode = cbh.ResponseMessage.GetAttribute("Item[0].ItemReturnCode", (byte)0);
-                        if (firstReturnCode == 0xFF)
-                            return cbh.ResponseMessage.GetAttribute("Item[0].ItemData", new byte[0]);
-                        throw new Dacs7ContentException(firstReturnCode, 0);
-                    }
-                    var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
-                    throw new Dacs7Exception(errorClass, errorCode);
-                }) is byte[] currentData)
-                    readResult.AddRange(currentData);
-                else
-                    throw new InvalidDataException("Returned data are null");
-                packageLength -= ItemReadSlice;
-            }
-            return readResult.ToArray<byte>();
+            SetupParameter(args, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
+            return GetReadReferences(offset, length).SelectMany(item => ProcessReadOperation(area, offset, type, dbNr, policy, item)).ToArray();
         }
+
 
         /// <summary>
         /// Read multiple variables with one call from the PLC and return them as a list of the correct read types.
@@ -446,34 +399,27 @@ namespace Dacs7
                     throw new Dacs7ToMuchDataPerCallException(ItemReadSlice, currentPackageSize);
 
                 Log(string.Format("ReadAny: ProtocolDataUnitReference is {0}", id));
-
                 if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
-                    var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
-                    if (errorClass == 0)
+                    var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
+                    if (items > 1)
                     {
-                        var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
-                        if (items > 1)
+                        var result = new List<byte[]>();
+                        for (var i = 0; i < items; i++)
                         {
-                            var result = new List<byte[]>();
-                            for (var i = 0; i < items; i++)
-                            {
-                                var item = new List<byte>();
-                                var returnCode = cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemReturnCode", i), (byte)0);
-                                if (returnCode == 0xFF)
-                                    result.Add(cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemData", i), new byte[0]));
-                                else
-                                    throw new Dacs7ReturnCodeException(returnCode, i);
-                            }
-                            return result;
+                            var item = new List<byte>();
+                            var returnCode = cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemReturnCode", i), (byte)0);
+                            if (returnCode == 0xFF)
+                                result.Add(cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemData", i), new byte[0]));
+                            else
+                                throw new Dacs7ReturnCodeException(returnCode, i);
                         }
-                        var firstReturnCode = cbh.ResponseMessage.GetAttribute("Item[0].ItemReturnCode", (byte)0);
-                        if (firstReturnCode == 0xFF)
-                            return new List<byte[]> { cbh.ResponseMessage.GetAttribute("Item[0].ItemData", new byte[0]) };
-                        throw new Dacs7ContentException(firstReturnCode, 0);
+                        return result;
                     }
-                    var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
-                    throw new Dacs7Exception(errorClass, errorCode);
+                    var firstReturnCode = cbh.ResponseMessage.GetAttribute("Item[0].ItemReturnCode", (byte)0);
+                    if (firstReturnCode == 0xFF)
+                        return new List<byte[]> { cbh.ResponseMessage.GetAttribute("Item[0].ItemData", new byte[0]) };
+                    throw new Dacs7ContentException(firstReturnCode, 0);
                 }) is List<byte[]> currentData)
                     readResult.AddRange(currentData);
                 else
@@ -497,101 +443,24 @@ namespace Dacs7
             foreach (var param in parameters)
             {
                 var data = readResult[current++];
-                var t = param.Type;
-                var isBool = t == typeof(bool);
-                var isString = t == typeof(string);
-                var readType = typeof(byte);
                 var numberOfItems = param.Args != null && param.Args.Length > 0 ? param.Args[0] : 1;
-#pragma warning disable CS0618 // Type or member is obsolete
-                var elementLength = isBool ? 1 : (isString ? numberOfItems + 2 : Marshal.SizeOf(t));  //Will be supported: https://github.com/dotnet/corefx/pull/10541
-#pragma warning restore CS0618 // Type or member is obsolete
-                var originOffset = param.Offset;
-
-
-                if (isString)
-                {
-                    string s = string.Empty;
-                    if (data.Length > 2)
-                    {
-                        var length = (int)data[1];
-                        if (length > data.Length - 2)
-                            s = string.Empty; // INVALID DATA
-                        else
-                            s = new String(data.Skip(2).Select(x => Convert.ToChar(x)).ToArray()).Substring(0, length);
-                    }
-                    resultList.Add(Convert.ChangeType(s, t));
-                }
-                else if (t != typeof(byte) && t != typeof(char) && numberOfItems > 1)
-                {
-                    var result = new List<object>();
-                    var array = data as byte[];
-                    var byteOffet = 0;
-                    var bitOffset = originOffset % 8;
-                    for (int i = 0; i < numberOfItems; i += elementLength)
-                    {
-                        result.Add(isBool ?
-                            Convert.ChangeType(array[byteOffet].GetBit(bitOffset + i), t) :
-                            data.ConvertTo(t, i));
-                    }
-                    resultList.Add(result);
-                }
-                else if (t == typeof(byte) || t == typeof(char))
-                {
-                    resultList.Add(Convert.ChangeType(data[0], t));
-                }
-                else
-                    resultList.Add(data.ConvertTo(t));
+                var offset = param.Offset;
+                SetupGenericReadData(param.Type, ref offset, out Type readType, out int bytesToRead, out int elementLength, out int bitOffset, out Type t, out bool isBool, out bool isString, numberOfItems);
+                
+                resultList.Add(ConvertToType(numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data));
             }
             return resultList;
         }
 
-
         /// <summary>
-        /// Read data from the plc by using Tasks.
+        /// Read multiple variables with one call from the PLC and return them as a list of the correct read types.
         /// </summary>
-        /// <param name="area">Specify the plc area to read.  e.g. IB InputByte</param>
-        /// <param name="offset">Specify the read offset</param>
-        /// <param name="type">Specify the .Net data type for the red data</param>
-        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
-        /// <returns></returns>
-        /// http://www.tugberkugurlu.com/archive/how-and-where-concurrent-asynchronous-io-with-asp-net-web-api
-        private byte[] ReadAnyPartsAsync(PlcArea area, int offset, Type type, params int[] args)
+        /// <param name="parameters">A list of <see cref="ReadOperationParameter"/>, so multiple read requests can be handled in one message</param>
+        /// <returns>A list of <see cref="T:object"/> where every list entry contains the read value in order of the given parameter order</returns>
+        public Task<IEnumerable<object>> ReadAnyAsync(IEnumerable<ReadOperationParameter> parameters)
         {
-            if (!IsConnected)
-                throw new Dacs7NotConnectedException();
-            try
-            {
-                var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
-                var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
-                var packageLength = length;
-                var readResult = new List<byte>();
-                var requests = new List<Task<byte[]>>();
-                for (var j = 0; j < length; j += ItemReadSlice)
-                {
-                    while (_currentNumberOfPendingCalls >= _maxParallelCalls)
-                        Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
-                    var readLength = Math.Min(ItemReadSlice, packageLength);
-                    var readOffset = offset + j;
-                    requests.Add(Task.Factory.StartNew(() => ReadAny(area, readOffset, type, new int[] { readLength, dbNr }), _taskCreationOptions));
-                    packageLength -= ItemReadSlice;
-                }
-
-                Task.WaitAll(requests.ToArray());
-
-                foreach (var result in requests.Select(request => request.Result as byte[]))
-                {
-                    if (result != null)
-                        readResult.AddRange(result);
-                    else
-                        throw new InvalidDataException("Returned data are null");
-                }
-                return readResult.ToArray<byte>();
-            }
-            catch (AggregateException exception)
-            {
-                //Throw only the first exception
-                throw exception.InnerExceptions.First();
-            }
+            //TODO:  _maxParallelCalls <= 1 ?
+            return Task.Factory.StartNew(() => ReadAny(parameters), _taskCreationOptions);
         }
 
         /// <summary>
@@ -611,31 +480,13 @@ namespace Dacs7
                 throw new Dacs7NotConnectedException();
             try
             {
-                var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
-                var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
-                var packageLength = length;
-                var readResult = new List<byte>();
-                var results = new Dictionary<int, byte[]>();
-                var requests = new List<Tuple<int, int, int>>();
-                for (var j = 0; j < length; j += ItemReadSlice)
-                {
-                    var readLength = Math.Min(ItemReadSlice, packageLength);
-                    requests.Add(new Tuple<int, int, int>(j, offset + j, readLength));
-                    packageLength -= ItemReadSlice;
-                }
+                SetupParameter(args, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
+                var items = GetReadReferences(offset, length).ToList();
+                Parallel.ForEach(items, item => ProcessReadOperation(area, offset, type, dbNr, policy, item));
 
-                foreach (var result in requests.AsParallel().Select(result => new KeyValuePair<int, byte[]>(result.Item1, ReadAny(area, result.Item2, type, new int[] { result.Item3, dbNr }) as byte[])))
-                {
-                    if (result.Value != null)
-                        results.Add(result.Key, result.Value);
-                    else
-                        throw new InvalidDataException("Returned data are null");
-                }
+                return items.OrderBy(x => x.DataOffset)
+                            .SelectMany(request => request.Data as byte[] ?? throw new InvalidDataException("Returned data are null")).ToArray();
 
-                foreach (var result in results.OrderBy(x => x.Key).Select(x => x.Value))
-                    readResult.AddRange(result);
-
-                return readResult.ToArray<byte>();
             }
             catch (AggregateException exception)
             {
@@ -657,11 +508,9 @@ namespace Dacs7
         /// <returns></returns>
         public Task<byte[]> ReadAnyAsync(PlcArea area, int offset, Type type, params int[] args)
         {
-            return Task.Factory.StartNew(() =>
-                _maxParallelCalls <= 1 ?
-                ReadAny(area, offset, type, args) :
-                ReadAnyPartsAsync(area, offset, type, args),
-                _taskCreationOptions);
+            return  _maxParallelCalls <= 1 ?
+                Task.Factory.StartNew(() => ReadAny(area, offset, type, args), _taskCreationOptions) :
+                ReadAnyPartsAsync(area, offset, type, args);
         }
 
         /// <summary>
@@ -679,7 +528,15 @@ namespace Dacs7
             if (area == PlcArea.DB)
                 throw new ArgumentException("The argument area could not be DB.");
             var size = CalculateSizeForGenericWriteOperation<T>(area, value, length, out Type elementType);
-            WriteAny(area, offset, value, new int[] { size });
+            if (elementType == typeof(bool))
+            {
+                //with bool's we have to create a multi write request
+                WriteAny((value as IEnumerable<bool>).Select((element, i) => WriteOperationParameter.Create(area, offset + i, element)));
+            }
+            else
+            {
+                WriteAny(area, offset, value, new int[] { size });
+            }
         }
 
         /// <summary>
@@ -698,9 +555,12 @@ namespace Dacs7
             {
                 //with bool's we have to create a multi write request
                 WriteAny((value as IEnumerable<bool>).Select((element, i) => WriteOperationParameter.Create(dbNumber, offset + i, element)));
-                return;
             }
-            WriteAny(PlcArea.DB, offset, value, new int[] { size, dbNumber });
+            else
+            {
+                WriteAny(PlcArea.DB, offset, value, new int[] { size, dbNumber });
+            }
+            
         }
 
         /// <summary>
@@ -718,37 +578,8 @@ namespace Dacs7
             if (!IsConnected)
                 throw new Dacs7NotConnectedException();
 
-            var id = GetNextReferenceId();
-            var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
-            var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
-            var policy = new S7JobWriteProtocolPolicy();
-            var packageLength = length;
-            var isToExtract = length > ItemWriteSlice;
-            for (var j = 0; j < length; j += ItemWriteSlice)
-            {
-                var writeLength = Math.Min(ItemWriteSlice, packageLength);
-                var reqMsg = S7MessageCreator.CreateWriteRequest(id, area, dbNr, offset + j, writeLength, isToExtract ? ExtractData(value, j, writeLength) : value);
-                Log($"WriteAny: ProtocolDataUnitReference is {id}");
-                PerformDataExchange(id, reqMsg, policy, (cbh) =>
-                {
-                    var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
-                    if (errorClass == 0x00)
-                    {
-                        var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
-                        for (var i = 0; i < items; i++)
-                        {
-                            var returnCode = cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemReturnCode", (byte)0);
-                            if (returnCode != 0xff)
-                                throw new Dacs7ContentException(returnCode, i);
-                        }
-                        //all write operations are successfully
-                        return;
-                    }
-                    var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
-                    throw new Dacs7Exception(errorClass, errorCode);
-                });
-                packageLength -= ItemWriteSlice;
-            }
+            SetupParameter(args, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
+            GetWriteReferences(offset, length, value).ForEach(item => ProcessWriteOperation(area, dbNr, policy, item));
         }
 
         /// <summary>
@@ -768,19 +599,8 @@ namespace Dacs7
                 throw new Dacs7NotConnectedException();
             try
             {
-                var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
-                var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
-                var packageLength = length;
-                var requests = new List<Tuple<int, int, int>>();
-                var isToExtract = length > ItemWriteSlice;
-                for (var j = 0; j < length; j += ItemReadSlice)
-                {
-                    var writeLength = Math.Min(ItemReadSlice, packageLength);
-                    requests.Add(new Tuple<int, int, int>(j, offset + j, writeLength));
-                    packageLength -= ItemReadSlice;
-                }
-
-                Parallel.ForEach(requests, (request) => WriteAny(area, request.Item2, isToExtract ? ExtractData(value, request.Item1, request.Item3) : value, new int[] { request.Item3, dbNr }));
+                SetupParameter(args, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
+                Parallel.ForEach(GetWriteReferences(offset, length, value), item => ProcessWriteOperation(area, dbNr, policy, item));
             }
             catch (AggregateException exception)
             {
@@ -788,64 +608,49 @@ namespace Dacs7
                 throw exception.InnerExceptions.First();
             }
         }
-
-
-        internal static int CalculateSizeForGenericWriteOperation<T>(PlcArea area, T value, int length, out Type elementType)
-        {
-            elementType = null;
-            if (value is Array && length < 0)
-            {
-                elementType = typeof(T).GetElementType();
-                length = (value as Array).Length * TransportSizeHelper.DataTypeToSizeByte(elementType, area);
-            }
-            var size = length < 0 ? TransportSizeHelper.DataTypeToSizeByte(typeof(T), PlcArea.DB) : length;
-            var stringValue = value as string;
-            if (stringValue != null)
-            {
-                if (length < 0) size = stringValue.Length;
-                size += 2;
-            }
-            return size;
-        }
-
 
         /// <summary>
-        /// Write data parallel to the connected plc.
+        /// Write data async to the given PLC data block with offset and length.
         /// </summary>
-        /// <param name="area">Specify the plc area to write to.  e.g. OB OutputByte</param>
-        /// <param name="offset">Specify the write offset</param>
-        /// <param name="value">Value to write</param>
-        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
-        /// <returns></returns>
-        private void WriteAnyPartsAsync(PlcArea area, int offset, object value, params int[] args)
+        /// <param name="dbNumber">This parameter specifies the number of the data block in the PLC</param>
+        /// <param name="offset">This is the offset to the data you want to write.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="value">Should be the value you want to write.</param>
+        /// <param name="length">the length of data in bytes you want to write  e.g. if you have a value byte[500] and you want to write
+        /// only the first 100 bytes, you have to set length to 100. If length is not set, the correct size will be determined by the value size.</param>
+        public async Task WriteAnyAsync<T>(int dbNumber, int offset, T value, int length = -1)
         {
-            try
+            var size = CalculateSizeForGenericWriteOperation(PlcArea.DB, value, length, out Type elementType);
+            if (elementType == typeof(bool))
             {
-                var length = Convert.ToUInt16(args.Any() ? args[0] : 0);
-                var dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
-                var packageLength = length;
-                var requests = new List<Task>();
-                var isToExtract = length > ItemWriteSlice;
-                for (var j = 0; j < length; j += ItemReadSlice)
-                {
-                    while (_currentNumberOfPendingCalls >= _maxParallelCalls)
-                        Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
-                    var writeLength = Math.Min(ItemReadSlice, packageLength);
-                    var writeOffset = offset + j;
-                    var data = isToExtract ? ExtractData(value, j, writeLength) : value;
-                    requests.Add(Task.Factory.StartNew(() => WriteAny(area, writeOffset, data, new int[] { writeLength, dbNr }), TaskCreationOptions.LongRunning));
-                    packageLength -= ItemReadSlice;
-                }
-
-                Task.WaitAll(requests.ToArray());
+                //with bool's we have to create a multi write request
+                await WriteAnyAsync((value as IEnumerable<bool>).Select((element, i) => WriteOperationParameter.Create(dbNumber, offset + i, element)));
             }
-            catch (AggregateException exception)
-            {
-                //Throw only the first exception
-                throw exception.InnerExceptions.First();
-            }
+            await WriteAnyAsync(PlcArea.DB, offset, value, new[] { size, dbNumber });
         }
 
+        /// <summary>
+        /// Write data async to the given PLC area.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="area">The target <see cref="PlcArea"></see> we want to write.</param>
+        /// <param name="offset">This is the offset to the data you want to write.(offset is normally the number of bytes from the beginning of the area, 
+        /// excepted the data type is a boolean, then the offset is in number of bits. This means ByteOffset*8+BitNumber)</param>
+        /// <param name="value">Should be the value you want to write.</param>
+        /// <param name="length">the length of data in bytes you want to write  e.g. if you have a value byte[500] and you want to write
+        /// only the first 100 bytes, you have to set length to 100. If length is not set, the correct size will be determined by the value size.</param>
+        public Task WriteAnyAsync<T>(PlcArea area, int offset, T value, int length = -1)
+        {
+            if (area == PlcArea.DB)
+                throw new ArgumentException("The argument area could not be DB.");
+            var size = CalculateSizeForGenericWriteOperation(PlcArea.DB, value, length, out Type elementType);
+            if (elementType == typeof(bool))
+            {
+                //with bool's we have to create a multi write request
+                return WriteAnyAsync((value as IEnumerable<bool>).Select((element, i) => WriteOperationParameter.Create(area, offset + i, element)));
+            }
+            return WriteAnyAsync(area, offset, value, new[] { size });
+        }
 
         /// <summary>
         /// Write data asynchronous to the given PLC area.
@@ -857,19 +662,18 @@ namespace Dacs7
         /// <param name="args">Arguments depending on the area. First argument is the number of items multiplied by the size of an item to write. If area is DB, second parameter is the db number.
         /// For example if you will write 500 bytes, then you have to pass type = typeof(byte) and as first arg you have to pass 500.</param>
         /// <returns><see cref="Task"/></returns>
-        public Task WriteAnyAsync(PlcArea area, int offset, object value, params int[] args)
+        public async Task WriteAnyAsync(PlcArea area, int offset, object value, params int[] args)
         {
-            return Task.Factory.StartNew(() =>
+            if (_maxParallelCalls <= 1)
             {
-                if (_maxParallelCalls <= 1)
+                await Task.Factory.StartNew(() =>
+                {
                     WriteAny(area, offset, value, args);
-                else
-                    WriteAnyPartsAsync(area, offset, value, args);
-            },
-            _taskCreationOptions);
-
+                }, _taskCreationOptions);
+            }
+            else
+                await WriteAnyPartsAsync(area, offset, value, args);
         }
-
 
         /// <summary>
         /// Write multiple variables with one call to the PLC.
@@ -892,24 +696,34 @@ namespace Dacs7
                 Log(string.Format("WriteAny: ProtocolDataUnitReference is {0}", id));
                 PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
-                    var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
-                    if (errorClass == 0x00)
+                    var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
+                    for (var i = 0; i < items; i++)
                     {
-                        var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
-                        for (var i = 0; i < items; i++)
-                        {
-                            var returnCode = cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemReturnCode", i), (byte)0);
-                            if (returnCode != 0xff)
-                                throw new Dacs7ContentException(returnCode, i);
-                        }
+                        var returnCode = cbh.ResponseMessage.GetAttribute(string.Format("Item[{0}].ItemReturnCode", i), (byte)0);
+                        if (returnCode != 0xff)
+                            throw new Dacs7ContentException(returnCode, i);
+                    }
                     //all write operations are successfully
                     return;
-                    }
-                    var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
-                    throw new Dacs7Exception(errorClass, errorCode);
                 });
             }
         }
+
+        /// <summary>
+        /// Write multiple variables async with one call to the PLC.
+        /// </summary>
+        /// <param name="parameters">A list of <see cref="WriteOperationParameter"/>, so multiple write requests can be handled in one message</param>
+        public Task WriteAnyAsync(IEnumerable<WriteOperationParameter> parameters)
+        {
+            return Task.Factory.StartNew(() => WriteAny(parameters), _taskCreationOptions);
+        }
+
+
+
+
+
+
+
 
 
         /// <summary>
@@ -926,57 +740,53 @@ namespace Dacs7
             Log($"GetBlocksCount: ProtocolDataUnitReference is {id}");
             return PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
-                var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0);
-                if (errorCode == 0)
+                EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
+                var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
+                if (returnCode == 0xff)
                 {
-                    var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
-                    if (returnCode == 0xff)
+                    var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
+                    if (sslData.Any())
                     {
-                        var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
-                        if (sslData.Any())
+                        var bc = new PlcBlocksCount();
+                        for (var i = 0; i < sslData.Length; i += 4)
                         {
-                            var bc = new PlcBlocksCount();
-                            for (var i = 0; i < sslData.Length; i += 4)
+                            if (sslData[i] == 0x30)
                             {
-                                if (sslData[i] == 0x30)
-                                {
-                                    var type = (PlcBlockType)sslData[i + 1];
-                                    var value = sslData.GetSwap<UInt16>(i + 2);
+                                var type = (PlcBlockType)sslData[i + 1];
+                                var value = sslData.GetSwap<UInt16>(i + 2);
 
-                                    switch (type)
-                                    {
-                                        case PlcBlockType.Ob:
-                                            bc.Ob = value;
-                                            break;
-                                        case PlcBlockType.Fb:
-                                            bc.Fb = value;
-                                            break;
-                                        case PlcBlockType.Fc:
-                                            bc.Fc = value;
-                                            break;
-                                        case PlcBlockType.Db:
-                                            bc.Db = value;
-                                            break;
-                                        case PlcBlockType.Sdb:
-                                            bc.Sdb = value;
-                                            break;
-                                        case PlcBlockType.Sfc:
-                                            bc.Sfc = value;
-                                            break;
-                                        case PlcBlockType.Sfb:
-                                            bc.Sfb = value;
-                                            break;
-                                    }
+                                switch (type)
+                                {
+                                    case PlcBlockType.Ob:
+                                        bc.Ob = value;
+                                        break;
+                                    case PlcBlockType.Fb:
+                                        bc.Fb = value;
+                                        break;
+                                    case PlcBlockType.Fc:
+                                        bc.Fc = value;
+                                        break;
+                                    case PlcBlockType.Db:
+                                        bc.Db = value;
+                                        break;
+                                    case PlcBlockType.Sdb:
+                                        bc.Sdb = value;
+                                        break;
+                                    case PlcBlockType.Sfc:
+                                        bc.Sfc = value;
+                                        break;
+                                    case PlcBlockType.Sfb:
+                                        bc.Sfb = value;
+                                        break;
                                 }
                             }
-                            return bc;
-
                         }
-                        throw new InvalidDataException("SSL Data are empty!");
+                        return bc;
+
                     }
-                    throw new Dacs7ReturnCodeException(returnCode);
+                    throw new InvalidDataException("SSL Data are empty!");
                 }
-                throw new Dacs7ParameterException(errorCode);
+                throw new Dacs7ReturnCodeException(returnCode); 
             }) as IPlcBlocksCount;
         }
 
@@ -1011,37 +821,33 @@ namespace Dacs7
 
                 if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
-                    var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0);
-                    if (errorCode == 0)
+                    EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
+                    var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
+                    if (returnCode == 0xff)
                     {
-                        var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
-                        if (returnCode == 0xff)
+                        var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
+                        if (sslData.Any())
                         {
-                            var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
-                            if (sslData.Any())
+                            var result = new List<IPlcBlocks>();
+                            for (var i = 0; i < sslData.Length; i += 4)
                             {
-                                var result = new List<IPlcBlocks>();
-                                for (var i = 0; i < sslData.Length; i += 4)
+                                result.Add(new PlcBlocks
                                 {
-                                    result.Add(new PlcBlocks
-                                    {
-                                        Number = sslData.GetSwap<ushort>(i),
-                                        Flags = sslData[i + 2],
-                                        Language = PlcBlockInfo.GetLanguage(sslData[i + 3])
-                                    });
-                                }
-
-                                lastUnit = cbh.ResponseMessage.GetAttribute("LastDataUnit", true);
-                                sequenceNumber = cbh.ResponseMessage.GetAttribute("SequenceNumber", (byte)0x00);
-
-                                return result;
+                                    Number = sslData.GetSwap<ushort>(i),
+                                    Flags = sslData[i + 2],
+                                    Language = PlcBlockInfo.GetLanguage(sslData[i + 3])
+                                });
                             }
-                            throw new InvalidDataException("SSL Data are empty!");
 
+                            lastUnit = cbh.ResponseMessage.GetAttribute("LastDataUnit", true);
+                            sequenceNumber = cbh.ResponseMessage.GetAttribute("SequenceNumber", (byte)0x00);
+
+                            return result;
                         }
-                        throw new Dacs7ReturnCodeException(returnCode);
+                        throw new InvalidDataException("SSL Data are empty!");
+
                     }
-                    throw new Dacs7ParameterException(errorCode);
+                    throw new Dacs7ReturnCodeException(returnCode);
                 }) is IEnumerable<IPlcBlocks> blocksPart)
                     blocks.AddRange(blocksPart);
             } while (!lastUnit);
@@ -1074,43 +880,39 @@ namespace Dacs7
             Log($"ReadBlockInfo: ProtocolDataUnitReference is {id}");
             return PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
-                var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0);
-                if (errorCode == 0)
+                EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
+                var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
+                if (returnCode == 0xff)
                 {
-                    var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
-                    if (returnCode == 0xff)
+                    var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
+                    if (sslData.Any())
                     {
-                        var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
-                        if (sslData.Any())
+                        var datalength = sslData[3];
+                        var authorOffset = sslData[5];
+
+                        return new PlcBlockInfo()
                         {
-                            var datalength = sslData[3];
-                            var authorOffset = sslData[5];
+                            BlockLanguage = PlcBlockInfo.GetLanguage(sslData[10]),
+                            BlockType = PlcBlockInfo.GetPlcBlockType(sslData[11]),
+                            BlockNumber = PlcBlockInfo.GetU16(sslData, 12),
+                            Length = PlcBlockInfo.GetU32(sslData, 14),
+                            Password = PlcBlockInfo.GetString(18, 4, sslData),
+                            LastCodeChange = PlcBlockInfo.GetDt(sslData[22], sslData[23], sslData[24], sslData[25], sslData[26], sslData[27]),
+                            LastInterfaceChange = PlcBlockInfo.GetDt(sslData[28], sslData[29], sslData[30], sslData[31], sslData[32], sslData[33]),
 
-                            return new PlcBlockInfo()
-                            {
-                                BlockLanguage = PlcBlockInfo.GetLanguage(sslData[10]),
-                                BlockType = PlcBlockInfo.GetPlcBlockType(sslData[11]),
-                                BlockNumber = PlcBlockInfo.GetU16(sslData, 12),
-                                Length = PlcBlockInfo.GetU32(sslData, 14),
-                                Password = PlcBlockInfo.GetString(18, 4, sslData),
-                                LastCodeChange = PlcBlockInfo.GetDt(sslData[22], sslData[23], sslData[24], sslData[25], sslData[26], sslData[27]),
-                                LastInterfaceChange = PlcBlockInfo.GetDt(sslData[28], sslData[29], sslData[30], sslData[31], sslData[32], sslData[33]),
+                            LocalDataSize = PlcBlockInfo.GetU16(sslData, 38),
+                            CodeSize = PlcBlockInfo.GetU16(sslData, 40),
 
-                                LocalDataSize = PlcBlockInfo.GetU16(sslData, 38),
-                                CodeSize = PlcBlockInfo.GetU16(sslData, 40),
-
-                                Author = PlcBlockInfo.GetString(42 + authorOffset, 8, sslData),
-                                Family = PlcBlockInfo.GetString(42 + 8 + authorOffset, 8, sslData),
-                                Name = PlcBlockInfo.GetString(42 + 16 + authorOffset, 8, sslData),
-                                VersionHeader = PlcBlockInfo.GetVersion(sslData[42 + 24 + authorOffset]),
-                                Checksum = PlcBlockInfo.GetCheckSum(42 + 26 + authorOffset, sslData)
-                            };
-                        }
-                        throw new InvalidDataException("SSL Data are empty!");
+                            Author = PlcBlockInfo.GetString(42 + authorOffset, 8, sslData),
+                            Family = PlcBlockInfo.GetString(42 + 8 + authorOffset, 8, sslData),
+                            Name = PlcBlockInfo.GetString(42 + 16 + authorOffset, 8, sslData),
+                            VersionHeader = PlcBlockInfo.GetVersion(sslData[42 + 24 + authorOffset]),
+                            Checksum = PlcBlockInfo.GetCheckSum(42 + 26 + authorOffset, sslData)
+                        };
                     }
-                    throw new Dacs7ReturnCodeException(returnCode);
+                    throw new InvalidDataException("SSL Data are empty!");
                 }
-                throw new Dacs7ParameterException(errorCode);
+                throw new Dacs7ReturnCodeException(returnCode);
             }) as IPlcBlockInfo;
         }
 
@@ -1133,22 +935,16 @@ namespace Dacs7
             uint controlId = 0;
             PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
-                var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
-                if (errorClass == 0x00)
+                var function = cbh.ResponseMessage.GetAttribute("Function", (byte)0);
+                if (function == 0x1d)
                 {
-                    var function = cbh.ResponseMessage.GetAttribute("Function", (byte)0);
-                    if (function == 0x1d)
-                    {
-                        //all write operations are successfully
-                        var paramData = cbh.ResponseMessage.GetAttribute("ParameterData", new byte[0]);
-                        if (paramData.Length >= 7)
-                            controlId = paramData.GetSwap<uint>(3);
-                        return;
-                    }
-
+                    //all write operations are successfully
+                    var paramData = cbh.ResponseMessage.GetAttribute("ParameterData", new byte[0]);
+                    if (paramData.Length >= 7)
+                        controlId = paramData.GetSwap<uint>(3);
+                    return;
                 }
-                var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
-                throw new Dacs7Exception(errorClass, errorCode);
+
             });
 
             //Upload packages
@@ -1160,23 +956,17 @@ namespace Dacs7
                 hasNext = false;
                 PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
-                    var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
-                    if (errorClass == 0x00)
+                    var function = cbh.ResponseMessage.GetAttribute("Function", (byte)0);
+                    if (function == 0x1e)
                     {
-                        var function = cbh.ResponseMessage.GetAttribute("Function", (byte)0);
-                        if (function == 0x1e)
-                        {
-                            //all write operations are successfully
-                            var paramdata = cbh.ResponseMessage.GetAttribute("ParameterData", new byte[0]);
-                            if (paramdata.Length == 1)
-                                hasNext = paramdata[0] == 0x01;
-                            var currentdata = cbh.ResponseMessage.GetAttribute("Data", new byte[0]).Skip(3);
-                            data.AddRange(currentdata);
-                            return;
-                        }
+                        //all write operations are successfully
+                        var paramdata = cbh.ResponseMessage.GetAttribute("ParameterData", new byte[0]);
+                        if (paramdata.Length == 1)
+                            hasNext = paramdata[0] == 0x01;
+                        var currentdata = cbh.ResponseMessage.GetAttribute("Data", new byte[0]).Skip(3);
+                        data.AddRange(currentdata);
+                        return;
                     }
-                    var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
-                    throw new Dacs7Exception(errorClass, errorCode);
                 });
             } while (hasNext);
 
@@ -1184,92 +974,17 @@ namespace Dacs7
             reqMsg = S7MessageCreator.CreateEndUploadRequest(id, blockType, blocknumber, controlId);
             PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
-                var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
-                if (errorClass == 0x00)
+                var function = cbh.ResponseMessage.GetAttribute("Function", (byte)0);
+                if (function == 0x1f)
                 {
-                    var function = cbh.ResponseMessage.GetAttribute("Function", (byte)0);
-                    if (function == 0x1f)
-                    {
-                        //all write operations are successfully
-                        return;
-                    }
+                    //all write operations are successfully
+                    return;
                 }
-                var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
-                throw new Dacs7Exception(errorClass, errorCode);
             });
 
             return data.ToArray();
         }
-
-        ///// <summary>
-        ///// Write the full data of a block to the plc.
-        ///// </summary>
-        ///// <param name="blockType">Specify the block type to read. e.g. DB</param>
-        ///// <param name="blocknumber">Specify the Number of the block</param>
-        ///// <param name="data">Plc block in byte</param>
-        ///// <returns></returns>
-        //public bool DownloadPlcBlock(PlcBlockType blockType, int blocknumber, byte[] data)
-        //{
-        //    //TODO: Implement it correct
-        //    throw new NotImplementedException();
-
-        //    if (!IsConnected)
-        //        throw new Dacs7NotConnectedException();
-        //    var id = GetNextReferenceId();
-        //    var reqMsg = S7MessageCreator.CreateStartDownloadRequest(id, blockType, blocknumber, data);  //Start Download
-        //    var policy = new S7UserDataProtocolPolicy();
-        //    Log($"DownloadPlcBlock: ProtocolDataUnitReference is {id}");
-        //    return (bool)PerformeDataExchange(id, reqMsg, policy, (cbh) =>
-        //    {
-        //        var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0xff);
-        //        if (errorCode == 0)
-        //        {
-        //            var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
-        //            if (returnCode == 0x00)
-        //            {
-
-        //                //TODO!!!!!!!!!!!!!!!!!!!!!!
-        //                var callbackId = GetNextReferenceId();
-        //                var cbhOnUpdate = GetCallbackHandler(callbackId, true);
-        //                //_alarmUpdateId = callbackId;
-        //                cbhOnUpdate.OnCallbackAction = (msg) =>
-        //                {
-        //                    if (msg != null)
-        //                    {
-        //                        try
-        //                        {
-        //                            var returnCodeCb = msg.GetAttribute("ReturnCode", (byte)0);
-        //                            if (returnCodeCb == 0xff)
-        //                            {
-        //                                var dataLength = msg.GetAttribute("UserDataLength", (UInt16)0);
-        //                                if (dataLength > 0)
-        //                                {
-        //                                    var subItemName = string.Format("Alarm[{0}].", 0) + "{0}";
-        //                                    var isComing = msg.GetAttribute(string.Format(subItemName, "IsComing"), false);
-        //                                    return;
-        //                                }
-        //                                throw new InvalidDataException("SSL Data are empty!");
-        //                            }
-        //                            throw new Dacs7ReturnCodeException(returnCodeCb);
-        //                        }
-        //                        catch (Exception ex)
-        //                        {
-        //                            Log(ex.Message);
-        //                        }
-        //                    }
-        //                    else if (cbhOnUpdate.OccuredException != null)
-        //                    {
-        //                        Log(cbhOnUpdate.OccuredException.Message);
-        //                    }
-        //                };
-        //                return callbackId;
-        //            }
-        //            throw new Dacs7ReturnCodeException(returnCode);
-        //        }
-        //        throw new Dacs7ParameterException(errorCode);
-        //    });
-        //}
-
+        
         /// <summary>
         /// Read the meta data of a block asynchronous from the PLC.This means the call is wrapped in a Task.
         /// </summary>
@@ -1280,6 +995,14 @@ namespace Dacs7
         {
             return Task.Factory.StartNew(() => ReadBlockInfo(blockType, blocknumber), _taskCreationOptions);
         }
+
+
+
+
+
+
+
+
 
         /// <summary>
         /// Read the current pending alarms from the PLC.
@@ -1300,41 +1023,35 @@ namespace Dacs7
 
                 if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
-                    var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0);
-                    if (errorCode == 0)
+                    EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
+                    EnsureValidReturnCode(cbh.ResponseMessage, 0xff);
+
+                    var numberOfAlarms = cbh.ResponseMessage.GetAttribute("NumberOfAlarms", 0);
+                    var result = new List<IPlcAlarm>();
+                    for (var i = 0; i < numberOfAlarms; i++)
                     {
-                        var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
-                        if (returnCode == 0xff)
+                        var subItemName = $"Alarm[{i}]." + "{0}";
+                        var isComing = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "IsComing"), false);
+                        var isAck = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "IsAck"), false);
+                        var ack = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "Ack"), false);
+                        result.Add(new PlcAlarm
                         {
-                            var numberOfAlarms = cbh.ResponseMessage.GetAttribute("NumberOfAlarms", 0);
-                            var result = new List<IPlcAlarm>();
-                            for (var i = 0; i < numberOfAlarms; i++)
-                            {
-                                var subItemName = $"Alarm[{i}]." + "{0}";
-                                var isComing = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "IsComing"), false);
-                                var isAck = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "IsAck"), false);
-                                var ack = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "Ack"), false);
-                                result.Add(new PlcAlarm
-                                {
-                                    Id = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "Id"), (ushort)0),
-                                    MsgNumber = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "MsgNumber"), (uint)0),
-                                    IsComing = isComing,
-                                    IsAck = isAck,
-                                    Ack = ack,
-                                    AlarmSource = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "AlarmSource"), (ushort)0),
-                                    Timestamp = ExtractTimestamp(cbh.ResponseMessage, i, !isComing && !isAck && ack ? 1 : 0),
-                                    AssotiatedValue = ExtractAssotiatedValue(cbh.ResponseMessage, i)
-                                });
-                            }
-
-                            lastUnit = cbh.ResponseMessage.GetAttribute("LastDataUnit", true);
-                            sequenceNumber = cbh.ResponseMessage.GetAttribute("SequenceNumber", (byte)0x00);
-
-                            return result;
-                        }
-                        throw new Dacs7ReturnCodeException(returnCode);
+                            Id = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "Id"), (ushort)0),
+                            MsgNumber = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "MsgNumber"), (uint)0),
+                            IsComing = isComing,
+                            IsAck = isAck,
+                            Ack = ack,
+                            AlarmSource = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "AlarmSource"), (ushort)0),
+                            Timestamp = PlcAlarm.ExtractTimestamp(cbh.ResponseMessage, i, !isComing && !isAck && ack ? 1 : 0),
+                            AssotiatedValue = PlcAlarm.ExtractAssotiatedValue(cbh.ResponseMessage, i)
+                        });
                     }
-                    throw new Dacs7ParameterException(errorCode);
+
+                    lastUnit = cbh.ResponseMessage.GetAttribute("LastDataUnit", true);
+                    sequenceNumber = cbh.ResponseMessage.GetAttribute("SequenceNumber", (byte)0x00);
+
+                    return result;
+
                 }) is IEnumerable<IPlcAlarm> alarmPart)
                     alarms.AddRange(alarmPart);
             } while (!lastUnit);
@@ -1370,63 +1087,52 @@ namespace Dacs7
             Log($"RegisterAlarmUpdateCallback: ProtocolDataUnitReference is {id}");
             return (ushort)PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
-                var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0xff);
-                if (errorCode == 0)
+                EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
+                EnsureValidReturnCode(cbh.ResponseMessage, 0xff);
+                    
+                var callbackId = GetNextReferenceId();
+                var cbhOnUpdate = GetCallbackHandler(callbackId, true);
+                _alarmUpdateId = callbackId;
+                cbhOnUpdate.OnCallbackAction = (msg) =>
                 {
-                    var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
-                    if (returnCode == 0xff)
+                    if (msg != null)
                     {
-                        var callbackId = GetNextReferenceId();
-                        var cbhOnUpdate = GetCallbackHandler(callbackId, true);
-                        _alarmUpdateId = callbackId;
-                        cbhOnUpdate.OnCallbackAction = (msg) =>
+                        try
                         {
-                            if (msg != null)
+                            EnsureValidReturnCode(cbh.ResponseMessage, 0xff);
+                            var dataLength = msg.GetAttribute("UserDataLength", (UInt16)0);
+                            if (dataLength > 0)
                             {
-                                try
+                                var subItemName = "Alarm[0].{0}";
+                                var isComing = msg.GetAttribute(string.Format(subItemName, "IsComing"), false);
+                                onAlarmUpdate(new PlcAlarm
                                 {
-                                    var returnCodeCb = msg.GetAttribute("ReturnCode", (byte)0);
-                                    if (returnCodeCb == 0xff)
-                                    {
-                                        var dataLength = msg.GetAttribute("UserDataLength", (UInt16)0);
-                                        if (dataLength > 0)
-                                        {
-                                            var subItemName = "Alarm[0].{0}";
-                                            var isComing = msg.GetAttribute(string.Format(subItemName, "IsComing"), false);
-                                            onAlarmUpdate(new PlcAlarm
-                                            {
-                                                Id = msg.GetAttribute(string.Format(subItemName, "Id"), (ushort)0),
-                                                MsgNumber = msg.GetAttribute(string.Format(subItemName, "MsgNumber"), (uint)0),
-                                                IsComing = isComing,
-                                                IsAck = msg.GetAttribute(string.Format(subItemName, "IsAck"), false),
-                                                Ack = msg.GetAttribute(string.Format(subItemName, "Ack"), false),
-                                                AlarmSource = msg.GetAttribute(string.Format(subItemName, "AlarmSource"), (ushort)0),
-                                                Timestamp = ExtractTimestamp(msg, 0),
-                                                AssotiatedValue = ExtractAssotiatedValue(msg, 0)
-                                            });
-                                            return;
-                                        }
-                                        throw new InvalidDataException("SSL Data are empty!");
-                                    }
-                                    throw new Dacs7ReturnCodeException(returnCodeCb);
-                                }
-                                catch (Exception ex)
-                                {
-                                    Log(ex.Message);
-                                    onErrorOccured?.Invoke(ex);
-                                }
+                                    Id = msg.GetAttribute(string.Format(subItemName, "Id"), (ushort)0),
+                                    MsgNumber = msg.GetAttribute(string.Format(subItemName, "MsgNumber"), (uint)0),
+                                    IsComing = isComing,
+                                    IsAck = msg.GetAttribute(string.Format(subItemName, "IsAck"), false),
+                                    Ack = msg.GetAttribute(string.Format(subItemName, "Ack"), false),
+                                    AlarmSource = msg.GetAttribute(string.Format(subItemName, "AlarmSource"), (ushort)0),
+                                    Timestamp = PlcAlarm.ExtractTimestamp(msg, 0),
+                                    AssotiatedValue = PlcAlarm.ExtractAssotiatedValue(msg, 0)
+                                });
+                                return;
                             }
-                            else if (cbhOnUpdate.OccuredException != null)
-                            {
-                                Log(cbhOnUpdate.OccuredException.Message);
-                                onErrorOccured?.Invoke(cbhOnUpdate.OccuredException);
-                            }
-                        };
-                        return callbackId;
+                            throw new InvalidDataException("SSL Data are empty!");
+                        }
+                        catch (Exception ex)
+                        {
+                            Log(ex.Message);
+                            onErrorOccured?.Invoke(ex);
+                        }
                     }
-                    throw new Dacs7ReturnCodeException(returnCode);
-                }
-                throw new Dacs7ParameterException(errorCode);
+                    else if (cbhOnUpdate.OccuredException != null)
+                    {
+                        Log(cbhOnUpdate.OccuredException.Message);
+                        onErrorOccured?.Invoke(cbhOnUpdate.OccuredException);
+                    }
+                };
+                return callbackId;
             });
         }
 
@@ -1454,20 +1160,12 @@ namespace Dacs7
             Log($"GetPlcTime: ProtocolDataUnitReference is {id}");
             return (DateTime)PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
-                var errorCode = cbh.ResponseMessage.GetAttribute("ParamErrorCode", (ushort)0);
-                if (errorCode == 0)
-                {
-                    var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
-                    if (returnCode == 0xff)
-                    {
-                        var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
-                        if (sslData.Any())
-                            return sslData.ConvertToDateTime(2);
-                        throw new InvalidDataException("SSL Data are empty!");
-                    }
-                    throw new Dacs7ReturnCodeException(returnCode);
-                }
-                throw new Dacs7ParameterException(errorCode);
+                EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
+                EnsureValidReturnCode(cbh.ResponseMessage, 0xff);
+                var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
+                if (sslData.Any())
+                    return sslData.ConvertToDateTime(2);
+                throw new InvalidDataException("SSL Data are empty!");
             });
         }
 
@@ -1480,8 +1178,7 @@ namespace Dacs7
             return Task.Factory.StartNew(() => GetPlcTime(), _taskCreationOptions);
         }
 
-
-        #region Helper
+        #region connection helper
 
         private void OnClientStateChanged(string socketHandle, bool connected)
         {
@@ -1518,19 +1215,14 @@ namespace Dacs7
                     Log(string.Format("Connect: ProtocolDataUnitReference is {0}", id));
                     PerformDataExchange(id, reqMsg, policy, (cbh) =>
                     {
-                        var errorClass = cbh.ResponseMessage.GetAttribute("ErrorClass", (byte)0);
-                        if (errorClass == 0)
+                        var data = cbh.ResponseMessage.GetAttribute("ParameterData", new byte[0]);
+                        if (data.Length >= 7)
                         {
-                            var data = cbh.ResponseMessage.GetAttribute("ParameterData", new byte[0]);
-                            if (data.Length >= 7)
-                            {
-                                PduSize = data.GetSwap<UInt16>(5);
-                                Log(string.Format("Connected: PduSize is {0}", PduSize));
-                            }
-                            return;
+                            PduSize = data.GetSwap<UInt16>(5);
+                            Log(string.Format("Connected: PduSize is {0}", PduSize));
                         }
-                        var errorCode = cbh.ResponseMessage.GetAttribute("ErrorCode", (byte)0);
-                        throw new Dacs7Exception(errorClass, errorCode);
+                        return;
+
                     });
                 }
                 else
@@ -1544,6 +1236,46 @@ namespace Dacs7
             _waitingForPlcConfiguration.Set();
         }
 
+        #endregion
+
+        #region config
+
+        private void AssignParameters()
+        {
+            _timeout = _parameter.GetParameter("Receive Timeout", 5000);
+            _maxParallelJobs = _parameter.GetParameter("Maximum Parallel Jobs", (ushort)1);  //Used by simatic manager -> best performance with 1
+            _maxParallelCalls = _parameter.GetParameter("Maximum Parallel Calls", (ushort)4); //Used by Dacs7
+            _taskCreationOptions = _parameter.GetParameter("Use Threads", true) ? TaskCreationOptions.LongRunning : TaskCreationOptions.None; //Used by Dacs7
+            _sleeptimeAfterMaxPendingCallsReached = _parameter.GetParameter("Sleeptime After Max Pending Calls Reached", 5);
+
+            var config = new ClientSocketConfiguration
+            {
+                Hostname = _parameter.GetParameter("Ip", "127.0.0.1"),
+                ServiceName = _parameter.GetParameter("Port", 102),
+                ReceiveBufferSize = _parameter.GetParameter("ReceiveBufferSize", 65536),
+                Autoconnect = _parameter.GetParameter("Reconnect", false),
+                //_parameter.GetParameter("KeepAliveTime", default(uint)),
+                //_parameter.GetParameter("KeepAliveInterval", default(uint))
+            };
+
+            //Setup the socket
+            _clientSocket = new ClientSocket(config);
+
+            var name = typeof(Rfc1006ProtocolHandler).Name;
+            _upperProtocolHandlerFactory.RemoveProtocolHandler(name);
+            _upperProtocolHandlerFactory.AddUpperProtocolHandler(new Rfc1006ProtocolHandler(
+                _clientSocket.Send,
+               "0x0100",
+                CalcRemoteTsap(
+                    _parameter.GetParameter("Connection Type", PlcConnectionType.Pg),
+                    _parameter.GetParameter("Rack", ConnectionParameters.DefaultRack),
+                    _parameter.GetParameter("Slot", ConnectionParameters.DefaultSlot)),
+                 PduSize));
+            _lastConnectException = null;
+        }
+        #endregion
+
+        #region Communication
 
         private void OnRawDataReceived(string socketHandle, IEnumerable<byte> buffer)
         {
@@ -1555,7 +1287,7 @@ namespace Dacs7
                     foreach (var array in _upperProtocolHandlerFactory.RemoveUpperProtocolFrame(b, b.Length).Where(payload => payload != null))
                     {
                         Log($"OnRawDataReceived: Received Data size was {array.Length}");
-                        var policy = GetProtocolPolicy(array);
+                        var policy = ProtocolPolicyBase.FindPolicyByPayload<S7AckDataProtocolPolicy>(array);
                         if (policy != null)
                         {
                             Log($"OnRawDataReceived: determined policy is {policy.GetType().Name}");
@@ -1620,40 +1352,6 @@ namespace Dacs7
             }
         }
 
-        private void AssignParameters()
-        {
-            _timeout = _parameter.GetParameter("Receive Timeout", 5000);
-            _maxParallelJobs = _parameter.GetParameter("Maximum Parallel Jobs", (ushort)1);  //Used by simatic manager -> best performance with 1
-            _maxParallelCalls = _parameter.GetParameter("Maximum Parallel Calls", (ushort)4); //Used by Dacs7
-            _taskCreationOptions = _parameter.GetParameter("Use Threads", true) ? TaskCreationOptions.LongRunning : TaskCreationOptions.None; //Used by Dacs7
-            _sleeptimeAfterMaxPendingCallsReached = _parameter.GetParameter("Sleeptime After Max Pending Calls Reached", 5);
-
-            var config = new ClientSocketConfiguration
-            {
-                Hostname = _parameter.GetParameter("Ip", "127.0.0.1"),
-                ServiceName = _parameter.GetParameter("Port", 102),
-                ReceiveBufferSize = _parameter.GetParameter("ReceiveBufferSize", 65536),
-                Autoconnect = _parameter.GetParameter("Reconnect", false),
-                //_parameter.GetParameter("KeepAliveTime", default(uint)),
-                //_parameter.GetParameter("KeepAliveInterval", default(uint))
-            };
-
-            //Setup the socket
-            _clientSocket = new ClientSocket(config);
-
-            var name = typeof(Rfc1006ProtocolHandler).Name;
-            _upperProtocolHandlerFactory.RemoveProtocolHandler(name);
-            _upperProtocolHandlerFactory.AddUpperProtocolHandler(new Rfc1006ProtocolHandler(
-                _clientSocket.Send,
-               "0x0100",
-                CalcRemoteTsap(
-                    _parameter.GetParameter("Connection Type", PlcConnectionType.Pg),
-                    _parameter.GetParameter("Rack", ConnectionParameters.DefaultRack),
-                    _parameter.GetParameter("Slot", ConnectionParameters.DefaultSlot)),
-                 PduSize));
-            _lastConnectException = null;
-        }
-
         private UInt16 GetNextReferenceId()
         {
             var id = Interlocked.Increment(ref _referenceId);
@@ -1676,11 +1374,6 @@ namespace Dacs7
         {
             var value = ((ushort)connectionType << 8) + (rack * 0x20) + slot;
             return string.Format("0x{0:X4}", value);
-        }
-
-        private void Log(string message)
-        {
-            OnLogEntry?.Invoke(message);
         }
 
         private object PerformDataExchange(ushort id, IMessage msg, IProtocolPolicy policy, Func<CallbackHandler, object> func)
@@ -1717,6 +1410,7 @@ namespace Dacs7
                 {
                     if (cbh.ResponseMessage != null)
                     {
+                        EnsureValidErrorClass(cbh.ResponseMessage, 0x00);
                         action(cbh);
                         return;
                     }
@@ -1787,45 +1481,50 @@ namespace Dacs7
         private void ReleaseCallbackHandler(ushort id)
         {
             CallbackHandler cbh;
-
-            _callbackLockSlim.EnterUpgradeableReadLock();
             try
             {
-                if (_callbacks.TryGetValue(id, out cbh))
+
+                _callbackLockSlim.EnterUpgradeableReadLock();
+                try
                 {
-                    _callbackLockSlim.EnterWriteLock();
+                    if (_callbacks.TryGetValue(id, out cbh))
+                    {
+                        _callbackLockSlim.EnterWriteLock();
+                        try
+                        {
+                            _callbacks.Remove(id);
+                        }
+                        finally
+                        {
+                            _callbackLockSlim.ExitWriteLock();
+                        }
+                    }
+                }
+                finally
+                {
+                    _callbackLockSlim.ExitUpgradeableReadLock();
+                }
+
+
+                if (cbh != null && cbh.Event != null)
+                {
+                    _queueLockSlim.EnterWriteLock();
                     try
                     {
-                        _callbacks.Remove(id);
+                        _eventQueue.Enqueue(cbh.Event);
+                        Log($"Number of queued events {_eventQueue.Count}");
                     }
                     finally
                     {
-                        _callbackLockSlim.ExitWriteLock();
+                        _queueLockSlim.ExitWriteLock();
                     }
                 }
             }
             finally
             {
-                _callbackLockSlim.ExitUpgradeableReadLock();
+                Interlocked.Decrement(ref _currentNumberOfPendingCalls);
             }
 
-
-            if (cbh != null && cbh.Event != null)
-            {
-                _queueLockSlim.EnterWriteLock();
-                try
-                {
-                    _eventQueue.Enqueue(cbh.Event);
-                    Log($"Number of queued events {_eventQueue.Count}");
-                }
-                finally
-                {
-                    _queueLockSlim.ExitWriteLock();
-                }
-            }
-
-            //_semaphore.Release();
-            Interlocked.Decrement(ref _currentNumberOfPendingCalls);
         }
 
         private async void SendMessages(IMessage msg, IProtocolPolicy policy)
@@ -1843,26 +1542,115 @@ namespace Dacs7
                 throw new SocketException((int)ret);
         }
 
-        private static IProtocolPolicy GetProtocolPolicy(IEnumerable<byte> data)
+
+        #endregion
+
+        #region Helper
+
+
+        private void EnsureValidParameterErrorCode(IMessage msg, ushort valid = 0)
         {
-            var policy = ProtocolPolicyBase.FindPolicyByPayload(data);
-            return policy ?? new S7AckDataProtocolPolicy();
+            var errorCode = msg.GetAttribute("ParamErrorCode", (ushort)0);
+            if (errorCode != valid)
+                throw new Dacs7ParameterException(errorCode);
         }
 
-        private static byte[] ExtractAssotiatedValue(IMessage msg, int alarmindex)
+        private void EnsureValidReturnCode(IMessage msg, byte valid = 0xff)
         {
-            var subItemName = $"Alarm[{alarmindex}].ExtendedData[0]." + "{0}";
-            if (msg.GetAttribute(string.Format(subItemName, "NumberOfAssotiatedValues"), 0) > 0)
+            var returnCode = msg.GetAttribute("ReturnCode", (byte)0);
+            if (returnCode != valid)
+                throw new Dacs7ReturnCodeException(returnCode);
+        }
+
+        private void EnsureValidErrorClass(IMessage msg, byte valid = 0x00)
+        {
+            var errorClass = msg.GetAttribute("ErrorClass", (byte)0);
+            if (errorClass != valid)
             {
-                return msg.GetAttribute(string.Format(subItemName, "AssotiatedValue"), new byte[0]);
+                var errorCode = msg.GetAttribute("ErrorCode", (byte)0);
+                throw new Dacs7Exception(errorClass, errorCode);
             }
-            return new byte[0];
         }
 
-        private static DateTime ExtractTimestamp(IMessage msg, int alarmindex, int tsIdx = 0)
+
+        private void Log(string message)
         {
-            var subItemName = $"Alarm[{alarmindex}].ExtendedData[{tsIdx}]." + "{0}";
-            return msg.GetAttribute(string.Format(subItemName, "Timestamp"), DateTime.MinValue);
+            OnLogEntry?.Invoke(message);
+        }
+
+
+        /// <summary>
+        /// Read data from the plc by using Tasks.
+        /// </summary>
+        /// <param name="area">Specify the plc area to read.  e.g. IB InputByte</param>
+        /// <param name="offset">Specify the read offset</param>
+        /// <param name="type">Specify the .Net data type for the red data</param>
+        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
+        /// <returns></returns>
+        private async Task<byte[]> ReadAnyPartsAsync(PlcArea area, int offset, Type type, params int[] args)
+        {
+            if (!IsConnected)
+                throw new Dacs7NotConnectedException();
+            try
+            {
+                SetupParameter(args, out ushort length, out ushort dbNr, out S7JobReadProtocolPolicy policy);
+
+                var requests = new List<Task<byte[]>>();
+                GetReadReferences(offset, length).ForEach(item =>
+                {
+                    requests.Add(Task.Factory.StartNew(() =>
+                    {
+                        while (_currentNumberOfPendingCalls >= _maxParallelCalls)
+                            Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
+                        return ProcessReadOperation(area, offset, type, dbNr, policy, item);
+                    }, _taskCreationOptions));
+                });
+
+                await Task.WhenAll(requests.ToArray());
+
+                return requests.SelectMany(request => request.Result as byte[] ?? throw new InvalidDataException("Returned data are null")).ToArray();
+            }
+            catch (AggregateException exception)
+            {
+                //Throw only the first exception
+                throw exception.InnerExceptions.First();
+            }
+        }
+
+        /// <summary>
+        /// Write data parallel to the connected plc.
+        /// </summary>
+        /// <param name="area">Specify the plc area to write to.  e.g. OB OutputByte</param>
+        /// <param name="offset">Specify the write offset</param>
+        /// <param name="value">Value to write</param>
+        /// <param name="args">Arguments depending on the area. First argument is the data length in byte. If area is DB, second parameter is the db number </param>
+        /// <returns></returns>
+        private async Task WriteAnyPartsAsync(PlcArea area, int offset, object value, params int[] args)
+        {
+            try
+            {
+                if (!IsConnected)
+                    throw new Dacs7NotConnectedException();
+
+                var requests = new List<Task>();
+                SetupParameter(args, out ushort length, out ushort dbNr, out S7JobWriteProtocolPolicy policy);
+                foreach (var item in GetWriteReferences(offset, length, value))
+                {
+                    requests.Add(Task.Factory.StartNew(() =>
+                    {
+                        while (_currentNumberOfPendingCalls >= _maxParallelCalls)
+                            Thread.Sleep(_sleeptimeAfterMaxPendingCallsReached);
+                        ProcessWriteOperation(area, dbNr, policy, item);
+                    }));
+                }
+
+                await Task.WhenAll(requests);
+            }
+            catch (AggregateException exception)
+            {
+                //Throw only the first exception
+                throw exception.InnerExceptions.First();
+            }
         }
 
 
@@ -1880,78 +1668,315 @@ namespace Dacs7
             var result = new List<IEnumerable<T>> { currentPackage };
             foreach (var parameter in parameters)
             {
-                var itemSize = headerSize;
+                var itemSize = UpdateWriteParameterSize(parameter, headerSize);
+                currentSize += itemSize;
 
-                if (parameter is WriteOperationParameter)
+                if (currentSize >= PduSize)
                 {
-                    itemSize += 4 + parameter.Length;  // Data header = 4
-                    if (parameter.Type == typeof(string))
-                        itemSize += 2;
+                    do
+                    {
+                        var origin = parameter;
+                        var tmpParam = origin;
+                        do
+                        {
+                            tmpParam = currentSize > PduSize ? (T)origin.Cut(GetItemLength(origin)) : origin;
+                            itemSize = UpdateWriteParameterSize(tmpParam, headerSize);
 
-                    if (itemSize % 2 != 0) itemSize++;
+                            if (currentPackage.Any())
+                            {
+                                currentSize = headerSize + itemSize; // reset size   
+                                currentPackage = new List<T>(); // create new package
+                                result.Add(currentPackage); // add it to result
+                            }
+                            currentPackage.Add(tmpParam);
+                        }
+                        while (origin.Length > GetItemLength(origin));
+                    }
+                    while (currentSize >= PduSize);
                 }
+                else if(parameter.Length > 0)
+                    currentPackage.Add(parameter);
 
-                currentSize = currentSize + itemSize;
-                if (PduSize <= currentSize)
-                {
-                    currentSize = headerSize + itemSize; // reset size
-                    currentPackage = new List<T>(); // create new package
-                    result.Add(currentPackage); // add it to result
-                }
-                currentPackage.Add(parameter);
+
             }
             return result;
         }
 
-        private static object ExtractData(object data, int offset = 0, int length = Int32.MaxValue)
+        private int GetItemLength<T>(T parameter) where T : OperationParameter
         {
-            var enumerable = data as byte[];
-            if (enumerable == null)
+            if (parameter is WriteOperationParameter)
             {
-                var boolEnum = data as bool[];
-                if (boolEnum == null)
+                return ItemWriteSlice;
+            }
+            return ItemReadSlice;
+        }
+
+        private static int UpdateWriteParameterSize<T>(T parameter, int itemSize) where T : OperationParameter
+        {
+            if (parameter is WriteOperationParameter)
+            {
+                itemSize += 4 + parameter.Length;  // Data header = 4
+                if (parameter.Type == typeof(string))
+                    itemSize += 2;
+
+                if (itemSize % 2 != 0) itemSize++;
+            }
+            return itemSize;
+        }
+
+        public static object InvokeGenericMethod<T>(Type genericType, string methodName, object[] parameters)
+        {
+            var method = parameters.All(x => x != null)
+                                ? typeof(T).GetMethod(methodName, parameters.Select(x => x.GetType()).ToArray())
+                                : typeof(T).GetMethod(methodName);
+            var genericMethod = method.MakeGenericMethod(genericType);
+            return genericMethod.Invoke(null, parameters);
+        }
+
+        private static void SetupGenericReadData<T>(ref int offset, out Type readType, out int bytesToRead)
+        {
+            SetupGenericReadData<T>(ref offset, out readType, out bytesToRead, out _ ,out _, out _, out _, out _);
+        }
+
+        private static object SetupGenericReadData(Type genericType, ref int offset, out Type readType, out int bytesToRead, out int elementLength, out int bitOffset, out Type t, out bool isBool, out bool isString, int numberOfItems = 1)
+        {
+            readType = t = null; 
+            bytesToRead = elementLength = bitOffset = 0;
+            isBool = isString = false;
+
+            var parameters = new object[] { offset, readType, bytesToRead, elementLength, bitOffset, t, isBool, isString, numberOfItems };
+            var result = InvokeGenericMethod<Dacs7Client>(genericType, nameof(SetupGenericReadData), parameters);
+            offset = (int)parameters[0];
+            readType = (Type)parameters[1];
+            bytesToRead = (int)parameters[2];
+            elementLength = (int)parameters[3];
+            bitOffset = (int)parameters[4];
+            t = (Type)parameters[5];
+            isBool = (bool)parameters[6];
+            isString = (bool)parameters[7];
+            return result;
+        }
+
+        public static void SetupGenericReadData<T>(ref int offset, out Type readType, out int bytesToRead, out int elementLength, out int bitOffset, out Type t, out bool isBool, out bool isString, int numberOfItems = 1)
+        {
+            t = typeof(T);
+            isBool = t == typeof(bool);
+            isString = t == typeof(string);
+            readType = (isBool && numberOfItems <= 1) ? typeof(bool) : typeof(byte);
+            
+            bytesToRead = 1;
+            bitOffset = 0;
+            var originOffset = offset;
+            if (numberOfItems > 0)
+            {
+                if (isBool)
                 {
-                    if (data is bool)
-                        return (bool)data;
-                    if (data is byte || data is char)
-                        return (byte)data;
-                    return null;
+                    offset /= 8;
+                    bitOffset = originOffset % 8;
+                    var bitsToRead = bitOffset + numberOfItems;
+                    elementLength = bitsToRead / 8 + (bitsToRead % 8 > 0 ? 1 : 0);
+                    bytesToRead = elementLength;
                 }
-                return boolEnum.SubArray(offset, length);
+                else if (isString)
+                {
+                    bytesToRead = elementLength = numberOfItems + 2;
+                }
+                else
+                {
+                    elementLength = Marshal.SizeOf<T>();
+                    bytesToRead = numberOfItems * elementLength;
+                }
             }
-            return enumerable.SubArray(offset, length);
+            else
+                bytesToRead = elementLength = 0;
         }
 
-        private static string ResolveErrorCode<T>(byte b) where T : struct
+        private object ConvertToType(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
         {
-            return Enum.IsDefined(typeof(T), b) ? ResolveErrorCode<T>(Enum.GetName(typeof(T), b)) : b.ToString(CultureInfo.InvariantCulture);
+            var m = typeof(Dacs7Client).GetMethods().ToList();
+            var method = this.GetType().GetMethod("ConvertTo");
+            var genericMethod = method.MakeGenericMethod(t);
+            return genericMethod.Invoke(null, new object[] { numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data });
         }
 
-        private static string ResolveErrorCode<T>(ushort sh) where T : struct
-        {
-            return Enum.IsDefined(typeof(T), sh) ? ResolveErrorCode<T>(Enum.GetName(typeof(T), sh)) : sh.ToString(CultureInfo.InvariantCulture);
-        }
 
-        private static string ResolveErrorCode<T>(string s) where T : struct
+        public static object ConvertTo<T>(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
         {
-            if (Enum.TryParse(s, out T result))
+            if (isString)
             {
-                var r = GetEnumDescription(result);
-                if (!r.IsNullOrEmpty())
-                    return r;
+                var result = new List<T>();
+                string s = string.Empty;
+                if (data.Length > 2)
+                {
+                    var length = (int)data[1];
+                    if (length > data.Length - 2)
+                        s = string.Empty; // INVALID DATA
+                    else
+                        s = new String(data.Skip(2).Select(x => Convert.ToChar(x)).ToArray()).Substring(0, length);
+                }
+                result.Add((T)Convert.ChangeType(s, t));
+                return result;
             }
-            return s;
+            else if (t != typeof(byte) && t != typeof(char) && numberOfItems > 1)
+            {
+                var result = new List<T>();
+                var array = data as byte[];
+                var lengthInBits = array.Length * 8;
+                for (int i = 0; i < numberOfItems; i += elementLength)
+                {
+                    if (isBool)
+                    {
+                        var bitIdx = bitOffset + i;
+                        if (bitIdx >= lengthInBits)
+                        {
+                            throw new IndexOutOfRangeException($"Bit-Index {bitIdx} is not in the array!");
+                        }
+
+                        result.Add((T)Convert.ChangeType(array.GetBit(bitIdx), t));
+                    }
+                    else
+                    {
+                        if (i >= array.Length)
+                        {
+                            throw new IndexOutOfRangeException($"Index {i} is not in the array!");
+                        }
+
+                        result.Add((T)data.ConvertTo<T>(i));
+                    }
+                }
+                return result;
+            }
+            else if ((t == typeof(byte) || t == typeof(char)) && numberOfItems == 1)
+            {
+                return (T)Convert.ChangeType(data[0], t);
+            }
+            return data.ConvertTo<T>();
         }
 
-        private static string GetEnumDescription(object e)
+        private IEnumerable<T> ConvertToEnumerable<T>(int numberOfItems, Type t, bool isBool, bool isString, int elementLength, int bitOffset, int bytesToRead, byte[] data)
         {
-            var fieldInfo = e.GetType().GetField(e.ToString());
-            if (fieldInfo != null)
+            var result = ConvertTo<T>(numberOfItems, t, isBool, isString, elementLength, bitOffset, bytesToRead, data);
+            if(result is IEnumerable<T>)
             {
-                if (fieldInfo.GetCustomAttributes(typeof(DescriptionAttribute), false) is DescriptionAttribute[] enumAttributes && enumAttributes.Length > 0)
-                    return enumAttributes[0].Description;
+                return (IEnumerable<T>)result;
             }
-            return e.ToString();
+            var resultList = new List<T>
+            {
+                (T)result
+            };
+            return resultList;
+        }
+
+        private void SetupParameter<T>(int[] args, out ushort length, out ushort dbNr, out T policy) where T : S7ProtocolPolicy, new()
+        {
+            length = Convert.ToUInt16(args.Any() ? args[0] : 0);
+            dbNr = Convert.ToUInt16(args.Length > 1 ? args[1] : 0);
+            policy = new T();
+        }
+
+        private IEnumerable<WriteReference> GetWriteReferences(int offset, ushort length, object data)
+        {
+            var requests = new List<WriteReference>();
+            if (length > ItemWriteSlice)
+            {
+                var packageLength = length;
+                for (var j = 0; j < length; j += ItemWriteSlice)
+                {
+                    var writeLength = Math.Min(ItemWriteSlice, packageLength);
+                    packageLength -= ItemWriteSlice;
+                    yield return new WriteReference(j, offset + j, writeLength, data);
+                }
+            }
+            else
+                yield return new WriteReference(0, offset, length, data, false);
+        }
+
+        private IEnumerable<ReadReference> GetReadReferences(int offset, ushort length)
+        {
+            var requests = new List<ReadReference>();
+            var packageLength = length;
+            var readResult = new List<byte>();
+            for (var j = 0; j < length; j += ItemReadSlice)
+            {
+                var readLength = Math.Min(ItemReadSlice, packageLength);
+                packageLength -= ItemReadSlice;
+                yield return new ReadReference(j, offset + j, readLength);
+            }
+        }
+
+        private void ProcessWriteOperation(PlcArea area, ushort dbNr, S7JobWriteProtocolPolicy policy, WriteReference item)
+        {
+            var id = GetNextReferenceId();
+            var reqMsg = S7MessageCreator.CreateWriteRequest(id, area, dbNr, item.PlcOffset, item.Length, item.Data);
+            Log($"WriteAny: ProtocolDataUnitReference is {id}");
+
+            PerformDataExchange(id, reqMsg, policy, (cbh) =>
+            {
+                var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
+                for (var i = 0; i < items; i++)
+                {
+                    var returnCode = cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemReturnCode", (byte)0);
+                    if (returnCode != 0xff)
+                        throw new Dacs7ContentException(returnCode, i);
+                }
+                //all write operations are successfully
+                return;
+            });
+        }
+
+        private byte[] ProcessReadOperation(PlcArea area, int offset, Type type, ushort dbNr, S7JobReadProtocolPolicy policy, ReadReference item)
+        {
+            var id = GetNextReferenceId();
+            var reqMsg = S7MessageCreator.CreateReadRequest(id, area, dbNr, item.PlcOffset, item.Length, type);
+            Log($"ReadAny: ProtocolDataUnitReference is {id}");
+
+            if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
+            {
+                var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
+                if (items > 1)
+                {
+                    var result = new List<object>();
+                    for (var i = 0; i < items; i++)
+                    {
+                        var returnCode = cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemReturnCode", (byte)0);
+                        if (returnCode == 0xFF)
+                            result.Add(cbh.ResponseMessage.GetAttribute($"Item[{i}].ItemData", new byte[0]));
+                        else
+                            throw new Dacs7ReturnCodeException(returnCode, i);
+                    }
+                    return result;
+                }
+                var firstReturnCode = cbh.ResponseMessage.GetAttribute("Item[0].ItemReturnCode", (byte)0);
+                if (firstReturnCode == 0xFF)
+                    return cbh.ResponseMessage.GetAttribute("Item[0].ItemData", new byte[0]);
+                throw new Dacs7ContentException(firstReturnCode, 0);
+            }) is byte[] currentData)
+            {
+                item.Data = currentData;
+                return currentData;
+            }
+            else
+                throw new InvalidDataException("Returned data are null");
+        }
+
+
+
+        internal static int CalculateSizeForGenericWriteOperation<T>(PlcArea area, T value, int length, out Type elementType)
+        {
+            elementType = null;
+            if (value is Array && length < 0)
+            {
+                elementType = typeof(T).GetElementType();
+                length = (value as Array).Length * TransportSizeHelper.DataTypeToSizeByte(elementType, area);
+            }
+            var size = length < 0 ? TransportSizeHelper.DataTypeToSizeByte(typeof(T), PlcArea.DB) : length;
+            var stringValue = value as string;
+            if (stringValue != null)
+            {
+                if (length < 0) size = stringValue.Length;
+                size += 2;
+            }
+            return size;
         }
         #endregion
     }

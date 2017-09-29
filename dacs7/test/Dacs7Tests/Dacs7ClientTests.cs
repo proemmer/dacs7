@@ -1,3 +1,5 @@
+// #define TEST_PLC
+
 using Dacs7;
 using Dacs7.Domain;
 using System;
@@ -6,21 +8,22 @@ using System.Threading.Tasks;
 using Xunit;
 using System.Linq;
 using System.Diagnostics;
-using System.Threading;
 using Dacs7.Helper;
-using Dacs7.Protocols.S7;
 
 namespace Dacs7Tests
 {
+
+
 
 #if TEST_PLC
 
     public class Dacs7ClientTests
     {
-        //private const string Ip = "127.0.0.1";//"127.0.0.1";
-        private const string Ip = "192.168.0.148";
-        //private const string Ip = "192.168.1.10";//"127.0.0.1";
-        private const string ConnectionString = "Data Source=" + Ip + ":102,0,2"; //"Data Source=192.168.1.10:102,0,2";
+        private const string Ip = "127.0.0.1";//"127.0.0.1";
+        //private const string Ip = "192.168.0.148";
+        //private const string Ip = "192.168.1.17";//"127.0.0.1";
+        //private const string ConnectionString = "Data Source=" + Ip + ":102,0,2;PduSize=240"; //"Data Source=192.168.1.10:102,0,2";
+        public const string ConnectionString = "Data Source=" + Ip + ":102,0,2;Connect Timeout=10000"; //"Data Source=192.168.1.10:102,0,2";
         private const int TestDbNr = 250;
         private const int TestByteOffset = 524;
         private const int TestByteOffset2 = 525;
@@ -31,10 +34,10 @@ namespace Dacs7Tests
 
         public Dacs7ClientTests()
         {
-            //Manually instantiate all Ack types, because we have a different executing assembly in the test framework and so this will not be done automatically
-            new S7AckDataProtocolPolicy();
-            new S7ReadJobAckDataProtocolPolicy();
-            new S7WriteJobAckDataProtocolPolicy();
+            ////Manually instantiate all Ack types, because we have a different executing assembly in the test framework and so this will not be done automatically
+            //new S7AckDataProtocolPolicy();
+            //new S7ReadJobAckDataProtocolPolicy();
+            //new S7WriteJobAckDataProtocolPolicy();
         }
 
 
@@ -48,119 +51,52 @@ namespace Dacs7Tests
         }
 
         [Fact]
-        public void ConnectTest()
+        public void ConnectDisconnectTest()
         {
+            ushort pduSize = 960;
             var client = new Dacs7Client();
-            client.Connect(ConnectionString);
-            Assert.True(client.IsConnected);
+            var connectionString = ConnectionString + $";PduSize={pduSize}";
+            client.Connect(connectionString);
+            Assert.Equal(Ip == "127.0.0.1" ? pduSize : pduSize / 2, client.PduSize); // RTX onyl supports 960 / 2
+            Assert.True(client.IsConnected, $"NotConnected with PduSize={pduSize}");
             client.Disconnect();
-            Assert.False(client.IsConnected);
-        }
+            Assert.False(client.IsConnected, $"NotDisconnected with PduSize={pduSize}");
 
-        [Fact]
-        public void ConnectAsyncTest()
-        {
-            var client = new Dacs7Client();
-            client.ConnectAsync(ConnectionString).Wait();
-            Assert.True(client.IsConnected);
-            client.DisconnectAsync().Wait();
-            Assert.False(client.IsConnected);
-        }
-
-        [Fact]
-        public void TestMulti()
-        {
-            var operations = new List<ReadOperationParameter>
-            {
-                new ReadOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, Type=typeof(byte), Args = new int[]{1, TestDbNr}},
-                new ReadOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}}
-            };
-
-            var writeOperations = new List<WriteOperationParameter>
-            {
-                new WriteOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, Type=typeof(byte), Args = new int[]{1, TestDbNr}, Data = (byte)0x05},
-                new WriteOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}, Data = true}
-            };
-            var client = new Dacs7Client();
-            client.Connect(ConnectionString);
-            client.WriteAny(writeOperations);
-            var result = client.ReadAnyRaw(operations);
+            pduSize /=2;
+            connectionString = ConnectionString + $";PduSize={pduSize}";
+            client.Connect(connectionString);
+            Assert.True(client.IsConnected, $"NotConnected with PduSize={pduSize}");
+            Assert.Equal(pduSize, client.PduSize);
             client.Disconnect();
-            Assert.False(client.IsConnected);
+            Assert.False(client.IsConnected, $"NotDisconnected with PduSize={pduSize}");
+
         }
 
-
         [Fact]
-        public void TestaBunchOfMultiReads()
+        public async Task ConnectDisconnectAsyncTest()
         {
-            var db = 10;
-            var operations = new List<ReadOperationParameter>
-            {
-                new ReadOperationParameter{Area = PlcArea.DB, Offset= 0, Type=typeof(byte), Args = new int[]{1, db}},
-                new ReadOperationParameter{Area = PlcArea.DB, Offset= 1, Type=typeof(bool), Args = new int[]{1, db}},
-            };
-
-            for (int i = 0; i < 100; i++)
-            {
-                operations.Add(new ReadOperationParameter { Area = PlcArea.DB, Offset = 1 + i, Type = typeof(bool), Args = new int[] { 1, db } });
-            }
-
+            ushort pduSize = 960;
             var client = new Dacs7Client();
-            client.Connect(ConnectionString);
-            var result = client.ReadAnyRaw(operations);
-            Assert.Equal(operations.Count(), result.Count());
+            var connectionString = ConnectionString + $";PduSize={pduSize}";
+            await client.ConnectAsync(connectionString);
+            Assert.Equal(Ip == "127.0.0.1" ? pduSize : pduSize / 2, client.PduSize); // RTX onyl supports 960 / 2
+            Assert.True(client.IsConnected, $"NotConnected with PduSize={pduSize}");
+            await client.DisconnectAsync();
+            Assert.False(client.IsConnected, $"NotDisconnected with PduSize={pduSize}");
 
-            operations.RemoveAt(0);
-            result = client.ReadAnyRaw(operations);
-            Assert.Equal(operations.Count(), result.Count());
-            client.Disconnect();
-            Assert.False(client.IsConnected);
-        }
+            pduSize /= 2;
+            connectionString = ConnectionString + $";PduSize={pduSize}";
+            await client.ConnectAsync(connectionString);
+            Assert.True(client.IsConnected, $"NotConnected with PduSize={pduSize}");
+            Assert.Equal(pduSize, client.PduSize);
+            await client.DisconnectAsync();
+            Assert.False(client.IsConnected, $"NotDisconnected with PduSize={pduSize}");
 
-        [Fact]
-        public void TestaBunchOfMultiWrites()
-        {
-            var db = 11;
-            var operations = new List<WriteOperationParameter>();
-            var readOperations = new List<ReadOperationParameter>();
-
-
-            for (int i = 0; i < 100; i++)
-            {
-                operations.Add(new WriteOperationParameter { Area = PlcArea.DB, Offset = i, Type = typeof(bool), Args = new int[] { 1, db }, Data = false });
-                readOperations.Add(new ReadOperationParameter { Area = PlcArea.DB, Offset = i, Type = typeof(bool), Args = new int[] { 1, db } });
-            }
-
-            var client = new Dacs7Client();
-            client.Connect(ConnectionString);
-
-
-            //Reset to false
-            client.WriteAny(operations);
-            var result = client.ReadAny(readOperations).ToList();
-            for (int i = 0; i < operations.Count; i++)
-            {
-                operations[i].Data = !((bool)result[i]);
-            }
-
-            client.WriteAny(operations);
-            result = client.ReadAny(readOperations).ToList();
-            for (int i = 0; i < operations.Count; i++)
-            {
-                Assert.Equal((bool)operations[i].Data, ((bool)result[i]));
-            }
-
-
-            operations.RemoveAt(0);
-            client.WriteAny(operations);
-
-            client.Disconnect();
-            Assert.False(client.IsConnected);
         }
 
 
         [Fact]
-        public void TestGeneric()
+        public void TestGenericReadWriteAny()
         {
             var client = new Dacs7Client();
             client.Connect(ConnectionString);
@@ -218,7 +154,280 @@ namespace Dacs7Tests
         }
 
         [Fact]
-        public void ReadWriteAnyTest()
+        public async Task TestGenericReadWriteAnyAsync()
+        {
+            var client = new Dacs7Client();
+            await client.ConnectAsync(ConnectionString);
+
+            for (int i = 0; i < 8; i++)
+            {
+                var offset = TestBitOffset + i;
+
+                //Set to false and read
+                await client.WriteAnyAsync<bool>(TestDbNr, offset, false);
+
+
+                var boolValue1 = await client.ReadAnyAsync<bool>(TestDbNr, offset);
+
+                //Set to true and read
+                await client.WriteAnyAsync(TestDbNr, offset, true);
+                var boolValue2 = await client.ReadAnyAsync<bool>(TestDbNr, offset);
+
+                Assert.NotEqual(boolValue1, boolValue2);
+
+                await client.WriteAnyAsync<int>(TestDbNr, TestByteOffset, 512);
+                var intValue1 = await client.ReadAnyAsync<int>(TestDbNr, TestByteOffset);
+
+                await client.WriteAnyAsync<int>(TestDbNr, TestByteOffset, i);
+                var intValue2 = await client.ReadAnyAsync<int>(TestDbNr, TestByteOffset);
+
+                Assert.NotEqual(intValue1, intValue2);
+                Assert.Equal(512, intValue1);
+                Assert.Equal(i, intValue2);
+
+                await client.WriteAnyAsync(TestDbNr, TestByteOffset, "TEST", 4);
+                var strValue1 = (await client.ReadAnyAsync<string>(TestDbNr, TestByteOffset, 4))?.FirstOrDefault();
+
+                var writeVal = i.ToString().PadRight(4, 'X');
+                await client.WriteAnyAsync(TestDbNr, TestByteOffset, writeVal, 4);
+                var strValue2 = (await client.ReadAnyAsync<string>(TestDbNr, TestByteOffset, 4))?.FirstOrDefault();
+
+                Assert.NotEqual(strValue1, strValue2);
+                Assert.Equal("TEST", strValue1);
+                Assert.Equal(writeVal, strValue2);
+
+                var firstWriteVal = "TEST".ToCharArray();
+                await client.WriteAnyAsync(TestDbNr, TestByteOffset, firstWriteVal, 4);
+                var charValue1 = await client.ReadAnyAsync<char>(TestDbNr, TestByteOffset, 4);
+
+                var secondWriteVal = i.ToString().PadRight(4, 'X').ToCharArray();
+                await client.WriteAnyAsync(TestDbNr, TestByteOffset, secondWriteVal, 4);
+                var charValue2 = await client.ReadAnyAsync<char>(TestDbNr, TestByteOffset, 4);
+
+                Assert.False(charValue1.SequenceEqual(charValue2));
+                Assert.True(firstWriteVal.SequenceEqual(charValue1));
+                Assert.True(secondWriteVal.SequenceEqual(charValue2));
+            }
+
+            await client.DisconnectAsync();
+
+        }
+
+        [Fact]
+        public void TestReadWriteAnyBigData()
+        {
+            var client = new Dacs7Client();
+            client.Connect(ConnectionString);
+            var length = 6534;
+            var buffer = new byte[length];
+
+            //Write 0
+            client.WriteAny(PlcArea.DB, 0, buffer, new[] { length, TestDbNr });
+            var result = client.ReadAny(PlcArea.DB, 0, typeof(byte[]), new[] { length, TestDbNr });
+            Assert.True(buffer.SequenceEqual(result));
+
+            for (int i = 0; i < length; i++)
+                buffer[i] = ((i % 2) == 0) ? (byte)0x05 : (byte)0x06;
+
+            client.WriteAny(PlcArea.DB, 0, buffer, new[] { length, TestDbNr });
+            result = client.ReadAny(PlcArea.DB, 0, typeof(byte[]), new[] { length, TestDbNr });
+            Assert.True(buffer.SequenceEqual(result));
+
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public async Task TestReadWriteAnyAsyncBigData()
+        {
+            var client = new Dacs7Client();
+            await client.ConnectAsync(ConnectionString);
+            var length = 6534;
+            var buffer = new byte[length];
+
+            //Write 0
+            await client.WriteAnyAsync(PlcArea.DB, 0, buffer, new[] { length, TestDbNr });
+            var result = await client.ReadAnyAsync(PlcArea.DB, 0, typeof(byte[]), new[] { length, TestDbNr });
+            Assert.True(buffer.SequenceEqual(result));
+
+            for (int i = 0; i < length; i++)
+                buffer[i] = ((i % 2) == 0) ? (byte)0x05 : (byte)0x06;
+
+            await client.WriteAnyAsync(PlcArea.DB, 0, buffer, new[] { length, TestDbNr });
+            result = await client.ReadAnyAsync(PlcArea.DB, 0, typeof(byte[]), new[] { length, TestDbNr });
+            Assert.True(buffer.SequenceEqual(result));
+
+            await client.DisconnectAsync();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public void TestMultipleReadAnyRaw()
+        {
+            var operations = new List<ReadOperationParameter>
+            {
+                new ReadOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, Type=typeof(byte), Args = new int[]{1, TestDbNr}},
+                new ReadOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}}
+            };
+
+            var writeOperations = new List<WriteOperationParameter>
+            {
+                new WriteOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, Type=typeof(byte), Args = new int[]{1, TestDbNr}, Data = (byte)0x05},
+                new WriteOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}, Data = true}
+            };
+            var client = new Dacs7Client();
+            client.Connect(ConnectionString);
+            client.WriteAny(writeOperations);
+            var result = client.ReadAnyRaw(operations);
+            Assert.Equal(operations.Count, result.Count());
+            Assert.Equal((byte)0x05, result.First()[0]);
+            Assert.Equal((byte)0x01, result.Last()[0]);
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public void TestMultipleReadAny()
+        {
+            var operations = new List<ReadOperationParameter>
+            {
+                new ReadOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, Type=typeof(byte), Args = new int[]{1, TestDbNr}},
+                new ReadOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}}
+            };
+
+            var writeOperations = new List<WriteOperationParameter>
+            {
+                new WriteOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, Type=typeof(byte), Args = new int[]{1, TestDbNr}, Data = (byte)0x05},
+                new WriteOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}, Data = true}
+            };
+            var client = new Dacs7Client();
+            client.Connect(ConnectionString);
+            client.WriteAny(writeOperations);
+            var result = client.ReadAny(operations);
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public void TestMultipleReadWriteAnyBigData()
+        {
+            var client = new Dacs7Client();
+            client.Connect(ConnectionString);
+            var length = 3534;
+            var buffer = new byte[length];
+
+            //Write 0
+            client.WriteAny(new List<WriteOperationParameter> { WriteOperationParameter.Create(TestDbNr, 0, buffer) });
+            var result = client.ReadAny(new List<ReadOperationParameter> { ReadOperationParameter.Create<byte>(TestDbNr, 0, length) });
+            Assert.True(buffer.SequenceEqual(result.First() as byte[]));
+
+            for (int i = 0; i < length; i++)
+                buffer[i] = ((i % 2) == 0) ? (byte)0x05 : (byte)0x06;
+
+            client.WriteAny(new List<WriteOperationParameter> { WriteOperationParameter.Create(TestDbNr, 0, buffer) });
+            result = client.ReadAny(new List<ReadOperationParameter> { ReadOperationParameter.Create<byte>(TestDbNr, 0, length) });
+            Assert.True(buffer.SequenceEqual(result.First() as byte[]));
+
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public async Task TestMultipleReadWriteAnyAsyncBigData()
+        {
+            var client = new Dacs7Client();
+            await client.ConnectAsync(ConnectionString);
+            var length = 3534;
+            var buffer = new byte[length];
+
+            //Write 0
+            await client.WriteAnyAsync(new List<WriteOperationParameter> { WriteOperationParameter.Create(TestDbNr, 0, buffer) });
+            var result = await client.ReadAnyAsync(new List<ReadOperationParameter> { ReadOperationParameter.Create<byte>(TestDbNr, 0, length) });
+            Assert.True(buffer.SequenceEqual(result.First() as byte[]));
+
+            for (int i = 0; i < length; i++)
+                buffer[i] = ((i % 2) == 0) ? (byte)0x05 : (byte)0x06;
+
+            await client.WriteAnyAsync(new List<WriteOperationParameter> { WriteOperationParameter.Create(TestDbNr, 0, buffer) });
+            result = await client.ReadAnyAsync(new List<ReadOperationParameter> { ReadOperationParameter.Create<byte>(TestDbNr, 0, length) });
+            Assert.True(buffer.SequenceEqual(result.First() as byte[]));
+
+            await client.DisconnectAsync();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public void TestaBunchOfMultiReads()
+        {
+            var db = 10;
+            var operations = new List<ReadOperationParameter>
+            {
+                new ReadOperationParameter{Area = PlcArea.DB, Offset= 0, Type=typeof(byte), Args = new int[]{1, db}},
+                new ReadOperationParameter{Area = PlcArea.DB, Offset= 1, Type=typeof(bool), Args = new int[]{1, db}},
+            };
+
+            // There is a bug in the snap7 server!!
+            for (int i = 0; i < ((Ip == "127.0.0.1") ? 18 : 100); i++)
+            {
+                operations.Add(new ReadOperationParameter { Area = PlcArea.DB, Offset = 1 + i, Type = typeof(bool), Args = new int[] { 1, db } });
+            }
+
+            var client = new Dacs7Client();
+            client.Connect(ConnectionString);
+            var result = client.ReadAnyRaw(operations);
+            Assert.Equal(operations.Count(), result.Count());
+
+            operations.RemoveAt(0);
+            result = client.ReadAnyRaw(operations);
+            Assert.Equal(operations.Count(), result.Count());
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public void TestaBunchOfMultiWrites()
+        {
+            var db = 11;
+            var operations = new List<WriteOperationParameter>();
+            var readOperations = new List<ReadOperationParameter>();
+
+
+            // There is a bug in the snap7 server!!
+            for (int i = 0; i < ((Ip == "127.0.0.1") ? 18 : 100); i++)
+            {
+                operations.Add(new WriteOperationParameter { Area = PlcArea.DB, Offset = i, Type = typeof(bool), Args = new int[] { 1, db }, Data = false });
+                readOperations.Add(new ReadOperationParameter { Area = PlcArea.DB, Offset = i, Type = typeof(bool), Args = new int[] { 1, db } });
+            }
+
+            var client = new Dacs7Client();
+            client.Connect(ConnectionString);
+
+
+            //Reset to false
+            client.WriteAny(operations);
+            var result = client.ReadAny(readOperations).ToList();
+            for (int i = 0; i < operations.Count; i++)
+            {
+                operations[i].Data = !((bool)result[i]);
+            }
+
+            client.WriteAny(operations);
+            result = client.ReadAny(readOperations).ToList();
+            for (int i = 0; i < operations.Count; i++)
+            {
+                Assert.Equal((bool)operations[i].Data, ((bool)result[i]));
+            }
+
+
+            operations.RemoveAt(0);
+            client.WriteAny(operations);
+
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public void TestReadWriteAny()
         {
             var client = new Dacs7Client();
             client.Connect(ConnectionString);
@@ -266,6 +475,57 @@ namespace Dacs7Tests
 
 
             client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public async void TestReadWriteAnyAsync()
+        {
+            var client = new Dacs7Client();
+            await client.ConnectAsync(ConnectionString);
+            Assert.True(client.IsConnected);
+
+            await client.WriteAnyAsync(PlcArea.DB, TestByteOffset, (byte)0x05, new int[] { 1, TestDbNr });
+            var bytes = await client.ReadAnyAsync(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
+            Assert.NotNull(bytes);
+            Assert.Equal((byte)0x05, bytes[0]);
+
+            await client.WriteAnyAsync(PlcArea.DB, TestByteOffset, (byte)0x00, new int[] { 1, TestDbNr });
+            bytes = await client.ReadAnyAsync(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr })as byte[];
+            Assert.NotNull(bytes);
+            Assert.Equal((byte)0x00, bytes[0]);
+
+            await client.WriteAnyAsync(PlcArea.DB, TestByteOffset, (byte)0x05, new int[] { 1, TestDbNr });
+            bytes = await client.ReadAnyAsync(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr })as byte[];
+            Assert.NotNull(bytes);
+            Assert.Equal((byte)0x05, bytes[0]);
+
+            await client.WriteAnyAsync(PlcArea.DB, TestByteOffset, (byte)0x00, new int[] { 1, TestDbNr });
+            bytes = await client.ReadAnyAsync(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr })as byte[];
+            Assert.NotNull(bytes);
+            Assert.Equal((byte)0x00, bytes[0]);
+
+            await client.WriteAnyAsync(PlcArea.DB, TestBitOffset, true, new int[] { 1, TestDbNr });
+            var state = await client.ReadAnyAsync(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr })as byte[];
+            Assert.NotNull(state);
+            Assert.Equal((byte)0x01, state[0]);
+
+            await client.WriteAnyAsync(PlcArea.DB, TestBitOffset, false, new int[] { 1, TestDbNr });
+            state = await client.ReadAnyAsync(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr })as byte[];
+            Assert.NotNull(state);
+            Assert.Equal((byte)0x00, state[0]);
+
+            await client.WriteAnyAsync(PlcArea.DB, TestBitOffset, true, new int[] { 1, TestDbNr });
+            state = await client.ReadAnyAsync(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr })as byte[];
+            Assert.NotNull(state);
+            Assert.Equal((byte)0x01, state[0]);
+
+            await client.WriteAnyAsync(PlcArea.DB, TestBitOffset, false, new int[] { 1, TestDbNr });
+            state = await client.ReadAnyAsync(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr })as byte[];
+            Assert.NotNull(state);
+            Assert.Equal((byte)0x00, state[0]);
+
+            await client.DisconnectAsync();
             Assert.False(client.IsConnected);
         }
 
@@ -367,58 +627,6 @@ namespace Dacs7Tests
         }
 
         [Fact]
-        public void ReadWriteAnyAsyncTest()
-        {
-            var client = new Dacs7Client();
-            client.ConnectAsync(ConnectionString).Wait();
-            Assert.True(client.IsConnected);
-
-            client.WriteAnyAsync(PlcArea.DB, TestByteOffset, (byte)0x05, new int[] { 1, TestDbNr }).Wait(); ;
-            var bytes = client.ReadAnyAsync(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }).Result as byte[];
-            Assert.NotNull(bytes);
-            Assert.Equal((byte)0x05, bytes[0]);
-
-            client.WriteAnyAsync(PlcArea.DB, TestByteOffset, (byte)0x00, new int[] { 1, TestDbNr }).Wait();
-            bytes = client.ReadAnyAsync(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }).Result as byte[];
-            Assert.NotNull(bytes);
-            Assert.Equal((byte)0x00, bytes[0]);
-
-            client.WriteAnyAsync(PlcArea.DB, TestByteOffset, (byte)0x05, new int[] { 1, TestDbNr }).Wait();
-            bytes = client.ReadAnyAsync(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }).Result as byte[];
-            Assert.NotNull(bytes);
-            Assert.Equal((byte)0x05, bytes[0]);
-
-            client.WriteAnyAsync(PlcArea.DB, TestByteOffset, (byte)0x00, new int[] { 1, TestDbNr }).Wait();
-            bytes = client.ReadAnyAsync(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }).Result as byte[];
-            Assert.NotNull(bytes);
-            Assert.Equal((byte)0x00, bytes[0]);
-
-            client.WriteAnyAsync(PlcArea.DB, TestBitOffset, true, new int[] { 1, TestDbNr }).Wait();
-            var state = client.ReadAnyAsync(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }).Result as byte[];
-            Assert.NotNull(state);
-            Assert.Equal((byte)0x01, state[0]);
-
-            client.WriteAnyAsync(PlcArea.DB, TestBitOffset, false, new int[] { 1, TestDbNr }).Wait();
-            state = client.ReadAnyAsync(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }).Result as byte[];
-            Assert.NotNull(state);
-            Assert.Equal((byte)0x00, state[0]);
-
-            client.WriteAnyAsync(PlcArea.DB, TestBitOffset, true, new int[] { 1, TestDbNr }).Wait();
-            state = client.ReadAnyAsync(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }).Result as byte[];
-            Assert.NotNull(state);
-            Assert.Equal((byte)0x01, state[0]);
-
-            client.WriteAnyAsync(PlcArea.DB, TestBitOffset, false, new int[] { 1, TestDbNr }).Wait();
-            state = client.ReadAnyAsync(PlcArea.DB, TestBitOffset, typeof(bool), new int[] { 1, TestDbNr }).Result as byte[];
-            Assert.NotNull(state);
-            Assert.Equal((byte)0x00, state[0]);
-
-
-            client.DisconnectAsync().Wait();
-            Assert.False(client.IsConnected);
-        }
-
-        [Fact]
         public void ReadWriteAnyAsyncDoubleTest()
         {
             var client = new Dacs7Client();
@@ -517,27 +725,22 @@ namespace Dacs7Tests
             Assert.False(client2.IsConnected);
         }
 
-
-
-
         [Fact]
-        public void ReadBlockInfoAsyncTest()
+        public async Task ReadBlockInfoAsyncTest()
         {
             var client = new Dacs7Client();
-            client.ConnectAsync(ConnectionString).Wait();
+            await client.ConnectAsync(ConnectionString);
             Assert.True(client.IsConnected);
 
 
-            client.ConnectAsync(ConnectionString).Wait();
-            var blkInfo = client.ReadBlockInfoAsync(PlcBlockType.Db, TestDbNr).Result;
+            await client.ConnectAsync(ConnectionString);
+            var blkInfo = await client.ReadBlockInfoAsync(PlcBlockType.Db, TestDbNr);
             Assert.Equal(TestDbNr, blkInfo.BlockNumber);
 
 
-            client.DisconnectAsync().Wait();
+            await client.DisconnectAsync();
             Assert.False(client.IsConnected);
         }
-
-
 
         [Fact]
         public void ReadWriteMoreThanOnePduTest()
@@ -622,7 +825,6 @@ namespace Dacs7Tests
             Assert.False(client.IsConnected);
         }
 
-
         [Fact]
         public void Convertest()
         {
@@ -650,174 +852,7 @@ namespace Dacs7Tests
         }
 
 
-#if REAL_PLC
 
-        
-        [Fact]
-        public void RegisterAlarmUpdateCallbackTest()
-        {
-            var client = new Dacs7Client();
-            client.ConnectAsync(ConnectionString).Wait();
-            Assert.True(client.IsConnected);
-
-            var alarmID = client.RegisterAlarmUpdateCallback((alarm) =>
-            {
-                var numberOfalarms = alarm.CountAlarms;
-            });
-
-            Thread.Sleep(10000);
-
-            client.UnregisterAlarmUpdate(alarmID);
-
-            client.DisconnectAsync().Wait();
-            Assert.False(client.IsConnected);
-        }
-
-
-        [Fact]
-        public void GetBlocksCountTest()
-        {
-            var client = new Dacs7Client();
-            client.Connect(ConnectionString);
-            Assert.True(client.IsConnected);
-
-            var bc = client.GetBlocksCount();
-
-            client.Disconnect();
-            Assert.False(client.IsConnected);
-        }
-
-        [Fact]
-        public void GetBlocksOfTypeTest()
-        {
-            var client = new Dacs7Client();
-            client.Connect(ConnectionString);
-            Assert.True(client.IsConnected);
-
-            var bc = client.GetBlocksOfType(PlcBlockType.Ob);
-
-            client.Disconnect();
-            Assert.False(client.IsConnected);
-        }
-
-        [Fact]
-        public void GetBlocksOfTypeTest2()
-        {
-            var client = new Dacs7Client();
-            client.Connect(ConnectionString);
-            Assert.True(client.IsConnected);
-
-            var bc = client.GetBlocksOfType(PlcBlockType.Sdb);
-
-            foreach (var c in bc)
-            {
-                Console.WriteLine(c.Number);
-            }
-
-            client.Disconnect();
-            Assert.False(client.IsConnected);
-        }
-
-        
-        [Fact]
-        public void ReadBlockInfoTest()
-        {
-            var client = new Dacs7Client();
-
-            client.Connect(ConnectionString);
-            Assert.True(client.IsConnected);
-
-            var blkInfo = client.ReadBlockInfo(PlcBlockType.Db, TestDbNr);
-            Assert.Equal(TestDbNr, blkInfo.BlockNumber);
-
-            blkInfo = client.ReadBlockInfo(PlcBlockType.Sdb, 1000);
-            Assert.Equal(TestDbNr, 1001);
-
-            blkInfo = client.ReadBlockInfo(PlcBlockType.Db, 250);
-            Assert.Equal(250, blkInfo.BlockNumber);
-
-            client.Disconnect();
-            Assert.False(client.IsConnected);
-        }
-
-        [Fact]
-        public void ReadPendingAlarmsAsyncTest()
-        {
-            var client = new Dacs7Client();
-            client.ConnectAsync(ConnectionString).Wait();
-            Assert.True(client.IsConnected);
-
-            var alarms = client.ReadPendingAlarmsAsync().Result;
-
-            client.DisconnectAsync().Wait();
-            Assert.False(client.IsConnected);
-        }
-
-        [Fact]
-        public void ReadBlockInfo2Test()
-        {
-            var client = new Dacs7Client();
-            client.Connect(ConnectionString);
-            Assert.True(client.IsConnected);
-
-            var blkInfo = client.UploadPlcBlock(PlcBlockType.Db, TestDbNr);
-
-            blkInfo = client.UploadPlcBlock(PlcBlockType.Db, 250);
-
-            client.Disconnect();
-            Assert.False(client.IsConnected);
-        }
-
-        [Fact]
-        public void ReadBlockInfoFromSdbTest()
-        {
-            var client = new Dacs7Client();
-            client.Connect(ConnectionString);
-            Assert.True(client.IsConnected);
-
-            var blkInfo = client.ReadBlockInfo(PlcBlockType.Sdb, 0);
-            Assert.Equal(0, blkInfo.BlockNumber);
-
-            client.Disconnect();
-            Assert.False(client.IsConnected);
-        }
-
-        [Fact]
-        public void ReadBlockInfoNoExistingTest()
-        {
-            var client = new Dacs7Client();
-            client.Connect(ConnectionString);
-            Assert.True(client.IsConnected);
-
-            var blkInfo = client.ReadBlockInfo(PlcBlockType.Db, 9999);
-            Assert.Equal(9999, blkInfo.BlockNumber);
-
-            client.Disconnect();
-            Assert.False(client.IsConnected);
-        }
-
-        [Fact]
-        public void ReadPendingAlarmsTest()
-        {
-            var client = new Dacs7Client();
-            client.Connect(ConnectionString);
-            Assert.True(client.IsConnected);
-
-            var alarms = client.ReadPendingAlarms();
-
-            foreach (var alm in alarms)
-            {
-                var ts = alm.Timestamp;
-                var i = alm.Id;
-                var c = alm.IsComing;
-                var sc = alm.IsAck;
-            }
-
-            client.Disconnect();
-            Assert.False(client.IsConnected);
-        }
-
-#endif
 
 
     }
