@@ -718,6 +718,14 @@ namespace Dacs7
             return Task.Factory.StartNew(() => WriteAny(parameters), _taskCreationOptions);
         }
 
+
+
+
+
+
+
+
+
         /// <summary>
         /// Read the number of blocks in the PLC per type
         /// </summary>
@@ -987,6 +995,14 @@ namespace Dacs7
         {
             return Task.Factory.StartNew(() => ReadBlockInfo(blockType, blocknumber), _taskCreationOptions);
         }
+
+
+
+
+
+
+
+
 
         /// <summary>
         /// Read the current pending alarms from the PLC.
