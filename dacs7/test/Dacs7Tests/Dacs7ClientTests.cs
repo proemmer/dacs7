@@ -40,6 +40,18 @@ namespace Dacs7Tests
             //new S7WriteJobAckDataProtocolPolicy();
         }
 
+        [Fact]
+        public void ValidateBoolReadLength()
+        {
+            var client = new Dacs7Client();
+            client.Connect(ConnectionString);
+
+            var boolValue1 = client.ReadAny<bool>(TestDbNr, TestBitOffset, 8).ToList();
+            Assert.Equal(8, boolValue1.Count);
+
+
+            client.Disconnect();
+        }
 
         [Fact]
         public void ConnectionStringTest()
