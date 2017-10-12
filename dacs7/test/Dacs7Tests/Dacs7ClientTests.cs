@@ -9,16 +9,19 @@ using Xunit;
 using System.Linq;
 using System.Diagnostics;
 using Dacs7.Helper;
+using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.Logging;
 
 namespace Dacs7Tests
 {
 
 
 
-#if TEST_PLC
+#if TEST_PLC || REAL_PLC
 
     public class Dacs7ClientTests
     {
+        private ILoggerFactory _loggerFactory = new LoggerFactory().AddConsole();
         private const string Ip = "127.0.0.1";//"127.0.0.1";
         //private const string Ip = "192.168.0.148";
         //private const string Ip = "192.168.1.17";//"127.0.0.1";
@@ -43,7 +46,7 @@ namespace Dacs7Tests
         [Fact]
         public void ValidateBoolReadLength()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(ConnectionString);
 
             var boolValue1 = client.ReadAny<bool>(TestDbNr, TestBitOffset, 8).ToList();
@@ -56,7 +59,7 @@ namespace Dacs7Tests
         [Fact]
         public void ConnectionStringTest()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             const string connectionString = "Data Source = " + Ip + ":102,0,2";
             client.Connect(connectionString);
             Assert.True(client.IsConnected);
@@ -66,7 +69,7 @@ namespace Dacs7Tests
         public void ConnectDisconnectTest()
         {
             ushort pduSize = 960;
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             var connectionString = ConnectionString + $";PduSize={pduSize}";
             client.Connect(connectionString);
             Assert.Equal(Ip == "127.0.0.1" ? pduSize : pduSize / 2, client.PduSize); // RTX onyl supports 960 / 2
@@ -88,7 +91,7 @@ namespace Dacs7Tests
         public async Task ConnectDisconnectAsyncTest()
         {
             ushort pduSize = 960;
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             var connectionString = ConnectionString + $";PduSize={pduSize}";
             await client.ConnectAsync(connectionString);
             Assert.Equal(Ip == "127.0.0.1" ? pduSize : pduSize / 2, client.PduSize); // RTX onyl supports 960 / 2
@@ -110,7 +113,7 @@ namespace Dacs7Tests
         [Fact]
         public void TestGenericReadWriteAny()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(ConnectionString);
 
             for (int i = 0; i < 8; i++)
@@ -168,7 +171,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task TestGenericReadWriteAnyAsync()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             await client.ConnectAsync(ConnectionString);
 
             for (int i = 0; i < 8; i++)
@@ -228,7 +231,7 @@ namespace Dacs7Tests
         [Fact]
         public void TestReadWriteAnyBigData()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(ConnectionString);
             var length = 6534;
             var buffer = new byte[length];
@@ -252,7 +255,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task TestReadWriteAnyAsyncBigData()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             await client.ConnectAsync(ConnectionString);
             var length = 6534;
             var buffer = new byte[length];
@@ -287,7 +290,7 @@ namespace Dacs7Tests
                 new WriteOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, Type=typeof(byte), Args = new int[]{1, TestDbNr}, Data = (byte)0x05},
                 new WriteOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}, Data = true}
             };
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(ConnectionString);
             client.WriteAny(writeOperations);
             var result = client.ReadAnyRaw(operations);
@@ -312,7 +315,7 @@ namespace Dacs7Tests
                 new WriteOperationParameter{Area = PlcArea.DB, Offset= TestByteOffset, Type=typeof(byte), Args = new int[]{1, TestDbNr}, Data = (byte)0x05},
                 new WriteOperationParameter{Area = PlcArea.DB, Offset= TestBitOffset, Type=typeof(bool), Args = new int[]{1, TestDbNr}, Data = true}
             };
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(ConnectionString);
             client.WriteAny(writeOperations);
             var result = client.ReadAny(operations);
@@ -323,7 +326,7 @@ namespace Dacs7Tests
         [Fact]
         public void TestMultipleReadWriteAnyBigData()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(ConnectionString);
             var length = 3534;
             var buffer = new byte[length];
@@ -347,7 +350,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task TestMultipleReadWriteAnyAsyncBigData()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             await client.ConnectAsync(ConnectionString);
             var length = 3534;
             var buffer = new byte[length];
@@ -384,7 +387,7 @@ namespace Dacs7Tests
                 operations.Add(new ReadOperationParameter { Area = PlcArea.DB, Offset = 1 + i, Type = typeof(bool), Args = new int[] { 1, db } });
             }
 
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(ConnectionString);
             var result = client.ReadAnyRaw(operations);
             Assert.Equal(operations.Count(), result.Count());
@@ -411,7 +414,7 @@ namespace Dacs7Tests
                 readOperations.Add(new ReadOperationParameter { Area = PlcArea.DB, Offset = i, Type = typeof(bool), Args = new int[] { 1, db } });
             }
 
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(ConnectionString);
 
 
@@ -441,7 +444,7 @@ namespace Dacs7Tests
         [Fact]
         public void TestReadWriteAny()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(ConnectionString);
             Assert.True(client.IsConnected);
 
@@ -493,7 +496,7 @@ namespace Dacs7Tests
         [Fact]
         public async void TestReadWriteAnyAsync()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             await client.ConnectAsync(ConnectionString);
             Assert.True(client.IsConnected);
 
@@ -544,12 +547,12 @@ namespace Dacs7Tests
         [Fact]
         public void ReadWriteAnyDoubleTest()
         {
-            var client = new Dacs7Client();
-            var client2 = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
+            var client2 = new Dacs7Client(_loggerFactory);
             client.Connect(ConnectionString);
             Assert.True(client.IsConnected);
             client2.Connect(ConnectionString);
-            Assert.Equal(true, client2.IsConnected);
+            Assert.True(client2.IsConnected);
 
             client.WriteAny(PlcArea.DB, TestByteOffset, (byte)0x05, new int[] { 1, TestDbNr });
             var bytes = client.ReadAny(PlcArea.DB, TestByteOffset, typeof(byte), new int[] { 1, TestDbNr }) as byte[];
@@ -641,8 +644,8 @@ namespace Dacs7Tests
         [Fact]
         public void ReadWriteAnyAsyncDoubleTest()
         {
-            var client = new Dacs7Client();
-            var client2 = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
+            var client2 = new Dacs7Client(_loggerFactory);
             var t = new Task[2];
             t[0] = client.ConnectAsync(ConnectionString);
             t[1] = client2.ConnectAsync(ConnectionString);
@@ -650,7 +653,7 @@ namespace Dacs7Tests
             Task.WaitAll(t);
 
             Assert.True(client.IsConnected);
-            Assert.Equal(true, client2.IsConnected);
+            Assert.True(client2.IsConnected);
 
             t[0] = client.WriteAnyAsync(PlcArea.DB, TestByteOffset, (byte)0x05, new int[] { 1, TestDbNr });
             t[1] = client2.WriteAnyAsync(PlcArea.DB, TestByteOffset2, (byte)0x05, new int[] { 1, TestDbNr });
@@ -740,7 +743,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadBlockInfoAsyncTest()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             await client.ConnectAsync(ConnectionString);
             Assert.True(client.IsConnected);
 
@@ -757,7 +760,7 @@ namespace Dacs7Tests
         [Fact]
         public void ReadWriteMoreThanOnePduTest()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(ConnectionString);
             Assert.True(client.IsConnected);
 
@@ -790,7 +793,7 @@ namespace Dacs7Tests
         [Fact]
         public void ReadWriteMoreThanOnePduParallelTest()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             //client.OnLogEntry += Console.WriteLine;
             client.Connect(ConnectionString);
             Assert.True(client.IsConnected);
@@ -825,7 +828,7 @@ namespace Dacs7Tests
         [Fact]
         public void ReadNotExistingItem()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             //client.OnLogEntry += Console.WriteLine;
             client.Connect(ConnectionString);
             Assert.True(client.IsConnected);
@@ -853,7 +856,7 @@ namespace Dacs7Tests
         [Fact]
         public void GetPlcTimeTest()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(ConnectionString);
             Assert.True(client.IsConnected);
 

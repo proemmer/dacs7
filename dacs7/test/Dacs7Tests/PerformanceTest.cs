@@ -31,7 +31,7 @@ namespace Dacs7Tests
         [Fact]
         public void PerfTest()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(ConnectionString);
             var offset = 0;
 

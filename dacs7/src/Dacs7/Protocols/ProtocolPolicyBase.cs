@@ -104,17 +104,21 @@ namespace Dacs7.Protocols
         {
             if (!Bindings.ContainsKey(GetType()))
             {
-                Bindings.Add(GetType(), new ProtocolBinding()
-                {
-                    ProtocolPolicy = this
-                });
-
-                if (_orderedBindingsCache == null)
-                    return;
                 CacheLock.EnterWriteLock();
                 try
                 {
-                    _orderedBindingsCache = null;
+                    if (!Bindings.ContainsKey(GetType()))
+                    {
+                        Bindings.Add(GetType(), new ProtocolBinding()
+                        {
+                            ProtocolPolicy = this
+                        });
+
+                        if (_orderedBindingsCache == null)
+                            return;
+
+                        _orderedBindingsCache = null;
+                    }
                 }
                 finally
                 {
