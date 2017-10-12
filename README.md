@@ -249,6 +249,18 @@ Select the CPU in the left pane and click 'Properties' in the context menu and g
 
 
 # Release Notes
+* 1.3.0:
+	* Changed logging from action to Microsoft.Extensions.Logging  [!!!breaking change!!!] 
+	* Fixed a Bug in RegisterPolicies
+* 1.2.0:
+	* Added some methods 
+	* Fixed a couple of bugs 
+	* Added more tests 
+	* refactoring 
+	* Breaking change possible!
+* 1.1.0:
+	* Fixed some typos onMethods (Breaking Change)
+	* Register policies in ctor of client, because the assembly resolve method did not work in any case.
 * 1.0.7:
 	* Fixed a bug in Alarm Ack detection, because of transport size calculation
 	* Improved multi read and write with auto adjustment of data size.
