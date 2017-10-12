@@ -4,12 +4,12 @@ using Dacs7.Helper;
 using Dacs7.Protocols;
 using Dacs7.Protocols.RFC1006;
 using Dacs7.Protocols.S7;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,6 +20,7 @@ namespace Dacs7
     // To enable this option, right-click on the project and select the Properties menu item. In the Build tab select "Produce outputs on build".
     public class Dacs7Client : IDacs7Client
     {
+        
         #region Helper class
         private class CallbackHandler
         {
@@ -32,7 +33,7 @@ namespace Dacs7
         #endregion
 
         #region Fields
-
+        private readonly ILogger _logger;
         private readonly object _syncRoot = new object();
         private Exception _lastConnectException = null;
         private readonly AutoResetEvent _waitingForPlcConfiguration = new AutoResetEvent(false);
@@ -94,12 +95,6 @@ namespace Dacs7
         private UInt16 ItemWriteSlice { get { return (UInt16)(PduSize - 28); } } //28 Header and some other data
 
         /// <summary>
-        /// Callback to an log Message Handler
-        /// </summary>
-        /// <returns></returns>
-        public Action<string> OnLogEntry { get; set; }
-
-        /// <summary>
         /// Max bytes to read in one telegram.
         /// </summary>
         /// <returns></returns>
@@ -147,8 +142,17 @@ namespace Dacs7
         /// <summary>
         /// Client constructor to register acknowledge policies.
         /// </summary>
-        public Dacs7Client()
+        public Dacs7Client(ILoggerFactory factory) : this(factory.CreateLogger<Dacs7Client>())
         {
+
+        }
+
+        /// <summary>
+        /// Client constructor to register acknowledge policies.
+        /// </summary>
+        public Dacs7Client(ILogger logger = null)
+        {
+            _logger = logger;
             // Register needed ack policies
             new S7AckDataProtocolPolicy();
             new S7ReadJobAckDataProtocolPolicy();
@@ -242,7 +246,7 @@ namespace Dacs7
                     }
                     catch (Exception ex)
                     {
-                        Log(string.Format("Exception on Disconnect. Error was: {0}", ex.Message));
+                        _logger?.LogError($"Exception on Disconnect. Error was: {ex.Message}");
                     }
                 }
             }
@@ -262,7 +266,7 @@ namespace Dacs7
                 }
                 catch (Exception ex)
                 {
-                    Log(string.Format("Exception on Disconnect while closing socket. Error was: {0}", ex.Message));
+                    _logger?.LogError($"Exception on Disconnect while closing socket. Error was: {ex.Message}");
                 }
             }
         }
@@ -398,7 +402,7 @@ namespace Dacs7
                 if (PduSize < currentPackageSize)
                     throw new Dacs7ToMuchDataPerCallException(ItemReadSlice, currentPackageSize);
 
-                Log(string.Format("ReadAny: ProtocolDataUnitReference is {0}", id));
+                _logger?.LogDebug($"ReadAny: ProtocolDataUnitReference is {id}");
                 if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
                     var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
@@ -692,8 +696,7 @@ namespace Dacs7
                 if (PduSize < currentPackageSize)
                     throw new Dacs7ToMuchDataPerCallException(ItemReadSlice, currentPackageSize);
 
-
-                Log(string.Format("WriteAny: ProtocolDataUnitReference is {0}", id));
+                _logger?.LogDebug($"WriteAny: ProtocolDataUnitReference is {id}");
                 PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
                     var items = cbh.ResponseMessage.GetAttribute("ItemCount", (byte)0);
@@ -737,7 +740,8 @@ namespace Dacs7
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateBlocksCountRequest(id);
             var policy = new S7UserDataProtocolPolicy();
-            Log($"GetBlocksCount: ProtocolDataUnitReference is {id}");
+
+            _logger?.LogDebug($"GetBlocksCount: ProtocolDataUnitReference is {id}");
             return PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
@@ -813,7 +817,7 @@ namespace Dacs7
             var blocks = new List<IPlcBlocks>();
             var lastUnit = false;
             var sequenceNumber = (byte)0x00;
-            Log($"GetBlocksOfType: ProtocolDataUnitReference is {id}");
+            _logger?.LogDebug($"GetBlocksOfType: ProtocolDataUnitReference is {id}");
 
             do
             {
@@ -877,7 +881,7 @@ namespace Dacs7
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateBlockInfoRequest(id, blockType, blocknumber);
             var policy = new S7UserDataProtocolPolicy();
-            Log($"ReadBlockInfo: ProtocolDataUnitReference is {id}");
+            _logger?.LogDebug($"ReadBlockInfo: ProtocolDataUnitReference is {id}");
             return PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
@@ -928,7 +932,7 @@ namespace Dacs7
                 throw new Dacs7NotConnectedException();
             var id = GetNextReferenceId();
             var policy = new S7JobUploadProtocolPolicy();
-            Log("ReadBlockInfo: ProtocolDataUnitReference is {id}");
+            _logger?.LogDebug($"ReadBlockInfo: ProtocolDataUnitReference is {id}");
 
             //Start Upload
             var reqMsg = S7MessageCreator.CreateStartUploadRequest(id, blockType, blocknumber);
@@ -1015,7 +1019,7 @@ namespace Dacs7
             var alarms = new List<IPlcAlarm>();
             var lastUnit = false;
             var sequenceNumber = (byte)0x00;
-            Log($"ReadBlockInfo: ProtocolDataUnitReference is {id}");
+            _logger?.LogDebug($"ReadBlockInfo: ProtocolDataUnitReference is {id}");
 
             do
             {
@@ -1084,7 +1088,7 @@ namespace Dacs7
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateAlarmCallbackRequest(id);
             var policy = new S7UserDataProtocolPolicy();
-            Log($"RegisterAlarmUpdateCallback: ProtocolDataUnitReference is {id}");
+            _logger?.LogDebug($"RegisterAlarmUpdateCallback: ProtocolDataUnitReference is {id}");
             return (ushort)PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
@@ -1122,13 +1126,13 @@ namespace Dacs7
                         }
                         catch (Exception ex)
                         {
-                            Log(ex.Message);
+                            _logger?.LogError($"Exception in RegisterAlarmUpdateCallback after callback occured with a message. Error was {ex.Message}");
                             onErrorOccured?.Invoke(ex);
                         }
                     }
                     else if (cbhOnUpdate.OccuredException != null)
                     {
-                        Log(cbhOnUpdate.OccuredException.Message);
+                        _logger?.LogError($"Exception in RegisterAlarmUpdateCallback after callback occured without a message. Error was {cbhOnUpdate.OccuredException.Message}");
                         onErrorOccured?.Invoke(cbhOnUpdate.OccuredException);
                     }
                 };
@@ -1157,7 +1161,7 @@ namespace Dacs7
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateReadClockRequest(id);
             var policy = new S7UserDataProtocolPolicy();
-            Log($"GetPlcTime: ProtocolDataUnitReference is {id}");
+            _logger?.LogDebug($"GetPlcTime: ProtocolDataUnitReference is {id}");
             return (DateTime)PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
                 EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
@@ -1183,7 +1187,7 @@ namespace Dacs7
         private void OnClientStateChanged(string socketHandle, bool connected)
         {
             EventHandler?.Invoke(this, new PlcConnectionNotificationEventArgs(socketHandle, connected));
-            Log(string.Format("OnClientStateChanged to {0}.", connected ? "connected" : "disconnected"));
+            _logger?.LogInformation($"OnClientStateChanged to {(connected ? "connected" : "disconnected")}.");
             if (connected)
                 Task.Factory.StartNew(() => ConfigurePlcConnection());
         }
@@ -1212,14 +1216,14 @@ namespace Dacs7
                     var id = GetNextReferenceId();
                     var reqMsg = S7MessageCreator.CreateCommunicationSetup(id, _maxParallelJobs, PduSize);
                     var policy = new S7JobSetupProtocolPolicy();
-                    Log(string.Format("Connect: ProtocolDataUnitReference is {0}", id));
+                    _logger?.LogDebug($"Connect: ProtocolDataUnitReference is {id}");
                     PerformDataExchange(id, reqMsg, policy, (cbh) =>
                     {
                         var data = cbh.ResponseMessage.GetAttribute("ParameterData", new byte[0]);
                         if (data.Length >= 7)
                         {
                             PduSize = data.GetSwap<UInt16>(5);
-                            Log(string.Format("Connected: PduSize is {0}", PduSize));
+                            _logger?.LogInformation($"Connected: PduSize is {PduSize}");
                         }
                         return;
 
@@ -1231,7 +1235,7 @@ namespace Dacs7
             catch (Exception ex)
             {
                 _lastConnectException = ex;
-                Log(string.Format("ConfigurePlcConnection: Exception occurred {0}", ex.Message));
+                _logger?.LogError($"ConfigurePlcConnection: Exception occurred {ex.Message}");
             }
             _waitingForPlcConfiguration.Set();
         }
@@ -1286,18 +1290,18 @@ namespace Dacs7
                     var b = buffer.ToArray();
                     foreach (var array in _upperProtocolHandlerFactory.RemoveUpperProtocolFrame(b, b.Length).Where(payload => payload != null))
                     {
-                        Log($"OnRawDataReceived: Received Data size was {array.Length}");
+                        _logger?.LogDebug($"OnRawDataReceived: Received Data size was {array.Length}");
                         var policy = ProtocolPolicyBase.FindPolicyByPayload<S7AckDataProtocolPolicy>(array);
                         if (policy != null)
                         {
-                            Log($"OnRawDataReceived: determined policy is {policy.GetType().Name}");
+                            _logger?.LogDebug($"OnRawDataReceived: determined policy is {policy.GetType().Name}");
                             var extractionResult = policy.ExtractRawMessages(array);
                             foreach (var msg in policy.Normalize(socketHandle, extractionResult.GetExtractedRawMessages()))
                             {
                                 var id = msg.GetAttribute("ProtocolDataUnitReference", (ushort)0);
                                 if (id == 0 && _alarmUpdateId != 0 && policy is S7UserDataAckAlarmUpdateProtocolPolicy)
                                     id = _alarmUpdateId;
-                                Log(string.Format("OnRawDataReceived: ProtocolDataUnitReference is {0}", id));
+                                _logger?.LogDebug($"OnRawDataReceived: ProtocolDataUnitReference is {id}");
                                 _callbackLockSlim.EnterReadLock();
                                 try
                                 {
@@ -1311,7 +1315,7 @@ namespace Dacs7
                                     }
                                     else
                                     {
-                                        Log($"OnRawDataReceived: message with id {id} has no waiter!");
+                                        _logger?.LogWarning($"OnRawDataReceived: message with id {id} has no waiter!");
                                     }
                                 }
                                 finally
@@ -1323,11 +1327,11 @@ namespace Dacs7
                     }
                 }
                 else
-                    Log("OnRawDataReceived with empty data!");
+                    _logger?.LogDebug("OnRawDataReceived with empty data!");
             }
             catch (Exception ex)
             {
-                Log($"OnRawDataReceived: Exception was {ex.Message} -{ex.StackTrace}");
+                _logger?.LogError($"OnRawDataReceived: Exception was {ex.Message} - {ex.StackTrace}");
                 //Set the Exception to all pending Calls
                 List<CallbackHandler> snapshot;
                 _callbackLockSlim.EnterReadLock();
@@ -1389,10 +1393,10 @@ namespace Dacs7
                     if (cbh.OccuredException != null)
                         throw cbh.OccuredException;
                     else
-                        throw new Exception("There was no response message created!");
+                        throw new Exception($"There was no response message created for ProtocolDataUnitReference {id}!");
                 }
                 else
-                    throw new TimeoutException("Timeout while waiting for response.");
+                    throw new TimeoutException($"Timeout while waiting for response for ProtocolDataUnitReference {id}.");
             }
             finally
             {
@@ -1416,10 +1420,10 @@ namespace Dacs7
                     }
                     if (cbh.OccuredException != null)
                         throw cbh.OccuredException;
-                    throw new Exception("No response message was been created!");
+                    throw new Exception($"There was no response message created for ProtocolDataUnitReference {id}!");
                 }
                 else
-                    throw new TimeoutException("Timeout while waiting for response.");
+                    throw new TimeoutException($"Timeout while waiting for response for ProtocolDataUnitReference {id}.");
             }
             finally
             {
@@ -1512,7 +1516,7 @@ namespace Dacs7
                     try
                     {
                         _eventQueue.Enqueue(cbh.Event);
-                        Log($"Number of queued events {_eventQueue.Count}");
+                        _logger?.LogDebug($"Number of queued events {_eventQueue.Count}");
                     }
                     finally
                     {
@@ -1570,12 +1574,6 @@ namespace Dacs7
                 var errorCode = msg.GetAttribute("ErrorCode", (byte)0);
                 throw new Dacs7Exception(errorClass, errorCode);
             }
-        }
-
-
-        private void Log(string message)
-        {
-            OnLogEntry?.Invoke(message);
         }
 
 
@@ -1908,7 +1906,7 @@ namespace Dacs7
         {
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateWriteRequest(id, area, dbNr, item.PlcOffset, item.Length, item.Data);
-            Log($"WriteAny: ProtocolDataUnitReference is {id}");
+            _logger?.LogDebug($"WriteAny: ProtocolDataUnitReference is {id}");
 
             PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
@@ -1928,7 +1926,7 @@ namespace Dacs7
         {
             var id = GetNextReferenceId();
             var reqMsg = S7MessageCreator.CreateReadRequest(id, area, dbNr, item.PlcOffset, item.Length, type);
-            Log($"ReadAny: ProtocolDataUnitReference is {id}");
+            _logger?.LogDebug($"ReadAny: ProtocolDataUnitReference is {id}");
 
             if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {

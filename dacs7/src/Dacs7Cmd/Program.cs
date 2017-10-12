@@ -1,5 +1,6 @@
 ﻿using Dacs7;
 using Dacs7.Domain;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -10,7 +11,7 @@ namespace Dacs7Cmd
 {
     public class Program
     {
-        private static readonly Dacs7Client _client = new Dacs7Client();
+        private static readonly Dacs7Client _client = new Dacs7Client(new LoggerFactory().AddConsole());
         //private const string Ip = "192.168.0.146";
         private const string Ip = "127.0.0.1";
         private const string ConnectionString = "Data Source=" + Ip + ":102,0,2"; //"Data Source=192.168.0.145:102,0,2";
@@ -123,11 +124,6 @@ namespace Dacs7Cmd
 
         public static void ReadWriteMoreThanOnePduParallelTest()
         {
-
-            //_client.OnLogEntry += Console.WriteLine;
-            //_client.Connect(ConnectionString);
-            //Assert.AreEqual(true, _client.IsConnected);
-
             const int length = 24000;
 
             var testData = new byte[length];
@@ -146,10 +142,6 @@ namespace Dacs7Cmd
             var red = _client.ReadAnyParallel(PlcArea.DB, 0, typeof(byte), new[] { length, LongDbNumer }) as byte[];
             sw.Stop();
             Console.WriteLine("Read time: {0}ms", sw.ElapsedMilliseconds);
-
-            //Assert.IsNotNull(red);
-            //Assert.IsTrue(testData.SequenceEqual(red));
-            //client.Disconnect();
             
 
         }

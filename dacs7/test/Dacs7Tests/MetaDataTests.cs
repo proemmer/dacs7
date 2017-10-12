@@ -14,7 +14,7 @@ namespace Dacs7Tests
         [Fact]
         public void GetBlocksCountTest()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(Dacs7ClientTests.ConnectionString);
             Assert.True(client.IsConnected);
 
@@ -27,7 +27,7 @@ namespace Dacs7Tests
         [Fact]
         public void GetBlocksOfTypeTest()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(Dacs7ClientTests.ConnectionString);
             Assert.True(client.IsConnected);
 
@@ -40,7 +40,7 @@ namespace Dacs7Tests
         [Fact]
         public void GetBlocksOfTypeTest2()
         {
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
             client.Connect(Dacs7ClientTests.ConnectionString);
             Assert.True(client.IsConnected);
 
@@ -60,7 +60,7 @@ namespace Dacs7Tests
         public void ReadBlockInfoTest()
         {
             var db = 250;
-            var client = new Dacs7Client();
+            var client = new Dacs7Client(_loggerFactory);
 
             client.Connect(Dacs7ClientTests.ConnectionString);
             Assert.True(client.IsConnected);
