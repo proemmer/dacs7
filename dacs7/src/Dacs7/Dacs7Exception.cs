@@ -85,7 +85,7 @@ namespace Dacs7
         public int ItemNumber { get; set; }
 
         public Dacs7ReturnCodeException(byte returnCode, int itemNumber = -1) :
-            base(string.Format($"No success return code{returnCode}: <{(itemNumber != -1 ? string.Format(" for item {0}",itemNumber) : "")}>" ))
+            base(string.Format($"No success return code {returnCode}: <{(itemNumber != -1 ? string.Format(" for item {0}",itemNumber) : "")}>" ))
         {
             ReturnCode = returnCode;
         }
@@ -95,7 +95,7 @@ namespace Dacs7
     public class Dacs7ToMuchDataPerCallException : Exception
     {
         public Dacs7ToMuchDataPerCallException(int expected, int actual) :
-            base(string.Format("There is too much data ({0} bytes) for a single job, please split jobs to a maximum of {1} bytes per call!", actual, expected))
+            base($"There is too much data ({actual} bytes) for a single job, please split jobs to a maximum of {expected} bytes per call!")
         {
         }
     }

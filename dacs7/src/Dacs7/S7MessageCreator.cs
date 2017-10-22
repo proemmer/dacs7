@@ -114,6 +114,20 @@ namespace Dacs7
             message.SetAttribute("PduLength", length);
         }
 
+        private static void AddInvocationParameter(IMessage message, byte function, string pi, byte[] parameterExt = null)
+        {
+            message.SetAttribute("Function", function);
+            var res = new List<byte> { 0x00, 0x00, 0x00, 0x00, 0x00 };
+            if(parameterExt != null)
+            {
+                res.AddRange(parameterExt);
+            }
+            message.SetAttribute("Reserved", res.ToArray());
+            message.SetAttribute("LengthPart2", (byte)pi.Length);
+            message.SetAttribute("Pi", Encoding.ASCII.GetBytes(pi));
+        }
+
+
         /// <summary>
         /// Add parameter for upload datagram.
         /// </summary>
@@ -448,6 +462,31 @@ namespace Dacs7
             AddUserDataParameter(msg, 4, UserDataFunctionType.Request, UserDataFunctionGroup.Time, (byte)UserDataSubFunctionTime.Read);
 
             AddData(msg, new byte[0]);
+            return msg;
+        }
+
+        public static IMessage CreateWriteClockRequest(ushort unitId, byte[] data)
+        {
+            var msg = Message.Create();
+            FillCommHeader(msg, (byte)PduType.UserData, 14, 8, unitId);
+            AddUserDataParameter(msg, 4, UserDataFunctionType.Request, UserDataFunctionGroup.Time, (byte)UserDataSubFunctionTime.Set);
+            AddData(msg, data);
+            return msg;
+        }
+
+        public static IMessage CreatePlcStopRequest(ushort unitId)
+        {
+            var msg = Message.Create();
+            FillCommHeader(msg, (byte)PduType.Job, 0, 16, unitId);
+            AddInvocationParameter(msg, (byte)FunctionCode.PlcStop, "P_PROGRAM");
+            return msg;
+        }
+
+        public static IMessage CreatePlcStartRequest(ushort unitId)
+        {
+            var msg = Message.Create();
+            FillCommHeader(msg, (byte)PduType.Job, 0, 20, unitId);
+            AddInvocationParameter(msg, (byte)FunctionCode.PlcControl, "P_PROGRAM", new byte[] { 0x00, 0xfd, 0x00, 0x00 });
             return msg;
         }
 

@@ -22,8 +22,8 @@ namespace Dacs7Tests
     public class Dacs7ClientTests
     {
         private ILoggerFactory _loggerFactory = new LoggerFactory().AddConsole();
-        private const string Ip = "127.0.0.1";//"127.0.0.1";
-        //private const string Ip = "192.168.0.148";
+        //private const string Ip = "127.0.0.1";//"127.0.0.1";
+        private const string Ip = "192.168.0.148";
         //private const string Ip = "192.168.1.17";//"127.0.0.1";
         //private const string ConnectionString = "Data Source=" + Ip + ":102,0,2;PduSize=240"; //"Data Source=192.168.1.10:102,0,2";
         public const string ConnectionString = "Data Source=" + Ip + ":102,0,2;Connect Timeout=10000"; //"Data Source=192.168.1.10:102,0,2";
@@ -866,10 +866,44 @@ namespace Dacs7Tests
             Assert.False(client.IsConnected);
         }
 
+        [Fact]
+        public void SetPlcTimeTest()
+        {
+            var client = new Dacs7Client(_loggerFactory);
+            client.Connect(ConnectionString);
+            Assert.True(client.IsConnected);
 
+            client.SetPlcTime(new DateTime(2017, 10, 22, 18, 0, 0, 10));
 
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
 
+        [Fact]
+        public void CreatePlcStopTest()
+        {
+            var client = new Dacs7Client(_loggerFactory);
+            client.Connect(ConnectionString);
+            Assert.True(client.IsConnected);
 
+            client.StopPlc();
+
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public void CreatePlcStartTest()
+        {
+            var client = new Dacs7Client(_loggerFactory);
+            client.Connect(ConnectionString);
+            Assert.True(client.IsConnected);
+
+            client.StartPlc();
+
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
     }
 
 #endif

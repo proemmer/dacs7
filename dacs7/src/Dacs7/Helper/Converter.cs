@@ -727,10 +727,24 @@ namespace Dacs7.Helper
             return bytes;
         }
 
+        private static int ToBcd(this byte value)
+        {
+            return ((int)value).ToBcd();
+        }
 
-        private static int Bcd(int value)
+        private static int ToBcd(this int value)
         {
             return ((value / 10) << 4) + (value % 10);
+        }
+
+        private static int FromBcd(this byte value)
+        {
+            return ((int)value).FromBcd();
+        }
+
+        private static int FromBcd(this int value)
+        {
+            return (((value >> 4)) * 10) + ((value & 0x0f));
         }
 
         /// <summary>
@@ -746,39 +760,21 @@ namespace Dacs7.Helper
             if (data == null || !data.Any())
                 return new DateTime(1900, 01, 01, 00, 00, 00);
 
-            int bt = data[offset];
             //BCD
-            var bb = bt;
-            var xx = Bcd(bb);
-            bt = (((bt >> 4)) * 10) + ((bt & 0x0f));
+            var bt = data[offset].FromBcd();
             var year = bt < 90 ? 2000 : 1900;
             year += bt;
 
-            //month
-            bt = data[offset + 1];
-            var month = (((bt >> 4)) * 10) + ((bt & 0x0f));
-
-            //day
-            bt = data[offset + 2];
-            var day = (((bt >> 4)) * 10) + ((bt & 0x0f));
-
-            //hour
-            bt = data[offset + 3];
-            var hour = (((bt >> 4)) * 10) + ((bt & 0x0f));
-
-            //minutes
-            bt = data[offset + 4];
-            var minute = (((bt >> 4)) * 10) + ((bt & 0x0f));
-
-            //second
-            bt = data[offset + 5];
-            var second = (((bt >> 4)) * 10) + ((bt & 0x0f));
+            var month = data[offset + 1].FromBcd();
+            var day = data[offset + 2].FromBcd();
+            var hour = data[offset + 3].FromBcd();
+            var minute = data[offset + 4].FromBcd();
+            var second = data[offset + 5].FromBcd();
 
             //millisecond
             //Byte 6 BCD + MSB (Byte 7)
-            bt = data[offset + 6];
-            int bt1 = data[offset + 7];
-            var milli = (((bt >> 4)) * 10) + ((bt & 0x0f));
+            var milli = data[offset + 6].FromBcd();
+            var bt1 = data[offset + 7];
             milli = milli * 10 + (bt1 >> 4);
 
             //week day
@@ -797,9 +793,21 @@ namespace Dacs7.Helper
 
 
 
-        public static IList<byte> ConvertFromDateTime(DateTime dateTime)
+        public static IList<byte> ConvertFromDateTime(this DateTime dateTime)
         {
-            return null;
+            var res = new List<byte>
+            {
+                0,
+                (byte)(dateTime.Year - 2000).ToBcd(),
+                (byte)(dateTime.Month).ToBcd(),
+                (byte)(dateTime.Day).ToBcd(),
+                (byte)(dateTime.Hour).ToBcd(),
+                (byte)(dateTime.Minute).ToBcd(),
+                (byte)(dateTime.Second).ToBcd(),
+                (byte)(dateTime.Millisecond/10).ToBcd(),  //TODO
+                (byte)((byte)(dateTime.DayOfWeek + 1)).ToBcd()  //TODO
+            };
+            return res;
         }
 
         internal static object ConvertTo<T>(this byte[] data, int offset = 0)
