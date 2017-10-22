@@ -18,20 +18,8 @@ namespace Dacs7
 {
     // This project can output the Class library as a NuGet Package.
     // To enable this option, right-click on the project and select the Properties menu item. In the Build tab select "Produce outputs on build".
-    public class Dacs7Client : IDacs7Client
+    public partial class Dacs7Client : IDacs7Client
     {
-        
-        #region Helper class
-        private class CallbackHandler
-        {
-            public ushort Id { get; set; }
-            public AutoResetEvent Event { get; set; }
-            public IMessage ResponseMessage { get; set; }
-            public Exception OccuredException { get; set; }
-            public Action<IMessage> OnCallbackAction { get; set; }
-        }
-        #endregion
-
         #region Fields
         private readonly ILogger _logger;
         private readonly object _syncRoot = new object();
@@ -62,6 +50,10 @@ namespace Dacs7
         #endregion
 
         #region Properties
+
+        internal TaskCreationOptions TaskCreationOptions => _taskCreationOptions;
+        internal ILogger Logger => _logger;
+
         public event OnConnectionChangeEventHandler OnConnectionChange
         {
             add
@@ -744,7 +736,7 @@ namespace Dacs7
             _logger?.LogDebug($"GetBlocksCount: ProtocolDataUnitReference is {id}");
             return PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
-                EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
+                cbh.ResponseMessage.EnsureValidParameterErrorCode( 0);
                 var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
                 if (returnCode == 0xff)
                 {
@@ -825,7 +817,7 @@ namespace Dacs7
 
                 if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
-                    EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
+                    cbh.ResponseMessage.EnsureValidParameterErrorCode( 0);
                     var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
                     if (returnCode == 0xff)
                     {
@@ -884,7 +876,7 @@ namespace Dacs7
             _logger?.LogDebug($"ReadBlockInfo: ProtocolDataUnitReference is {id}");
             return PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
-                EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
+                cbh.ResponseMessage.EnsureValidParameterErrorCode( 0);
                 var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
                 if (returnCode == 0xff)
                 {
@@ -1027,8 +1019,8 @@ namespace Dacs7
 
                 if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
                 {
-                    EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
-                    EnsureValidReturnCode(cbh.ResponseMessage, 0xff);
+                    cbh.ResponseMessage.EnsureValidParameterErrorCode( 0);
+                    cbh.ResponseMessage.EnsureValidReturnCode( 0xff);
 
                     var numberOfAlarms = cbh.ResponseMessage.GetAttribute("NumberOfAlarms", 0);
                     var result = new List<IPlcAlarm>();
@@ -1091,8 +1083,8 @@ namespace Dacs7
             _logger?.LogDebug($"RegisterAlarmUpdateCallback: ProtocolDataUnitReference is {id}");
             return (ushort)PerformDataExchange(id, reqMsg, policy, (cbh) =>
             {
-                EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
-                EnsureValidReturnCode(cbh.ResponseMessage, 0xff);
+                cbh.ResponseMessage.EnsureValidParameterErrorCode( 0);
+                cbh.ResponseMessage.EnsureValidReturnCode( 0xff);
                     
                 var callbackId = GetNextReferenceId();
                 var cbhOnUpdate = GetCallbackHandler(callbackId, true);
@@ -1103,7 +1095,7 @@ namespace Dacs7
                     {
                         try
                         {
-                            EnsureValidReturnCode(cbh.ResponseMessage, 0xff);
+                            cbh.ResponseMessage.EnsureValidReturnCode( 0xff);
                             var dataLength = msg.GetAttribute("UserDataLength", (UInt16)0);
                             if (dataLength > 0)
                             {
@@ -1150,38 +1142,7 @@ namespace Dacs7
             ReleaseCallbackHandler(id);
         }
 
-        /// <summary>
-        /// Read the number of blocks in the PLC per type
-        /// </summary>
-        /// <returns>The current <see cref="DateTime"/> from the PLC.</returns>
-        public DateTime GetPlcTime()
-        {
-            if (!IsConnected)
-                throw new Dacs7NotConnectedException();
-            var id = GetNextReferenceId();
-            var reqMsg = S7MessageCreator.CreateReadClockRequest(id);
-            var policy = new S7UserDataProtocolPolicy();
-            _logger?.LogDebug($"GetPlcTime: ProtocolDataUnitReference is {id}");
-            return (DateTime)PerformDataExchange(id, reqMsg, policy, (cbh) =>
-            {
-                EnsureValidParameterErrorCode(cbh.ResponseMessage, 0);
-                EnsureValidReturnCode(cbh.ResponseMessage, 0xff);
-                var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
-                if (sslData.Any())
-                    return sslData.ConvertToDateTime(2);
-                throw new InvalidDataException("SSL Data are empty!");
-            });
-        }
-
-        /// <summary>
-        /// Read the number of blocks in the PLC per type
-        /// </summary>
-        /// <returns>The current <see cref="DateTime"/> from the PLC as a <see cref="Task"/></returns>
-        public Task<DateTime> GetPlcTimeAsync()
-        {
-            return Task.Factory.StartNew(() => GetPlcTime(), _taskCreationOptions);
-        }
-
+        
         #region connection helper
 
         private void OnClientStateChanged(string socketHandle, bool connected)
@@ -1226,7 +1187,6 @@ namespace Dacs7
                             _logger?.LogInformation($"Connected: PduSize is {PduSize}");
                         }
                         return;
-
                     });
                 }
                 else
@@ -1237,7 +1197,10 @@ namespace Dacs7
                 _lastConnectException = ex;
                 _logger?.LogError($"ConfigurePlcConnection: Exception occurred {ex.Message}");
             }
-            _waitingForPlcConfiguration.Set();
+            finally
+            {
+                _waitingForPlcConfiguration.Set();
+            }
         }
 
         #endregion
@@ -1356,7 +1319,7 @@ namespace Dacs7
             }
         }
 
-        private UInt16 GetNextReferenceId()
+        internal UInt16 GetNextReferenceId()
         {
             var id = Interlocked.Increment(ref _referenceId);
             if (id < UInt16.MinValue || id > UInt16.MaxValue)
@@ -1380,12 +1343,12 @@ namespace Dacs7
             return string.Format("0x{0:X4}", value);
         }
 
-        private object PerformDataExchange(ushort id, IMessage msg, IProtocolPolicy policy, Func<CallbackHandler, object> func)
+        internal object PerformDataExchange(ushort id, IMessage msg, IProtocolPolicy policy, Func<CallbackHandler, object> func)
         {
             try
             {
                 var cbh = GetCallbackHandler(id);
-                SendMessages(msg, policy);
+                var sending = SendMessages(msg, policy);
                 if (cbh.Event.WaitOne(_timeout))
                 {
                     if (cbh.ResponseMessage != null)
@@ -1396,7 +1359,12 @@ namespace Dacs7
                         throw new Exception($"There was no response message created for ProtocolDataUnitReference {id}!");
                 }
                 else
-                    throw new TimeoutException($"Timeout while waiting for response for ProtocolDataUnitReference {id}.");
+                {
+                    if(sending.Exception != null)
+                        throw sending.Exception;
+                    else 
+                        throw new TimeoutException($"Timeout while waiting for response for ProtocolDataUnitReference {id}.");
+                }
             }
             finally
             {
@@ -1409,12 +1377,12 @@ namespace Dacs7
             try
             {
                 var cbh = GetCallbackHandler(id);
-                SendMessages(msg, policy);
+                var sending = SendMessages(msg, policy);
                 if (cbh.Event.WaitOne(_timeout))
                 {
                     if (cbh.ResponseMessage != null)
                     {
-                        EnsureValidErrorClass(cbh.ResponseMessage, 0x00);
+                        cbh.ResponseMessage.EnsureValidErrorClass(0x00);
                         action(cbh);
                         return;
                     }
@@ -1423,7 +1391,13 @@ namespace Dacs7
                     throw new Exception($"There was no response message created for ProtocolDataUnitReference {id}!");
                 }
                 else
-                    throw new TimeoutException($"Timeout while waiting for response for ProtocolDataUnitReference {id}.");
+                {
+                    if (sending.Exception != null)
+                        throw sending.Exception;
+                    else
+                        throw new TimeoutException($"Timeout while waiting for response for ProtocolDataUnitReference {id}.");
+                }
+                   
             }
             finally
             {
@@ -1531,19 +1505,41 @@ namespace Dacs7
 
         }
 
-        private async void SendMessages(IMessage msg, IProtocolPolicy policy)
+        private async Task SendMessages(IMessage msg, IProtocolPolicy policy)
         {
-            foreach (var data in policy.TranslateToRawMessage(msg))
+            try
             {
-                await Send(data);
+                foreach (var data in policy.TranslateToRawMessage(msg))
+                {
+                    await Send(data);
+                }
+            }
+            catch(Exception)
+            {
+                throw;
             }
         }
 
         private async Task Send(IEnumerable<byte> msg)
         {
-            var ret = await _clientSocket.Send(_upperProtocolHandlerFactory.AddUpperProtocolFrame(msg.ToArray()));
-            if (ret != SocketError.Success)
-                throw new SocketException((int)ret);
+            try
+            {
+                var sendData = _upperProtocolHandlerFactory.AddUpperProtocolFrame(msg.ToArray());
+                if (!_clientSocket.IsConnected)
+                {
+                    var errorMsg = $"Could not send data, because socket is currently disconnected!";
+                    _logger?.LogError(errorMsg);
+                    throw new InvalidOperationException(errorMsg);
+                }
+                var ret = await _clientSocket.Send(sendData);
+                if (ret != SocketError.Success)
+                    throw new SocketException((int)ret);
+            }
+            catch(Exception ex)
+            {
+                _logger?.LogError($"Socket send exception: {ex.Message}");
+                throw;
+            }
         }
 
 
@@ -1552,29 +1548,6 @@ namespace Dacs7
         #region Helper
 
 
-        private void EnsureValidParameterErrorCode(IMessage msg, ushort valid = 0)
-        {
-            var errorCode = msg.GetAttribute("ParamErrorCode", (ushort)0);
-            if (errorCode != valid)
-                throw new Dacs7ParameterException(errorCode);
-        }
-
-        private void EnsureValidReturnCode(IMessage msg, byte valid = 0xff)
-        {
-            var returnCode = msg.GetAttribute("ReturnCode", (byte)0);
-            if (returnCode != valid)
-                throw new Dacs7ReturnCodeException(returnCode);
-        }
-
-        private void EnsureValidErrorClass(IMessage msg, byte valid = 0x00)
-        {
-            var errorClass = msg.GetAttribute("ErrorClass", (byte)0);
-            if (errorClass != valid)
-            {
-                var errorCode = msg.GetAttribute("ErrorCode", (byte)0);
-                throw new Dacs7Exception(errorClass, errorCode);
-            }
-        }
 
 
         /// <summary>

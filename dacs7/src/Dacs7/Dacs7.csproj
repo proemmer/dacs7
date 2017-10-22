@@ -9,7 +9,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Dacs7</AssemblyName>
     <PackageId>Dacs7</PackageId>
-    <PackageTags>siemens plc S7</PackageTags>
+    <PackageTags>siemens plc S7 PC-S7-Connection TCP/IP-S7 communication .netcore Automation HMI C# VB.Net RFC-1006 IsoOnTcp-S7 SIMATIC</PackageTags>
     <PackageReleaseNotes>* Changed logging from action to Microsoft.Extensions.Logging  [!!!breaking change!!!]
 * Fixed a Bug in RegisterPolicies</PackageReleaseNotes>
     <PackageProjectUrl>http://proemmer.github.io/dacs7</PackageProjectUrl>

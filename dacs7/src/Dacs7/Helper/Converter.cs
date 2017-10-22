@@ -727,6 +727,12 @@ namespace Dacs7.Helper
             return bytes;
         }
 
+
+        private static int Bcd(int value)
+        {
+            return ((value / 10) << 4) + (value % 10);
+        }
+
         /// <summary>
         /// Convert a byte list to a Datetime 
         /// given byte array hast the following format
@@ -742,6 +748,8 @@ namespace Dacs7.Helper
 
             int bt = data[offset];
             //BCD
+            var bb = bt;
+            var xx = Bcd(bb);
             bt = (((bt >> 4)) * 10) + ((bt & 0x0f));
             var year = bt < 90 ? 2000 : 1900;
             year += bt;
@@ -787,6 +795,12 @@ namespace Dacs7.Helper
             }
         }
 
+
+
+        public static IList<byte> ConvertFromDateTime(DateTime dateTime)
+        {
+            return null;
+        }
 
         internal static object ConvertTo<T>(this byte[] data, int offset = 0)
         {
