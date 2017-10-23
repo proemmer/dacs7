@@ -482,11 +482,40 @@ namespace Dacs7
             return msg;
         }
 
-        public static IMessage CreatePlcStartRequest(ushort unitId)
+        public static IMessage CreateInvocationRequest(ushort unitId, string pi, string parameterblock = "")
         {
             var msg = Message.Create();
-            FillCommHeader(msg, (byte)PduType.Job, 0, 20, unitId);
-            AddInvocationParameter(msg, (byte)FunctionCode.PlcControl, "P_PROGRAM", new byte[] { 0x00, 0xfd, 0x00, 0x00 });
+            var length = (ushort)11;
+            length += (ushort)parameterblock.Length;
+            length += (ushort)pi.Length;
+            FillCommHeader(msg, (byte)PduType.Job, 0, length, unitId);
+            var data = new List<byte>();
+            data.AddRange(new byte[] { 0x00, 0xfd });
+            // size
+            data.AddRange(((ushort)parameterblock.Length).SetSwap());
+            // parameter block
+            data.AddRange(Encoding.ASCII.GetBytes(parameterblock));
+            
+            //else
+            //{
+            //    data.AddRange(new byte[] { 0x00, 0xfd, 0x00, 0x02, 0x43, 0x20 });
+            //}
+            AddInvocationParameter(msg, (byte)FunctionCode.PlcControl, pi, data.ToArray());
+            return msg;
+        }
+
+
+
+
+        public static IMessage CreateSllRequest(ushort unitId, ushort sslId, ushort sslIndex)
+        {
+            var msg = Message.Create();
+            FillCommHeader(msg, (byte)PduType.UserData, 8, 8, unitId);
+            AddUserDataParameter(msg, 4, UserDataFunctionType.Request, UserDataFunctionGroup.Cpu, (byte)UserDataSubFunctionCpu.ReadSsl);
+            var data = new List<byte>();
+            data.AddRange(sslId.SetSwap());
+            data.AddRange(sslIndex.SetSwap());
+            AddData(msg, data.ToArray());
             return msg;
         }
 

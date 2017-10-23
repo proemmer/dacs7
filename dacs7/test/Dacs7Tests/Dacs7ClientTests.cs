@@ -904,6 +904,60 @@ namespace Dacs7Tests
             client.Disconnect();
             Assert.False(client.IsConnected);
         }
+
+        [Fact]
+        public void CreatePlcColdStartTest()
+        {
+            var client = new Dacs7Client(_loggerFactory);
+            client.Connect(ConnectionString);
+            Assert.True(client.IsConnected);
+
+            client.StartPlc(true);
+
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+
+        [Fact]
+        public void GetPlcStateTest()
+        {
+            var client = new Dacs7Client(_loggerFactory);
+            client.Connect(ConnectionString);
+            Assert.True(client.IsConnected);
+
+            var state = client.GetPlcState();
+
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+
+        [Fact]
+        public void CopyRamToRomTest()
+        {
+            var client = new Dacs7Client(_loggerFactory);
+            client.Connect(ConnectionString);
+            Assert.True(client.IsConnected);
+
+            client.CopyRamToRom();
+
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
+
+        [Fact]
+        public void CompressMemoryTest()
+        {
+            var client = new Dacs7Client(_loggerFactory);
+            client.Connect(ConnectionString);
+            Assert.True(client.IsConnected);
+
+            client.CompressMemory();
+
+            client.Disconnect();
+            Assert.False(client.IsConnected);
+        }
     }
 
 #endif
