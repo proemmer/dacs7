@@ -192,7 +192,7 @@ namespace Dacs7
                 if (!string.IsNullOrEmpty(connectionString))
                     ConnectionString = connectionString;
 
-                if (!IsConnected)
+                if (IsConnected)
                     Disconnect();
 
                 AssignParameters();
