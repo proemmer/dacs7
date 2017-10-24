@@ -1,7 +1,7 @@
 ﻿namespace Dacs7.Domain
 {
 
-    public enum FunctionCode : byte
+    internal enum FunctionCode : byte
     {
         Cpu  =    0x00,   //CPU service
         SetupComm = 0xF0, //Setup communication

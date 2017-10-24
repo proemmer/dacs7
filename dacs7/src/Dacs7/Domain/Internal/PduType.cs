@@ -1,6 +1,6 @@
 ﻿namespace Dacs7.Domain
 {
-    public enum PduType : byte
+    internal enum PduType : byte
     {
         Job = 0x01,
         Ack = 0x02,

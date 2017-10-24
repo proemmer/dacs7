@@ -2,7 +2,7 @@
 
 namespace Dacs7.Domain
 {
-    public enum ItemDataTransportSize
+    internal enum ItemDataTransportSize
     {
         /* types of 1 byte length */
         Bit = 1,
@@ -29,7 +29,7 @@ namespace Dacs7.Domain
         HsCounter = 32
     }
 
-    public enum DataTransportSize
+    internal enum DataTransportSize
     {
         Null = 0,
         Bit = 3, /* bit access, length is in bits */

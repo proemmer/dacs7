@@ -1,6 +1,6 @@
 ﻿namespace Dacs7.Domain
 {
-    public enum ItemSyntaxId : byte
+    internal enum ItemSyntaxId : byte
     {
         S7Any = 0x10,       /* Address data S7-Any pointer-like DB1.DBX10.2 */
         DriveEsAny = 0xa2,  /* seen on Drive ES Starter with routing over S7 */

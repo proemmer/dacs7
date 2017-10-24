@@ -3,7 +3,7 @@ using System;
 using System.Globalization;
 using System.Reflection;
 
-namespace Dacs7.Domain
+namespace Dacs7
 {
     public enum ErrorClass : byte
     {

@@ -2,7 +2,7 @@
 using System.Text;
 using Dacs7.Helper;
 
-namespace Dacs7.Domain
+namespace Dacs7.Metadata
 {
     public enum BlockSecurity
     {

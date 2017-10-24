@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Dacs7.Domain
+namespace Dacs7.Control
 {
     public enum PlcStates
     {

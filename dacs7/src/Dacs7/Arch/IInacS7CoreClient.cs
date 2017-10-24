@@ -254,77 +254,7 @@ namespace Dacs7
         /// </summary>
         /// <param name="parameters">A list of <see cref="WriteOperationParameter"/>, so multiple write requests can be handled in one message</param>
         Task WriteAnyAsync(IEnumerable<WriteOperationParameter> parameters);
+       
 
-        /// <summary>
-        /// Read the number of blocks in the PLC per type
-        /// </summary>
-        /// <returns><see cref="IPlcBlocksCount"/> where you have access to the count of all the block types.</returns>
-        IPlcBlocksCount GetBlocksCount();
-
-        /// <summary>
-        /// Read the number of blocks in the PLC per type asynchronous. This means the call is wrapped in a Task.
-        /// </summary>
-        /// <returns><see cref="IPlcBlocksCount"/> where you have access to the count of all the block types.</returns>
-        Task<IPlcBlocksCount> GetBlocksCountAsync();
-
-        /// <summary>
-        /// Get all blocks of the specified type.
-        /// </summary>
-        /// <param name="type">Block type to read. <see cref="PlcBlockType"/></param>
-        /// <returns>Return a list off all blocks <see cref="IPlcBlock"/> of this type</returns>
-        IEnumerable<IPlcBlocks> GetBlocksOfType(PlcBlockType type);
-
-        /// <summary>
-        /// Get all blocks of the specified type asynchronous.This means the call is wrapped in a Task.
-        /// </summary>
-        /// <param name="type">Block type to read. <see cref="PlcBlockType"/></param>
-        /// <returns>Return a list off all blocks <see cref="IPlcBlock"/> of this type</returns>
-        Task<IEnumerable<IPlcBlocks>> GetBlocksOfTypeAsync(PlcBlockType type);
-
-        /// <summary>
-        /// Read Meta information of a plc block.
-        /// </summary>
-        /// <param name="blockType">Type of the block e.g. Db</param>
-        /// <param name="blocknumber">Number of the block</param>
-        /// <returns></returns>
-        IPlcBlockInfo ReadBlockInfo(PlcBlockType blockType, int blocknumber);
-
-        /// <summary>
-        /// Read the full data of a block from the plc.
-        /// </summary>
-        /// <param name="blockType">Specify the block type to read. e.g. DB</param>
-        /// <param name="blocknumber">Specify the Number of the block</param>
-        /// <returns></returns>
-        byte[] UploadPlcBlock(PlcBlockType blockType, int blocknumber);
-
-
-        ///// <summary>
-        ///// Write the full data of a block to the plc.
-        ///// </summary>
-        ///// <param name="blockType">Specify the block type to read. e.g. DB</param>
-        ///// <param name="blocknumber">Specify the Number of the block</param>
-        ///// <param name="data">Plc block in byte</param>
-        ///// <returns></returns>
-        //bool DownloadPlcBlock(PlcBlockType blockType, int blocknumber, byte[] data);
-
-        /// <summary>
-        /// Read Meta information of a plc block asynchronous.
-        /// </summary>
-        /// <param name="blockType">Type of the block e.g. Db</param>
-        /// <param name="blocknumber">Number of the block</param>
-        /// <returns></returns>
-        Task<IPlcBlockInfo> ReadBlockInfoAsync(PlcBlockType blockType, int blocknumber);
-
-        /// <summary>
-        /// Return a list of pending alarms
-        /// </summary>
-        /// <returns></returns>
-        IEnumerable<IPlcAlarm> ReadPendingAlarms();
-
-        /// <summary>
-        /// Return a list of pending alarms
-        /// </summary>
-        /// <returns></returns>
-        Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync();
     }
 }

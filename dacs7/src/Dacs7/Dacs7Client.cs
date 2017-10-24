@@ -28,8 +28,7 @@ namespace Dacs7
         private readonly UpperProtocolHandlerFactory _upperProtocolHandlerFactory = new UpperProtocolHandlerFactory();
         private readonly Queue<AutoResetEvent> _eventQueue = new Queue<AutoResetEvent>();
         private readonly ReaderWriterLockSlim _queueLockSlim = new ReaderWriterLockSlim();
-        private readonly ReaderWriterLockSlim _callbackLockSlim = new ReaderWriterLockSlim();
-        private ushort _alarmUpdateId;
+        private readonly ReaderWriterLockSlim _callbackLockSlim = new ReaderWriterLockSlim();     
         private int _currentNumberOfPendingCalls;
         private int _sleeptimeAfterMaxPendingCallsReached;
         private ushort _maxParallelJobs;
@@ -47,12 +46,51 @@ namespace Dacs7
         private ushort _receivedPduSize;
         private readonly object _eventHandlerLock = new object();
         private event OnConnectionChangeEventHandler EventHandler;
+
+        private Dictionary<Type,ushort> _callbackIds = new Dictionary<Type, ushort>();
         #endregion
 
         #region Properties
 
         internal TaskCreationOptions TaskCreationOptions => _taskCreationOptions;
         internal ILogger Logger => _logger;
+
+        internal bool TrySetCallbackId(Type policyType, ushort id = 0)
+        {
+            var contains = _callbackIds.ContainsKey(policyType);
+            if (id > 0 && !contains)
+            {
+                lock(_callbackIds)
+                {
+                    if (!_callbackIds.ContainsKey(policyType))
+                    {
+                        _callbackIds.Add(policyType, id);
+                    }
+                }
+            }
+            else if(id == 0 && contains)
+            {
+                lock (_callbackIds)
+                {
+                    return _callbackIds.Remove(policyType);
+                }
+            }
+            return false;
+        }
+
+        internal bool HasCallbackId(Type policyType)
+        {
+            return GetCallbackId(policyType) != 0;
+        }
+
+        internal ushort GetCallbackId(Type policyType)
+        {
+            if(_callbackIds.TryGetValue(policyType, out ushort id))
+            {
+                return id;
+            }
+            return 0;
+        }
 
         public event OnConnectionChangeEventHandler OnConnectionChange
         {
@@ -252,8 +290,8 @@ namespace Dacs7
             {
                 try
                 {
-                    if (_alarmUpdateId != 0)
-                        UnregisterAlarmUpdate(_alarmUpdateId);
+                    foreach(var item in _callbackIds.Where(item => item.Value > 0))
+                        UnregisterCallbackId(item.Key, item.Value);
                     _clientSocket.Close();
                 }
                 catch (Exception ex)
@@ -717,432 +755,6 @@ namespace Dacs7
 
 
 
-
-
-
-
-        /// <summary>
-        /// Read the number of blocks in the PLC per type
-        /// </summary>
-        /// <returns><see cref="IPlcBlocksCount"/> where you have access to the count of all the block types.</returns>
-        public IPlcBlocksCount GetBlocksCount()
-        {
-            if (!IsConnected)
-                throw new Dacs7NotConnectedException();
-            var id = GetNextReferenceId();
-            var reqMsg = S7MessageCreator.CreateBlocksCountRequest(id);
-            var policy = new S7UserDataProtocolPolicy();
-
-            _logger?.LogDebug($"GetBlocksCount: ProtocolDataUnitReference is {id}");
-            return PerformDataExchange(id, reqMsg, policy, (cbh) =>
-            {
-                cbh.ResponseMessage.EnsureValidParameterErrorCode( 0);
-                var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
-                if (returnCode == 0xff)
-                {
-                    var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
-                    if (sslData.Any())
-                    {
-                        var bc = new PlcBlocksCount();
-                        for (var i = 0; i < sslData.Length; i += 4)
-                        {
-                            if (sslData[i] == 0x30)
-                            {
-                                var type = (PlcBlockType)sslData[i + 1];
-                                var value = sslData.GetSwap<UInt16>(i + 2);
-
-                                switch (type)
-                                {
-                                    case PlcBlockType.Ob:
-                                        bc.Ob = value;
-                                        break;
-                                    case PlcBlockType.Fb:
-                                        bc.Fb = value;
-                                        break;
-                                    case PlcBlockType.Fc:
-                                        bc.Fc = value;
-                                        break;
-                                    case PlcBlockType.Db:
-                                        bc.Db = value;
-                                        break;
-                                    case PlcBlockType.Sdb:
-                                        bc.Sdb = value;
-                                        break;
-                                    case PlcBlockType.Sfc:
-                                        bc.Sfc = value;
-                                        break;
-                                    case PlcBlockType.Sfb:
-                                        bc.Sfb = value;
-                                        break;
-                                }
-                            }
-                        }
-                        return bc;
-
-                    }
-                    throw new InvalidDataException("SSL Data are empty!");
-                }
-                throw new Dacs7ReturnCodeException(returnCode); 
-            }) as IPlcBlocksCount;
-        }
-
-        /// <summary>
-        /// Read the number of blocks in the PLC per type asynchronous. This means the call is wrapped in a Task.
-        /// </summary>
-        /// <returns><see cref="IPlcBlocksCount"/> where you have access to the count of all the block types.</returns>
-        public Task<IPlcBlocksCount> GetBlocksCountAsync()
-        {
-            return Task.Factory.StartNew(() => GetBlocksCount(), _taskCreationOptions);
-        }
-
-        /// <summary>
-        /// Get all blocks of the specified type.
-        /// </summary>
-        /// <param name="type">Block type to read. <see cref="PlcBlockType"/></param>
-        /// <returns>Return a list off all blocks <see cref="IPlcBlock"/> of this type</returns>
-        public IEnumerable<IPlcBlocks> GetBlocksOfType(PlcBlockType type)
-        {
-            if (!IsConnected)
-                throw new Dacs7NotConnectedException();
-            var id = GetNextReferenceId();
-            var policy = new S7UserDataProtocolPolicy();
-            var blocks = new List<IPlcBlocks>();
-            var lastUnit = false;
-            var sequenceNumber = (byte)0x00;
-            _logger?.LogDebug($"GetBlocksOfType: ProtocolDataUnitReference is {id}");
-
-            do
-            {
-                var reqMsg = S7MessageCreator.CreateBlocksOfTypeRequest(id, type, sequenceNumber);
-
-                if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
-                {
-                    cbh.ResponseMessage.EnsureValidParameterErrorCode( 0);
-                    var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
-                    if (returnCode == 0xff)
-                    {
-                        var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
-                        if (sslData.Any())
-                        {
-                            var result = new List<IPlcBlocks>();
-                            for (var i = 0; i < sslData.Length; i += 4)
-                            {
-                                result.Add(new PlcBlocks
-                                {
-                                    Number = sslData.GetSwap<ushort>(i),
-                                    Flags = sslData[i + 2],
-                                    Language = PlcBlockInfo.GetLanguage(sslData[i + 3])
-                                });
-                            }
-
-                            lastUnit = cbh.ResponseMessage.GetAttribute("LastDataUnit", true);
-                            sequenceNumber = cbh.ResponseMessage.GetAttribute("SequenceNumber", (byte)0x00);
-
-                            return result;
-                        }
-                        throw new InvalidDataException("SSL Data are empty!");
-
-                    }
-                    throw new Dacs7ReturnCodeException(returnCode);
-                }) is IEnumerable<IPlcBlocks> blocksPart)
-                    blocks.AddRange(blocksPart);
-            } while (!lastUnit);
-            return blocks;
-        }
-
-        /// <summary>
-        /// Get all blocks of the specified type asynchronous.This means the call is wrapped in a Task.
-        /// </summary>
-        /// <param name="type">Block type to read. <see cref="PlcBlockType"/></param>
-        /// <returns>Return a list off all blocks <see cref="IPlcBlock"/> of this type</returns>
-        public Task<IEnumerable<IPlcBlocks>> GetBlocksOfTypeAsync(PlcBlockType type)
-        {
-            return Task.Factory.StartNew(() => GetBlocksOfType(type), _taskCreationOptions);
-        }
-
-        /// <summary>
-        /// Read the meta data of a block from the PLC.
-        /// </summary>
-        /// <param name="blockType">Specify the block type to read. e.g. DB   <see cref="PlcBlockType"/></param>
-        /// <param name="blocknumber">Specify the Number of the block</param>
-        /// <returns><see cref="IPlcBlockInfo"/> where you have access tho the detailed meta data of the block.</returns>
-        public IPlcBlockInfo ReadBlockInfo(PlcBlockType blockType, int blocknumber)
-        {
-            if (!IsConnected)
-                throw new Dacs7NotConnectedException();
-            var id = GetNextReferenceId();
-            var reqMsg = S7MessageCreator.CreateBlockInfoRequest(id, blockType, blocknumber);
-            var policy = new S7UserDataProtocolPolicy();
-            _logger?.LogDebug($"ReadBlockInfo: ProtocolDataUnitReference is {id}");
-            return PerformDataExchange(id, reqMsg, policy, (cbh) =>
-            {
-                cbh.ResponseMessage.EnsureValidParameterErrorCode( 0);
-                var returnCode = cbh.ResponseMessage.GetAttribute("ReturnCode", (byte)0);
-                if (returnCode == 0xff)
-                {
-                    var sslData = cbh.ResponseMessage.GetAttribute("SSLData", new byte[0]);
-                    if (sslData.Any())
-                    {
-                        var datalength = sslData[3];
-                        var authorOffset = sslData[5];
-
-                        return new PlcBlockInfo()
-                        {
-                            BlockLanguage = PlcBlockInfo.GetLanguage(sslData[10]),
-                            BlockType = PlcBlockInfo.GetPlcBlockType(sslData[11]),
-                            BlockNumber = PlcBlockInfo.GetU16(sslData, 12),
-                            Length = PlcBlockInfo.GetU32(sslData, 14),
-                            Password = PlcBlockInfo.GetString(18, 4, sslData),
-                            LastCodeChange = PlcBlockInfo.GetDt(sslData[22], sslData[23], sslData[24], sslData[25], sslData[26], sslData[27]),
-                            LastInterfaceChange = PlcBlockInfo.GetDt(sslData[28], sslData[29], sslData[30], sslData[31], sslData[32], sslData[33]),
-
-                            LocalDataSize = PlcBlockInfo.GetU16(sslData, 38),
-                            CodeSize = PlcBlockInfo.GetU16(sslData, 40),
-
-                            Author = PlcBlockInfo.GetString(42 + authorOffset, 8, sslData),
-                            Family = PlcBlockInfo.GetString(42 + 8 + authorOffset, 8, sslData),
-                            Name = PlcBlockInfo.GetString(42 + 16 + authorOffset, 8, sslData),
-                            VersionHeader = PlcBlockInfo.GetVersion(sslData[42 + 24 + authorOffset]),
-                            Checksum = PlcBlockInfo.GetCheckSum(42 + 26 + authorOffset, sslData)
-                        };
-                    }
-                    throw new InvalidDataException("SSL Data are empty!");
-                }
-                throw new Dacs7ReturnCodeException(returnCode);
-            }) as IPlcBlockInfo;
-        }
-
-        /// <summary>
-        /// Read the full data of a block from the PLC.
-        /// </summary>
-        /// <param name="blockType">Specify the block type to read. e.g. DB  <see cref="PlcBlockType"/></param>
-        /// <param name="blocknumber">Specify the Number of the block</param>
-        /// <returns>returns the see  <see cref="T:byte[]"/> of the block.</returns>
-        public byte[] UploadPlcBlock(PlcBlockType blockType, int blocknumber)
-        {
-            if (!IsConnected)
-                throw new Dacs7NotConnectedException();
-            var id = GetNextReferenceId();
-            var policy = new S7JobUploadProtocolPolicy();
-            _logger?.LogDebug($"ReadBlockInfo: ProtocolDataUnitReference is {id}");
-
-            //Start Upload
-            var reqMsg = S7MessageCreator.CreateStartUploadRequest(id, blockType, blocknumber);
-            uint controlId = 0;
-            PerformDataExchange(id, reqMsg, policy, (cbh) =>
-            {
-                var function = cbh.ResponseMessage.GetAttribute("Function", (byte)0);
-                if (function == 0x1d)
-                {
-                    //all write operations are successfully
-                    var paramData = cbh.ResponseMessage.GetAttribute("ParameterData", new byte[0]);
-                    if (paramData.Length >= 7)
-                        controlId = paramData.GetSwap<uint>(3);
-                    return;
-                }
-
-            });
-
-            //Upload packages
-            reqMsg = S7MessageCreator.CreateUploadRequest(id, blockType, blocknumber, controlId);
-            var data = new List<byte>();
-            var hasNext = false;
-            do
-            {
-                hasNext = false;
-                PerformDataExchange(id, reqMsg, policy, (cbh) =>
-                {
-                    var function = cbh.ResponseMessage.GetAttribute("Function", (byte)0);
-                    if (function == 0x1e)
-                    {
-                        //all write operations are successfully
-                        var paramdata = cbh.ResponseMessage.GetAttribute("ParameterData", new byte[0]);
-                        if (paramdata.Length == 1)
-                            hasNext = paramdata[0] == 0x01;
-                        var currentdata = cbh.ResponseMessage.GetAttribute("Data", new byte[0]).Skip(3);
-                        data.AddRange(currentdata);
-                        return;
-                    }
-                });
-            } while (hasNext);
-
-
-            reqMsg = S7MessageCreator.CreateEndUploadRequest(id, blockType, blocknumber, controlId);
-            PerformDataExchange(id, reqMsg, policy, (cbh) =>
-            {
-                var function = cbh.ResponseMessage.GetAttribute("Function", (byte)0);
-                if (function == 0x1f)
-                {
-                    //all write operations are successfully
-                    return;
-                }
-            });
-
-            return data.ToArray();
-        }
-        
-        /// <summary>
-        /// Read the meta data of a block asynchronous from the PLC.This means the call is wrapped in a Task.
-        /// </summary>
-        /// <param name="blockType">Specify the block type to read. e.g. DB  <see cref="PlcBlockType"/></param>
-        /// <param name="blocknumber">Specify the Number of the block</param>
-        /// <returns>a <see cref="Task"/> of <see cref="IPlcBlockInfo"/> where you have access tho the detailed meta data of the block.</returns>
-        public Task<IPlcBlockInfo> ReadBlockInfoAsync(PlcBlockType blockType, int blocknumber)
-        {
-            return Task.Factory.StartNew(() => ReadBlockInfo(blockType, blocknumber), _taskCreationOptions);
-        }
-
-
-
-
-
-
-
-
-
-        /// <summary>
-        /// Read the current pending alarms from the PLC.
-        /// </summary>
-        /// <returns>returns a list of all pending alarms</returns>
-        public IEnumerable<IPlcAlarm> ReadPendingAlarms()
-        {
-            var id = GetNextReferenceId();
-            var policy = new S7UserDataProtocolPolicy();
-            var alarms = new List<IPlcAlarm>();
-            var lastUnit = false;
-            var sequenceNumber = (byte)0x00;
-            _logger?.LogDebug($"ReadBlockInfo: ProtocolDataUnitReference is {id}");
-
-            do
-            {
-                var reqMsg = S7MessageCreator.CreatePendingAlarmRequest(id, sequenceNumber);
-
-                if (PerformDataExchange(id, reqMsg, policy, (cbh) =>
-                {
-                    cbh.ResponseMessage.EnsureValidParameterErrorCode( 0);
-                    cbh.ResponseMessage.EnsureValidReturnCode( 0xff);
-
-                    var numberOfAlarms = cbh.ResponseMessage.GetAttribute("NumberOfAlarms", 0);
-                    var result = new List<IPlcAlarm>();
-                    for (var i = 0; i < numberOfAlarms; i++)
-                    {
-                        var subItemName = $"Alarm[{i}]." + "{0}";
-                        var isComing = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "IsComing"), false);
-                        var isAck = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "IsAck"), false);
-                        var ack = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "Ack"), false);
-                        result.Add(new PlcAlarm
-                        {
-                            Id = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "Id"), (ushort)0),
-                            MsgNumber = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "MsgNumber"), (uint)0),
-                            IsComing = isComing,
-                            IsAck = isAck,
-                            Ack = ack,
-                            AlarmSource = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "AlarmSource"), (ushort)0),
-                            Timestamp = PlcAlarm.ExtractTimestamp(cbh.ResponseMessage, i, !isComing && !isAck && ack ? 1 : 0),
-                            AssotiatedValue = PlcAlarm.ExtractAssotiatedValue(cbh.ResponseMessage, i)
-                        });
-                    }
-
-                    lastUnit = cbh.ResponseMessage.GetAttribute("LastDataUnit", true);
-                    sequenceNumber = cbh.ResponseMessage.GetAttribute("SequenceNumber", (byte)0x00);
-
-                    return result;
-
-                }) is IEnumerable<IPlcAlarm> alarmPart)
-                    alarms.AddRange(alarmPart);
-            } while (!lastUnit);
-            return alarms;
-        }
-
-        /// <summary>
-        /// Read the current pending alarms asynchronous from the PLC.
-        /// </summary>
-        /// <returns>returns a list of all pending alarms</returns>
-        public Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync()
-        {
-            return Task.Factory.StartNew(() => ReadPendingAlarms(), _taskCreationOptions);
-        }
-
-        /// <summary>
-        /// Register a alarm changed callback. After this you will be notified if a Alarm is coming or going.
-        /// </summary>
-        /// <param name="onAlarmUpdate">Callback to alarm data change</param>
-        /// <param name="onErrorOccured">Callback to error in routine</param>
-        /// <returns></returns>
-        public ushort RegisterAlarmUpdateCallback(Action<IPlcAlarm> onAlarmUpdate, Action<Exception> onErrorOccured = null)
-        {
-            if (_alarmUpdateId != 0)
-                throw new Exception("There is already an update callback registered. Only one alarm update callback is allowed!");
-
-            if (!IsConnected)
-                throw new Dacs7NotConnectedException();
-
-            var id = GetNextReferenceId();
-            var reqMsg = S7MessageCreator.CreateAlarmCallbackRequest(id);
-            var policy = new S7UserDataProtocolPolicy();
-            _logger?.LogDebug($"RegisterAlarmUpdateCallback: ProtocolDataUnitReference is {id}");
-            return (ushort)PerformDataExchange(id, reqMsg, policy, (cbh) =>
-            {
-                cbh.ResponseMessage.EnsureValidParameterErrorCode( 0);
-                cbh.ResponseMessage.EnsureValidReturnCode( 0xff);
-                    
-                var callbackId = GetNextReferenceId();
-                var cbhOnUpdate = GetCallbackHandler(callbackId, true);
-                _alarmUpdateId = callbackId;
-                cbhOnUpdate.OnCallbackAction = (msg) =>
-                {
-                    if (msg != null)
-                    {
-                        try
-                        {
-                            cbh.ResponseMessage.EnsureValidReturnCode( 0xff);
-                            var dataLength = msg.GetAttribute("UserDataLength", (UInt16)0);
-                            if (dataLength > 0)
-                            {
-                                var subItemName = "Alarm[0].{0}";
-                                var isComing = msg.GetAttribute(string.Format(subItemName, "IsComing"), false);
-                                onAlarmUpdate(new PlcAlarm
-                                {
-                                    Id = msg.GetAttribute(string.Format(subItemName, "Id"), (ushort)0),
-                                    MsgNumber = msg.GetAttribute(string.Format(subItemName, "MsgNumber"), (uint)0),
-                                    IsComing = isComing,
-                                    IsAck = msg.GetAttribute(string.Format(subItemName, "IsAck"), false),
-                                    Ack = msg.GetAttribute(string.Format(subItemName, "Ack"), false),
-                                    AlarmSource = msg.GetAttribute(string.Format(subItemName, "AlarmSource"), (ushort)0),
-                                    Timestamp = PlcAlarm.ExtractTimestamp(msg, 0),
-                                    AssotiatedValue = PlcAlarm.ExtractAssotiatedValue(msg, 0)
-                                });
-                                return;
-                            }
-                            throw new InvalidDataException("SSL Data are empty!");
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger?.LogError($"Exception in RegisterAlarmUpdateCallback after callback occured with a message. Error was {ex.Message}");
-                            onErrorOccured?.Invoke(ex);
-                        }
-                    }
-                    else if (cbhOnUpdate.OccuredException != null)
-                    {
-                        _logger?.LogError($"Exception in RegisterAlarmUpdateCallback after callback occured without a message. Error was {cbhOnUpdate.OccuredException.Message}");
-                        onErrorOccured?.Invoke(cbhOnUpdate.OccuredException);
-                    }
-                };
-                return callbackId;
-            });
-        }
-
-        /// <summary>
-        /// Remove the callback for alarms, so you will not get alarms any more.
-        /// </summary>
-        /// <param name="id">registration id created by register method</param>
-        public void UnregisterAlarmUpdate(ushort id)
-        {
-            _alarmUpdateId = 0;
-            ReleaseCallbackHandler(id);
-        }
-
-        
         #region connection helper
 
         private void OnClientStateChanged(string socketHandle, bool connected)
@@ -1244,6 +856,22 @@ namespace Dacs7
 
         #region Communication
 
+
+        private ushort HandleCallbackIds(ushort id, IProtocolPolicy policy)
+        {
+            if (id == 0)
+            {
+                foreach (var item in _callbackIds.Where(x => x.Value > 0))
+                {
+                    if(policy.GetType() == item.Key)
+                    {
+                        return item.Value;
+                    }
+                }
+            }
+            return id;
+        }
+
         private void OnRawDataReceived(string socketHandle, IEnumerable<byte> buffer)
         {
             try
@@ -1261,9 +889,8 @@ namespace Dacs7
                             var extractionResult = policy.ExtractRawMessages(array);
                             foreach (var msg in policy.Normalize(socketHandle, extractionResult.GetExtractedRawMessages()))
                             {
-                                var id = msg.GetAttribute("ProtocolDataUnitReference", (ushort)0);
-                                if (id == 0 && _alarmUpdateId != 0 && policy is S7UserDataAckAlarmUpdateProtocolPolicy)
-                                    id = _alarmUpdateId;
+                                var id = HandleCallbackIds(msg.GetAttribute("ProtocolDataUnitReference", (ushort)0), policy);
+
                                 _logger?.LogDebug($"OnRawDataReceived: ProtocolDataUnitReference is {id}");
                                 _callbackLockSlim.EnterReadLock();
                                 try
@@ -1405,7 +1032,7 @@ namespace Dacs7
             }
         }
 
-        private CallbackHandler GetCallbackHandler(ushort id, bool withoutEvent = false)
+        internal CallbackHandler GetCallbackHandler(ushort id, bool withoutEvent = false)
         {
             //_semaphore.Wait();
             Interlocked.Increment(ref _currentNumberOfPendingCalls);
@@ -1456,7 +1083,7 @@ namespace Dacs7
             return cbh;
         }
 
-        private void ReleaseCallbackHandler(ushort id)
+        internal void ReleaseCallbackHandler(ushort id)
         {
             CallbackHandler cbh;
             try
@@ -1503,6 +1130,17 @@ namespace Dacs7
                 Interlocked.Decrement(ref _currentNumberOfPendingCalls);
             }
 
+        }
+
+        /// <summary>
+        /// Remove the callback for the given id.
+        /// </summary>
+        /// <param name="name">name of the callback</param>
+        /// <param name="id">registration id created by register method</param>
+        internal void UnregisterCallbackId(Type policyType, ushort id)
+        {
+            TrySetCallbackId(policyType, 0);
+            ReleaseCallbackHandler(id);
         }
 
         private async Task SendMessages(IMessage msg, IProtocolPolicy policy)

@@ -1,7 +1,7 @@
 ﻿
 
 
-namespace Dacs7.Domain
+namespace Dacs7.Metadata
 {
     internal class PlcBlocks : IPlcBlocks
     {

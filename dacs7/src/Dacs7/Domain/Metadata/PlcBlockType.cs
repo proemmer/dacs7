@@ -1,4 +1,4 @@
-﻿namespace Dacs7.Domain
+﻿namespace Dacs7.Metadata
 {
     public enum PlcBlockType : byte
     {

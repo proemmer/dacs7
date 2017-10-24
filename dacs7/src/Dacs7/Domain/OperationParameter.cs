@@ -1,11 +1,8 @@
 ﻿using Dacs7.Domain;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
-namespace Dacs7.Domain
+namespace Dacs7
 {
     /// <summary>
     /// This class is the abstract base class of the read and write operations

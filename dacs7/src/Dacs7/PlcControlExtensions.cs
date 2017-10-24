@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Dacs7
+namespace Dacs7.Control
 {
     public static class PlcControlExtensions
     {

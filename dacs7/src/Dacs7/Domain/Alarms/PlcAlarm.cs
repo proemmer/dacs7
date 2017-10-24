@@ -1,7 +1,7 @@
 ﻿using System;
 using Dacs7.Helper;
 
-namespace Dacs7.Domain
+namespace Dacs7.Alarms
 {
 
 
