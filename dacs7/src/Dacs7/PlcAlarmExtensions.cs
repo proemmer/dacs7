@@ -1,5 +1,4 @@
-﻿using Dacs7.Domain;
-using Dacs7.Helper;
+﻿using Dacs7.Helper;
 using Dacs7.Protocols.S7;
 using Microsoft.Extensions.Logging;
 using System;

@@ -113,6 +113,10 @@ namespace Dacs7.Control
             });
         }
 
+        public static Task GetPlcStateAsync(this Dacs7Client client, DateTime dateTime)
+        {
+            return Task.Factory.StartNew(() => client.GetPlcState(), client.TaskCreationOptions);
+        }
 
         /// <summary>
         /// Stopps the plc.
