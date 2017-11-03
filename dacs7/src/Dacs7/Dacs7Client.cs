@@ -27,12 +27,13 @@ namespace Dacs7
         private readonly AutoResetEvent _waitingForPlcConfiguration = new AutoResetEvent(false);
         private readonly UpperProtocolHandlerFactory _upperProtocolHandlerFactory = new UpperProtocolHandlerFactory();
         private readonly Queue<AutoResetEvent> _eventQueue = new Queue<AutoResetEvent>();
-        private readonly ReaderWriterLockSlim _queueLockSlim = new ReaderWriterLockSlim();
-        private readonly ReaderWriterLockSlim _callbackLockSlim = new ReaderWriterLockSlim();     
+        private ReaderWriterLockSlim _queueLockSlim = new ReaderWriterLockSlim();
+        private ReaderWriterLockSlim _callbackLockSlim = new ReaderWriterLockSlim();     
         private int _currentNumberOfPendingCalls;
         private int _sleeptimeAfterMaxPendingCallsReached;
         private ushort _maxParallelJobs;
         private ushort _maxParallelCalls;
+        private bool _disableParallelSemaphore;
         private TaskCreationOptions _taskCreationOptions = TaskCreationOptions.None;
         private ConnectionParameters _parameter;
         private ClientSocket _clientSocket;
@@ -41,11 +42,14 @@ namespace Dacs7
         private int _timeout = 5000;
         private int _connectTimeout = 5000;
         private const ushort PduSizeDefault = 960;
+        private const ushort MaxParallelJobsDefault = 2;
         private int _referenceId;
         private readonly object _idLock = new object();
         private ushort _receivedPduSize;
+        private ushort _receivedMaxParallelJobs;
         private readonly object _eventHandlerLock = new object();
         private event OnConnectionChangeEventHandler EventHandler;
+        private SemaphoreSlim _parallelCallsSemaphore;
 
         private Dictionary<Type,ushort> _callbackIds = new Dictionary<Type, ushort>();
         #endregion
@@ -121,6 +125,18 @@ namespace Dacs7
                     _receivedPduSize = value;
             }
         }
+
+        public UInt16 MaximumParallelJobs
+        {
+            get { return _receivedMaxParallelJobs <= 0 ? _parameter.GetParameter("Maximum Parallel Jobs", MaxParallelJobsDefault) : _receivedMaxParallelJobs; }
+            private set
+            {
+                if (value < _parameter.GetParameter("Maximum Parallel Jobs", MaxParallelJobsDefault)) 
+                    _receivedMaxParallelJobs = value;
+            }
+        }
+
+
         private UInt16 ItemReadSlice { get { return (UInt16)(PduSize - 18); } }  //18 Header and some other data 
         private UInt16 ItemWriteSlice { get { return (UInt16)(PduSize - 28); } } //28 Header and some other data
 
@@ -201,6 +217,7 @@ namespace Dacs7
                 try
                 {
                     _queueLockSlim.Dispose();
+                    _queueLockSlim.Dispose();
                 }
                 catch (ObjectDisposedException)
                 {
@@ -212,6 +229,19 @@ namespace Dacs7
                 try
                 {
                     _callbackLockSlim.Dispose();
+                    _callbackLockSlim = null;
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+            }
+
+            if (_parallelCallsSemaphore != null)
+            {
+                try
+                {
+                    _parallelCallsSemaphore.Dispose();
+                    _parallelCallsSemaphore = null;
                 }
                 catch (ObjectDisposedException)
                 {
@@ -787,7 +817,7 @@ namespace Dacs7
                 if (_clientSocket.IsConnected)
                 {
                     var id = GetNextReferenceId();
-                    var reqMsg = S7MessageCreator.CreateCommunicationSetup(id, _maxParallelJobs, PduSize);
+                    var reqMsg = S7MessageCreator.CreateCommunicationSetup(id, MaximumParallelJobs, PduSize);
                     var policy = new S7JobSetupProtocolPolicy();
                     _logger?.LogDebug($"Connect: ProtocolDataUnitReference is {id}");
                     PerformDataExchange(id, reqMsg, policy, (cbh) =>
@@ -797,6 +827,23 @@ namespace Dacs7
                         {
                             PduSize = data.GetSwap<UInt16>(5);
                             _logger?.LogInformation($"Connected: PduSize is {PduSize}");
+
+                            var jobs = data.GetSwap<UInt16>(1);
+                            if(_parallelCallsSemaphore == null || MaximumParallelJobs != jobs)
+                            {
+                                MaximumParallelJobs = jobs;
+                                if (!_disableParallelSemaphore)
+                                {
+                                    _parallelCallsSemaphore = new SemaphoreSlim(jobs);
+                                }
+                                else
+                                {
+                                    _parallelCallsSemaphore?.Dispose();
+                                    _parallelCallsSemaphore = null;
+                                }
+                            }
+                            _logger?.LogInformation($"Connected: MaximumParallelJobs is {MaximumParallelJobs}");
+                            
                         }
                         return;
                     });
@@ -822,7 +869,15 @@ namespace Dacs7
         private void AssignParameters()
         {
             _timeout = _parameter.GetParameter("Receive Timeout", 5000);
-            _maxParallelJobs = _parameter.GetParameter("Maximum Parallel Jobs", (ushort)1);  //Used by simatic manager -> best performance with 1
+            _maxParallelJobs = _parameter.GetParameter("Maximum Parallel Jobs", MaximumParallelJobs); 
+
+            // invalid value means disable semaphore
+            if(_maxParallelJobs == 0)
+            {
+                _maxParallelJobs = 2;  // simatic manager default value
+                _disableParallelSemaphore = true;
+            }
+
             _maxParallelCalls = _parameter.GetParameter("Maximum Parallel Calls", (ushort)4); //Used by Dacs7
             _taskCreationOptions = _parameter.GetParameter("Use Threads", true) ? TaskCreationOptions.LongRunning : TaskCreationOptions.None; //Used by Dacs7
             _sleeptimeAfterMaxPendingCallsReached = _parameter.GetParameter("Sleeptime After Max Pending Calls Reached", 5);
@@ -970,71 +1025,92 @@ namespace Dacs7
             return string.Format("0x{0:X4}", value);
         }
 
-        internal object PerformDataExchange(ushort id, IMessage msg, IProtocolPolicy policy, Func<CallbackHandler, object> func)
+        private T PerformInSemaphore<T>(ushort id, Func<T> action)
         {
             try
             {
-                var cbh = GetCallbackHandler(id);
-                var sending = SendMessages(msg, policy);
-                if (cbh.Event.WaitOne(_timeout))
+                if (_parallelCallsSemaphore != null && !_parallelCallsSemaphore.Wait(_timeout))
                 {
-                    if (cbh.ResponseMessage != null)
-                        return func(cbh);
-                    if (cbh.OccuredException != null)
-                        throw cbh.OccuredException;
-                    else
-                        throw new Exception($"There was no response message created for ProtocolDataUnitReference {id}!");
+                    throw new TimeoutException($"Timeout while waiting for free send slot for ProtocolDataUnitReference {id}.");
                 }
-                else
-                {
-                    if(sending.Exception != null)
-                        throw sending.Exception;
-                    else 
-                        throw new TimeoutException($"Timeout while waiting for response for ProtocolDataUnitReference {id}.");
-                }
+
+                return action();
             }
             finally
             {
-                ReleaseCallbackHandler(id);
+                _parallelCallsSemaphore?.Release();
             }
+        }
+
+        internal object PerformDataExchange(ushort id, IMessage msg, IProtocolPolicy policy, Func<CallbackHandler, object> func)
+        {
+            return PerformInSemaphore(id, () =>
+            {
+                try
+                {
+                    var cbh = GetCallbackHandler(id);
+                    var sending = SendMessages(msg, policy);
+                    if (cbh.Event.WaitOne(_timeout))
+                    {
+                        if (cbh.ResponseMessage != null)
+                            return func(cbh);
+                        if (cbh.OccuredException != null)
+                            throw cbh.OccuredException;
+                        else
+                            throw new Exception($"There was no response message created for ProtocolDataUnitReference {id}!");
+                    }
+                    else
+                    {
+                        if (sending.Exception != null)
+                            throw sending.Exception;
+                        else
+                            throw new TimeoutException($"Timeout while waiting for response for ProtocolDataUnitReference {id}.");
+                    }
+                }
+                finally
+                {
+                    ReleaseCallbackHandler(id);
+                }
+            });
         }
 
         private void PerformDataExchange(ushort id, IMessage msg, IProtocolPolicy policy, Action<CallbackHandler> action)
         {
-            try
+            PerformInSemaphore(id, () =>
             {
-                var cbh = GetCallbackHandler(id);
-                var sending = SendMessages(msg, policy);
-                if (cbh.Event.WaitOne(_timeout))
+                try
                 {
-                    if (cbh.ResponseMessage != null)
+                    var cbh = GetCallbackHandler(id);
+                    var sending = SendMessages(msg, policy);
+                    if (cbh.Event.WaitOne(_timeout))
                     {
-                        cbh.ResponseMessage.EnsureValidErrorClass(0x00);
-                        action(cbh);
-                        return;
+                        if (cbh.ResponseMessage != null)
+                        {
+                            cbh.ResponseMessage.EnsureValidErrorClass(0x00);
+                            action(cbh);
+                            return 0;
+                        }
+                        if (cbh.OccuredException != null)
+                            throw cbh.OccuredException;
+                        throw new Exception($"There was no response message created for ProtocolDataUnitReference {id}!");
                     }
-                    if (cbh.OccuredException != null)
-                        throw cbh.OccuredException;
-                    throw new Exception($"There was no response message created for ProtocolDataUnitReference {id}!");
-                }
-                else
-                {
-                    if (sending.Exception != null)
-                        throw sending.Exception;
                     else
-                        throw new TimeoutException($"Timeout while waiting for response for ProtocolDataUnitReference {id}.");
+                    {
+                        if (sending.Exception != null)
+                            throw sending.Exception;
+                        else
+                            throw new TimeoutException($"Timeout while waiting for response for ProtocolDataUnitReference {id}.");
+                    }
                 }
-                   
-            }
-            finally
-            {
-                ReleaseCallbackHandler(id);
-            }
+                finally
+                {
+                    ReleaseCallbackHandler(id);
+                }
+            });
         }
 
         internal CallbackHandler GetCallbackHandler(ushort id, bool withoutEvent = false)
         {
-            //_semaphore.Wait();
             Interlocked.Increment(ref _currentNumberOfPendingCalls);
             AutoResetEvent arEvent = null;
             if (!withoutEvent)

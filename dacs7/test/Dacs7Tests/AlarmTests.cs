@@ -1,5 +1,5 @@
 ﻿
-// #define REAL_PLC
+//#define REAL_PLC
 using Dacs7;
 using Dacs7.Domain;
 using Microsoft.Extensions.Logging;
