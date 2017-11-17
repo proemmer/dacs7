@@ -1,10 +1,11 @@
 ﻿
-//#define REAL_PLC
+// #define REAL_PLC
 using Dacs7;
-using Dacs7.Domain;
 using Microsoft.Extensions.Logging;
 using System.Threading;
 using Xunit;
+using Dacs7.Alarms;
+using Dacs7.Metadata;
 
 namespace Dacs7Tests
 {
@@ -51,21 +52,21 @@ namespace Dacs7Tests
             Assert.False(client.IsConnected);
         }
 
-        [Fact]
-        public void ReadBlockInfo2Test()
-        {
-            var db = 250;
-            var client = new Dacs7Client(_loggerFactory);
-            client.Connect(ConnectionString);
-            Assert.True(client.IsConnected);
+        //[Fact]
+        //public void ReadBlockInfo2Test()
+        //{
+        //    var db = 250;
+        //    var client = new Dacs7Client(_loggerFactory);
+        //    client.Connect(ConnectionString);
+        //    Assert.True(client.IsConnected);
 
-            var blkInfo = client.UploadPlcBlock(PlcBlockType.Db, db);
+        //    var blkInfo = client.UploadPlcBlock(PlcBlockType.Db, db);
 
-            blkInfo = client.UploadPlcBlock(PlcBlockType.Db, db);
+        //    blkInfo = client.UploadPlcBlock(PlcBlockType.Db, db);
 
-            client.Disconnect();
-            Assert.False(client.IsConnected);
-        }
+        //    client.Disconnect();
+        //    Assert.False(client.IsConnected);
+        //}
 
         [Fact]
         public void ReadBlockInfoFromSdbTest()

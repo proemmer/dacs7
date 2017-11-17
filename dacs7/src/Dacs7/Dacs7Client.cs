@@ -69,6 +69,7 @@ namespace Dacs7
                     if (!_callbackIds.ContainsKey(policyType))
                     {
                         _callbackIds.Add(policyType, id);
+                        return true;
                     }
                 }
             }
