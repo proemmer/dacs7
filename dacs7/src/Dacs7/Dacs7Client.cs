@@ -42,7 +42,7 @@ namespace Dacs7
         private int _timeout = 5000;
         private int _connectTimeout = 5000;
         private const ushort PduSizeDefault = 960;
-        private const ushort MaxParallelJobsDefault = 2;
+        private const ushort MaxParallelJobsDefault = 10;
         private int _referenceId;
         private readonly object _idLock = new object();
         private ushort _receivedPduSize;
