@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Dacs7 (Data Access S7)</Description>
-    <Copyright>Copyright 2016</Copyright>
+    <Description>Dacs7 (Data Access S7) is a library to communicate with a Siemens S7 and TIA PLC.</Description>
+    <Copyright>Copyright © Benjamin Proemmer 2016-2018</Copyright>
     <AssemblyTitle>dacs7</AssemblyTitle>
-    <VersionPrefix>1.0.5</VersionPrefix>
+    <VersionPrefix>1.4.2</VersionPrefix>
     <Authors>Benjamin Proemmer</Authors>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Dacs7</AssemblyName>
