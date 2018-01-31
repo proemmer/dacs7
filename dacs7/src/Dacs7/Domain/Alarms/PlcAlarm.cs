@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using Dacs7.Helper;
 
 namespace Dacs7.Alarms
@@ -13,39 +15,64 @@ namespace Dacs7.Alarms
     }
 
 
-    public class PlcAlarm :  IPlcAlarm
+    internal class PlcAlarm :  IPlcAlarm
     {
+        public AlarmMessageType AlarmMessageType { get; set; }
         public int Id { get; set; }
-        public uint MsgNumber { get; set; }
-        public byte[] AssotiatedValue { get; set; }
-        public int CountAlarms { get; set; }
+        public UInt32 MsgNumber { get; set; }
+        public List<byte[]> AssociatedValue { get; set; }
+        public byte EventState { get; set; }
+        public byte State { get; set; }
+        public byte AckStateGoing { get; set; }
+        public byte AckStateComing { get; set; }
 
-        //Update is Coming update
-        public bool IsComing { get; set; }
-
-        //Update is Ack update
-        public bool IsAck { get; set; }
-
-        //Ack has been set to true
-        public bool Ack { get; set; }
-
-        public int AlarmSource { get; set; }
+        public byte AlarmSource { get; set; }
         public DateTime Timestamp { get; set; }
+
+        public bool IsAck { get; set; }
 
         public override string ToString()
         {
-            return string.Format("{0}: AssotiatedValue = {1}, Timestamp = {2}", MsgNumber, AssotiatedValue.ToHexString(),Timestamp);
+            return string.Format("{0} - Id {8}: \n\tTimestamp = \t\t{2}, \n\tEventState = \t\t{3:X2}, \n\tState = \t\t{4:X2}, \n\tAckStateGoing = \t{5:X2}, \n\tAckStateComing = \t{6:X2}, \n\tAlarmSource = \t\t{7:X2}, \n\tIsAck = \t\t{9}, \n\tAssVal = \t{1},", MsgNumber, PrintAssociatedValues(), Timestamp, EventState, State, AckStateGoing, AckStateComing, AlarmSource, Id, IsAck);
+        }
+
+        public string PrintAssociatedValues()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine(string.Format("Number of Associated values: \t{0}", AssociatedValue.Count));
+            for (int i = 0; i < AssociatedValue.Count; i++)
+            {
+                sb.AppendLine(string.Format("\tValue {0} = \tlenght={1}\t0x{2}", i + 1, AssociatedValue[i].Length, AssociatedValue[i].ToHexString("", 0, Int32.MaxValue, false)));
+            }
+            return sb.ToString();
         }
 
 
-        internal static byte[] ExtractAssotiatedValue(IMessage msg, int alarmindex)
+        internal static List<byte[]> ExtractAssociatedValue(IMessage msg, int alarmindex, int valueindex = -1)
         {
-            var subItemName = $"Alarm[{alarmindex}].ExtendedData[0]." + "{0}";
-            if (msg.GetAttribute(string.Format(subItemName, "NumberOfAssotiatedValues"), 0) > 0)
+            var result = new List<byte[]>();
+            var nosub = false;
+            if (valueindex == -1)
             {
-                return msg.GetAttribute(string.Format(subItemName, "AssotiatedValue"), new byte[0]);
+                nosub = true;
+                valueindex = 0;
             }
-            return new byte[0];
+            var subItemName = string.Format("Alarm[{0}].ExtendedData[{1}].", alarmindex, valueindex) + "{0}";
+            var items = msg.GetAttribute(string.Format(subItemName, "NumberOfAssociatedValues"), (byte)0);
+
+            if (items >= valueindex)
+            {
+                if (!nosub)
+                    subItemName = string.Format("Alarm[{0}].ExtendedData[{1}].AssociatedValue[{2}].", alarmindex, valueindex, valueindex) + "{0}";
+
+
+                for (int i = 0; i < items; i++)
+                {
+                    result.Add(msg.GetAttribute(string.Format(subItemName, "AssociatedValue"), new byte[0]));
+                }
+
+            }
+            return result;
         }
 
         internal static DateTime ExtractTimestamp(IMessage msg, int alarmindex, int tsIdx = 0)

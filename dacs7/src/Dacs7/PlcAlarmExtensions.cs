@@ -42,21 +42,28 @@ namespace Dacs7.Alarms
                     var result = new List<IPlcAlarm>();
                     for (var i = 0; i < numberOfAlarms; i++)
                     {
-                        var subItemName = $"Alarm[{i}]." + "{0}";
-                        var isComing = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "IsComing"), false);
-                        var isAck = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "IsAck"), false);
-                        var ack = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "Ack"), false);
-                        result.Add(new PlcAlarm
+                        try
                         {
-                            Id = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "Id"), (ushort)0),
-                            MsgNumber = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "MsgNumber"), (uint)0),
-                            IsComing = isComing,
-                            IsAck = isAck,
-                            Ack = ack,
-                            AlarmSource = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "AlarmSource"), (ushort)0),
-                            Timestamp = PlcAlarm.ExtractTimestamp(cbh.ResponseMessage, i, !isComing && !isAck && ack ? 1 : 0),
-                            AssotiatedValue = PlcAlarm.ExtractAssotiatedValue(cbh.ResponseMessage, i)
-                        });
+                            var subItemName = string.Format("Alarm[{0}].", i) + "{0}";
+                            var isGoing = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "EventState"), (byte)0x00) == 0x00;
+                            result.Add(new PlcAlarm
+                            {
+                                Id = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "Id"), (UInt16)0),
+                                AlarmMessageType = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "AlarmMessageType"), AlarmMessageType.Unknown),
+                                MsgNumber = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "MsgNumber"), (UInt32)0),
+                                EventState = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "EventState"), (byte)0x00),
+                                State = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "State"), (byte)0x00),
+                                AckStateGoing = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "AckStateGoing"), (byte)0x00),
+                                AckStateComing = cbh.ResponseMessage.GetAttribute(string.Format(subItemName, "AckStateComing"), (byte)0x00),
+                                Timestamp = PlcAlarm.ExtractTimestamp(cbh.ResponseMessage, i, isGoing ? 1 : 0),
+                                AssociatedValue = PlcAlarm.ExtractAssociatedValue(cbh.ResponseMessage, i)
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            client.Logger?.LogError($"ReadPendingAlarms exception working on alarm {i}. Exception was: {ex.Message}");
+                            throw;
+                        }
                     }
 
                     lastUnit = cbh.ResponseMessage.GetAttribute("LastDataUnit", true);
@@ -119,19 +126,26 @@ namespace Dacs7.Alarms
                             var dataLength = msg.GetAttribute("UserDataLength", (UInt16)0);
                             if (dataLength > 0)
                             {
-                                var subItemName = "Alarm[0].{0}";
-                                var isComing = msg.GetAttribute(string.Format(subItemName, "IsComing"), false);
-                                onAlarmUpdate(new PlcAlarm
+                                var numberOfAlarms = msg.GetAttribute("NumberOfAlarms", (byte)0);
+                                for (var i = 0; i < numberOfAlarms; i++)
                                 {
-                                    Id = msg.GetAttribute(string.Format(subItemName, "Id"), (ushort)0),
-                                    MsgNumber = msg.GetAttribute(string.Format(subItemName, "MsgNumber"), (uint)0),
-                                    IsComing = isComing,
-                                    IsAck = msg.GetAttribute(string.Format(subItemName, "IsAck"), false),
-                                    Ack = msg.GetAttribute(string.Format(subItemName, "Ack"), false),
-                                    AlarmSource = msg.GetAttribute(string.Format(subItemName, "AlarmSource"), (ushort)0),
-                                    Timestamp = PlcAlarm.ExtractTimestamp(msg, 0),
-                                    AssotiatedValue = PlcAlarm.ExtractAssotiatedValue(msg, 0)
-                                });
+                                    var subItemName = string.Format("Alarm[{0}].", i) + "{0}";
+                                    var isComing = msg.GetAttribute(string.Format(subItemName, "IsComing"), false);
+                                    onAlarmUpdate(new PlcAlarm
+                                    {
+                                        Id = msg.GetAttribute(string.Format(subItemName, "Id"), (UInt16)0),
+                                        AlarmMessageType = msg.GetAttribute(string.Format(subItemName, "AlarmMessageType"), AlarmMessageType.Unknown),
+                                        MsgNumber = msg.GetAttribute(string.Format(subItemName, "MsgNumber"), (UInt32)0),
+                                        EventState = msg.GetAttribute(string.Format(subItemName, "EventState"), (byte)0x00),
+                                        State = msg.GetAttribute(string.Format(subItemName, "State"), (byte)0x00),
+                                        AckStateGoing = msg.GetAttribute(string.Format(subItemName, "AckStateGoing"), (byte)0x00),
+                                        AckStateComing = msg.GetAttribute(string.Format(subItemName, "AckStateComing"), (byte)0x00),
+                                        AlarmSource = msg.GetAttribute(string.Format(subItemName, "AlarmSource"), (byte)0),
+                                        Timestamp = PlcAlarm.ExtractTimestamp(msg, i),
+                                        AssociatedValue = PlcAlarm.ExtractAssociatedValue(msg, i, 0),
+                                        IsAck = msg.GetAttribute(string.Format(subItemName, "IsAck"), false),
+                                    });
+                                }
                                 return;
                             }
                             throw new InvalidDataException("SSL Data are empty!");
