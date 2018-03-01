@@ -1,22 +1,55 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Dacs7
 {
+
+    public enum AlarmMessageType
+    {
+        Unknown = 0,
+        Alarm_Ack = 12,
+        Alarm_SQ = 17,
+        Alarm_S = 18
+    }
+
+
+    /// <summary>
+    /// Represent a alarm of the alarm interface of Step7
+    /// </summary>
     public interface IPlcAlarm
     {
+        /// <summary>
+        /// Id of the alarm
+        /// </summary>
         int Id { get; }
-        uint MsgNumber { get; }
-        byte[] AssotiatedValue { get; }
-        int CountAlarms { get; }
-        //Update is Coming update
-        bool IsComing { get; }
 
-        //Update is Ack update
-        bool IsAck { get; }
+        /// <summary>
+        /// Message number of the alarm
+        /// </summary>
+        UInt32 MsgNumber { get; }
 
-        //Ack has been set to true
-        bool Ack { get; }
-        int AlarmSource { get; }
+        /// <summary>
+        /// Associate values
+        /// </summary>
+        List<byte[]> AssociatedValue { get; }
+
+        byte EventState { get; }
+        byte State { get; }
+        byte AckStateGoing { get; }
+        byte AckStateComing { get; }
+
+        bool IsAck { get; set; }
+
+        AlarmMessageType AlarmMessageType { get; set; }
+
+        /// <summary>
+        /// Source of the alarm
+        /// </summary>
+        byte AlarmSource { get; }
+
+        /// <summary>
+        /// Timestamp of the alarm
+        /// </summary>
         DateTime Timestamp { get; }
     }
 }

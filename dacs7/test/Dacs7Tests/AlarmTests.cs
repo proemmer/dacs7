@@ -26,7 +26,7 @@ namespace Dacs7Tests
 
             var alarmID = client.RegisterAlarmUpdateCallback((alarm) =>
             {
-                var numberOfalarms = alarm.CountAlarms;
+                var x = alarm;
             });
 
             Thread.Sleep(10000);
@@ -108,7 +108,6 @@ namespace Dacs7Tests
             {
                 var ts = alm.Timestamp;
                 var i = alm.Id;
-                var c = alm.IsComing;
                 var sc = alm.IsAck;
             }
 

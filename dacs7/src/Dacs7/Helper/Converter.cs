@@ -497,13 +497,13 @@ namespace Dacs7.Helper
             return binString.ToString();
         }
 
-        public static string ToHexString(this IEnumerable<byte> bytes, string separator = "", int offset = 0, int length = int.MaxValue)
+        public static string ToHexString(this IEnumerable<byte> bytes, string separator = "", int offset = 0, int length = int.MaxValue, bool reverse = true)
         {
             var arr = bytes.Skip(offset).Take(length).ToArray();
             if (!arr.Any())
                 return string.Empty;
             var sb = new StringBuilder(arr.Count() * (2 + separator.Length));
-            foreach (var b in arr.Reverse())
+            foreach (var b in reverse ? arr.Reverse() : arr)
                 sb.AppendFormat("{0:X2}{1}", b, separator);
             return sb.ToString(0, sb.Length - separator.Length);
         }
