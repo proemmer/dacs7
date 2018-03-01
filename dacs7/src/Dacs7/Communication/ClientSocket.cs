@@ -52,8 +52,15 @@ namespace Dacs7.Communication
                     {
                         var epLocal = _socket.LocalEndPoint as IPEndPoint;
                         IPEndPoint epRemote = null;
-                        try { epRemote = _socket.RemoteEndPoint as IPEndPoint; } catch (Exception) { };
-                        _identity = $"{epLocal.Address}:{epLocal.Port}-{(epRemote != null ? epRemote.Address.ToString() : _configuration.Hostname)}:{(epRemote != null ? epRemote.Port : _configuration.ServiceName)}";
+                        try
+                        {
+                            epRemote = _socket.RemoteEndPoint as IPEndPoint;
+                            _identity = $"{epLocal.Address}:{epLocal.Port}-{(epRemote != null ? epRemote.Address.ToString() : _configuration.Hostname)}:{(epRemote != null ? epRemote.Port : _configuration.ServiceName)}";
+                        }
+                        catch (Exception)
+                        {
+                            return string.Empty;
+                        };
                     }
                     else
                         return string.Empty;
