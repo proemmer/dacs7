@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -312,8 +311,7 @@ namespace Dacs7
                 length = (value as Array).Length * TransportSizeHelper.DataTypeToSizeByte(elementType, area);
             }
             var size = length < 0 ? TransportSizeHelper.DataTypeToSizeByte(typeof(T), PlcArea.DB) : length;
-            var stringValue = value as string;
-            if (stringValue != null)
+            if (value is string stringValue)
             {
                 if (length < 0) size = stringValue.Length;
                 size += 2;
