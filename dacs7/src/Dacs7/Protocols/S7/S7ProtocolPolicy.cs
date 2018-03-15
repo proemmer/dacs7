@@ -1,5 +1,6 @@
 ﻿using Dacs7.Helper;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -42,13 +43,14 @@ namespace Dacs7.Protocols.S7
 
         public override void SetupMessageAttributes(IMessage message)
         {
-            var msg = (message.GetRawMessage() as IEnumerable<byte>).ToArray();
-            message.SetAttribute("ProtocolId", msg[OffsetInPayload("ProtocolId")]);
+            var msg = (message.GetRawMessage() as IEnumerable<byte>).ToArray().AsSpan();
+            
+            message.SetAttribute("ProtocolId",  msg[OffsetInPayload("ProtocolId")]);
             message.SetAttribute("PduType", msg[OffsetInPayload("PduType")]);
-            message.SetAttribute("RedundancyIdentification", msg.GetSwap<UInt16>(OffsetInPayload("RedundancyIdentification")));
-            message.SetAttribute("ProtocolDataUnitReference", msg.GetSwap<UInt16>(OffsetInPayload("ProtocolDataUnitReference")));
-            message.SetAttribute("ParamLength", msg.GetSwap<UInt16>(OffsetInPayload("ParamLength")));
-            message.SetAttribute("DataLength", msg.GetSwap<UInt16>(OffsetInPayload("DataLength")));
+            message.SetAttribute("RedundancyIdentification", BinaryPrimitives.ReadUInt16BigEndian(msg.Slice(OffsetInPayload("RedundancyIdentification"))));
+            message.SetAttribute("ProtocolDataUnitReference", BinaryPrimitives.ReadUInt16BigEndian(msg.Slice(OffsetInPayload("ProtocolDataUnitReference"))));
+            message.SetAttribute("ParamLength", BinaryPrimitives.ReadUInt16BigEndian(msg.Slice(OffsetInPayload("ParamLength"))));
+            message.SetAttribute("DataLength", BinaryPrimitives.ReadUInt16BigEndian(msg.Slice(OffsetInPayload("DataLength"))));
         }
 
         public override IEnumerable<byte> CreateRawMessage(IMessage message)
@@ -59,6 +61,8 @@ namespace Dacs7.Protocols.S7
                 message.GetAttribute("ProtocolId", (byte) 0),
                 message.GetAttribute("PduType", (byte) 0)
             };
+
+
             msg.AddRange(message.GetAttribute("RedundancyIdentification", UInt16.MinValue).SetSwap());
             msg.AddRange(message.GetAttribute("ProtocolDataUnitReference", UInt16.MinValue).SetSwap());
             msg.AddRange(message.GetAttribute("ParamLength", UInt16.MinValue).SetSwap());

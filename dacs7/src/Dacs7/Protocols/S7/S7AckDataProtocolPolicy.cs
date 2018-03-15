@@ -42,7 +42,7 @@ namespace Dacs7.Protocols.S7
         public override void SetupMessageAttributes(IMessage message)
         {
             base.SetupMessageAttributes(message);
-            var msg = (message.GetRawMessage() as IEnumerable<byte>).ToArray();
+            var msg = (message.GetRawMessage() as IEnumerable<byte>).ToArray().AsSpan();
             message.SetAttribute("ErrorClass", msg[MinimumSize + OffsetInPayload("S7CommHeaderAck.ErrorClass")]);
             message.SetAttribute("ErrorCode", msg[MinimumSize + OffsetInPayload("S7CommHeaderAck.ErrorCode")]);
 
@@ -53,11 +53,11 @@ namespace Dacs7.Protocols.S7
             {
                 message.SetAttribute("Function", msg[MinimumAckSize + OffsetInPayload("S7JobParameter.Function")]);
                 if (paramLength > 1)
-                    message.SetAttribute("ParameterData", msg.Skip(MinimumAckSize + OffsetInPayload("S7JobParameter.ParameterData")).Take((ushort)paramLength-1).ToArray());
+                    message.SetAttribute("ParameterData", msg.Slice(MinimumAckSize + OffsetInPayload("S7JobParameter.ParameterData"), paramLength - 1).ToArray());
             }
 
             if (dataLength > 0)
-                message.SetAttribute("Data", msg.Skip(MinimumAckSize + OffsetInPayload("S7JobParameter.ParameterData") + paramLength).Take((ushort)dataLength).ToArray());
+                message.SetAttribute("Data", msg.Slice((MinimumAckSize + OffsetInPayload("S7JobParameter.ParameterData") + paramLength), dataLength).ToArray());
         }
 
         public override IEnumerable<byte> CreateRawMessage(IMessage message)
@@ -86,15 +86,15 @@ namespace Dacs7.Protocols.S7
         {
             var parts = aStructMemberName.Split('.');
             var dot = aStructMemberName.Contains('.');
-            if (!dot || parts.Length == 2 && parts[0] == "S7CommHeader")
+            if (!dot || parts.Length == 2 && parts[0] == nameof(S7CommHeader))
             {
                 return (int)Marshal.OffsetOf<S7CommHeader>(dot ? parts[1] : aStructMemberName);
             }
-            if (parts.Length == 2 && parts[0] == "S7CommHeaderAck")
+            if (parts.Length == 2 && parts[0] == nameof(S7CommHeaderAck))
             {
                 return (int)Marshal.OffsetOf<S7CommHeaderAck>( parts[1]);
             }
-            if (parts.Length == 2 && parts[0] == "S7JobParameter")
+            if (parts.Length == 2 && parts[0] == nameof(S7JobParameter))
             {
                 return (int)Marshal.OffsetOf<S7JobParameter>(parts[1]);
             }

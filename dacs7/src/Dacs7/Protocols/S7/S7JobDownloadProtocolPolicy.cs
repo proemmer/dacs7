@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Dacs7.Helper;
+
 
 namespace Dacs7.Protocols.S7
 {
@@ -57,12 +59,12 @@ namespace Dacs7.Protocols.S7
         public override void SetupMessageAttributes(IMessage message)
         {
             base.SetupMessageAttributes(message);
-            var msg = (message.GetRawMessage() as IEnumerable<byte>).ToArray();
+            var msg = (message.GetRawMessage() as IEnumerable<byte>).ToArray().AsSpan();
             var parentOffset = MinimumSize;
 
             message.SetAttribute("Function", msg[parentOffset + OffsetInPayload("S7JobParameter.Function")]);
 
-            var itemCount = msg.GetSwap<ushort>(parentOffset + OffsetInPayload("S7JobParameter.UploadErrorCode"));
+            var itemCount = BinaryPrimitives.ReadUInt16BigEndian(msg.Slice(parentOffset + OffsetInPayload("S7JobParameter.UploadErrorCode"));
             message.SetAttribute("ParamErrorCode", itemCount);
 
             var paramLength = message.GetAttribute("ParamLength", (ushort)0);
@@ -73,7 +75,7 @@ namespace Dacs7.Protocols.S7
                 message.SetAttribute("FileIdentifier", msg[parentOffset + OffsetInPayload("S7JobParameter.FileIdentifier")]);
                 message.SetAttribute("Unknown1", msg[parentOffset + OffsetInPayload("S7JobParameter.Unknown1")]);
                 message.SetAttribute("BlockType", msg[parentOffset + OffsetInPayload("S7JobParameter.BlockType")]);
-                message.SetAttribute("BlockNumber", msg.Skip(parentOffset + OffsetInPayload("S7JobParameter.BlockNumber")).Take(6).ToArray());
+                message.SetAttribute("BlockNumber", msg.Slice(parentOffset + OffsetInPayload("S7JobParameter.BlockNumber"), 6).ToArray());
                 message.SetAttribute("DestFilesystem", msg[parentOffset + OffsetInPayload("S7JobParameter.DestFilesystem")]);
             }
 
@@ -81,8 +83,8 @@ namespace Dacs7.Protocols.S7
             {
                 message.SetAttribute("LengthPart2", msg[parentOffset + OffsetInPayload("S7DownloadJobParameter.LengthPart2")]);
                 message.SetAttribute("Unknown2", msg[parentOffset + OffsetInPayload("S7DownloadJobParameter.Unknown2")]);
-                message.SetAttribute("LoadMemLength", msg.Skip(parentOffset + OffsetInPayload("S7DownloadJobParameter.LoadMemLength")).Take(6).ToArray());
-                message.SetAttribute("MC7Length", msg.Skip(parentOffset + OffsetInPayload("S7DownloadJobParameter.MC7Length")).Take(6).ToArray());
+                message.SetAttribute("LoadMemLength", msg.Slice(parentOffset + OffsetInPayload("S7DownloadJobParameter.LoadMemLength"), 6).ToArray());
+                message.SetAttribute("MC7Length", msg.Slice(parentOffset + OffsetInPayload("S7DownloadJobParameter.MC7Length"), 6).ToArray());
             }
         }
 
@@ -93,6 +95,7 @@ namespace Dacs7.Protocols.S7
 
             msg.Add(message.GetAttribute("Function", (byte)0));
             msg.Add(message.GetAttribute("Reserved", (byte)0));
+            
             msg.AddRange(message.GetAttribute("ParamErrorCode", ((ushort)0).SetSwap()));
             msg.AddRange(message.GetAttribute("Reserved2", (uint)0).SetSwap());
 
@@ -122,15 +125,15 @@ namespace Dacs7.Protocols.S7
         {
             var parts = aStructMemberName.Split('.');
             var dot = aStructMemberName.Contains('.');
-            if (!dot || parts.Length == 2 && parts[0] == "S7CommHeader")
+            if (!dot || parts.Length == 2 && parts[0] == nameof(S7CommHeader))
             {
                 return (int)Marshal.OffsetOf<S7CommHeader>(dot ? parts[1] : aStructMemberName);
             }
-            if (parts.Length == 2 && parts[0] == "S7JobParameter")
+            if (parts.Length == 2 && parts[0] == nameof(S7JobParameter))
             {
                 return (int)Marshal.OffsetOf<S7JobParameter>(parts[1]);
             }
-            if (parts.Length == 2 && parts[0] == "S7DownloadJobParameter")
+            if (parts.Length == 2 && parts[0] == nameof(S7DownloadJobParameter))
             {
                 return (int)Marshal.OffsetOf<S7DownloadJobParameter>(parts[1]);
             }

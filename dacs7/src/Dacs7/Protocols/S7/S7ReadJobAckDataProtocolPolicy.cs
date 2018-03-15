@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -43,7 +44,7 @@ namespace Dacs7.Protocols.S7
         public override void SetupMessageAttributes(IMessage message)
         {
             base.SetupMessageAttributes(message);
-            var msg = (message.GetRawMessage() as IEnumerable<byte>).ToArray();
+            var msg = (message.GetRawMessage() as IEnumerable<byte>).ToArray().AsSpan();
             var parentOffset = MinimumAckSize;
 
             message.SetAttribute("Function", msg[parentOffset + OffsetInPayload("S7ReadJobParameter.Function")]);
@@ -58,14 +59,14 @@ namespace Dacs7.Protocols.S7
                 message.SetAttribute(prefix + "ItemReturnCode", msg[offset + OffsetInPayload("S7ReadJobItemData.ItemReturnCode")]);
                 var transportSize = msg[offset + OffsetInPayload("S7ReadJobItemData.ItemTransportSize")];
                 message.SetAttribute(prefix + "ItemTransportSize", transportSize);
-                var dataLength = (int)msg.GetSwap<short>(offset + OffsetInPayload("S7ReadJobItemData.ItemSpecLength"));
+                var dataLength = (int)BinaryPrimitives.ReadInt16BigEndian(msg.Slice(offset + OffsetInPayload("S7ReadJobItemData.ItemSpecLength")));
 
                 if (transportSize != (byte)DataTransportSize.OctetString && transportSize != (byte)DataTransportSize.Real && transportSize != (byte)DataTransportSize.Bit)
                     dataLength = dataLength >> 3;
 
                 message.SetAttribute(prefix + "ItemSpecLength", (ushort)dataLength);
                 var dataOffset = offset + OffsetInPayload("S7ReadJobItemData.ItemData");
-                message.SetAttribute(prefix + "ItemData", msg.SubArray(dataOffset, (ushort)dataLength));
+                message.SetAttribute(prefix + "ItemData", msg.Slice(dataOffset, (ushort)dataLength).ToArray());
                 offset += dataLength + 4;
                 //Fillbyte check
                 if (offset % 2 != 0)
@@ -98,11 +99,11 @@ namespace Dacs7.Protocols.S7
             var parts = aStructMemberName.Split('.');
             if (parts.Length == 2)
             {
-                if (parts[0] == "S7CommHeader")
+                if (parts[0] == nameof(S7CommHeader))
                     return (int)Marshal.OffsetOf<S7CommHeader>(parts[1]);
-                if (parts[0] == "S7ReadJobParameter")
+                if (parts[0] == nameof(S7ReadJobParameter))
                     return (int)Marshal.OffsetOf<S7ReadJobParameter>(parts[1]);
-                if (parts[0] == "S7ReadJobItemData")
+                if (parts[0] == nameof(S7ReadJobItemData))
                     return (int)Marshal.OffsetOf<S7ReadJobItemData>(parts[1]);
             }
             else if(!aStructMemberName.Contains('.'))
