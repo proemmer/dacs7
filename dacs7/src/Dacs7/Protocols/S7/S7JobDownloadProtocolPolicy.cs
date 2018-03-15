@@ -64,7 +64,7 @@ namespace Dacs7.Protocols.S7
 
             message.SetAttribute("Function", msg[parentOffset + OffsetInPayload("S7JobParameter.Function")]);
 
-            var itemCount = BinaryPrimitives.ReadUInt16BigEndian(msg.Slice(parentOffset + OffsetInPayload("S7JobParameter.UploadErrorCode"));
+            var itemCount = BinaryPrimitives.ReadUInt16BigEndian(msg.Slice(parentOffset + OffsetInPayload("S7JobParameter.UploadErrorCode")));
             message.SetAttribute("ParamErrorCode", itemCount);
 
             var paramLength = message.GetAttribute("ParamLength", (ushort)0);

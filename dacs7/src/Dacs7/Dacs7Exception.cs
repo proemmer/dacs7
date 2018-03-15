@@ -13,7 +13,7 @@ namespace Dacs7
 
 
         public Dacs7Exception(byte eClass, byte code) : 
-            base("No success error class and code: class: <{ResolveErrorCode<ErrorClass>(eClass)}>, code: <{code}>")
+            base($"No success error class and code: class: <{ResolveErrorCode<ErrorClass>(eClass)}>, code: <{code}>")
         {
             ErrorClass = (ErrorClass)eClass;
             ErrorCode = code;

@@ -16,7 +16,7 @@ namespace Dacs7.Protocols.S7
         public S7UserDataAckPendingRequestProtocolPolicy()
         {
             //0x84 ->  Response and Type 8
-            AddMarker(new byte[] { (byte)UserDataParamTypeType.Response, 0x84 }, MinimumSize + 4, false);
+            AddMarker(new byte[] { (byte)UserDataParamTypeType.Response, 0x84, 0x13 }, MinimumSize + 4, false);
         }
 
 

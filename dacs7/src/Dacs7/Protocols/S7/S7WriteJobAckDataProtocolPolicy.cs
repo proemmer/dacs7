@@ -74,15 +74,15 @@ namespace Dacs7.Protocols.S7
         {
             var parts = aStructMemberName.Split('.');
             var dot = aStructMemberName.Contains('.');
-            if (!dot || parts.Length == 2 && parts[0] == "S7CommHeader")
+            if (!dot || parts.Length == 2 && parts[0] == nameof(S7CommHeader))
             {
                 return (int)Marshal.OffsetOf<S7CommHeader>(dot ? parts[1] : aStructMemberName);
             }
-            if (parts.Length == 2 && parts[0] == "S7WriteJobParameter")
+            if (parts.Length == 2 && parts[0] == nameof(S7WriteJobParameter))
             {
                 return (int)Marshal.OffsetOf<S7WriteJobParameter>(parts[1]);
             }
-            if (parts.Length == 2 && parts[0] == "S7WriteJobItemData")
+            if (parts.Length == 2 && parts[0] == nameof(S7WriteJobItemData))
             {
                 return (int)Marshal.OffsetOf<S7WriteJobItemData>(parts[1]);
             }

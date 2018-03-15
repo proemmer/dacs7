@@ -1,5 +1,6 @@
 ﻿using Dacs7.Helper;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -62,14 +63,14 @@ namespace Dacs7.Protocols.S7
         public override void SetupMessageAttributes(IMessage message)
         {
             base.SetupMessageAttributes(message);
-            var msg = (message.GetRawMessage() as IEnumerable<byte>).ToArray();
+            var msg = (message.GetRawMessage() as IEnumerable<byte>).ToArray().AsSpan();
             
             var parentOffset = MinimumSize;
             var paramLength = msg[parentOffset + OffsetInPayload("S7UserDataParameter.ParamDataLength")];
             var offset = parentOffset;
             if (paramLength > 0)
             {
-                message.SetAttribute("ParamHeader", msg.Skip(parentOffset + OffsetInPayload("S7UserDataParameter.ParamHeader")).Take(3));
+                message.SetAttribute("ParamHeader", msg.Slice(parentOffset + OffsetInPayload("S7UserDataParameter.ParamHeader"), 3).ToArray());
                 message.SetAttribute("ParamDataLength", paramLength);
                 message.SetAttribute("Unknown", msg[parentOffset + OffsetInPayload("S7UserDataParameter.Unknown")]);
                 message.SetAttribute("TypeAndGroup", msg[parentOffset + OffsetInPayload("S7UserDataParameter.TypeAndGroup")]);
@@ -87,15 +88,15 @@ namespace Dacs7.Protocols.S7
                 {
                     message.SetAttribute("DataUnitReferenceNumber", msg[offset + OffsetInPayload("S7UserDataParameterExt.DataUnitReferenceNumber")]);
                     message.SetAttribute("LastDataUnit", msg[offset + OffsetInPayload("S7UserDataParameterExt.LastDataUnit")] == 0x00);
-                    message.SetAttribute("ParamErrorCode", msg.GetSwap<ushort>(offset + OffsetInPayload("S7UserDataParameterExt.ParamErrorCode")));
+                    message.SetAttribute("ParamErrorCode", BinaryPrimitives.ReadUInt16BigEndian(msg.Slice(offset + OffsetInPayload("S7UserDataParameterExt.ParamErrorCode"))));
                 }
                 offset = parentOffset + ParamHeaderLength + paramLength;
             }
 
             message.SetAttribute("ReturnCode", msg[offset + OffsetInPayload("S7UserData.ReturnCode")]);
             message.SetAttribute("TransportSize", msg[offset + OffsetInPayload("S7UserData.TransportSize")]);
-            message.SetAttribute("UserDataLength", msg.GetSwap<ushort>(offset + OffsetInPayload("S7UserData.UserDataLength")));
-            message.SetAttribute("SSLData", msg.Skip(offset + UserDataHeaderLength).ToArray());
+            message.SetAttribute("UserDataLength", BinaryPrimitives.ReadUInt16BigEndian(msg.Slice(offset + OffsetInPayload("S7UserData.UserDataLength"))));
+            message.SetAttribute("SSLData", msg.Slice(offset + UserDataHeaderLength).ToArray());
         }
 
         public override IEnumerable<byte> CreateRawMessage(IMessage message)
@@ -132,19 +133,19 @@ namespace Dacs7.Protocols.S7
         {
             var parts = aStructMemberName.Split('.');
             var dot = aStructMemberName.Contains('.');
-            if (!dot || parts.Length == 2 && parts[0] == "S7CommHeader")
+            if (!dot || parts.Length == 2 && parts[0] == nameof(S7CommHeader))
             {
                 return (int)Marshal.OffsetOf<S7CommHeader>( dot ? parts[1] : aStructMemberName);
             }
-            if (parts.Length == 2 && parts[0] == "S7UserDataParameter")
+            if (parts.Length == 2 && parts[0] == nameof(S7UserDataParameter))
             {
                 return (int)Marshal.OffsetOf<S7UserDataProtocolPolicy.S7UserDataParameter>(parts[1]);
             }
-            if (parts.Length == 2 && parts[0] == "S7UserDataParameterExt")
+            if (parts.Length == 2 && parts[0] == nameof(S7UserDataParameterExt))
             {
                 return (int)Marshal.OffsetOf<S7UserDataProtocolPolicy.S7UserDataParameterExt>(parts[1]);
             }
-            if (parts.Length == 2 && parts[0] == "S7UserData")
+            if (parts.Length == 2 && parts[0] == nameof(S7UserData))
             {
                 return (int)Marshal.OffsetOf<S7UserDataProtocolPolicy.S7UserData>(parts[1]);
             }

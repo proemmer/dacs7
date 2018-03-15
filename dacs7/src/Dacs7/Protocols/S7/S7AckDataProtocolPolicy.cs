@@ -57,7 +57,10 @@ namespace Dacs7.Protocols.S7
             }
 
             if (dataLength > 0)
-                message.SetAttribute("Data", msg.Slice((MinimumAckSize + OffsetInPayload("S7JobParameter.ParameterData") + paramLength), dataLength).ToArray());
+            {
+                var off = MinimumAckSize - 1 + OffsetInPayload("S7JobParameter.ParameterData") + paramLength;
+                message.SetAttribute("Data", msg.Slice(off, dataLength).ToArray());
+            }
         }
 
         public override IEnumerable<byte> CreateRawMessage(IMessage message)
