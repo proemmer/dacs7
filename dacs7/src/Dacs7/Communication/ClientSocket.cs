@@ -84,10 +84,10 @@ namespace Dacs7.Communication
             ) : base(ClientSocketConfiguration.FromSocket(socket))
         {
             _socket = socket ?? throw new ArgumentNullException(nameof(socket));
-            OnConnectionStateChanged += connectionStateChanged;
-            OnSocketShutdown += shutdown;
-            OnSendFinished += sendfinished;
-            OnRawDataReceived += dataReceive;
+            OnConnectionStateChanged = connectionStateChanged;
+            OnSocketShutdown = shutdown;
+            OnSendFinished = sendfinished;
+            OnRawDataReceived = dataReceive;
             Task.Factory.StartNew(() =>
             {
                 PublishConnectionStateChanged(true);

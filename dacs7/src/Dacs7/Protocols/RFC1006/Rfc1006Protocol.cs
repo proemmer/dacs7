@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -277,7 +278,7 @@ namespace Dacs7.Protocols.RFC1006
                 {
                     return false;
                 }
-                return data.Skip(Tpkt.HeaderLength + 1).First().CompareTo(PduType) == 0;
+                return data.AsSpan().Slice(Tpkt.HeaderLength + 1)[0].CompareTo(PduType) == 0;
             }
         }
 
@@ -301,7 +302,7 @@ namespace Dacs7.Protocols.RFC1006
                 if (data == null || data.Length < Tpkt.HeaderLength + HeaderLength)
                     return false;
 
-                return data.Skip(Tpkt.HeaderLength + 1).First().CompareTo(PduType) == 0;
+                return data.AsSpan().Slice(Tpkt.HeaderLength + 1)[0].CompareTo(PduType) == 0;
             }
         }
 
@@ -325,7 +326,7 @@ namespace Dacs7.Protocols.RFC1006
                 {
                     return false;
                 }
-                return data.Skip(Tpkt.HeaderLength + 1).First().CompareTo(PduType) == 0;
+                return data.AsSpan().Slice(Tpkt.HeaderLength + 1)[0].CompareTo(PduType) == 0;
             }
         }
 
@@ -348,9 +349,7 @@ namespace Dacs7.Protocols.RFC1006
                     SYNC_2,
                     0xff, 0xff
                 }).Concat(data.ToArray()).ToArray();
-                var length = BitConverter.GetBytes((ushort)(data.Length)).Reverse().ToArray();
-                data[2] = length[0];
-                data[3] = length[1];
+                BinaryPrimitives.WriteUInt16BigEndian(data.AsSpan().Slice(2), (ushort)(data.Length));
                 return data;
             }
 
@@ -360,7 +359,8 @@ namespace Dacs7.Protocols.RFC1006
                 {
                     return 0;
                 }
-                return BitConverter.ToUInt16(new List<byte>(data.Skip(2).Take(2).Reverse()).ToArray(), 0);
+                
+                return BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan().Slice(2));
             }
         }
         #endregion

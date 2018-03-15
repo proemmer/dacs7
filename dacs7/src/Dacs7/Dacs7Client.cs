@@ -265,8 +265,8 @@ namespace Dacs7
                     Disconnect();
 
                 AssignParameters();
-                _clientSocket.OnConnectionStateChanged += OnClientStateChanged;
-                _clientSocket.OnRawDataReceived += OnRawDataReceived;
+                _clientSocket.OnConnectionStateChanged = OnClientStateChanged;
+                _clientSocket.OnRawDataReceived = OnRawDataReceived;
                 if (_clientSocket.Open())
                 {
                     if (!_waitingForPlcConfiguration.WaitOne(_connectTimeout * 2))

@@ -33,10 +33,10 @@ namespace Dacs7.Communication
         public bool IsConnected { get; protected set; }
         public bool Shutdown => _shutdown;
         public int ReceiveBufferSize { get { return _configuration.ReceiveBufferSize; } }
-        public event OnConnectionStateChangedHandler OnConnectionStateChanged;
-        public event OnDataReceivedHandler OnRawDataReceived;
-        public event OnSendFinishedHandler OnSendFinished;
-        public event OnSocketShutdownHandler OnSocketShutdown;
+        public OnConnectionStateChangedHandler OnConnectionStateChanged;
+        public OnDataReceivedHandler OnRawDataReceived;
+        public OnSendFinishedHandler OnSendFinished;
+        public OnSocketShutdownHandler OnSocketShutdown;
         //public event PublisherEventHandlerDelegate PublisherEvent;
 
         public abstract string Identity { get; }
