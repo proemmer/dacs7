@@ -160,13 +160,13 @@ namespace Dacs7Cli
             try
             {
                 await client.ConnectAsync(readOptions.ConnectionString);
-
+                var tags = ReadOperationParametersFromTags(readOptions.Tags);
 
                 for (int i = 0; i < readOptions.Loops; i++)
                 {
                     var sw = new Stopwatch();
                     sw.Start();
-                    var results = await client.ReadAnyAsync(ReadOperationParametersFromTags(readOptions.Tags));
+                    var results = await client.ReadAnyAsync(tags);
                     sw.Stop();
                     _logger.LogDebug($"Read: {sw.Elapsed}");
 

@@ -19,7 +19,7 @@ namespace Dacs7Cli.Options
         public int Rack { get; set; } = 0;
 
         [Option('s', "slot", HelpText = "Slot")]
-        public int Slot { get; set; } = 0;
+        public int Slot { get; set; } = 2;
 
         public string ConnectionString => $"Data Source={Address}:{Port},{Rack},{Slot}";
     }
