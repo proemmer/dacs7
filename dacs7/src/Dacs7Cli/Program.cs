@@ -204,12 +204,7 @@ namespace Dacs7Cli
 
         private static IEnumerable<ReadOperationParameter> ReadOperationParametersFromTags(IEnumerable<string> tags)
         {
-            var methodName = typeof(ReadOperationParameter).GetMethod(nameof(ReadOperationParameter.Create));
-            tags.Select(t =>
-            {
-                methodName.MakeGenericMethod(ConvertFromNodeId(t))
-            });
-            return new List<ReadOperationParameter>();
+            return tags.Select(t => ConvertFromNodeId(t) );
         }
 
         private static IEnumerable<WriteOperationParameter> WriteOperationParametersFromTags(IEnumerable<KeyValuePair<string, object>> tags)
@@ -217,25 +212,56 @@ namespace Dacs7Cli
             return new List<WriteOperationParameter>();
         }
 
-        public static Type ConvertFromNodeId(string nodeId)
+        public static ReadOperationParameter ConvertFromNodeId(string nodeId)
         {
             var parts = nodeId.Split(',');
+            var startParts = parts[0].Split('.');
+            var hasPrefix = startParts.Length == 3;
             var array = parts.Length == 3;
             var type = parts[1];
+            PlcArea area = 0;
+            Type readType = typeof(object);
+            int datablock = -1;
+            int numberOfItems = array ? Int32.Parse(parts[2]) : -1;
+
+            switch (startParts[hasPrefix ? 1 : 0])
+            {
+                case "I": area = PlcArea.IB; break;
+                case "M": area = PlcArea.FB; break;
+                case "A": area = PlcArea.QB; break;
+                case "T": area = PlcArea.TM; break;
+                case "C": area = PlcArea.CT; break;
+                case var s when Regex.IsMatch(s, "^DB\\d+$"):
+                    {
+                        area = PlcArea.DB;
+                        datablock = Int32.Parse(s.Substring(2));
+                        break;
+                    }
+            }
+
+            var offset = Int32.Parse(startParts[hasPrefix ? 2 : 1]);
 
             switch (type.ToLower())
             {
-                case "b": return array ? typeof(byte[])   : typeof(byte);
-                case "c": return array ? typeof(char[])   : typeof(char);
-                case "w": return array ? typeof(UInt16[]) : typeof(UInt16);
-                case "dw": return array ?typeof(UInt32[]) : typeof(UInt32);
-                case "i": return array ? typeof(Int16[])  : typeof(Int16);
-                case "di": return array ?typeof(Int32[])  : typeof(Int32);
-                case "r": return array ? typeof(Single[]) : typeof(Single);
-                case "s": return array ? typeof(String[]) : typeof(String);
-                case var s when Regex.IsMatch(s, "^x\\d+$"): return array ?typeof(bool[]) : typeof(bool);
+                case "b": readType = typeof(byte); break;
+                case "c": readType = typeof(char); break;
+                case "w": readType = typeof(UInt16); break;
+                case "dw": readType = typeof(UInt32); break;
+                case "i": readType = typeof(Int16); break;
+                case "di": readType = typeof(Int32); break;
+                case "r": readType = typeof(Single); break;
+                case "s": readType = typeof(String); break;
+                case var s when Regex.IsMatch(s, "^x\\d+$"): readType = typeof(bool); break;
             }
-            return value;
+
+
+            return new ReadOperationParameter
+            {
+                Area = area,
+                Offset = offset,
+                Type = readType,
+                Args = datablock > 0 ? new[] { numberOfItems, datablock } : new [] { numberOfItems }
+            };
         }
     }
 }
