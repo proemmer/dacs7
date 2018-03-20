@@ -4,43 +4,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net;
+using System.Buffers;
 
 namespace Dacs7.Communication
 {
-    public class ClientSocketConfiguration : ISocketConfiguration
-    {
-        public string Hostname { get; set; } = "localhost";
-        public int ServiceName { get; set; } = 22112;
-        public int ReceiveBufferSize { get; set; } = 65536;  // buffer size to use for each socket I/O operation 
-        public bool Autoconnect { get; set; } = true;
-        public string NetworkAdapter { get; set; }
-        public bool KeepAlive { get; set; } = false;
-
-        public ClientSocketConfiguration()
-        {
-        }
-
-        public static ClientSocketConfiguration FromSocket(Socket socket)
-        {
-            var ep = socket.RemoteEndPoint as IPEndPoint;
-            var keepAlive = socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.KeepAlive);
-            return new ClientSocketConfiguration
-            {
-                Hostname = ep.Address.ToString(),
-                ServiceName = ep.Port,
-                ReceiveBufferSize = socket.ReceiveBufferSize,  // buffer size to use for each socket I/O operation 
-                KeepAlive = keepAlive != null
-            };
-        }
-    }
 
     internal class ClientSocket : SocketBase
     {
-        #region Fields
         private Socket _socket;
-        #endregion
 
-        #region Properties
         public override string Identity
         {
             get
@@ -68,31 +40,29 @@ namespace Dacs7.Communication
                 return _identity;
             }
         }
-        public DateTime LastUsage { get; private set; }
-        #endregion
 
         #region Ctor
         public ClientSocket(ClientSocketConfiguration configuration) : base(configuration)
         {
             Init();
         }
-        internal ClientSocket(Socket socket,
-            OnConnectionStateChangedHandler connectionStateChanged,
-            OnSocketShutdownHandler shutdown,
-            OnSendFinishedHandler sendfinished,
-            OnDataReceivedHandler dataReceive
-            ) : base(ClientSocketConfiguration.FromSocket(socket))
+        internal ClientSocket(  Socket socket,
+                                OnConnectionStateChangedHandler connectionStateChanged,
+                                OnSocketShutdownHandler shutdown,
+                                OnSendFinishedHandler sendfinished,
+                                OnDataReceivedHandler dataReceive
+                                ) : base(ClientSocketConfiguration.FromSocket(socket))
         {
             _socket = socket ?? throw new ArgumentNullException(nameof(socket));
             OnConnectionStateChanged = connectionStateChanged;
             OnSocketShutdown = shutdown;
             OnSendFinished = sendfinished;
             OnRawDataReceived = dataReceive;
-            Task.Factory.StartNew(() =>
+            Task.Factory.StartNew(async () =>
             {
                 PublishConnectionStateChanged(true);
-                StartReceive();
-            }, TaskCreationOptions.LongRunning);
+                await StartReceive();
+            }, TaskCreationOptions.LongRunning).ConfigureAwait(false);
         }
         #endregion
 
@@ -126,11 +96,11 @@ namespace Dacs7.Communication
         }
         public override async Task<SocketError> Send(IEnumerable<byte> data)
         {
-            LastUsage = DateTime.Now;
             var result = await SendInternal(data);
             PublishSendFinished();
             return result;
         }
+
         public override void Close()
         {
             base.Close();
@@ -145,19 +115,31 @@ namespace Dacs7.Communication
             }
 
         }
-        private async void StartReceive()
+
+
+        private async Task StartReceive()
         {
+            var receiveBuffer = ArrayPool<byte>.Shared.Rent(_socket.ReceiveBufferSize);
+            var span = new Memory<byte>(receiveBuffer);
+            var useAsync = (_configuration as ClientSocketConfiguration).Async;
             try
             {
-                byte[] receiveBuffer = new byte[_socket.ReceiveBufferSize];
                 while (true)
                 {
                     var buffer = new ArraySegment<byte>(receiveBuffer);
                     var received = await _socket.ReceiveAsync(buffer, SocketFlags.Partial);
                     if (received == 0)
                         return;
-                    LastUsage = DateTime.Now;
-                    PublishDataReceived(buffer.Take(received));
+
+                    if (useAsync)
+                    {
+                        var receivedData = new Memory<byte>(span.Slice(0, received).ToArray());
+                        var dummy = Task.Factory.StartNew(() => PublishDataReceived(receivedData)).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        PublishDataReceived(span.Slice(0, received));
+                    }
                 }
 
             }
@@ -172,10 +154,14 @@ namespace Dacs7.Communication
             }
             finally
             {
+                ArrayPool<byte>.Shared.Return(receiveBuffer);
                 HandleSocketDown();
             }
 
         }
+
+
+
         protected async Task<SocketError> SendInternal(IEnumerable<byte> data)
         {
             // Write the locally buffered data to the network.
@@ -195,6 +181,9 @@ namespace Dacs7.Communication
             }
             return SocketError.Success;
         }
+
+
+
         private bool IsReallyConnected()
         {
             var blocking = true;

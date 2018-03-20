@@ -484,11 +484,11 @@ namespace Dacs7
             return id;
         }
 
-        private void OnRawDataReceived(string socketHandle, IEnumerable<byte> buffer)
+        private void OnRawDataReceived(string socketHandle, Memory<byte> buffer)
         {
             try
             {
-                if (buffer != null)
+                if (!buffer.IsEmpty)
                 {
                     var b = buffer.ToArray();
                     foreach (var array in _upperProtocolHandlerFactory.RemoveUpperProtocolFrame(b, b.Length).Where(payload => payload != null))

@@ -178,10 +178,11 @@ namespace Dacs7
         /// <returns>A list of <see cref="T:object"/> where every list entry contains the read value in order of the given parameter order</returns>
         public IEnumerable<object> ReadAny(IEnumerable<ReadOperationParameter> parameters)
         {
+            var origin = parameters.Select(x => x.Copy()).ToList();
             var readResult = ReadAnyRaw(parameters).ToArray();
             var resultList = new List<object>();
             int current = 0;
-            foreach (var param in parameters)
+            foreach (var param in origin)   //TODO:  merged the data!!!!!
             {
                 var data = readResult[current++];
                 var numberOfItems = param.Args != null && param.Args.Length > 0 ? param.Args[0] : 1;

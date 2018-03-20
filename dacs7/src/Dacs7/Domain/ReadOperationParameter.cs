@@ -1,5 +1,6 @@
 ﻿using Dacs7.Domain;
 using System;
+using System.Linq;
 
 namespace Dacs7
 {
@@ -77,6 +78,18 @@ namespace Dacs7
             };
         }
 
+        public OperationParameter Copy()
+        {
+            return new ReadOperationParameter
+            {
+                Area = Area,
+                Offset = Offset,
+                Type = Type,
+                Args = Args.ToArray()
+            };
+        }
+
+
         /// <summary>
         /// Create a ReadOperationParameter instance to read a bit.
         /// </summary>
@@ -110,9 +123,48 @@ namespace Dacs7
                 numberOfItems = 1;
         }
 
+        public override int CalcSize(int itemSize)
+        {
+            itemSize += 4 + Length;  // Data header = 4
+            if (Type == typeof(string))
+                itemSize += 2;
+
+            if (itemSize % 2 != 0) itemSize++;
+            return itemSize;
+        }
+
         public override OperationParameter Cut(int size)
         {
-            throw new NotImplementedException();
+            if (Args[0] > -1)
+            {
+                size = Math.Min(size, Length);
+                var resultSize = size;
+                var newLength = Length - size;
+                var data = new object[size];
+                var restData = new object[Length - size];
+
+                var args = new int[Args.Length];
+                args[0] = size;
+                if (args.Length > 1)
+                {
+                    args[1] = Args[1];
+                }
+
+
+
+                var result = new ReadOperationParameter
+                {
+                    Area = Area,
+                    Offset = Offset,
+                    Type = Type,
+                    Args = args
+                };
+                Args[0] = newLength;
+                Offset += size;
+
+                return result;
+            }
+            return null;
         }
     }
 }
