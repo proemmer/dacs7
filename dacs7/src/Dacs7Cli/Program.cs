@@ -159,6 +159,7 @@ namespace Dacs7Cli
             var client = new Dacs7Client(_factory);
             try
             {
+                long msTotal = 0;
                 await client.ConnectAsync(readOptions.ConnectionString);
                 var tags = ReadOperationParametersFromTags(readOptions.Tags);
 
@@ -168,7 +169,8 @@ namespace Dacs7Cli
                     sw.Start();
                     var results = await client.ReadAnyAsync(tags);
                     sw.Stop();
-                    _logger.LogDebug($"Read: {sw.Elapsed}");
+                    msTotal += sw.ElapsedMilliseconds;
+                    _logger.LogDebug($"ReadTime: {sw.Elapsed}");
 
                     var resultEnumerator = results.GetEnumerator();
                     foreach (var item in readOptions.Tags)
@@ -180,6 +182,9 @@ namespace Dacs7Cli
 
                     }
                 }
+
+                if(readOptions.Loops > 0)
+                    _logger?.LogInformation($"Average read time over loops is {msTotal / readOptions.Loops}ms");
             }
             catch (Exception ex)
             {

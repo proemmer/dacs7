@@ -382,9 +382,10 @@ namespace Dacs7
                         if (data.Length >= 7)
                         {
                             PduSize = data.GetSwap<UInt16>(5);
-                            _logger?.LogInformation($"Connected: PduSize is {PduSize}");
-
                             var jobs = data.GetSwap<UInt16>(1);
+                            _logger?.LogInformation($"Connection data received: PduSize is {PduSize}; MaxJobs is {jobs}");
+
+                            
                             if(_parallelCallsSemaphore == null || MaximumParallelJobs != jobs)
                             {
                                 MaximumParallelJobs = jobs;
