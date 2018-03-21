@@ -4,7 +4,6 @@ using Dacs7;
 using Microsoft.Extensions.Logging;
 using System.Threading;
 using Xunit;
-using Dacs7.Alarms;
 using Dacs7.Metadata;
 
 namespace Dacs7Tests

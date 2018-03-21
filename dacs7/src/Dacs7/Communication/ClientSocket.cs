@@ -41,42 +41,26 @@ namespace Dacs7.Communication
             }
         }
 
-        #region Ctor
         public ClientSocket(ClientSocketConfiguration configuration) : base(configuration)
         {
-            Init();
+            
         }
-        internal ClientSocket(  Socket socket,
-                                OnConnectionStateChangedHandler connectionStateChanged,
-                                OnSocketShutdownHandler shutdown,
-                                OnSendFinishedHandler sendfinished,
-                                OnDataReceivedHandler dataReceive
-                                ) : base(ClientSocketConfiguration.FromSocket(socket))
-        {
-            _socket = socket ?? throw new ArgumentNullException(nameof(socket));
-            OnConnectionStateChanged = connectionStateChanged;
-            OnSocketShutdown = shutdown;
-            OnSendFinished = sendfinished;
-            OnRawDataReceived = dataReceive;
-            Task.Factory.StartNew(async () =>
-            {
-                PublishConnectionStateChanged(true);
-                await StartReceive();
-            }, TaskCreationOptions.LongRunning).ConfigureAwait(false);
-        }
-        #endregion
+
 
         /// <summary>
         /// Starts the server such that it is listening for 
         /// incoming connection requests.    
         /// </summary>
-        public override bool Open()
+        public async override Task OpenAsync()
         {
             try
             {
                 _identity = null;
-                _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                _socket.ConnectAsync(_configuration.Hostname, _configuration.ServiceName).Wait();
+                _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+                {
+                    ReceiveBufferSize = _configuration.ReceiveBufferSize
+                };
+                await _socket.ConnectAsync(_configuration.Hostname, _configuration.ServiceName);
                 if (IsReallyConnected())
                 {
                     if (!_configuration.KeepAlive)
@@ -90,20 +74,18 @@ namespace Dacs7.Communication
             catch (Exception)
             {
                 HandleSocketDown();
-                return false;
             }
-            return true;
-        }
-        public override async Task<SocketError> Send(IEnumerable<byte> data)
-        {
-            var result = await SendInternal(data);
-            PublishSendFinished();
-            return result;
         }
 
-        public override void Close()
+
+        public override async Task<SocketError> SendAsync(Memory<byte> data)
         {
-            base.Close();
+            return await SendInternal(data);
+        }
+
+        public async override Task CloseAsync()
+        {
+            await base.CloseAsync();
             if (_socket != null)
             {
                 try
@@ -131,26 +113,8 @@ namespace Dacs7.Communication
                     if (received == 0)
                         return;
 
-                    if (useAsync)
-                    {
-                        var receivedData = new Memory<byte>(span.Slice(0, received).ToArray());
-                        var dummy = Task.Factory.StartNew(() => PublishDataReceived(receivedData)).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        PublishDataReceived(span.Slice(0, received));
-                    }
+                    PublishDataReceived(span.Slice(0, received));
                 }
-
-            }
-            catch (Exception)
-            {
-                //TODO
-                // If this is an unknown status it means that the error is fatal and retry will likely fail.
-                //if (SocketError.GetStatus(exception.HResult) == SocketErrorStatus.Unknown)
-                //{
-                //    throw;
-                //}
             }
             finally
             {
@@ -162,7 +126,7 @@ namespace Dacs7.Communication
 
 
 
-        protected async Task<SocketError> SendInternal(IEnumerable<byte> data)
+        protected async Task<SocketError> SendInternal(Memory<byte> data)
         {
             // Write the locally buffered data to the network.
             try

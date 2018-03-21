@@ -11,12 +11,10 @@ namespace Dacs7.Communication
     public abstract class SocketBase
     {
         public delegate void OnConnectionStateChangedHandler(string socketHandle, bool connected);
-        public delegate void OnSendFinishedHandler(string socketHandle);
         public delegate void OnDataReceivedHandler(string socketHandle, Memory<byte> aBuffer);
         public delegate void OnSocketShutdownHandler(string socketHandle);
 
         #region Fields
-        private readonly IEventPublisher eventPublisher = new EventPublisher();
         protected ISocketConfiguration _configuration;
         private bool _shutdown;
         protected string _identity;
@@ -31,7 +29,6 @@ namespace Dacs7.Communication
 
         public OnConnectionStateChangedHandler OnConnectionStateChanged;
         public OnDataReceivedHandler OnRawDataReceived;
-        public OnSendFinishedHandler OnSendFinished;
         public OnSocketShutdownHandler OnSocketShutdown;
 
         public abstract string Identity { get; }
@@ -46,30 +43,20 @@ namespace Dacs7.Communication
                 {
                     CyclicExecutor.Instance.Enabled(CycleId, false);
                     if(!IsConnected && !_shutdown)
-                        Open();
+                        OpenAsync();
                 });
             }
         }
 
-        /// <summary>
-        /// Initializes the server by preallocating reusable buffers and 
-        //  context objects.  These objects do not need to be preallocated 
-        /// or reused, but it is done this way to illustrate how the API can 
-        /// easily be used to create reusable objects to increase server performance.
-        /// </summary>
-        public void Init()
-        {
+        public abstract Task OpenAsync();
 
-        }
-
-        public abstract bool Open();
-
-        public virtual void Close()
+        public virtual Task CloseAsync()
         {
             _shutdown = true;
+            return Task.CompletedTask;
         }
 
-        public abstract Task<SocketError> Send(IEnumerable<byte> data);
+        public abstract Task<SocketError> SendAsync(Memory<byte> data);
 
         protected void HandleSocketDown()
         {
@@ -81,11 +68,6 @@ namespace Dacs7.Communication
         protected void PublishSocketShutdown(string identity = null)
         {
             OnSocketShutdown?.Invoke(identity ?? Identity);
-        }
-
-        protected void PublishSendFinished(string identity = null)
-        {
-            OnSendFinished?.Invoke(identity ?? Identity);
         }
 
         protected void PublishConnectionStateChanged(bool state, string identity = null)

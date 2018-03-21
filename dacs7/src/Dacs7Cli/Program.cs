@@ -123,10 +123,10 @@ namespace Dacs7Cli
 
         private static async Task<int> Write(WriteOptions writeOptions)
         {
-            var client = new Dacs7Client(_factory);
+            var client = new Dacs7Client(writeOptions.Address);
             try
             {
-                await client.ConnectAsync(writeOptions.ConnectionString);
+                await client.ConnectAsync();
                 var write = writeOptions.Tags.Select(x =>
                 {
                     var s = x.Split('=');
@@ -134,7 +134,7 @@ namespace Dacs7Cli
                 }
                 ).ToList();
 
-                await client.WriteAnyAsync(WriteOperationParametersFromTags(write));
+                await client.WriteAsync(write);
 
                 foreach (var item in write)
                 {
@@ -156,18 +156,18 @@ namespace Dacs7Cli
 
         private static async Task<int> Read(ReadOptions readOptions)
         {
-            var client = new Dacs7Client(_factory);
+            var client = new Dacs7Client(readOptions.Address);
             try
             {
                 long msTotal = 0;
-                await client.ConnectAsync(readOptions.ConnectionString);
-                var tags = ReadOperationParametersFromTags(readOptions.Tags);
+                await client.ConnectAsync();
+
 
                 for (int i = 0; i < readOptions.Loops; i++)
                 {
                     var sw = new Stopwatch();
                     sw.Start();
-                    var results = await client.ReadAnyAsync(tags);
+                    var results = await client.ReadAsync(readOptions.Tags);
                     sw.Stop();
                     msTotal += sw.ElapsedMilliseconds;
                     _logger.LogDebug($"ReadTime: {sw.Elapsed}");
@@ -207,66 +207,5 @@ namespace Dacs7Cli
         }
 
 
-        private static IEnumerable<ReadOperationParameter> ReadOperationParametersFromTags(IEnumerable<string> tags)
-        {
-            return tags.Select(t => ConvertFromNodeId(t) );
-        }
-
-        private static IEnumerable<WriteOperationParameter> WriteOperationParametersFromTags(IEnumerable<KeyValuePair<string, object>> tags)
-        {
-            return new List<WriteOperationParameter>();
-        }
-
-        public static ReadOperationParameter ConvertFromNodeId(string nodeId)
-        {
-            var parts = nodeId.Split(',');
-            var startParts = parts[0].Split('.');
-            var hasPrefix = startParts.Length == 3;
-            var array = parts.Length == 3;
-            var type = parts[1];
-            PlcArea area = 0;
-            Type readType = typeof(object);
-            int datablock = -1;
-            int numberOfItems = array ? Int32.Parse(parts[2]) : -1;
-
-            switch (startParts[hasPrefix ? 1 : 0])
-            {
-                case "I": area = PlcArea.IB; break;
-                case "M": area = PlcArea.FB; break;
-                case "A": area = PlcArea.QB; break;
-                case "T": area = PlcArea.TM; break;
-                case "C": area = PlcArea.CT; break;
-                case var s when Regex.IsMatch(s, "^DB\\d+$"):
-                    {
-                        area = PlcArea.DB;
-                        datablock = Int32.Parse(s.Substring(2));
-                        break;
-                    }
-            }
-
-            var offset = Int32.Parse(startParts[hasPrefix ? 2 : 1]);
-
-            switch (type.ToLower())
-            {
-                case "b": readType = typeof(byte); break;
-                case "c": readType = typeof(char); break;
-                case "w": readType = typeof(UInt16); break;
-                case "dw": readType = typeof(UInt32); break;
-                case "i": readType = typeof(Int16); break;
-                case "di": readType = typeof(Int32); break;
-                case "r": readType = typeof(Single); break;
-                case "s": readType = typeof(String); break;
-                case var s when Regex.IsMatch(s, "^x\\d+$"): readType = typeof(bool); break;
-            }
-
-
-            return new ReadOperationParameter
-            {
-                Area = area,
-                Offset = offset,
-                Type = readType,
-                Args = datablock > 0 ? new[] { numberOfItems, datablock } : new [] { numberOfItems }
-            };
-        }
     }
 }

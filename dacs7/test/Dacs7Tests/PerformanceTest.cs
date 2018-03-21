@@ -1,6 +1,5 @@
 ﻿using Dacs7;
 using Dacs7.Domain;
-using Dacs7.Protocols.S7;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

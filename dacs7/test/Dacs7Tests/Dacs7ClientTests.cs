@@ -1,4 +1,4 @@
-#define TEST_PLC
+// #define TEST_PLC
 
 using Dacs7;
 using System;
@@ -25,12 +25,12 @@ namespace Dacs7Tests
     public class Dacs7ClientTests
     {
         private ILoggerFactory _loggerFactory = new LoggerFactory().AddConsole();
-        private const string Ip = "benjipc677c";//"127.0.0.1";
+        private const string Ip = "160.52.53.122";//"127.0.0.1";
         //private const string Ip = "192.168.0.148";
         //private const string Ip = "192.168.1.17";//"127.0.0.1";
         //private const string ConnectionString = "Data Source=" + Ip + ":102,0,2;PduSize=240"; //"Data Source=192.168.1.10:102,0,2";
         public const string ConnectionString = "Data Source=" + Ip + ":102,0,2;Connect Timeout=10000"; //"Data Source=192.168.1.10:102,0,2";
-        private const int TestDbNr = 1;
+        private const int TestDbNr = 6114;
         private const int TestByteOffset = 524;
         private const int TestByteOffset2 = 525;
         private const int TestBitOffset = 16 * 8; // DBX16.0

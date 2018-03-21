@@ -7,7 +7,7 @@ namespace Dacs7.Communication
     {
         public string Hostname { get; set; } = "localhost";
         public int ServiceName { get; set; } = 22112;
-        public int ReceiveBufferSize { get; set; } = 1000;  // buffer size to use for each socket I/O operation 
+        public int ReceiveBufferSize { get; set; } = 1024;  // buffer size to use for each socket I/O operation 
         public bool Autoconnect { get; set; } = true;
         public string NetworkAdapter { get; set; }
         public bool KeepAlive { get; set; } = false;
