@@ -10,6 +10,5 @@ namespace Dacs7.Protocols.Rfc1006
         public byte Sync1 { get; set; }
         public byte Sync2 { get; set; }
         public UInt16 Length { get; set; } = 4;
-        public byte[] Payload { get; set; }
     }
 }

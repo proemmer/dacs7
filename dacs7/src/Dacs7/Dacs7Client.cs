@@ -104,9 +104,19 @@ namespace Dacs7
         }
 
 
-        private void OnRawDataReceived(string socketHandle, Memory<byte> aBuffer)
+        private async void OnRawDataReceived(string socketHandle, Memory<byte> aBuffer)
         {
-            // DETECT TYPE
+            if(_context.TryDetectDatagramType(aBuffer, out var type))
+            {
+                if(type == typeof(ConnectionConfirmedDatagram))
+                {
+                    await Rfc1006Opened();
+                }
+                else if(type == typeof(DataTransferDatagram))
+                {
+
+                }
+            }
         }
 
 

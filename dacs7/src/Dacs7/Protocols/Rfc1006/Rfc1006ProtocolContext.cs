@@ -78,9 +78,30 @@ namespace Dacs7.Protocols.Rfc1006
             return mem;
         }
 
-        internal void DetectDatagramType()
+        public bool TryDetectDatagramType(Memory<byte> memory, out Type datagramType)
         {
+            if(memory.Length > 6 && 
+               memory.Span[0] == 0x03 && 
+               memory.Span[1] == 0x00)
+            {
 
+                switch(memory.Span[5])
+                {
+                    case 0xd0:
+                        datagramType = typeof(ConnectionConfirmedDatagram);// CC
+                        return true;
+                    case 0xe0:
+                        datagramType = typeof(ConnectionRequestDatagram);// CR
+                        return true;
+                    case 0xf0:
+                        datagramType = typeof(DataTransferDatagram);// DT
+                        return true;
+                    
+                }
+              
+            }
+            datagramType = null;
+            return false;
         }
 
 

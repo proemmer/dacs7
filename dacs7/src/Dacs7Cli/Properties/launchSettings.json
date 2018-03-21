@@ -2,7 +2,7 @@
   "profiles": {
     "Dacs7Cli": {
       "commandName": "Project",
-      "commandLineArgs": "read --address 160.52.53.122 -d --tags RTX.DB1114.0,b,50 -l 10"
+      "commandLineArgs": "read --address benjipc677c -d --tags RTX.DB1114.0,b,50 -l 10"
     }
   }
 }
