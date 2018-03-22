@@ -181,21 +181,25 @@ namespace Dacs7Cli
                         await Task.Delay(readOptions.Wait);
                     }
 
-                    var sw = new Stopwatch();
-                    sw.Start();
-                    var results = await client.ReadAsync(readOptions.Tags);
-                    sw.Stop();
-                    msTotal += sw.ElapsedMilliseconds;
-                    _logger.LogDebug($"ReadTime: {sw.Elapsed}");
-
-                    var resultEnumerator = results.GetEnumerator();
-                    foreach (var item in readOptions.Tags)
+                    try
                     {
-                        if (resultEnumerator.MoveNext())
+                        var sw = new Stopwatch();
+                        sw.Start();
+                        var results = await client.ReadAsync(readOptions.Tags);
+                        sw.Stop();
+                        msTotal += sw.ElapsedMilliseconds;
+                        _logger.LogDebug($"ReadTime: {sw.Elapsed}");
+
+                        var resultEnumerator = results.GetEnumerator();
+                        foreach (var item in readOptions.Tags)
                         {
-                            _logger.LogInformation($"Read: {item}={resultEnumerator.Current}");
+                            if (resultEnumerator.MoveNext())
+                            {
+                                _logger.LogInformation($"Read: {item}={resultEnumerator.Current}");
+                            }
                         }
                     }
+                    catch (Exception) { }
                 }
 
                 if(readOptions.Loops > 0)
