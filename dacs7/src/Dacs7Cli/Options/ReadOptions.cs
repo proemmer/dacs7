@@ -14,5 +14,9 @@ namespace Dacs7Cli.Options
 
         [Option('l', "loops", HelpText = "Specify the number of read loops.")]
         public int Loops { get; set; } = 1;
+
+
+        [Option('w', "wait", HelpText = "Wait time between loops")]
+        public int Wait { get; set; } = 0;
     }
 }

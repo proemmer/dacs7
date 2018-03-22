@@ -176,6 +176,11 @@ namespace Dacs7Cli
 
                 for (int i = 0; i < readOptions.Loops; i++)
                 {
+                    if(i > 0 && readOptions.Wait > 0)
+                    {
+                        await Task.Delay(readOptions.Wait);
+                    }
+
                     var sw = new Stopwatch();
                     sw.Start();
                     var results = await client.ReadAsync(readOptions.Tags);
@@ -190,7 +195,6 @@ namespace Dacs7Cli
                         {
                             _logger.LogInformation($"Read: {item}={resultEnumerator.Current}");
                         }
-
                     }
                 }
 
