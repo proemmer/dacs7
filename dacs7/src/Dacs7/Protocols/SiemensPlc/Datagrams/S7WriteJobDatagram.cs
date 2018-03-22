@@ -9,7 +9,7 @@ namespace Dacs7.Protocols.SiemensPlc
     public class S7WriteJobDatagram
     {
 
-        public S7CommHeaderDatagram CommHeader { get; set; } = new S7CommHeaderDatagram
+        public S7HeaderDatagram CommHeader { get; set; } = new S7HeaderDatagram
         {
             PduType = 0x01, //Job - > Should be a marker
             DataLength = 0,

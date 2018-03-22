@@ -3,6 +3,7 @@
 
 using Dacs7.Domain;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 
 namespace Dacs7.Protocols.SiemensPlc
@@ -17,10 +18,10 @@ namespace Dacs7.Protocols.SiemensPlc
         public ushort Length{ get; set; }
 
 
-        public byte[] Data{ get; set; }
+        public Memory<byte> Data{ get; set; }
 
 
-        public byte[] FillByte { get; set; }
+        public Memory<byte> FillByte { get; set; }
 
 
         #region IDatagramPropertyConverter
@@ -61,6 +62,11 @@ namespace Dacs7.Protocols.SiemensPlc
             return fullLength;
         }
 
+        public ushort GetSpecificationLength()
+        {
+            return (ushort)(4 + Length);
+        }
+
         public static byte GetTransportSize(Type t)
         {
 
@@ -85,6 +91,47 @@ namespace Dacs7.Protocols.SiemensPlc
                 datalength = datalength * 8;
             return (ushort)datalength;
         }
+
+        public static ushort SetDataLength(int datalength, byte transportSize)
+        {
+            var ts = (DataTransportSize)transportSize;
+            if (ts != DataTransportSize.OctetString && ts != DataTransportSize.Real && ts != DataTransportSize.Bit)
+                return (ushort)((ushort)datalength >> 3);  // value / 3
+            return (ushort)datalength;
+        }
         #endregion
+
+
+
+        public static Memory<byte> TranslateToMemory(S7DataItemSpecification datagram, Memory<byte> memory)
+        {
+            var result = memory.IsEmpty ? new Memory<byte>(new byte[12]) : memory;  // check if we could use ArrayBuffer
+            var span = result.Span;
+
+            span[0] = datagram.ReturnCode;
+            span[1] = datagram.TransportSize;
+            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(2, 2), GetDataLength(datagram.Length, datagram.TransportSize));
+            datagram.Data = new byte[datagram.Length];
+            datagram.Data.CopyTo(result.Slice(4, datagram.Length));
+            // datagram.Data.CopyTo(result.Slice(4 + datagram.Length, datagram.Length));
+            return result;
+        }
+
+        public static S7DataItemSpecification TranslateFromMemory(Memory<byte> data)
+        {
+            var span = data.Span;
+            var result = new S7DataItemSpecification
+            {
+                ReturnCode = span[0],
+                TransportSize = span[1],
+                Length = SetDataLength(BinaryPrimitives.ReadUInt16BigEndian(span.Slice(2, 2)), span[1])
+            };
+            result.Data = new byte[result.Length];
+            data.Slice(4, result.Length).CopyTo(result.Data);
+
+            return result;
+        }
+
+
     }
 }

@@ -1,6 +1,5 @@
 ﻿using Dacs7.Heper;
 using System;
-using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -10,9 +9,9 @@ namespace Dacs7.Communication
     /// </summary>
     public abstract class SocketBase
     {
-        public delegate void OnConnectionStateChangedHandler(string socketHandle, bool connected);
-        public delegate void OnDataReceivedHandler(string socketHandle, Memory<byte> aBuffer);
-        public delegate void OnSocketShutdownHandler(string socketHandle);
+        public delegate Task OnConnectionStateChangedHandler(string socketHandle, bool connected);
+        public delegate Task OnDataReceivedHandler(string socketHandle, Memory<byte> aBuffer);
+        public delegate Task OnSocketShutdownHandler(string socketHandle);
 
         #region Fields
         protected ISocketConfiguration _configuration;
@@ -58,27 +57,27 @@ namespace Dacs7.Communication
 
         public abstract Task<SocketError> SendAsync(Memory<byte> data);
 
-        protected void HandleSocketDown()
+        protected async Task HandleSocketDown()
         {
-            PublishConnectionStateChanged(false);
+            await PublishConnectionStateChanged(false);
             if (_shutdown && _configuration.Autoconnect)
                 CyclicExecutor.Instance.Enabled(CycleId, true);
         }
 
-        protected void PublishSocketShutdown(string identity = null)
+        protected async Task PublishSocketShutdown(string identity = null)
         {
-            OnSocketShutdown?.Invoke(identity ?? Identity);
+            await OnSocketShutdown?.Invoke(identity ?? Identity);
         }
 
-        protected void PublishConnectionStateChanged(bool state, string identity = null)
+        protected async Task PublishConnectionStateChanged(bool state, string identity = null)
         {
             IsConnected = state;
-            OnConnectionStateChanged?.Invoke(identity ?? Identity, IsConnected);
+            await OnConnectionStateChanged?.Invoke(identity ?? Identity, IsConnected);
         }
 
-        protected void PublishDataReceived(Memory<byte> receivedData, string identity = null)
+        protected async Task PublishDataReceived(Memory<byte> receivedData, string identity = null)
         {
-            OnRawDataReceived?.Invoke(identity ?? Identity, receivedData);
+            await OnRawDataReceived?.Invoke(identity ?? Identity, receivedData);
         }
     }
 }

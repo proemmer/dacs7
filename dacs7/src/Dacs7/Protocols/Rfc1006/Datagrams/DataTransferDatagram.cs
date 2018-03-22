@@ -11,6 +11,7 @@ namespace Dacs7.Protocols.Rfc1006
 
     public class DataTransferDatagram
     {
+        public static byte EndOfTransmition = 0x80;
         internal static DataTransferDatagram Default = new DataTransferDatagram();
 
         public TpktDatagram Tkpt { get; set; } = new TpktDatagram
@@ -24,7 +25,7 @@ namespace Dacs7.Protocols.Rfc1006
 
         public byte PduType { get; set; } = 0xf0;
 
-        public byte TpduNr { get; set; } = 0x80;  //EOT
+        public byte TpduNr { get; set; } = EndOfTransmition;  //EOT
 
         public Memory<byte> Payload { get; set; }
 
@@ -113,5 +114,43 @@ namespace Dacs7.Protocols.Rfc1006
 
             return result;
         }
+
+
+        public static DataTransferDatagram TranslateFromMemory(Memory<byte> buffer, 
+                                                                Rfc1006ProtocolContext context, 
+                                                                out bool needMoteData)
+        {
+            var datagram = TranslateFromMemory(buffer);
+            if (datagram.TpduNr == EndOfTransmition)
+            {
+                Memory<byte> payload = Memory<byte>.Empty;
+                if (context.FrameBuffer.Any())
+                {
+                    context.FrameBuffer.Add(datagram.Payload);
+                    var length = context.FrameBuffer.Sum(x => x.Length);
+                    payload = new byte[length];
+                    var index = 0;
+                    foreach (var item in context.FrameBuffer)
+                    {
+                        item.CopyTo(payload.Slice(index));
+                        index += item.Length;
+                    }
+                    datagram.Payload = payload;
+                    context.FrameBuffer.Clear();
+                }
+
+                needMoteData = false;
+                return datagram;
+            }
+            else if(!datagram.Payload.IsEmpty)
+            {
+                Memory<byte> copy = new byte[datagram.Payload.Length];
+                datagram.Payload.CopyTo(copy);
+                context.FrameBuffer.Add(copy);
+            }
+            needMoteData = true;
+            return datagram;
+        }
+
     }
 }

@@ -19,27 +19,34 @@ namespace Dacs7Cli
 
         static int Main(string[] args)
         {
-            var options = Parser.Default.ParseArguments<ReadOptions, WriteOptions/*, WatchOptions, WatchAlarmsOptions*/>(args);
-            if (options.Tag == ParserResultType.Parsed)
+            try
             {
-                try
+                var options = Parser.Default.ParseArguments<ReadOptions, WriteOptions/*, WatchOptions, WatchAlarmsOptions*/>(args);
+                if (options.Tag == ParserResultType.Parsed)
                 {
-                    return options.MapResult(
-                        (ReadOptions o) => Read(Configure(o)).ConfigureAwait(false).GetAwaiter().GetResult(),
-                        (WriteOptions o) => Write(Configure(o)).ConfigureAwait(false).GetAwaiter().GetResult(),
-                        //(WatchOptions o) => Watch(Configure(o)).ConfigureAwait(false).GetAwaiter().GetResult(),
-                        //(WatchAlarmsOptions o) => WatchAlarms(Configure(o)).ConfigureAwait(false).GetAwaiter().GetResult(),
-                        _ => 1);
+                    try
+                    {
+                        return options.MapResult(
+                            (ReadOptions o) => Read(Configure(o)).ConfigureAwait(false).GetAwaiter().GetResult(),
+                            (WriteOptions o) => Write(Configure(o)).ConfigureAwait(false).GetAwaiter().GetResult(),
+                            //(WatchOptions o) => Watch(Configure(o)).ConfigureAwait(false).GetAwaiter().GetResult(),
+                            //(WatchAlarmsOptions o) => WatchAlarms(Configure(o)).ConfigureAwait(false).GetAwaiter().GetResult(),
+                            _ => 1);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"An error occured: {ex.Message}");
+                        return 1;
+                    }
+                    finally
+                    {
+                        _factory?.Dispose();
+                    }
+
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError($"An error occured: {ex.Message}");
-                    return 1;
-                }
-                finally
-                {
-                    _factory?.Dispose();
-                }
+            }
+            catch(Exception ex)
+            {
 
             }
             return 1;
@@ -162,6 +169,10 @@ namespace Dacs7Cli
                 long msTotal = 0;
                 await client.ConnectAsync();
 
+                if (readOptions.RegisterItems)
+                {
+                    await client.RegisterAsync(readOptions.Tags);
+                }
 
                 for (int i = 0; i < readOptions.Loops; i++)
                 {
@@ -193,6 +204,11 @@ namespace Dacs7Cli
             }
             finally
             {
+                if (readOptions.RegisterItems)
+                {
+                    await client.UnregisterAsync(readOptions.Tags);
+                }
+
                 await client.DisconnectAsync();
             }
 

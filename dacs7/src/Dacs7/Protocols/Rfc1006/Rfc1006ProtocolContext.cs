@@ -44,7 +44,7 @@ namespace Dacs7.Protocols.Rfc1006
         public byte SizeTpduReceiving { get; set; }
         public byte SizeTpduSending { get; set; }
 
-        public IList<DataTransferDatagram> FrameBuffer { get; set; } = new List<DataTransferDatagram>();
+        public IList<Memory<byte>> FrameBuffer { get; set; } = new List<Memory<byte>>();
 
 
         public Rfc1006ProtocolContext()

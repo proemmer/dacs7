@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Sockets;
 using System.Net;
 using System.Buffers;
@@ -66,67 +64,18 @@ namespace Dacs7.Communication
                     if (!_configuration.KeepAlive)
                         _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, 1);
                     var ignore = Task.Factory.StartNew(() => StartReceive(), TaskCreationOptions.LongRunning);
-                    PublishConnectionStateChanged(true);
+                    await PublishConnectionStateChanged(true);
                 }
                 else
-                    HandleSocketDown();
+                    await HandleSocketDown();
             }
             catch (Exception)
             {
-                HandleSocketDown();
+                await HandleSocketDown();
             }
         }
-
 
         public override async Task<SocketError> SendAsync(Memory<byte> data)
-        {
-            return await SendInternal(data);
-        }
-
-        public async override Task CloseAsync()
-        {
-            await base.CloseAsync();
-            if (_socket != null)
-            {
-                try
-                { 
-                    _socket.Dispose();
-                }
-                catch (ObjectDisposedException) { }
-                _socket = null;
-            }
-
-        }
-
-
-        private async Task StartReceive()
-        {
-            var receiveBuffer = ArrayPool<byte>.Shared.Rent(_socket.ReceiveBufferSize);
-            var span = new Memory<byte>(receiveBuffer);
-            var useAsync = (_configuration as ClientSocketConfiguration).Async;
-            try
-            {
-                while (true)
-                {
-                    var buffer = new ArraySegment<byte>(receiveBuffer);
-                    var received = await _socket.ReceiveAsync(buffer, SocketFlags.Partial);
-                    if (received == 0)
-                        return;
-
-                    PublishDataReceived(span.Slice(0, received));
-                }
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(receiveBuffer);
-                HandleSocketDown();
-            }
-
-        }
-
-
-
-        protected async Task<SocketError> SendInternal(Memory<byte> data)
         {
             // Write the locally buffered data to the network.
             try
@@ -146,7 +95,53 @@ namespace Dacs7.Communication
             return SocketError.Success;
         }
 
+        public async override Task CloseAsync()
+        {
+            await base.CloseAsync();
+            if (_socket != null)
+            {
+                try
+                { 
+                    _socket.Dispose();
+                }
+                catch (ObjectDisposedException) { }
+                _socket = null;
+            }
 
+        }
+
+        private async Task StartReceive()
+        {
+            var receiveBuffer = ArrayPool<byte>.Shared.Rent(_socket.ReceiveBufferSize);
+            var span = new Memory<byte>(receiveBuffer);
+            var useAsync = (_configuration as ClientSocketConfiguration).Async;
+            try
+            {
+                while (true)
+                {
+                    try
+                    {
+                        var buffer = new ArraySegment<byte>(receiveBuffer);
+                        var received = await _socket.ReceiveAsync(buffer, SocketFlags.Partial);
+                        if (received == 0)
+                            return;
+
+                        // We work with the shared buffer, so if you need the data in user code, make a copy!
+                        await PublishDataReceived(span.Slice(buffer.Offset, received));
+                    }
+                    catch(Exception)
+                    {
+
+                    }
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(receiveBuffer);
+                await HandleSocketDown();
+            }
+
+        }
 
         private bool IsReallyConnected()
         {

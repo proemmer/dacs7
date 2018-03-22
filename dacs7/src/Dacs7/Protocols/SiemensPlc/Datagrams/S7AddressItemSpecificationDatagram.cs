@@ -3,6 +3,7 @@
 
 using Dacs7.Domain;
 using System;
+using System.Buffers.Binary;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
@@ -25,7 +26,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public byte Area { get; set; }
 
-        public byte[] Address { get; set; } = new byte[3];
+        public Memory<byte> Address { get; set; } = new byte[3];
 
 
         public static byte GetTransportSize(PlcArea area, Type t)
@@ -74,5 +75,52 @@ namespace Dacs7.Protocols.SiemensPlc
             address[0] = (byte)(offset & 0x000000FF);
             return address;
         }
+
+
+
+        public int GetSpecificationLength()
+        {
+            return 12;
+        }
+
+
+
+        public static Memory<byte> TranslateToMemory(S7AddressItemSpecificationDatagram datagram, Memory<byte> memory)
+        {
+            var result = memory.IsEmpty ? new Memory<byte>(new byte[12]) : memory;  // check if we could use ArrayBuffer
+            var span = result.Span;
+
+            span[0] = datagram.VariableSpecification;
+            span[1] = datagram.LengthOfAddressSpecification;
+            span[2] = datagram.SyntaxId;
+            span[3] = datagram.TransportSize;
+            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(4, 2), datagram.ItemSpecLength);
+            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(6, 2), datagram.DbNumber);
+            span[8] = datagram.Area;
+            datagram.Address.CopyTo(result.Slice(9));
+
+            return result;
+        }
+
+        public static S7AddressItemSpecificationDatagram TranslateFromMemory(Memory<byte> data)
+        {
+            var span = data.Span;
+            var result = new S7AddressItemSpecificationDatagram
+            {
+                VariableSpecification = span[0],
+                LengthOfAddressSpecification = span[1],
+                SyntaxId = span[2],
+                TransportSize = span[3],
+                ItemSpecLength = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(4, 2)),
+                DbNumber = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(6, 2)),
+                Area = span[8]
+            };
+            data.Slice(9, 3).CopyTo(result.Address);
+
+            return result;
+        }
+
+
+
     }
 }
