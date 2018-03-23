@@ -20,7 +20,6 @@ namespace Dacs7.Communication
         #endregion
 
         #region Properties
-        public string CycleId { get; } = Guid.NewGuid().ToString();
         public bool IsConnected { get; protected set; }
         public bool Shutdown => _shutdown;
         public int ReceiveBufferSize { get { return _configuration.ReceiveBufferSize; } }
@@ -36,15 +35,6 @@ namespace Dacs7.Communication
         public SocketBase(ISocketConfiguration configuration)
         {
             _configuration = configuration;
-            if (configuration.Autoconnect)
-            {
-                CyclicExecutor.Instance.Add(CycleId, CycleId, 5000, () =>
-                {
-                    CyclicExecutor.Instance.Enabled(CycleId, false);
-                    if(!IsConnected && !_shutdown)
-                        OpenAsync();
-                });
-            }
         }
 
         public abstract Task OpenAsync();
@@ -60,8 +50,6 @@ namespace Dacs7.Communication
         protected async Task HandleSocketDown()
         {
             await PublishConnectionStateChanged(false);
-            if (_shutdown && _configuration.Autoconnect)
-                CyclicExecutor.Instance.Enabled(CycleId, true);
         }
 
         protected async Task PublishSocketShutdown(string identity = null)
@@ -71,8 +59,11 @@ namespace Dacs7.Communication
 
         protected async Task PublishConnectionStateChanged(bool state, string identity = null)
         {
-            IsConnected = state;
-            await OnConnectionStateChanged?.Invoke(identity ?? Identity, IsConnected);
+            if (IsConnected != state)
+            {
+                IsConnected = state;
+                await OnConnectionStateChanged?.Invoke(identity ?? Identity, IsConnected);
+            }
         }
 
         /// <summary>

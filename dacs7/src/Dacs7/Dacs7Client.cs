@@ -97,7 +97,6 @@ namespace Dacs7
         /// <returns>Returns the registered shortcuts</returns>
         public async Task<IEnumerable<string>> RegisterAsync(params string[] values) => await RegisterAsync(values as IEnumerable<string>);
 
-
         /// <summary>
         /// Register shortcuts
         /// </summary>
@@ -113,10 +112,9 @@ namespace Dacs7
                 added.Add(new KeyValuePair<string, ReadItemSpecification>(enumerator.Current, x));
                 return x.ToString();
             }).ToList();
-
+            AddRegisteredTag(added);
             return await Task.FromResult(resList);
         }
-
 
         /// <summary>
         /// Remove shortcuts
@@ -197,11 +195,12 @@ namespace Dacs7
         {
             var parts = tag.Split(new[] { ',' });
             var start = parts[0].Split(new[] { '.' });
+            var withPrefix = start.Length == 3;
             PlcArea selector = 0;
             ushort length = 1;
             ushort offset = UInt16.Parse(start.Last());
             ushort db = 0;
-            switch (start[0].ToUpper())
+            switch (start[withPrefix ? 1 : 0].ToUpper())
             {
                 case "I": selector = PlcArea.IB; break;
                 case "M": selector = PlcArea.FB; break;
