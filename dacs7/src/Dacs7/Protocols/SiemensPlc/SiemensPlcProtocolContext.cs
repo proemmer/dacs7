@@ -71,7 +71,7 @@ namespace Dacs7.Protocols.SiemensPlc
                 switch (memory.Span[12])  // Function Type
                 {
                     case 0xf0:  // Setup communication
-                        datagramType = typeof(S7CommAckDataDatagram);
+                        datagramType = typeof(S7CommSetupAckDataDatagram);
                         return true;
                     case 0x04:  // Read Var
                         datagramType = typeof(S7ReadJobAckDatagram);

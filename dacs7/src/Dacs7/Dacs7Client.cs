@@ -22,14 +22,14 @@ namespace Dacs7
         private Rfc1006ProtocolContext _context;
         private SiemensPlcProtocolContext _s7Context;
         private const int ReconnectPeriod = 10;
-        
+
         private ProtocolHandler _protocolHandler;
 
         public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg)
         {
             var addressPort = address.Split(':');
-            var portRackSlot = addressPort.Length > 1 ? 
-                                        addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() : 
+            var portRackSlot = addressPort.Length > 1 ?
+                                        addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() :
                                         new int[] { 102, 0, 2 };
 
             _config = new ClientSocketConfiguration
@@ -42,7 +42,7 @@ namespace Dacs7
 
             _context = new Rfc1006ProtocolContext
             {
-                DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType, 
+                DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType,
                                                                  portRackSlot.Length > 1 ? portRackSlot[1] : 0,
                                                                  portRackSlot.Length > 2 ? portRackSlot[2] : 2)
             };
@@ -56,8 +56,6 @@ namespace Dacs7
 
 
         }
-
-
 
         public async Task ConnectAsync()
         {
@@ -74,10 +72,13 @@ namespace Dacs7
         public async Task<IEnumerable<object>> ReadAsync(IEnumerable<string> values)
         {
             var items = CreateNodeIdCollection(values);
-            var result =  await _protocolHandler.ReadAsync(items);
-
-            //TODO Validation
-            return items;
+            var result = await _protocolHandler.ReadAsync(items);
+            var enumerator = items.GetEnumerator();
+            return  result.Select(value =>
+            {
+                enumerator.MoveNext();
+                return Convert.ChangeType(value, enumerator.Current.ResultType);
+            }).ToList();
         }
 
         public Task WriteAsync(params KeyValuePair<string, object>[] values) => WriteAsync(values as IEnumerable<KeyValuePair<string, object>>);
@@ -200,7 +201,7 @@ namespace Dacs7
             ushort length = 1;
             ushort offset = UInt16.Parse(start.Last());
             ushort db = 0;
-            switch (start[1])
+            switch (start[0].ToUpper())
             {
                 case "I": selector = PlcArea.IB; break;
                 case "M": selector = PlcArea.FB; break;
@@ -215,43 +216,55 @@ namespace Dacs7
                     }
             }
 
-            Type vtype = typeof(object);
-            switch (parts[1].ToLower())
-            {
-                case "b":
-                    vtype = typeof(byte);
-                    break;
-                case "c":
-                    vtype = typeof(char);
-                    break;
-                case "w":
-                    vtype = typeof(UInt16);
-                    break;
-                case "dw":
-                    vtype = typeof(UInt32);
-                    break;
-                case "i":
-                    vtype = typeof(Int16);
-                    break;
-                case "di":
-                    vtype = typeof(Int32);
-                    break;
-                case "r":
-                    vtype = typeof(Single);
-                    break;
-                case "s":
-                    vtype = typeof(string);
-                    break;
-                case var s when Regex.IsMatch(s, "^x\\d+$"):
-                    vtype = typeof(bool);
-                    offset = (ushort)((offset * 8) + UInt16.Parse(s.Substring(1)));
-                    break;
-            }
-
             if (parts.Length > 2)
             {
                 length = UInt16.Parse(parts[2]);
             }
+
+            Type vtype = typeof(object);
+            Type rType = typeof(object);
+            switch (parts[1].ToLower())
+            {
+                case "b":
+                    vtype = typeof(byte);
+                    rType = length > 1 ? typeof(byte[]) : vtype;
+                    break;
+                case "c":
+                    vtype = typeof(char);
+                    rType = length > 1 ? typeof(char[]) : vtype;
+                    break;
+                case "w":
+                    vtype = typeof(UInt16);
+                    rType = length > 1 ? typeof(UInt16[]) : vtype;
+                    break;
+                case "dw":
+                    vtype = typeof(UInt32);
+                    rType = length > 1 ? typeof(UInt32[]) : vtype;
+                    break;
+                case "i":
+                    vtype = typeof(Int16);
+                    rType = length > 1 ? typeof(Int16[]) : vtype;
+                    break;
+                case "di":
+                    vtype = typeof(Int32);
+                    rType = length > 1 ? typeof(Int32[]) : vtype;
+                    break;
+                case "r":
+                    vtype = typeof(Single);
+                    rType = length > 1 ? typeof(Single[]) : vtype;
+                    break;
+                case "s":
+                    vtype = typeof(string);
+                    rType = length > 1 ? typeof(string[]) : vtype;
+                    break;
+                case var s when Regex.IsMatch(s, "^x\\d+$"):
+                    vtype = typeof(bool);
+                    rType = length > 1 ? typeof(bool[]) : vtype;
+                    offset = (ushort)((offset * 8) + UInt16.Parse(s.Substring(1)));
+                    break;
+            }
+
+
 
             return new ReadItemSpecification
             {
@@ -259,7 +272,8 @@ namespace Dacs7
                 DbNumber = db,
                 Offset = offset,
                 Length = length,
-                VarType = vtype
+                VarType = vtype,
+                ResultType = rType
             };
         }
 

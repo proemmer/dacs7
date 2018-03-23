@@ -5,24 +5,24 @@ using System;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
-    public class S7CommAckDataDatagram
+    public class S7CommSetupAckDataDatagram
     {
         public S7AckDataDatagram Header { get; set; } = new S7AckDataDatagram();
 
         public S7CommSetupParameterDatagram Parameter { get; set; } = new S7CommSetupParameterDatagram();
 
 
-        public static Memory<byte> TranslateToMemory(S7CommAckDataDatagram datagram)
+        public static Memory<byte> TranslateToMemory(S7CommSetupAckDataDatagram datagram)
         {
             var result = S7AckDataDatagram.TranslateToMemory(datagram.Header);
             S7CommSetupParameterDatagram.TranslateToMemory(datagram.Parameter, result.Slice(datagram.Header.GetParameterOffset()));
             return result;
         }
 
-        public static S7CommAckDataDatagram TranslateFromMemory(Memory<byte> data)
+        public static S7CommSetupAckDataDatagram TranslateFromMemory(Memory<byte> data)
         {
             var span = data.Span;
-            var result = new S7CommAckDataDatagram
+            var result = new S7CommSetupAckDataDatagram
             {
                 Header = S7AckDataDatagram.TranslateFromMemory(data),
             };

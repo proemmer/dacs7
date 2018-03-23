@@ -43,7 +43,7 @@ namespace Dacs7.Protocols
         private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
         private int _referenceId;
         private readonly object _idLock = new object();
-        private int _timeout = 150000;
+        private int _timeout = 5000;
 
         internal UInt16 GetNextReferenceId()
         {
@@ -115,20 +115,20 @@ namespace Dacs7.Protocols
                                         S7ReadJobDatagram.TranslateToMemory(
                                             S7ReadJobDatagram.BuildRead(_s7Context, cbh.Id, vars))).FirstOrDefault());
             _readHandler.TryAdd(cbh.Id, cbh);
-            var result = await _socket.SendAsync(sendData);
-            if (result == System.Net.Sockets.SocketError.Success)
+            var errorCode = await _socket.SendAsync(sendData);
+            if (errorCode == System.Net.Sockets.SocketError.Success)
             {
                 try
                 {
-                    var result1 = await cbh.Event.WaitAsync(_timeout);
-                    return result1.Select(x => x.Data.ToArray());
+                    var result = await cbh.Event.WaitAsync(_timeout);
+                    return result.Select(x => x.Data.ToArray()).ToList();
                 }
                 catch(TaskCanceledException)
                 {
                     throw new TimeoutException();
                 }
             }
-            return new List<object>(null);
+            return new List<object>();
         }
 
         private async Task<int> OnRawDataReceived(string socketHandle, Memory<byte> buffer)
@@ -182,7 +182,7 @@ namespace Dacs7.Protocols
 
         private async Task SiemensPlcDatagramReceived(Type datagramType, Memory<byte> buffer)
         {
-            if (datagramType == typeof(S7CommAckDataDatagram))
+            if (datagramType == typeof(S7CommSetupAckDataDatagram))
             {
                 await ReceivedCommunicationSetupAck(buffer);
             }
@@ -231,14 +231,11 @@ namespace Dacs7.Protocols
 
         private Task ReceivedCommunicationSetupAck(Memory<byte> buffer)
         {
-            _connectionState = ConnectionState.Opened;
-            _connectEvent.Set(true);
-
-
-            var data = S7CommAckDataDatagram.TranslateFromMemory(buffer);
-
+            var data = S7CommSetupAckDataDatagram.TranslateFromMemory(buffer);
             _s7Context.MaxParallelJobs = data.Parameter.MaxAmQCalling;
             _s7Context.PduSize = data.Parameter.PduLength;
+            _connectionState = ConnectionState.Opened;
+            _connectEvent.Set(true);
 
             return Task.CompletedTask;
         }

@@ -12,6 +12,7 @@ namespace Dacs7.Protocols.SiemensPlc
         public ushort Offset { get; set; }
         public ushort Length { get; set; }
         public Type VarType { get; set; }
+        public Type ResultType { get; set; }
 
 
         public virtual WriteItemSpecification Clone()
@@ -23,6 +24,7 @@ namespace Dacs7.Protocols.SiemensPlc
                 Offset = Offset,
                 Length = Length,
                 VarType = VarType,
+                ResultType = ResultType
             };
         }
     }

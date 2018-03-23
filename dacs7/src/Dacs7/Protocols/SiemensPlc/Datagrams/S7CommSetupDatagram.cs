@@ -37,7 +37,7 @@ namespace Dacs7.Protocols.SiemensPlc
             return result;
         }
 
-        public bool Correlate(S7CommSetupDatagram o1, S7CommAckDataDatagram o2)
+        public bool Correlate(S7CommSetupDatagram o1, S7CommSetupAckDataDatagram o2)
         {
             //Test ack
             if (o1.Header.RedundancyIdentification == o2.Header.Header.RedundancyIdentification)
