@@ -45,7 +45,7 @@ namespace Dacs7.Protocols.Rfc1006
         public byte SizeTpduSending { get; set; }
 
         public IList<Memory<byte>> FrameBuffer { get; set; } = new List<Memory<byte>>();
-
+        public Memory<byte> PartialFrame = Memory<byte>.Empty;
 
         public Rfc1006ProtocolContext()
         {

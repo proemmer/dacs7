@@ -112,7 +112,9 @@ namespace Dacs7.Communication
 
         private async Task StartReceive()
         {
-            var receiveBuffer = ArrayPool<byte>.Shared.Rent(_socket.ReceiveBufferSize);
+            var receiveBuffer = ArrayPool<byte>.Shared.Rent(_socket.ReceiveBufferSize * 2);
+            var receiveOffset = 0;
+            var bufferOffset = 0;
             var span = new Memory<byte>(receiveBuffer);
             var useAsync = (_configuration as ClientSocketConfiguration).Async;
             try
@@ -121,18 +123,40 @@ namespace Dacs7.Communication
                 {
                     try
                     {
-                        var buffer = new ArraySegment<byte>(receiveBuffer);
+                        var buffer = new ArraySegment<byte>(receiveBuffer, receiveOffset, _socket.ReceiveBufferSize);
+                        
                         var received = await _socket.ReceiveAsync(buffer, SocketFlags.Partial);
+                        
                         if (received == 0)
                             return;
 
-                        // We work with the shared buffer, so if you need the data in user code, make a copy!
-                        await PublishDataReceived(span.Slice(buffer.Offset, received));
+                        var toProcess = received + (receiveOffset - bufferOffset);
+                        var processed = 0;
+                        do
+                        {
+                            var off = bufferOffset + processed;
+                            var length = toProcess - processed;
+                            var slice = span.Slice(off, length);
+                            var proc = await ProcessData(slice);
+                            if(proc == 0)
+                            {
+                                if (length > 0)
+                                {
+                                    
+                                    receiveOffset += received;
+                                    bufferOffset = receiveOffset - (toProcess - processed);
+                                }
+                                else
+                                {
+                                    receiveOffset = 0;
+                                    bufferOffset = 0;
+                                }
+                                break;
+                            }
+                            processed += proc;
+                        } while (processed < toProcess);
                     }
-                    catch(Exception)
-                    {
-
-                    }
+                    catch(Exception){}
                 }
             }
             finally

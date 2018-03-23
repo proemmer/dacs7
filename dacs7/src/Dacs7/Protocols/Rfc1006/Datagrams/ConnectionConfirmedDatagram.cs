@@ -71,7 +71,7 @@ namespace Dacs7.Protocols.Rfc1006
             return new Memory<byte>();
         }
 
-        public static ConnectionConfirmedDatagram TranslateFromMemory(Memory<byte> data)
+        public static ConnectionConfirmedDatagram TranslateFromMemory(Memory<byte> data, out int processed)
         {
             var span = data.Span;
             var result = new ConnectionConfirmedDatagram
@@ -104,6 +104,7 @@ namespace Dacs7.Protocols.Rfc1006
             result.SourceTsap = data.Slice(offset, result.DestTsapLength);
             offset += (int)result.DestTsapLength;
 
+            processed = offset;
             return result;
         }
     }

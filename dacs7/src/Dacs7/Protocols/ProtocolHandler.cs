@@ -43,7 +43,7 @@ namespace Dacs7.Protocols
         private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
         private int _referenceId;
         private readonly object _idLock = new object();
-        private int _timeout = 5000;
+        private int _timeout = 150000;
 
         internal UInt16 GetNextReferenceId()
         {
@@ -118,22 +118,33 @@ namespace Dacs7.Protocols
             var result = await _socket.SendAsync(sendData);
             if (result == System.Net.Sockets.SocketError.Success)
             {
-                var result1 = await cbh.Event.WaitAsync(_timeout);
-                return result1.Select(x => x.Data.ToArray());
+                try
+                {
+                    var result1 = await cbh.Event.WaitAsync(_timeout);
+                    return result1.Select(x => x.Data.ToArray());
+                }
+                catch(TaskCanceledException)
+                {
+                    throw new TimeoutException();
+                }
             }
             return new List<object>(null);
         }
 
-        private async Task OnRawDataReceived(string socketHandle, Memory<byte> buffer)
+        private async Task<int> OnRawDataReceived(string socketHandle, Memory<byte> buffer)
         {
-            if (_context.TryDetectDatagramType(buffer, out var type))
+            if (buffer.Length > 6)
             {
-                await Rfc1006DatagramReceived(type, buffer);
+                if (_context.TryDetectDatagramType(buffer, out var type))
+                {
+                    return await Rfc1006DatagramReceived(type, buffer);
+                }
             }
             else
             {
-                // Unknown data
+                return 0; // no data processed, buffer is to short
             }
+            return 1; // move forward
 
         }
 
@@ -149,24 +160,24 @@ namespace Dacs7.Protocols
             }
         }
 
-        private async Task Rfc1006DatagramReceived(Type datagramType, Memory<byte> buffer)
+        private async Task<int> Rfc1006DatagramReceived(Type datagramType, Memory<byte> buffer)
         {
+            var processed = 0;
             if (datagramType == typeof(ConnectionConfirmedDatagram))
             {
+                var res = ConnectionConfirmedDatagram.TranslateFromMemory(buffer, out processed);
                 await ReceivedConnectionConfirmed();
             }
             else if (datagramType == typeof(DataTransferDatagram))
             {
-                var datagram = DataTransferDatagram.TranslateFromMemory(buffer, _context, out var needMoreData);
-
-                if (!needMoreData)
+                var datagram = DataTransferDatagram.TranslateFromMemory(buffer.Slice(processed), _context, out var needMoreData, out processed);
+                if (!needMoreData && _s7Context.TryDetectDatagramType(datagram.Payload, out var s7DatagramType))
                 {
-                    if (_s7Context.TryDetectDatagramType(datagram.Payload, out var s7DatagramType))
-                    {
-                        await SiemensPlcDatagramReceived(s7DatagramType, datagram.Payload);
-                    }
+                    await SiemensPlcDatagramReceived(s7DatagramType, datagram.Payload);
                 }
             }
+
+            return processed;
         }
 
         private async Task SiemensPlcDatagramReceived(Type datagramType, Memory<byte> buffer)

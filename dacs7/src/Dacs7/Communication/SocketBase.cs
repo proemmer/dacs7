@@ -10,7 +10,7 @@ namespace Dacs7.Communication
     public abstract class SocketBase
     {
         public delegate Task OnConnectionStateChangedHandler(string socketHandle, bool connected);
-        public delegate Task OnDataReceivedHandler(string socketHandle, Memory<byte> aBuffer);
+        public delegate Task<int> OnDataReceivedHandler(string socketHandle, Memory<byte> aBuffer);
         public delegate Task OnSocketShutdownHandler(string socketHandle);
 
         #region Fields
@@ -75,9 +75,15 @@ namespace Dacs7.Communication
             await OnConnectionStateChanged?.Invoke(identity ?? Identity, IsConnected);
         }
 
-        protected async Task PublishDataReceived(Memory<byte> receivedData, string identity = null)
+        /// <summary>
+        /// Process the incomimgn data
+        /// </summary>
+        /// <param name="receivedData"></param>
+        /// <param name="identity"></param>
+        /// <returns>the processed number of bytes</returns>
+        protected async Task<int> ProcessData(Memory<byte> receivedData, string identity = null)
         {
-            await OnRawDataReceived?.Invoke(identity ?? Identity, receivedData);
+            return await OnRawDataReceived?.Invoke(identity ?? Identity, receivedData);
         }
     }
 }

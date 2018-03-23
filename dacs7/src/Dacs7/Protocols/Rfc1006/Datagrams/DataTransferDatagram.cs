@@ -52,30 +52,6 @@ namespace Dacs7.Protocols.Rfc1006
             return result;
         }
 
-        //public DataTransferDatagram Decode(Rfc1006ProtocolContext context, DataTransferDatagram incoming)
-        //{
-        //    if (incoming.TpduNr == 0x80 && !context.FrameBuffer.Any())
-        //        return incoming;
-
-        //    context.FrameBuffer.Add(incoming);
-        //    if (incoming.TpduNr == 0x80) //EOT
-        //    {
-        //        var length = context.FrameBuffer.Sum(x => x.Payload.Length);
-        //        var res = new byte[length];
-        //        var index = 0;
-        //        foreach (var item in context.FrameBuffer)
-        //        {
-        //            item.Payload.CopyTo(res.Sl);
-        //            index += item.Payload.Length;
-        //        }
-        //        incoming.Payload = res;
-        //        context.FrameBuffer.Clear();
-        //        return incoming;
-        //    }
-        //    return null;
-        //}
-
-
         public static Memory<byte> TranslateToMemory(DataTransferDatagram datagram)
         {
             var length = datagram.Tkpt.Length;
@@ -94,7 +70,7 @@ namespace Dacs7.Protocols.Rfc1006
             return result;
         }
 
-        public static DataTransferDatagram TranslateFromMemory(Memory<byte> data)
+        public static DataTransferDatagram TranslateFromMemory(Memory<byte> data, out int processed)
         {
             var span = data.Span;
             var result = new DataTransferDatagram
@@ -110,17 +86,18 @@ namespace Dacs7.Protocols.Rfc1006
                 TpduNr = span[6]
             };
 
-            result.Payload = data.Slice(7);
-
+            var length = result.Tkpt.Length - 7;
+            result.Payload = data.Slice(7, length);
+            processed = result.Tkpt.Length;
             return result;
         }
 
-
         public static DataTransferDatagram TranslateFromMemory(Memory<byte> buffer, 
                                                                 Rfc1006ProtocolContext context, 
-                                                                out bool needMoteData)
+                                                                out bool needMoteData,
+                                                                out int processed)
         {
-            var datagram = TranslateFromMemory(buffer);
+            var datagram = TranslateFromMemory(buffer, out processed);
             if (datagram.TpduNr == EndOfTransmition)
             {
                 Memory<byte> payload = Memory<byte>.Empty;
