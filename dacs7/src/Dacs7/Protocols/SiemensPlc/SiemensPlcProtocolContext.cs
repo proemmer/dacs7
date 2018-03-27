@@ -21,7 +21,8 @@ namespace Dacs7.Protocols.SiemensPlc
         public static readonly int MinimumDataSize = 10;
         public static readonly int MinimumAckDetectionSize = MinimumDataSize + 2;
 
-
+        public bool OptimizeReadAccess { get; set; }
+        public bool OptimizeWriteAccess { get; set; }
 
         public bool TryDetectDatagramType(Memory<byte> memory, out Type datagramType)
         {
@@ -73,76 +74,5 @@ namespace Dacs7.Protocols.SiemensPlc
             return false;
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        public static ReadItemSpecification CreateBitReadItemSpec(string selector, ushort db, ushort offset, int bit)
-        {
-            return new ReadItemSpecification 
-            {
-                Area = (PlcArea)Enum.Parse(typeof(PlcArea), selector),
-                DbNumber = db,
-                Offset = (ushort)(offset + bit),
-                Length = 1,
-                VarType = typeof(bool)
-            };
-        }
-
-        public static ReadItemSpecification CreateWordReadItemSpec(string selector, ushort db, ushort offset)
-        {
-            return new ReadItemSpecification   
-            {
-                Area = (PlcArea)Enum.Parse(typeof(PlcArea), selector),
-                DbNumber = db,
-                Offset = offset,
-                Length = 1,
-                VarType = typeof(short)
-            };
-        }
-
-        public static ReadItemSpecification CreateByteReadItemSpec(string selector, ushort db, ushort offset, ushort length)
-        {
-            return new ReadItemSpecification  
-            {
-                Area = (PlcArea)Enum.Parse(typeof(PlcArea), selector),
-                DbNumber = db,
-                Offset = offset,
-                Length = length,
-                VarType = typeof(byte)
-            };
-        }
-
-        public static WriteItemSpecification CreateBitWriteItemSpec(string selector, ushort db, ushort offset, int bit)
-        {
-            return new WriteItemSpecification
-            {
-                Area = (PlcArea)Enum.Parse(typeof(PlcArea), selector),
-                DbNumber = db,
-                Offset = (ushort)(offset + (int)Convert.ChangeType(bit, typeof(int))),
-                Length = 1,
-                VarType = typeof(bool)
-            };
-        }
     }
 }

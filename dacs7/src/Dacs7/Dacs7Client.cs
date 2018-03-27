@@ -275,7 +275,11 @@ namespace Dacs7
 
         private static Memory<byte> ConvertDataToMemory(WriteItemSpecification item, object data)
         {
-            switch(data)
+
+            if (item.ResultType != data.GetType())
+                data = Convert.ChangeType(data, item.ResultType);
+
+            switch (data)
             {
                 case byte b:
                     return new byte[] { b };

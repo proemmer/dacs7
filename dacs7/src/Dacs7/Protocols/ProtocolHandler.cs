@@ -119,7 +119,13 @@ namespace Dacs7.Protocols
             CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh;
             SocketError errorCode = SocketError.NoData;
 
-            // TODO: optimization if we have no semaphore we can collect the read data and send them in a single request
+
+            if(_s7Context.OptimizeReadAccess && _concurrentJobs.CurrentCount == 0)
+            {
+                // TODO: optimization if we have no semaphore we can collect the read data and send them in a single request
+            }
+
+
             var sendData = DataTransferDatagram.TranslateToMemory(
                                 DataTransferDatagram.Build(_context,
                                         S7ReadJobDatagram.TranslateToMemory(
@@ -161,7 +167,11 @@ namespace Dacs7.Protocols
             CallbackHandler<IEnumerable<S7ItemDataWriteResult>> cbh;
             SocketError errorCode = SocketError.NoData;
 
-            // TODO: optimization if we have no semaphore we can collect the write data and send them in a single request
+            if (_s7Context.OptimizeWriteAccess && _concurrentJobs.CurrentCount == 0)
+            {
+                // TODO: optimization if we have no semaphore we can collect the write data and send them in a single request
+            }
+
             var sendData = DataTransferDatagram.TranslateToMemory(
                                 DataTransferDatagram.Build(_context,
                                         S7WriteJobDatagram.TranslateToMemory(
@@ -217,16 +227,17 @@ namespace Dacs7.Protocols
 
         }
 
-        private async Task OnConnectionStateChanged(string socketHandle, bool connected)
+        private Task OnConnectionStateChanged(string socketHandle, bool connected)
         {
             if (_connectionState == ConnectionState.Closed && connected)
             {
-                await SendConnectionRequest();
+                return SendConnectionRequest();
             }
             else if (_connectionState == ConnectionState.Opened && !connected)
             {
-                await Closed();
+                return Closed();
             }
+            return Task.CompletedTask;
         }
 
         private async Task<int> Rfc1006DatagramReceived(Type datagramType, Memory<byte> buffer)
