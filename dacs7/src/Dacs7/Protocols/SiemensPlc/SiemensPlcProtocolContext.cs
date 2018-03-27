@@ -18,6 +18,9 @@ namespace Dacs7.Protocols.SiemensPlc
         public ushort MaxParallelJobs { get; set; } = 10;
         public ushort PduSize { get; set; } = 960;
 
+        public UInt16 ReadItemMaxLength { get { return (UInt16)(PduSize - 18); } }  //18 Header and some other data    // in the result message
+        public UInt16 WriteItemMaxLength { get { return (UInt16)(PduSize - 28); } } //28 Header and some other data
+
         public static readonly int MinimumDataSize = 10;
         public static readonly int MinimumAckDetectionSize = MinimumDataSize + 2;
 

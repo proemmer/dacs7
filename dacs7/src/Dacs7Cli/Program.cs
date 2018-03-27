@@ -134,6 +134,7 @@ namespace Dacs7Cli
             try
             {
                 await client.ConnectAsync();
+
                 var write = writeOptions.Tags.Select(x =>
                 {
                     var s = x.Split('=');
@@ -164,6 +165,7 @@ namespace Dacs7Cli
         private static async Task<int> Read(ReadOptions readOptions)
         {
             var client = new Dacs7Client(readOptions.Address);
+
             try
             {
                 long msTotal = 0;

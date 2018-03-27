@@ -12,11 +12,6 @@ using System.Threading.Tasks;
 
 namespace Dacs7
 {
-
-
-
-    // This project can output the Class library as a NuGet Package.
-    // To enable this option, right-click on the project and select the Properties menu item. In the Build tab select "Produce outputs on build".
     public partial class Dacs7Client
     {
         private Dictionary<string, ReadItemSpecification> _registeredTags = new Dictionary<string, ReadItemSpecification>();
@@ -59,37 +54,24 @@ namespace Dacs7
 
         }
 
+        /// <summary>
+        /// Connect to the plc
+        /// </summary>
+        /// <returns></returns>
         public async Task ConnectAsync()
         {
             await _protocolHandler.OpenAsync();
         }
 
+        /// <summary>
+        /// Disconnect from the plc
+        /// </summary>
+        /// <returns></returns>
         public async Task DisconnectAsync()
         {
             await _protocolHandler.CloseAsync();
         }
 
-        public Task<IEnumerable<object>> ReadAsync(params string[] values) => ReadAsync(values as IEnumerable<string>);
-
-        public async Task<IEnumerable<object>> ReadAsync(IEnumerable<string> values)
-        {
-            var items = CreateNodeIdCollection(values);
-            var result = await _protocolHandler.ReadAsync(items);
-            var enumerator = items.GetEnumerator();
-            return  result.Select(value =>
-            {
-                enumerator.MoveNext();
-                return Convert.ChangeType(value, enumerator.Current.ResultType);
-            }).ToList();
-        }
-
-        public Task WriteAsync(params KeyValuePair<string, object>[] values) => WriteAsync(values as IEnumerable<KeyValuePair<string, object>>);
-
-        public async Task WriteAsync(IEnumerable<KeyValuePair<string, object>> values)
-        {
-            var items = CreateWriteNodeIdCollection(values);
-            await _protocolHandler.WriteAsync(items);
-        }
 
 
         /// <summary>
@@ -152,6 +134,11 @@ namespace Dacs7
         /// <param name="tag"></param>
         /// <returns></returns>
         public bool IsTagRegistered(string tag) => _registeredTags.ContainsKey(tag);
+
+
+
+
+
 
 
 
@@ -275,8 +262,7 @@ namespace Dacs7
 
         private static Memory<byte> ConvertDataToMemory(WriteItemSpecification item, object data)
         {
-
-            if (item.ResultType != data.GetType())
+            if (data is string && item.ResultType != typeof(string))
                 data = Convert.ChangeType(data, item.ResultType);
 
             switch (data)
@@ -284,6 +270,8 @@ namespace Dacs7
                 case byte b:
                     return new byte[] { b };
                 case byte[] ba:
+                    return ba;
+                case Memory<byte> ba:
                     return ba;
                 case char c:
                     return new byte[] { Convert.ToByte(c) };

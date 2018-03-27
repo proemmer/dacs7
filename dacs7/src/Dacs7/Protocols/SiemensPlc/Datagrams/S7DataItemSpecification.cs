@@ -111,9 +111,7 @@ namespace Dacs7.Protocols.SiemensPlc
             span[0] = datagram.ReturnCode;
             span[1] = datagram.TransportSize;
             BinaryPrimitives.WriteUInt16BigEndian(span.Slice(2, 2), GetDataLength(datagram.Length, datagram.TransportSize));
-            datagram.Data = new byte[datagram.Length];
             datagram.Data.CopyTo(result.Slice(4, datagram.Length));
-            // datagram.Data.CopyTo(result.Slice(4 + datagram.Length, datagram.Length));
             return result;
         }
 
