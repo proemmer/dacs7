@@ -54,7 +54,7 @@ namespace Dacs7
                     result = new byte[length];
                 }
 
-                Memory<byte> partResult = (await ReadAsync($"db{dbNumber}.{offset + processed},b,{slice}")).FirstOrDefault() as byte[];
+                Memory<byte> partResult = (Memory<byte>)(await ReadAsync($"db{dbNumber}.{offset + processed},b,{slice}")).FirstOrDefault();
 
                 if(result.IsEmpty)
                 {
