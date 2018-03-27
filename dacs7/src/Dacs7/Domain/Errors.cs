@@ -1,7 +1,6 @@
 ﻿using Dacs7.Helper;
 using System;
 using System.Globalization;
-using System.Reflection;
 
 namespace Dacs7
 {

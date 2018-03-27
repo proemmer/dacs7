@@ -1,11 +1,13 @@
 ﻿// Copyright (c) insite-gmbh. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
+using System;
+
 namespace Dacs7.Protocols.SiemensPlc
 {
     public class WriteItemSpecification : ReadItemSpecification
     {
-        public byte[] Data { get; set; }
+        public Memory<byte> Data { get; set; }
 
 
         public override WriteItemSpecification Clone()
@@ -15,7 +17,7 @@ namespace Dacs7.Protocols.SiemensPlc
             return clone;
         }
 
-        public WriteItemSpecification Clone(byte[] data)
+        public WriteItemSpecification Clone(Memory<byte> data)
         {
             var clone = base.Clone();
             clone.Data = data;

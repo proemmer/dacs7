@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Buffers.Binary;
+using System.Buffers;
 
 namespace Dacs7.Protocols.Rfc1006
 {
@@ -103,14 +104,18 @@ namespace Dacs7.Protocols.Rfc1006
                 Memory<byte> payload = Memory<byte>.Empty;
                 if (context.FrameBuffer.Any())
                 {
-                    context.FrameBuffer.Add(datagram.Payload);
-                    var length = context.FrameBuffer.Sum(x => x.Length);
+                    context.FrameBuffer.Add(new Tuple<Memory<byte>, int>(datagram.Payload, datagram.Payload.Length));
+                    var length = context.FrameBuffer.Sum(x => x.Item1.Length);
                     payload = new byte[length];
                     var index = 0;
                     foreach (var item in context.FrameBuffer)
                     {
-                        item.CopyTo(payload.Slice(index));
-                        index += item.Length;
+                        item.Item1.Slice(0, item.Item2).CopyTo(payload.Slice(index));
+                        if (!ReferenceEquals(datagram.Payload, item.Item1))
+                        {
+                            ArrayPool<byte>.Shared.Return(item.Item1.ToArray());
+                        }
+                        index += item.Item2;
                     }
                     datagram.Payload = payload;
                     context.FrameBuffer.Clear();
@@ -121,9 +126,9 @@ namespace Dacs7.Protocols.Rfc1006
             }
             else if(!datagram.Payload.IsEmpty)
             {
-                Memory<byte> copy = new byte[datagram.Payload.Length];
+                Memory<byte> copy = ArrayPool<byte>.Shared.Rent(datagram.Payload.Length);
                 datagram.Payload.CopyTo(copy);
-                context.FrameBuffer.Add(copy);
+                context.FrameBuffer.Add(new Tuple<Memory<byte>, int>(copy, datagram.Payload.Length));
             }
             needMoteData = true;
             return datagram;

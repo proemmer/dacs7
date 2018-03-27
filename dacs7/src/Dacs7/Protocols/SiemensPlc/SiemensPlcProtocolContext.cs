@@ -18,27 +18,14 @@ namespace Dacs7.Protocols.SiemensPlc
         public ushort MaxParallelJobs { get; set; } = 10;
         public ushort PduSize { get; set; } = 960;
 
-
-        public SiemensPlcProtocolContext()
-        {
-
-        }
-
-        //public string Ip { get; set; } = "127.0.0.1";
-        //public string LocalTsap { get; set; } = "0100";
-        //public string RemoteTsap { get; set; } = CalcRemoteTsap(0x01, 0, 2);
-
-        //private static string CalcRemoteTsap(ushort connectionType, int rack, int slot)
-        //{
-        //    var value = ((ushort)connectionType << 8) + (rack * 0x20) + slot;
-        //    return string.Format("{0:X4}", value);
-        //}
+        public static readonly int MinimumDataSize = 10;
+        public static readonly int MinimumAckDetectionSize = MinimumDataSize + 2;
 
 
 
         public bool TryDetectDatagramType(Memory<byte> memory, out Type datagramType)
         {
-            if (memory.Length >= 10 &&
+            if (memory.Length >= MinimumDataSize &&
                memory.Span[0] == 0x32)
             {
 
@@ -56,15 +43,15 @@ namespace Dacs7.Protocols.SiemensPlc
         }
 
 
-        public bool TryDetectJobType(Memory<byte> memory, out Type datagramType)
+        private bool TryDetectJobType(Memory<byte> memory, out Type datagramType)
         {
             datagramType = null;
             return false;
         }
 
-        public bool TryDetectAckType(Memory<byte> memory, out Type datagramType)
+        private bool TryDetectAckType(Memory<byte> memory, out Type datagramType)
         {
-            if (memory.Length > 12 &&
+            if (memory.Length > MinimumAckDetectionSize &&
                 memory.Span[0] == 0x32)
             {
 
@@ -75,6 +62,9 @@ namespace Dacs7.Protocols.SiemensPlc
                         return true;
                     case 0x04:  // Read Var
                         datagramType = typeof(S7ReadJobAckDatagram);
+                        return true;
+                    case 0x05:  // Write Var
+                        datagramType = typeof(S7WriteJobAckDatagram);
                         return true;
                 }
 

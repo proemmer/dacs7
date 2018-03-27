@@ -3,8 +3,10 @@ using Dacs7.Protocols;
 using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -83,10 +85,10 @@ namespace Dacs7
 
         public Task WriteAsync(params KeyValuePair<string, object>[] values) => WriteAsync(values as IEnumerable<KeyValuePair<string, object>>);
 
-        public Task WriteAsync(IEnumerable<KeyValuePair<string, object>> values)
+        public async Task WriteAsync(IEnumerable<KeyValuePair<string, object>> values)
         {
-            throw new NotImplementedException();
-
+            var items = CreateWriteNodeIdCollection(values);
+            await _protocolHandler.WriteAsync(items);
         }
 
 
@@ -167,6 +169,16 @@ namespace Dacs7
             return new List<ReadItemSpecification>(values.Select(item => RegisteredOrGiven(item)));
         }
 
+        internal List<WriteItemSpecification> CreateWriteNodeIdCollection(IEnumerable<KeyValuePair<string, object>> values)
+        {
+            return new List<WriteItemSpecification>(values.Select(item =>
+            {
+                var result = RegisteredOrGiven(item.Key).Clone();
+                result.Data = ConvertDataToMemory(result, item.Value);
+                return result;
+            }));
+        }
+
         internal ReadItemSpecification RegisteredOrGiven(string tag)
         {
             if (_registeredTags.TryGetValue(tag, out var nodeId))
@@ -175,21 +187,6 @@ namespace Dacs7
             }
             return Create(tag);
         }
-
-
-        internal IEnumerable<string> RemoveRegisteredTag(IEnumerable<string> keys)
-        {
-            var result = new List<string>();
-            foreach (var key in keys)
-            {
-                if (_registeredTags.Remove(key))
-                {
-                    result.Add(key);
-                }
-            }
-            return result;
-        }
-
 
         private ReadItemSpecification Create(string tag)
         {
@@ -276,5 +273,64 @@ namespace Dacs7
             };
         }
 
+        private static Memory<byte> ConvertDataToMemory(WriteItemSpecification item, object data)
+        {
+            switch(data)
+            {
+                case byte b:
+                    return new byte[] { b };
+                case byte[] ba:
+                    return ba;
+                case char c:
+                    return new byte[] { Convert.ToByte(c) };
+                case char[] ca:
+                    return ca.Select(x => Convert.ToByte(x)).ToArray();
+                case string s:
+                    {
+                        Memory<byte> result = new byte[s.Length + 2];
+                        result.Span[0] = (byte)s.Length;
+                        result.Span[1] = (byte)s.Length;
+                        Encoding.ASCII.GetBytes(s).AsSpan().CopyTo(result.Span.Slice(2));
+                        return result;
+                    }
+                case Int16 i16:
+                    {
+                        Memory<byte> result = new byte[2];
+                        BinaryPrimitives.WriteInt16BigEndian(result.Span, i16);
+                        return result;
+                    }
+                case UInt16 ui16:
+                    {
+                        Memory<byte> result = new byte[2];
+                        BinaryPrimitives.WriteUInt16BigEndian(result.Span, ui16);
+                        return result;
+                    }
+                case Int32 i32:
+                    {
+                        Memory<byte> result = new byte[4];
+                        BinaryPrimitives.WriteInt32BigEndian(result.Span, i32);
+                        return result;
+                    }
+                case UInt32 ui32:
+                    {
+                        Memory<byte> result = new byte[4];
+                        BinaryPrimitives.WriteUInt32BigEndian(result.Span, ui32);
+                        return result;
+                    }
+                case Int64 i64:
+                    {
+                        Memory<byte> result = new byte[8];
+                        BinaryPrimitives.WriteInt64BigEndian(result.Span, i64);
+                        return result;
+                    }
+                case UInt64 ui64:
+                    {
+                        Memory<byte> result = new byte[8];
+                        BinaryPrimitives.WriteUInt64BigEndian(result.Span, ui64);
+                        return result;
+                    }
+            }
+            throw new InvalidCastException();
+        }
     }
 }

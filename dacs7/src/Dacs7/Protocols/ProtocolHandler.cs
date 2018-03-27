@@ -5,6 +5,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -40,7 +41,12 @@ namespace Dacs7.Protocols
         private Rfc1006ProtocolContext _context;
         private SiemensPlcProtocolContext _s7Context;
         private AsyncAutoResetEvent<bool> _connectEvent = new AsyncAutoResetEvent<bool>();
+
+        private SemaphoreSlim _concurrentJobs;
+
         private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
+        private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7ItemDataWriteResult>>> _writeHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7ItemDataWriteResult>>>();
+
         private int _referenceId;
         private readonly object _idLock = new object();
         private int _timeout = 5000;
@@ -109,42 +115,105 @@ namespace Dacs7.Protocols
 
         public async Task<IEnumerable<object>> ReadAsync(IEnumerable<ReadItemSpecification> vars)
         {
-            var cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(GetNextReferenceId());
+            var id = GetNextReferenceId();
+            CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh;
+            SocketError errorCode = SocketError.NoData;
+
+            // TODO: optimization if we have no semaphore we can collect the read data and send them in a single request
             var sendData = DataTransferDatagram.TranslateToMemory(
                                 DataTransferDatagram.Build(_context,
                                         S7ReadJobDatagram.TranslateToMemory(
-                                            S7ReadJobDatagram.BuildRead(_s7Context, cbh.Id, vars))).FirstOrDefault());
-            _readHandler.TryAdd(cbh.Id, cbh);
-            var errorCode = await _socket.SendAsync(sendData);
-            if (errorCode == System.Net.Sockets.SocketError.Success)
+                                            S7ReadJobDatagram.BuildRead(_s7Context, id, vars))).FirstOrDefault());
+            
+
+            await _concurrentJobs.WaitAsync();
+            try
             {
-                try
-                {
-                    var result = await cbh.Event.WaitAsync(_timeout);
-                    return result.Select(x => x.Data.ToArray()).ToList();
-                }
-                catch(TaskCanceledException)
-                {
-                    throw new TimeoutException();
-                }
+                cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
+                _readHandler.TryAdd(cbh.Id, cbh);
+                errorCode = await _socket.SendAsync(sendData);
             }
-            return new List<object>();
+            finally
+            {
+                _concurrentJobs.Release();
+            }
+
+
+            if (errorCode != SocketError.Success)
+                return new List<object>();
+
+            try
+            {
+                var result = await cbh.Event.WaitAsync(_timeout);
+                return result.Select(x => x.Data.ToArray());
+            }
+            catch(TaskCanceledException)
+            {
+                throw new TimeoutException();
+            }
+
+
         }
 
-        private async Task<int> OnRawDataReceived(string socketHandle, Memory<byte> buffer)
+        public async Task<IEnumerable<byte>> WriteAsync(IEnumerable<WriteItemSpecification> vars)
         {
-            if (buffer.Length > 6)
+            var id = GetNextReferenceId();
+            CallbackHandler<IEnumerable<S7ItemDataWriteResult>> cbh;
+            SocketError errorCode = SocketError.NoData;
+
+            // TODO: optimization if we have no semaphore we can collect the write data and send them in a single request
+            var sendData = DataTransferDatagram.TranslateToMemory(
+                                DataTransferDatagram.Build(_context,
+                                        S7WriteJobDatagram.TranslateToMemory(
+                                            S7WriteJobDatagram.BuildWrite(_s7Context, id, vars))).FirstOrDefault());
+
+            await _concurrentJobs.WaitAsync();
+            try
+            {
+                cbh = new CallbackHandler<IEnumerable<S7ItemDataWriteResult>>(id);
+                _writeHandler.TryAdd(cbh.Id, cbh);
+                errorCode = await _socket.SendAsync(sendData);
+            }
+            finally
+            {
+                _concurrentJobs.Release();
+            }
+
+
+            if (errorCode != SocketError.Success)
+                return new List<byte>();
+
+
+            try
+            {
+                var result = await cbh.Event.WaitAsync(_timeout);
+                return result.Select(x => x.ReturnCode);
+            }
+            catch (TaskCanceledException)
+            {
+                throw new TimeoutException();
+            }
+
+
+        }
+
+
+
+        private Task<int> OnRawDataReceived(string socketHandle, Memory<byte> buffer)
+        {
+            if (buffer.Length > _context.MinimumBufferSize)
             {
                 if (_context.TryDetectDatagramType(buffer, out var type))
                 {
-                    return await Rfc1006DatagramReceived(type, buffer);
+                    return Rfc1006DatagramReceived(type, buffer);
                 }
+                // unknown datagram
             }
             else
             {
-                return 0; // no data processed, buffer is to short
+                return Task.FromResult(0); // no data processed, buffer is to short
             }
-            return 1; // move forward
+            return Task.FromResult(1); // move forward
 
         }
 
@@ -180,16 +249,21 @@ namespace Dacs7.Protocols
             return processed;
         }
 
-        private async Task SiemensPlcDatagramReceived(Type datagramType, Memory<byte> buffer)
+        private Task SiemensPlcDatagramReceived(Type datagramType, Memory<byte> buffer)
         {
             if (datagramType == typeof(S7CommSetupAckDataDatagram))
             {
-                await ReceivedCommunicationSetupAck(buffer);
+                return ReceivedCommunicationSetupAck(buffer);
             }
             else if(datagramType == typeof(S7ReadJobAckDatagram))
             {
-                await ReceivedReadJobAck(buffer);
+                return ReceivedReadJobAck(buffer);
             }
+            else if(datagramType == typeof(S7WriteJobAckDatagram))
+            {
+                return ReceivedWriteJobAck(buffer);
+            }
+            return Task.CompletedTask;
         }
 
 
@@ -235,6 +309,7 @@ namespace Dacs7.Protocols
             _s7Context.MaxParallelJobs = data.Parameter.MaxAmQCalling;
             _s7Context.PduSize = data.Parameter.PduLength;
             _connectionState = ConnectionState.Opened;
+            _concurrentJobs = new SemaphoreSlim(_s7Context.MaxParallelJobs);
             _connectEvent.Set(true);
 
             return Task.CompletedTask;
@@ -253,9 +328,30 @@ namespace Dacs7.Protocols
             return Task.CompletedTask;
         }
 
+        private Task ReceivedWriteJobAck(Memory<byte> buffer)
+        {
+            var data = S7WriteJobAckDatagram.TranslateFromMemory(buffer);
+
+            if (_writeHandler.TryGetValue(data.Header.Header.ProtocolDataUnitReference, out var cbh))
+            {
+                cbh.Event.Set(data.Data);
+                _writeHandler.TryRemove(cbh.Id, out _);
+            }
+
+            return Task.CompletedTask;
+        }
+
+
+
+
         private Task Closed()
         {
             _connectionState = ConnectionState.Closed;
+            if(_concurrentJobs != null)
+            {
+                _concurrentJobs.Dispose();
+                _concurrentJobs = null;
+            }
             return Task.CompletedTask;
         }
 

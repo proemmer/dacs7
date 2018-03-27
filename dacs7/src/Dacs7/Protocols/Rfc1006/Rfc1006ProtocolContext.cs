@@ -44,8 +44,13 @@ namespace Dacs7.Protocols.Rfc1006
         public byte SizeTpduReceiving { get; set; }
         public byte SizeTpduSending { get; set; }
 
-        public IList<Memory<byte>> FrameBuffer { get; set; } = new List<Memory<byte>>();
+        public IList<Tuple<Memory<byte>, int>> FrameBuffer { get; set; } = new List<Tuple<Memory<byte>, int>>();
         public Memory<byte> PartialFrame = Memory<byte>.Empty;
+
+        /// <summary>
+        /// The minimum data size we need to detect the datagram type
+        /// </summary>
+        public int MinimumBufferSize => TpktHeaderSize + 2;
 
         public Rfc1006ProtocolContext()
         {
@@ -80,12 +85,11 @@ namespace Dacs7.Protocols.Rfc1006
 
         public bool TryDetectDatagramType(Memory<byte> memory, out Type datagramType)
         {
-            if(memory.Length > 6 && 
-               memory.Span[0] == 0x03 && 
-               memory.Span[1] == 0x00)
-            {
 
-                switch(memory.Span[5])
+            var span = memory.Span;
+            if (span[0] == 0x03 && span[1] == 0x00)
+            {
+                switch (span[5])
                 {
                     case 0xd0:
                         datagramType = typeof(ConnectionConfirmedDatagram);// CC
@@ -96,10 +100,9 @@ namespace Dacs7.Protocols.Rfc1006
                     case 0xf0:
                         datagramType = typeof(DataTransferDatagram);// DT
                         return true;
-                    
                 }
-              
             }
+
             datagramType = null;
             return false;
         }

@@ -15,6 +15,10 @@ namespace Dacs7.Protocols.SiemensPlc
         public Type ResultType { get; set; }
 
 
+
+        internal int CallbackReference { get; set; }
+
+
         public virtual WriteItemSpecification Clone()
         {
             return new WriteItemSpecification
