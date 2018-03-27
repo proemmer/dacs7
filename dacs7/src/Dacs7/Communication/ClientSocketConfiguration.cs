@@ -11,7 +11,7 @@ namespace Dacs7.Communication
         public bool Autoconnect { get; set; } = true;
         public string NetworkAdapter { get; set; }
         public bool KeepAlive { get; set; } = false;
-        public bool Async { get; set; }
+        public int ReconnectInterval { get; set; } = 500;
 
         public ClientSocketConfiguration()
         {

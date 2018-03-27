@@ -9,8 +9,9 @@ namespace Dacs7.Communication
 
     internal class ClientSocket : SocketBase
     {
+        private bool _disableReconnect;
         private Socket _socket;
-
+        private ClientSocketConfiguration _config;
         public override string Identity
         {
             get
@@ -41,7 +42,7 @@ namespace Dacs7.Communication
 
         public ClientSocket(ClientSocketConfiguration configuration) : base(configuration)
         {
-            
+            _config = configuration;
         }
 
 
@@ -53,6 +54,7 @@ namespace Dacs7.Communication
         {
             try
             {
+                _disableReconnect = false;
                 _identity = null;
                 _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
                 {
@@ -97,6 +99,7 @@ namespace Dacs7.Communication
 
         public async override Task CloseAsync()
         {
+            _disableReconnect = true;
             await base.CloseAsync();
             if (_socket != null)
             {
@@ -116,7 +119,6 @@ namespace Dacs7.Communication
             var receiveOffset = 0;
             var bufferOffset = 0;
             var span = new Memory<byte>(receiveBuffer);
-            var useAsync = (_configuration as ClientSocketConfiguration).Async;
             try
             {
                 while (true)
@@ -162,9 +164,14 @@ namespace Dacs7.Communication
             finally
             {
                 ArrayPool<byte>.Shared.Return(receiveBuffer);
-                await HandleSocketDown();
+                var dummy = HandleSocketDown();
             }
 
+        }
+        protected override Task HandleSocketDown()
+        {
+            var dummy = HandleReconnectAsync();
+            return PublishConnectionStateChanged(false);
         }
 
         private bool IsReallyConnected()
@@ -189,5 +196,13 @@ namespace Dacs7.Communication
             return true;
         }
 
+        private async Task HandleReconnectAsync()
+        {
+            if (!_disableReconnect)
+            {
+                await Task.Delay(_socket.ReceiveBufferSize);
+                await OpenAsync();
+            }
+        }
     }
 }

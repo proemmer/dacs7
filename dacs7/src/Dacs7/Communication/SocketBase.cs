@@ -46,7 +46,7 @@ namespace Dacs7.Communication
 
         public abstract Task<SocketError> SendAsync(Memory<byte> data);
 
-        protected Task HandleSocketDown()
+        protected virtual Task HandleSocketDown()
         {
             return PublishConnectionStateChanged(false);
         }

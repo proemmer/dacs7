@@ -113,7 +113,7 @@ namespace Dacs7.Protocols
             await _socket.CloseAsync();
         }
 
-        public async Task<IEnumerable<object>> ReadAsync(IEnumerable<ReadItemSpecification> vars)
+        public async Task<IEnumerable<S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItemSpecification> vars)
         {
             var id = GetNextReferenceId();
             CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh;
@@ -146,12 +146,11 @@ namespace Dacs7.Protocols
 
 
             if (errorCode != SocketError.Success)
-                return new List<object>();
+                return new List<S7DataItemSpecification>();
 
             try
             {
-                var result = await cbh.Event.WaitAsync(_timeout);
-                return result.Select(x => x.Data.ToArray());
+                return await cbh.Event.WaitAsync(_timeout);
             }
             catch(TaskCanceledException)
             {

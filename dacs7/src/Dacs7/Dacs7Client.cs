@@ -18,8 +18,6 @@ namespace Dacs7
         private ClientSocketConfiguration _config;
         private Rfc1006ProtocolContext _context;
         private SiemensPlcProtocolContext _s7Context;
-        private const int ReconnectPeriod = 10;
-
         private ProtocolHandler _protocolHandler;
 
         public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg)
@@ -142,7 +140,7 @@ namespace Dacs7
 
 
 
-        internal void AddRegisteredTag(IEnumerable<KeyValuePair<string, ReadItemSpecification>> tags)
+        private void AddRegisteredTag(IEnumerable<KeyValuePair<string, ReadItemSpecification>> tags)
         {
             foreach (var item in tags)
             {
@@ -151,12 +149,12 @@ namespace Dacs7
 
         }
 
-        internal List<ReadItemSpecification> CreateNodeIdCollection(IEnumerable<string> values)
+        private List<ReadItemSpecification> CreateNodeIdCollection(IEnumerable<string> values)
         {
             return new List<ReadItemSpecification>(values.Select(item => RegisteredOrGiven(item)));
         }
 
-        internal List<WriteItemSpecification> CreateWriteNodeIdCollection(IEnumerable<KeyValuePair<string, object>> values)
+        private List<WriteItemSpecification> CreateWriteNodeIdCollection(IEnumerable<KeyValuePair<string, object>> values)
         {
             return new List<WriteItemSpecification>(values.Select(item =>
             {
@@ -166,7 +164,7 @@ namespace Dacs7
             }));
         }
 
-        internal ReadItemSpecification RegisteredOrGiven(string tag)
+        private ReadItemSpecification RegisteredOrGiven(string tag)
         {
             if (_registeredTags.TryGetValue(tag, out var nodeId))
             {
@@ -260,6 +258,12 @@ namespace Dacs7
             };
         }
 
+
+
+
+
+
+
         private static Memory<byte> ConvertDataToMemory(WriteItemSpecification item, object data)
         {
             if (data is string && item.ResultType != typeof(string))
@@ -324,5 +328,57 @@ namespace Dacs7
             }
             throw new InvalidCastException();
         }
+
+        private static object ConvertMemoryToData(ReadItemSpecification item, Memory<byte> data)
+        {
+
+            if (item.ResultType == typeof(byte))
+            {
+                return data.Span[0];
+            }
+            else if (item.ResultType == typeof(byte[]) || item.ResultType == typeof(Memory<byte>))
+            {
+                return data;
+            }
+            else if (item.ResultType == typeof(char))
+            {
+                return Convert.ToChar(data.Span[0]);
+            }
+            else if (item.ResultType == typeof(char[]) || item.ResultType == typeof(Memory<char>))
+            {
+                return null; // TODO
+            }
+            else if (item.ResultType == typeof(string))
+            {
+                var length = data.Span[1];
+                return Encoding.ASCII.GetString(data.Span.Slice(2, length).ToArray());
+            }
+            else if (item.ResultType == typeof(Int16))
+            {
+                return BinaryPrimitives.ReadInt16BigEndian(data.Span);
+            }
+            else if (item.ResultType == typeof(UInt16))
+            {
+                return BinaryPrimitives.ReadUInt16BigEndian(data.Span);
+            }
+            else if (item.ResultType == typeof(Int32))
+            {
+                return BinaryPrimitives.ReadInt32BigEndian(data.Span);
+            }
+            else if (item.ResultType == typeof(UInt32))
+            {
+                return BinaryPrimitives.ReadUInt32BigEndian(data.Span);
+            }
+            else if (item.ResultType == typeof(Int64))
+            {
+                return BinaryPrimitives.ReadInt64BigEndian(data.Span);
+            }
+            else if (item.ResultType == typeof(UInt64))
+            {
+                return BinaryPrimitives.ReadUInt64BigEndian(data.Span);
+            }
+            throw new InvalidCastException();
+        }
+
     }
 }
