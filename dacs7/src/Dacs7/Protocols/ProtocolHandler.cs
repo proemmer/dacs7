@@ -96,6 +96,9 @@ namespace Dacs7.Protocols
 
         public async Task<IEnumerable<S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItemSpecification> vars)
         {
+            if (ConnectionState != ConnectionState.Opened)
+                throw new Dacs7NotConnectedException();
+
             var id = GetNextReferenceId();
             CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh;
             SocketError errorCode = SocketError.NoData;
@@ -143,6 +146,10 @@ namespace Dacs7.Protocols
 
         public async Task<IEnumerable<byte>> WriteAsync(IEnumerable<WriteItemSpecification> vars)
         {
+            if (ConnectionState != ConnectionState.Opened)
+                throw new Dacs7NotConnectedException();
+
+
             var id = GetNextReferenceId();
             CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh;
             SocketError errorCode = SocketError.NoData;

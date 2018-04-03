@@ -160,12 +160,6 @@ namespace Dacs7
         public bool IsTagRegistered(string tag) => _registeredTags.ContainsKey(tag);
 
 
-
-
-
-
-
-
         private void AddRegisteredTag(IEnumerable<KeyValuePair<string, ReadItemSpecification>> tags)
         {
             foreach (var item in tags)
