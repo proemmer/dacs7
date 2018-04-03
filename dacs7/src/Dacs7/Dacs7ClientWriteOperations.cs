@@ -34,7 +34,28 @@ namespace Dacs7
         /// <param name="offset">offset in bytes in the datablock</param>
         /// <param name="data">data to write</param>
         /// <returns>returns 0xFF if succeeded</returns>
-        public async Task<byte> WriteAsync(int dbNumber, int offset, Memory<byte> data)
+        public Task<byte> WriteAsync(int dbNumber, int offset, Memory<byte> data)
+        {
+            return InternalWriteData($"db{dbNumber}", offset, data);
+        }
+
+        /// <summary>
+        /// This write opearation can be used for big data, because the partitioning is built-in.
+        /// </summary>
+        /// <param name="area"><see cref="PlcArea"/> to write to</param>
+        /// <param name="offset">offset in bytes in the datablock</param>
+        /// <param name="data">data to write</param>
+        /// <returns>returns 0xFF if succeeded</returns>
+        public Task<byte> WriteAsync(PlcArea area, int offset, Memory<byte> data)
+        {
+            return InternalWriteData(FromArea(area), offset, data);
+        }
+
+
+
+
+
+        private async Task<byte> InternalWriteData(string area, int offset, Memory<byte> data)
         {
             Memory<byte> result = Memory<byte>.Empty;
 
@@ -43,7 +64,7 @@ namespace Dacs7
             while (bytesToWrite > 0)
             {
                 var slice = Math.Min(_s7Context.WriteItemMaxLength, bytesToWrite);
-                var erroCode = (await WriteAsync(new KeyValuePair<string,object>($"db{dbNumber}.{offset + processed},b,{slice}", data.Slice(processed, slice)))).FirstOrDefault();
+                var erroCode = (await WriteAsync(new KeyValuePair<string, object>(CalculateByteArrayTag(area, offset + processed, slice), data.Slice(processed, slice)))).FirstOrDefault();
 
                 if (erroCode != 0xFF)
                     return erroCode;
@@ -54,6 +75,5 @@ namespace Dacs7
 
             return 0xFF;
         }
-
     }
 }

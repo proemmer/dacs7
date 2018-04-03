@@ -11,27 +11,6 @@ using System.Threading.Tasks;
 
 namespace Dacs7.Protocols
 {
-    internal struct CallbackHandler<T>
-    {
-        public ushort Id { get; }
-        public AsyncAutoResetEvent<T> Event { get; }
-
-        public CallbackHandler(ushort id)
-        {
-            Id = id;
-            Event = new AsyncAutoResetEvent<T>();
-        }
-
-    }
-
-    public enum ConnectionState
-    {
-        Closed,
-        PendingOpenRfc1006,
-        Rfc1006Opened,
-        PendingOpenPlc,
-        Opened
-    }
 
 
     public class ProtocolHandler
@@ -50,6 +29,8 @@ namespace Dacs7.Protocols
         private int _referenceId;
         private readonly object _idLock = new object();
         private int _timeout = 5000;
+
+        public ConnectionState ConnectionState => _connectionState;
 
         internal UInt16 GetNextReferenceId()
         {
@@ -318,8 +299,8 @@ namespace Dacs7.Protocols
             var data = S7CommSetupAckDataDatagram.TranslateFromMemory(buffer);
             _s7Context.MaxParallelJobs = data.Parameter.MaxAmQCalling;
             _s7Context.PduSize = data.Parameter.PduLength;
-            _connectionState = ConnectionState.Opened;
             _concurrentJobs = new SemaphoreSlim(_s7Context.MaxParallelJobs);
+            _connectionState = ConnectionState.Opened;
             _connectEvent.Set(true);
 
             return Task.CompletedTask;

@@ -20,6 +20,16 @@ namespace Dacs7
         private SiemensPlcProtocolContext _s7Context;
         private ProtocolHandler _protocolHandler;
 
+
+        public bool IsConnected => _protocolHandler != null && _protocolHandler?.ConnectionState == ConnectionState.Opened;
+
+        public ushort PduSize => _s7Context != null ? _s7Context.PduSize : (ushort)0;
+
+        public ushort ReadItemMaxLength => _s7Context != null ? _s7Context.ReadItemMaxLength : (ushort)0;
+
+        public ushort WriteItemMaxLength => _s7Context != null ? _s7Context.PduSize : (ushort)0;
+
+
         public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg)
         {
             var addressPort = address.Split(':');
@@ -173,7 +183,10 @@ namespace Dacs7
             return Create(tag);
         }
 
-        private ReadItemSpecification Create(string tag)
+
+
+
+        private static ReadItemSpecification Create(string tag)
         {
             var parts = tag.Split(new[] { ',' });
             var start = parts[0].Split(new[] { '.' });
@@ -182,6 +195,8 @@ namespace Dacs7
             ushort length = 1;
             ushort offset = UInt16.Parse(start.Last());
             ushort db = 0;
+
+            // TODO: support othe mnemonics
             switch (start[withPrefix ? 1 : 0].ToUpper())
             {
                 case "I": selector = PlcArea.IB; break;
@@ -258,11 +273,24 @@ namespace Dacs7
             };
         }
 
+        private static string FromArea(PlcArea area)
+        {
+            // TODO: support othe mnemonics
+            switch (area)
+            {
+                case PlcArea.IB: return "I";
+                case PlcArea.FB: return "M";
+                case PlcArea.QB: return "A";
+                case PlcArea.TM: return "T";
+                case PlcArea.CT: return "C";
+            }
+            throw new InvalidOperationException();
+        }
 
-
-
-
-
+        private static string CalculateByteArrayTag(string area, int offset, int length)
+        {
+            return $"{area}.{offset},b,{length}";
+        }
 
         private static Memory<byte> ConvertDataToMemory(WriteItemSpecification item, object data)
         {

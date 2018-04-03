@@ -40,10 +40,31 @@ namespace Dacs7
         /// <param name="offset">offset in bytes in the datablock</param>
         /// <param name="length">the length to read</param>
         /// <returns>returns the data if read succeeded</returns>
-        public async Task<Memory<byte>> ReadAsync(int dbNumber, int offset, int length)
+        public Task<Memory<byte>> ReadAsync(int dbNumber, int offset, int length)
+        {
+            return InternalReadData($"db{dbNumber}", offset, length);
+        }
+
+        /// <summary>
+        /// This read opearation can be used for big data, because the partitioning is built-in.
+        /// </summary>
+        /// <param name="area">the <see cref="PlcArea"/> to read from (DB is not supported)</param>
+        /// <param name="offset">offset in bytes in the datablock</param>
+        /// <param name="length">the length to read</param>
+        /// <returns>returns the data if read succeeded</returns>
+        public Task<Memory<byte>> ReadAsync(PlcArea area, int offset, int length)
+        {
+            return InternalReadData(FromArea(area), offset, length);
+        }
+
+
+
+
+
+        private async Task<Memory<byte>> InternalReadData(string area, int offset, int length)
         {
             Memory<byte> result = Memory<byte>.Empty;
-            
+
             var bytesToRead = length;
             var processed = 0;
             while (bytesToRead > 0)
@@ -54,9 +75,9 @@ namespace Dacs7
                     result = new byte[length];
                 }
 
-                Memory<byte> partResult = (Memory<byte>)(await ReadAsync($"db{dbNumber}.{offset + processed},b,{slice}")).FirstOrDefault();
+                Memory<byte> partResult = (Memory<byte>)(await ReadAsync(CalculateByteArrayTag(area, offset + processed, slice))).FirstOrDefault();
 
-                if(result.IsEmpty)
+                if (result.IsEmpty)
                 {
                     result = partResult;
                 }

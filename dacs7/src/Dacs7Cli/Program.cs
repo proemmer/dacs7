@@ -45,10 +45,7 @@ namespace Dacs7Cli
 
                 }
             }
-            catch(Exception ex)
-            {
-
-            }
+            catch(Exception){}
             return 1;
         }
 
@@ -146,12 +143,12 @@ namespace Dacs7Cli
 
                 foreach (var item in write)
                 {
-                    _logger.LogInformation($"Write: {item.Key}={item.Value}");
+                    _logger?.LogInformation($"Write: {item.Key}={item.Value}");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"An error occured in Write: {ex.Message}");
+                _logger?.LogError($"An error occured in Write: {ex.Message}");
                 return 1;
             }
             finally
@@ -190,26 +187,29 @@ namespace Dacs7Cli
                         var results = await client.ReadAsync(readOptions.Tags);
                         sw.Stop();
                         msTotal += sw.ElapsedMilliseconds;
-                        _logger.LogDebug($"ReadTime: {sw.Elapsed}");
+                        _logger?.LogDebug($"ReadTime: {sw.Elapsed}");
 
                         var resultEnumerator = results.GetEnumerator();
                         foreach (var item in readOptions.Tags)
                         {
                             if (resultEnumerator.MoveNext())
                             {
-                                _logger.LogInformation($"Read: {item}={resultEnumerator.Current}");
+                                _logger?.LogInformation($"Read: {item}={resultEnumerator.Current}");
                             }
                         }
                     }
                     catch (Exception) { }
                 }
 
-                if(readOptions.Loops > 0)
+                if (readOptions.Loops > 0)
+                {
                     _logger?.LogInformation($"Average read time over loops is {msTotal / readOptions.Loops}ms");
+                    await Task.Delay(readOptions.Wait);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"An error occured in Read: {ex.Message}");
+                _logger?.LogError($"An error occured in Read: {ex.Message}");
                 return 1;
             }
             finally
