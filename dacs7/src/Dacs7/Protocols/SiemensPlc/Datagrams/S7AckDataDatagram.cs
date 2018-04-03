@@ -5,7 +5,7 @@ using System;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
-    public class S7AckDataDatagram
+    internal class S7AckDataDatagram
     {
         public S7HeaderDatagram Header { get; set; } = new S7HeaderDatagram
         {

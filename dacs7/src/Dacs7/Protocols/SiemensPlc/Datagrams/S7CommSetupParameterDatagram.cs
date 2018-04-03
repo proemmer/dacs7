@@ -6,7 +6,7 @@ using System.Buffers.Binary;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
-    public class S7CommSetupParameterDatagram
+    internal class S7CommSetupParameterDatagram
     {
         public byte Function { get; set; } = 0xF0; //Setup communication
         public byte Reserved { get; set; } = 0x00;

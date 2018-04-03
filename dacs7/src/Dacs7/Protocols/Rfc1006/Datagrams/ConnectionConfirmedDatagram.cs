@@ -6,11 +6,8 @@ using System.Buffers.Binary;
 
 namespace Dacs7.Protocols.Rfc1006
 {
-    public class ConnectionConfirmedDatagram 
+    internal class ConnectionConfirmedDatagram 
     {
-        internal static ConnectionConfirmedDatagram Default = new ConnectionConfirmedDatagram();
-
-
         public TpktDatagram Tkpt { get; set; } = new TpktDatagram
         {
             Sync1 = 0x03,

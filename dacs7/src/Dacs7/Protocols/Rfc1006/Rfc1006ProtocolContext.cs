@@ -12,17 +12,22 @@ namespace Dacs7.Protocols.Rfc1006
     /// Context class for the protocol instance
     /// Contains all properties for the protocol
     /// </summary>
-    public class Rfc1006ProtocolContext
+    internal class Rfc1006ProtocolContext
     {
         private int _frameSize;
+
+        private const byte Prefix0 = 0x03;
+        private const byte Prefix1 = 0x00;
         private const byte TpduSizeMin = 0x04;
         private const byte TpduSizeMax = 0x0e;
-        private const int defaultFrameSize = 1024;    // THis is for testing the slip and merge function!!
-        public const int TpktHeaderSize = 4;
-        public const int DataHeaderSize = TpktHeaderSize + 3;
+        private const int DefaultFrameSize = 1024;
+        private const int DatagramTypeOffset = 5;
+        private const int TpktHeaderSize = 4;
+        
+
+
         public bool DoNotBuildConnectionConfirm { get; set; }
 
-        public string Name { get; set; }
 
         public int Port { get; set; }
         public bool IsClient { get; set; }
@@ -45,19 +50,23 @@ namespace Dacs7.Protocols.Rfc1006
         public byte SizeTpduSending { get; set; }
 
         public IList<Tuple<Memory<byte>, int>> FrameBuffer { get; set; } = new List<Tuple<Memory<byte>, int>>();
-        public Memory<byte> PartialFrame = Memory<byte>.Empty;
 
         /// <summary>
         /// The minimum data size we need to detect the datagram type
         /// </summary>
-        public int MinimumBufferSize => TpktHeaderSize + 2;
+        public static int MinimumBufferSize => TpktHeaderSize + 2;
+
+        /// <summary>
+        /// The size of the data header
+        /// </summary>
+        public static int DataHeaderSize => TpktHeaderSize + 3;
 
         public Rfc1006ProtocolContext()
         {
-            FrameSize = defaultFrameSize;
+            FrameSize = DefaultFrameSize;
         }
 
-        public void CalculateTpduSize(int frameSize = defaultFrameSize)
+        public void CalculateTpduSize(int frameSize = DefaultFrameSize)
         {
             var b = -1;
             for (var i = frameSize; i > 0; i = i >> 1, ++b) ;
@@ -87,9 +96,9 @@ namespace Dacs7.Protocols.Rfc1006
         {
 
             var span = memory.Span;
-            if (span[0] == 0x03 && span[1] == 0x00)
+            if (span[0] == Prefix0 && span[1] == Prefix1)
             {
-                switch (span[5])
+                switch (span[DatagramTypeOffset])
                 {
                     case 0xd0:
                         datagramType = typeof(ConnectionConfirmedDatagram);// CC

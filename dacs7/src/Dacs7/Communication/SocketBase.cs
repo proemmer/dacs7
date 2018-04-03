@@ -6,7 +6,7 @@ namespace Dacs7.Communication
 {
     /// <summary>
     /// </summary>
-    public abstract class SocketBase
+    internal abstract class SocketBase
     {
         public delegate Task OnConnectionStateChangedHandler(string socketHandle, bool connected);
         public delegate Task<int> OnDataReceivedHandler(string socketHandle, Memory<byte> aBuffer);

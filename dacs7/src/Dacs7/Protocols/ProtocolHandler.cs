@@ -13,7 +13,7 @@ namespace Dacs7.Protocols
 {
 
 
-    public class ProtocolHandler
+    internal class ProtocolHandler
     {
         private ConnectionState _connectionState = ConnectionState.Closed;
         private ClientSocket _socket;
@@ -24,7 +24,7 @@ namespace Dacs7.Protocols
         private SemaphoreSlim _concurrentJobs;
 
         private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
-        private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7ItemDataWriteResult>>> _writeHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7ItemDataWriteResult>>>();
+        private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>> _writeHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>>();
 
         private int _referenceId;
         private readonly object _idLock = new object();
@@ -144,7 +144,7 @@ namespace Dacs7.Protocols
         public async Task<IEnumerable<byte>> WriteAsync(IEnumerable<WriteItemSpecification> vars)
         {
             var id = GetNextReferenceId();
-            CallbackHandler<IEnumerable<S7ItemDataWriteResult>> cbh;
+            CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh;
             SocketError errorCode = SocketError.NoData;
 
             if (_s7Context.OptimizeWriteAccess && _concurrentJobs.CurrentCount == 0)
@@ -160,7 +160,7 @@ namespace Dacs7.Protocols
             await _concurrentJobs.WaitAsync();
             try
             {
-                cbh = new CallbackHandler<IEnumerable<S7ItemDataWriteResult>>(id);
+                cbh = new CallbackHandler<IEnumerable<S7DataItemWriteResult>>(id);
                 _writeHandler.TryAdd(cbh.Id, cbh);
                 errorCode = await _socket.SendAsync(sendData);
             }
@@ -191,7 +191,7 @@ namespace Dacs7.Protocols
 
         private Task<int> OnRawDataReceived(string socketHandle, Memory<byte> buffer)
         {
-            if (buffer.Length > _context.MinimumBufferSize)
+            if (buffer.Length > Rfc1006ProtocolContext.MinimumBufferSize)
             {
                 if (_context.TryDetectDatagramType(buffer, out var type))
                 {

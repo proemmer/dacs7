@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Dacs7.Domain;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 
@@ -11,34 +12,42 @@ namespace Dacs7.Protocols.SiemensPlc
     /// Context class for the protocol instance
     /// Contains all properties for the protocol
     /// </summary>
-    public class SiemensPlcProtocolContext
+    internal class SiemensPlcProtocolContext
     {
+        private const int MinimumDataSize = 10;
+        private const int MinimumAckDetectionSize = MinimumDataSize + 2;
+        private const int PduTypeOffset = 1;
+        private const int AckDataFunctionCodeOffset = MinimumAckDetectionSize;
+        private const byte Prefix = 0x32;
 
-        public string Name { get; set; }
-        public ushort MaxParallelJobs { get; set; } = 10;
-        public ushort PduSize { get; set; } = 960;
+        public ushort MaxParallelJobs { get; set; } = 10; // -> used for negotiation
+        public ushort PduSize { get; set; } = 960;  // defautl pdu size -> used for negotiation
 
         public UInt16 ReadItemMaxLength { get { return (UInt16)(PduSize - 18); } }  //18 Header and some other data    // in the result message
         public UInt16 WriteItemMaxLength { get { return (UInt16)(PduSize - 28); } } //28 Header and some other data
 
-        public static readonly int MinimumDataSize = 10;
-        public static readonly int MinimumAckDetectionSize = MinimumDataSize + 2;
 
-        public bool OptimizeReadAccess { get; set; }
-        public bool OptimizeWriteAccess { get; set; }
+
+        public bool OptimizeReadAccess { get; set; }  // TODO: Not implemented yet
+        public bool OptimizeWriteAccess { get; set; } // TODO: Not implemented yet
+
+
+
+
+
 
         public bool TryDetectDatagramType(Memory<byte> memory, out Type datagramType)
         {
             if (memory.Length >= MinimumDataSize &&
-               memory.Span[0] == 0x32)
+               memory.Span[0] == Prefix)
             {
 
-                switch (memory.Span[1])  // PDU Type
+                switch ((PduType)memory.Span[PduTypeOffset])  // PDU Type
                 {
-                    case 0x01:  // JOB
+                    case PduType.Job:  // JOB
                         return TryDetectJobType(memory, out datagramType);
-                    case 0x03: // ACK
-                        return TryDetectAckType(memory, out datagramType);
+                    case PduType.AckData: // ACKData
+                        return TryDetectAckDataType(memory, out datagramType);
                 }
 
             }
@@ -46,28 +55,25 @@ namespace Dacs7.Protocols.SiemensPlc
             return false;
         }
 
-
         private bool TryDetectJobType(Memory<byte> memory, out Type datagramType)
         {
             datagramType = null;
             return false;
         }
 
-        private bool TryDetectAckType(Memory<byte> memory, out Type datagramType)
+        private bool TryDetectAckDataType(Memory<byte> memory, out Type datagramType)
         {
-            if (memory.Length > MinimumAckDetectionSize &&
-                memory.Span[0] == 0x32)
+            if (memory.Length > MinimumAckDetectionSize)
             {
-
-                switch (memory.Span[12])  // Function Type
+                switch ((FunctionCode)memory.Span[AckDataFunctionCodeOffset])  // Function Type
                 {
-                    case 0xf0:  // Setup communication
+                    case FunctionCode.SetupComm:  // Setup communication
                         datagramType = typeof(S7CommSetupAckDataDatagram);
                         return true;
-                    case 0x04:  // Read Var
+                    case FunctionCode.ReadVar:  // Read Var
                         datagramType = typeof(S7ReadJobAckDatagram);
                         return true;
-                    case 0x05:  // Write Var
+                    case FunctionCode.WriteVar:  // Write Var
                         datagramType = typeof(S7WriteJobAckDatagram);
                         return true;
                 }

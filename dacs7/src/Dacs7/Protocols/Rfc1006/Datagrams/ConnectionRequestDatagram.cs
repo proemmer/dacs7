@@ -7,11 +7,8 @@ using System.Linq;
 
 namespace Dacs7.Protocols.Rfc1006
 {
-    public class ConnectionRequestDatagram 
+    internal class ConnectionRequestDatagram 
     {
-        internal static ConnectionRequestDatagram Default = new ConnectionRequestDatagram();
-
-
         public TpktDatagram Tkpt { get; set; } = new TpktDatagram
         {
             Sync1 = 0x03,

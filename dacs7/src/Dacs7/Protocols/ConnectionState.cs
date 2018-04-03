@@ -1,6 +1,6 @@
 ﻿namespace Dacs7.Protocols
 {
-    public enum ConnectionState
+    internal enum ConnectionState
     {
         Closed,
         PendingOpenRfc1006,

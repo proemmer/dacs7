@@ -33,35 +33,15 @@ namespace Dacs7
             }).ToList();
         }
 
-        /// <summary>
-        /// This read opearation can be used for big data, because the partitioning is built-in.
-        /// </summary>
-        /// <param name="dbNumber">number of the datablock</param>
-        /// <param name="offset">offset in bytes in the datablock</param>
-        /// <param name="length">the length to read</param>
-        /// <returns>returns the data if read succeeded</returns>
-        public Task<Memory<byte>> ReadAsync(int dbNumber, int offset, int length)
-        {
-            return InternalReadData($"db{dbNumber}", offset, length);
-        }
 
         /// <summary>
         /// This read opearation can be used for big data, because the partitioning is built-in.
         /// </summary>
-        /// <param name="area">the <see cref="PlcArea"/> to read from (DB is not supported)</param>
+        /// <param name="area">Area to read from   (DB1, M, I, O, ...)</param>
         /// <param name="offset">offset in bytes in the datablock</param>
         /// <param name="length">the length to read</param>
         /// <returns>returns the data if read succeeded</returns>
-        public Task<Memory<byte>> ReadAsync(PlcArea area, int offset, int length)
-        {
-            return InternalReadData(FromArea(area), offset, length);
-        }
-
-
-
-
-
-        private async Task<Memory<byte>> InternalReadData(string area, int offset, int length)
+        public async Task<Memory<byte>> ReadAsync(string area, int offset, int length)
         {
             Memory<byte> result = Memory<byte>.Empty;
 

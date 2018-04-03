@@ -10,7 +10,7 @@ using System.Buffers;
 namespace Dacs7.Protocols.Rfc1006
 {
 
-    public class DataTransferDatagram
+    internal class DataTransferDatagram
     {
         public static byte EndOfTransmition = 0x80;
         internal static DataTransferDatagram Default = new DataTransferDatagram();

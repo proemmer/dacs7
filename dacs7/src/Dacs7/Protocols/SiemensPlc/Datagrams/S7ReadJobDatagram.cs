@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
-    public class S7ReadJobDatagram
+    internal class S7ReadJobDatagram
     {
 
         public S7HeaderDatagram Header { get; set; } = new S7HeaderDatagram

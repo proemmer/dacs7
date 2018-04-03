@@ -5,7 +5,7 @@ using System;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
-    public class S7ItemDataWriteResult
+    internal class S7DataItemWriteResult
     {
         public byte ReturnCode { get; set; }
 
@@ -14,7 +14,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
 
-        public static Memory<byte> TranslateToMemory(S7ItemDataWriteResult datagram, Memory<byte> memory)
+        public static Memory<byte> TranslateToMemory(S7DataItemWriteResult datagram, Memory<byte> memory)
         {
             var result = memory.IsEmpty ? new Memory<byte>(new byte[1]) : memory;  // check if we could use ArrayBuffer
             var span = result.Span;
@@ -24,10 +24,10 @@ namespace Dacs7.Protocols.SiemensPlc
             return result;
         }
 
-        public static S7ItemDataWriteResult TranslateFromMemory(Memory<byte> data)
+        public static S7DataItemWriteResult TranslateFromMemory(Memory<byte> data)
         {
             var span = data.Span;
-            var result = new S7ItemDataWriteResult
+            var result = new S7DataItemWriteResult
             {
                 ReturnCode = span[0]
             };

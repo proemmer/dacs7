@@ -7,7 +7,7 @@ using System.Buffers.Binary;
 namespace Dacs7.Protocols.SiemensPlc
 {
 
-    public class S7HeaderDatagram
+    internal class S7HeaderDatagram
     {
 
         public byte ProtocolId { get; set; } = 0x32;

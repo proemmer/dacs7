@@ -20,16 +20,32 @@ namespace Dacs7
         private SiemensPlcProtocolContext _s7Context;
         private ProtocolHandler _protocolHandler;
 
-
+        /// <summary>
+        /// True if the connection is fully applied
+        /// </summary>
         public bool IsConnected => _protocolHandler != null && _protocolHandler?.ConnectionState == ConnectionState.Opened;
 
+        /// <summary>
+        /// The negotiated pdu size.
+        /// </summary>
         public ushort PduSize => _s7Context != null ? _s7Context.PduSize : (ushort)0;
 
+        /// <summary>
+        /// The maximum read item length of a single telegram.
+        /// </summary>
         public ushort ReadItemMaxLength => _s7Context != null ? _s7Context.ReadItemMaxLength : (ushort)0;
 
+        /// <summary>
+        /// The maximum write item length of a single telegram.
+        /// </summary>
         public ushort WriteItemMaxLength => _s7Context != null ? _s7Context.PduSize : (ushort)0;
 
 
+        /// <summary>
+        /// Constructor of Dacs7Client
+        /// </summary>
+        /// <param name="address">The address of the plc  [IP or Hostname]:[Rack],[Slot]  where as rack and slot ar optional  default is Rack = 0, Slot = 2</param>
+        /// <param name="connectionType">The <see cref="PlcConnectionType"/> for the connection.</param>
         public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg)
         {
             var addressPort = address.Split(':');
@@ -180,13 +196,13 @@ namespace Dacs7
             {
                 return nodeId;
             }
-            return Create(tag);
+            return CreateFromTag(tag);
         }
 
 
 
 
-        private static ReadItemSpecification Create(string tag)
+        private static ReadItemSpecification CreateFromTag(string tag)
         {
             var parts = tag.Split(new[] { ',' });
             var start = parts[0].Split(new[] { '.' });
@@ -196,20 +212,9 @@ namespace Dacs7
             ushort offset = UInt16.Parse(start.Last());
             ushort db = 0;
 
-            // TODO: support othe mnemonics
-            switch (start[withPrefix ? 1 : 0].ToUpper())
+            if (!TryDetectArea(start[withPrefix ? 1 : 0], ref selector, ref db))
             {
-                case "I": selector = PlcArea.IB; break;
-                case "M": selector = PlcArea.FB; break;
-                case "A": selector = PlcArea.QB; break;
-                case "T": selector = PlcArea.TM; break;
-                case "C": selector = PlcArea.CT; break;
-                case var s when Regex.IsMatch(s, "^DB\\d+$"):
-                    {
-                        selector = PlcArea.DB;
-                        db = UInt16.Parse(s.Substring(2));
-                        break;
-                    }
+                throw new ArgumentException($"Invalid area in tag <{tag}>");
             }
 
             if (parts.Length > 2)
@@ -217,9 +222,24 @@ namespace Dacs7
                 length = UInt16.Parse(parts[2]);
             }
 
-            Type vtype = typeof(object);
-            Type rType = typeof(object);
-            switch (parts[1].ToLower())
+            offset = DetectTypes(parts[1], length, offset, out Type vtype, out Type rType);
+
+            return new ReadItemSpecification
+            {
+                Area = selector,
+                DbNumber = db,
+                Offset = offset,
+                Length = length,
+                VarType = vtype,
+                ResultType = rType
+            };
+        }
+
+        private static ushort DetectTypes(string type, ushort length, ushort offset, out Type vtype, out Type rType)
+        {
+            vtype = typeof(object);
+            rType = typeof(object);
+            switch (type.ToLower())
             {
                 case "b":
                     vtype = typeof(byte);
@@ -260,31 +280,43 @@ namespace Dacs7
                     break;
             }
 
-
-
-            return new ReadItemSpecification
-            {
-                Area = selector,
-                DbNumber = db,
-                Offset = offset,
-                Length = length,
-                VarType = vtype,
-                ResultType = rType
-            };
+            return offset;
         }
 
-        private static string FromArea(PlcArea area)
+        private static bool TryDetectArea(string area, ref PlcArea selector, ref ushort db)
         {
-            // TODO: support othe mnemonics
-            switch (area)
+            switch (area.ToUpper())
             {
-                case PlcArea.IB: return "I";
-                case PlcArea.FB: return "M";
-                case PlcArea.QB: return "A";
-                case PlcArea.TM: return "T";
-                case PlcArea.CT: return "C";
+                // Inputs
+                case "I": selector = PlcArea.IB; break;  // English
+                case "E": selector = PlcArea.IB; break;  // German
+                
+                // Marker
+                case "M": selector = PlcArea.FB; break;  // English and German
+
+                // Ouputs
+                case "Q": selector = PlcArea.QB; break;  // English
+                case "A": selector = PlcArea.QB; break;  // German
+
+                // Timer
+                case "T": selector = PlcArea.TM; break;  // English and German
+
+                // Counter
+                case "C": selector = PlcArea.CT; break;  // English
+                case "Z": selector = PlcArea.CT; break;  // German
+
+                // Datablocks
+                case var s when Regex.IsMatch(s, "^DB\\d+$", RegexOptions.IgnoreCase):
+                    {
+                        selector = PlcArea.DB;
+                        db = UInt16.Parse(s.Substring(2));
+                        break;
+                    }
+
+                default: return false;
             }
-            throw new InvalidOperationException();
+
+            return true;
         }
 
         private static string CalculateByteArrayTag(string area, int offset, int length)

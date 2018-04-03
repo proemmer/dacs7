@@ -5,7 +5,7 @@ using System;
 
 namespace Dacs7.Protocols.Rfc1006
 {
-    public class TpktDatagram
+    internal class TpktDatagram
     {
         public byte Sync1 { get; set; }
         public byte Sync2 { get; set; }

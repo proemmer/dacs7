@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace Dacs7.Protocols.SiemensPlc
 {
 
-    public class S7WriteJobAckDatagram
+    internal class S7WriteJobAckDatagram
     {
 
         public S7AckDataDatagram Header { get; set; } = new S7AckDataDatagram();
@@ -19,7 +19,7 @@ namespace Dacs7.Protocols.SiemensPlc
         public byte ItemCount { get; set; } = 0x00;
 
 
-        public List<S7ItemDataWriteResult> Data { get; set; } = new List<S7ItemDataWriteResult>();
+        public List<S7DataItemWriteResult> Data { get; set; } = new List<S7DataItemWriteResult>();
 
 
 
@@ -36,7 +36,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
             foreach (var item in datagram.Data)
             {
-                S7ItemDataWriteResult.TranslateToMemory(item, result.Slice(offset));
+                S7DataItemWriteResult.TranslateToMemory(item, result.Slice(offset));
                 offset += item.GetSpecificationLength();
             }
 
@@ -56,7 +56,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
             for (int i = 0; i < result.ItemCount; i++)
             {
-                var res = S7ItemDataWriteResult.TranslateFromMemory(data.Slice(offset));
+                var res = S7DataItemWriteResult.TranslateFromMemory(data.Slice(offset));
                 result.Data.Add(res);
                 offset += res.GetSpecificationLength();
             }
