@@ -40,7 +40,7 @@ namespace Dacs7.Domain
         OctetString = 9 /* octet string, length is in bytes */
     }
 
-    public static class TransportSizeHelper
+    internal static class TransportSizeHelper
     {
         public static byte DataTypeToTransportSize(Type t)
         {

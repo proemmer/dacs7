@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Dacs7")]
-[assembly: AssemblyDescription("Dacs7 (Data Access S7) is a library to communicate with a Siemens S7 and TIA PLC.")]
+[assembly: AssemblyDescription("Library to communicate with Step7")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("insite GmbH")]
 [assembly: AssemblyProduct("Dacs7")]
-[assembly: AssemblyCopyright("Copyright © Benjamin Proemmer 2016-2018")]
+[assembly: AssemblyCopyright("Copyright © insite GmbH 2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
