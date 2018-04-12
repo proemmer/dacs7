@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Dacs7.Protocols.SiemensPlc;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,24 +16,38 @@ namespace Dacs7
         /// <returns>returns a enumerable with the read values</returns>
         public Task<IEnumerable<object>> ReadAsync(params string[] values) => ReadAsync(values as IEnumerable<string>);
 
+        /// <summary>
+        /// Reads data from the plc.
+        /// </summary>
+        /// <param name="values">a list of <see cref="ReadItemSpecification"/></param>
+        /// <returns>returns a enumerable with the read values</returns>
+        public Task<IEnumerable<object>> ReadAsync(params ReadItemSpecification[] values) => ReadAsync(values as IEnumerable<ReadItemSpecification>);
 
         /// <summary>
         /// Reads data from the plc.
         /// </summary>
         /// <param name="values">a list of tags with the following syntax Area.Offset,DataType[,length]</param>
         /// <returns>returns a enumerable with the read values</returns>
-        public async Task<IEnumerable<object>> ReadAsync(IEnumerable<string> values)
+        public Task<IEnumerable<object>> ReadAsync(IEnumerable<string> values)
         {
-            var items = CreateNodeIdCollection(values);
-            var result = await _protocolHandler.ReadAsync(items);
-            var enumerator = items.GetEnumerator();
+            return ReadAsync(CreateNodeIdCollection(values));
+        }
+
+        /// <summary>
+        /// Reads data from the plc.
+        /// </summary>
+        /// <param name="values">a list of <see cref="ReadItemSpecification"/></param>
+        /// <returns>returns a enumerable with the read values</returns>
+        public async Task<IEnumerable<object>> ReadAsync(IEnumerable<ReadItemSpecification> values)
+        {
+            var result = await _protocolHandler.ReadAsync(values);
+            var enumerator = values.GetEnumerator();
             return result.Select(value =>
             {
                 enumerator.MoveNext();
-                return ConvertMemoryToData(enumerator.Current, value.Data);
+                return ReadItemSpecification.ConvertMemoryToData(enumerator.Current, value.Data);
             }).ToList();
         }
-
 
         /// <summary>
         /// This read opearation can be used for big data, because the partitioning is built-in.

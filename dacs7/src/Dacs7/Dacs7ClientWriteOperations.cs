@@ -18,11 +18,28 @@ namespace Dacs7
         /// <summary>
         /// Writes data from the plc.
         /// </summary>
+        /// <param name="values">a list of <see cref="WriteItemSpecification"/>.</param>
+        /// <returns>returns a enumerable with the write result, 0xFF = Success</returns>
+        public Task<IEnumerable<byte>> WriteAsync(params WriteItemSpecification[] values) => WriteAsync(values as IEnumerable<WriteItemSpecification);
+
+        /// <summary>
+        /// Writes data from the plc.
+        /// </summary>
         /// <param name="values">a list of tags with the following syntax Area.Offset,DataType[,length]</param>
         /// <returns>returns a enumerable with the write result, 0xFF = Success</returns>
         public Task<IEnumerable<byte>> WriteAsync(IEnumerable<KeyValuePair<string, object>> values)
         {
-            var items = CreateWriteNodeIdCollection(values);
+            return WriteAsync(CreateWriteNodeIdCollection(values));
+        }
+
+
+        /// <summary>
+        /// Writes data from the plc.
+        /// </summary>
+        /// <param name="values">a list of <see cref="WriteItemSpecification"/>.</param>
+        /// <returns>returns a enumerable with the write result, 0xFF = Success</returns>
+        public Task<IEnumerable<byte>> WriteAsync(IEnumerable<WriteItemSpecification> items)
+        {
             return _protocolHandler.WriteAsync(items);
         }
 

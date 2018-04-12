@@ -166,20 +166,19 @@ namespace Dacs7
             {
                 _registeredTags.Add(item.Key, item.Value);
             }
-
         }
 
-        private List<ReadItemSpecification> CreateNodeIdCollection(IEnumerable<string> values)
+        private IEnumerable<ReadItemSpecification> CreateNodeIdCollection(IEnumerable<string> values)
         {
             return new List<ReadItemSpecification>(values.Select(item => RegisteredOrGiven(item)));
         }
 
-        private List<WriteItemSpecification> CreateWriteNodeIdCollection(IEnumerable<KeyValuePair<string, object>> values)
+        private IEnumerable<WriteItemSpecification> CreateWriteNodeIdCollection(IEnumerable<KeyValuePair<string, object>> values)
         {
             return new List<WriteItemSpecification>(values.Select(item =>
             {
                 var result = RegisteredOrGiven(item.Key).Clone();
-                result.Data = ConvertDataToMemory(result, item.Value);
+                result.Data = WriteItemSpecification.ConvertDataToMemory(result, item.Value);
                 return result;
             }));
         }
@@ -190,248 +189,12 @@ namespace Dacs7
             {
                 return nodeId;
             }
-            return CreateFromTag(tag);
-        }
-
-
-
-
-        private static ReadItemSpecification CreateFromTag(string tag)
-        {
-            var parts = tag.Split(new[] { ',' });
-            var start = parts[0].Split(new[] { '.' });
-            var withPrefix = start.Length == 3;
-            PlcArea selector = 0;
-            ushort length = 1;
-            ushort offset = UInt16.Parse(start.Last());
-            ushort db = 0;
-
-            if (!TryDetectArea(start[withPrefix ? 1 : 0], ref selector, ref db))
-            {
-                throw new ArgumentException($"Invalid area in tag <{tag}>");
-            }
-
-            if (parts.Length > 2)
-            {
-                length = UInt16.Parse(parts[2]);
-            }
-
-            offset = DetectTypes(parts[1], length, offset, out Type vtype, out Type rType);
-
-            return new ReadItemSpecification
-            {
-                Area = selector,
-                DbNumber = db,
-                Offset = offset,
-                Length = length,
-                VarType = vtype,
-                ResultType = rType
-            };
-        }
-
-        private static ushort DetectTypes(string type, ushort length, ushort offset, out Type vtype, out Type rType)
-        {
-            vtype = typeof(object);
-            rType = typeof(object);
-            switch (type.ToLower())
-            {
-                case "b":
-                    vtype = typeof(byte);
-                    rType = length > 1 ? typeof(byte[]) : vtype;
-                    break;
-                case "c":
-                    vtype = typeof(char);
-                    rType = length > 1 ? typeof(char[]) : vtype;
-                    break;
-                case "w":
-                    vtype = typeof(UInt16);
-                    rType = length > 1 ? typeof(UInt16[]) : vtype;
-                    break;
-                case "dw":
-                    vtype = typeof(UInt32);
-                    rType = length > 1 ? typeof(UInt32[]) : vtype;
-                    break;
-                case "i":
-                    vtype = typeof(Int16);
-                    rType = length > 1 ? typeof(Int16[]) : vtype;
-                    break;
-                case "di":
-                    vtype = typeof(Int32);
-                    rType = length > 1 ? typeof(Int32[]) : vtype;
-                    break;
-                case "r":
-                    vtype = typeof(Single);
-                    rType = length > 1 ? typeof(Single[]) : vtype;
-                    break;
-                case "s":
-                    vtype = typeof(string);
-                    rType = length > 1 ? typeof(string[]) : vtype;
-                    break;
-                case var s when Regex.IsMatch(s, "^x\\d+$"):
-                    vtype = typeof(bool);
-                    rType = length > 1 ? typeof(bool[]) : vtype;
-                    offset = (ushort)((offset * 8) + UInt16.Parse(s.Substring(1)));
-                    break;
-            }
-
-            return offset;
-        }
-
-        private static bool TryDetectArea(string area, ref PlcArea selector, ref ushort db)
-        {
-            switch (area.ToUpper())
-            {
-                // Inputs
-                case "I": selector = PlcArea.IB; break;  // English
-                case "E": selector = PlcArea.IB; break;  // German
-                
-                // Marker
-                case "M": selector = PlcArea.FB; break;  // English and German
-
-                // Ouputs
-                case "Q": selector = PlcArea.QB; break;  // English
-                case "A": selector = PlcArea.QB; break;  // German
-
-                // Timer
-                case "T": selector = PlcArea.TM; break;  // English and German
-
-                // Counter
-                case "C": selector = PlcArea.CT; break;  // English
-                case "Z": selector = PlcArea.CT; break;  // German
-
-                // Datablocks
-                case var s when Regex.IsMatch(s, "^DB\\d+$", RegexOptions.IgnoreCase):
-                    {
-                        selector = PlcArea.DB;
-                        db = UInt16.Parse(s.Substring(2));
-                        break;
-                    }
-
-                default: return false;
-            }
-
-            return true;
+            return ReadItemSpecification.CreateFromTag(tag);
         }
 
         private static string CalculateByteArrayTag(string area, int offset, int length)
         {
             return $"{area}.{offset},b,{length}";
-        }
-
-        private static Memory<byte> ConvertDataToMemory(WriteItemSpecification item, object data)
-        {
-            if (data is string && item.ResultType != typeof(string))
-                data = Convert.ChangeType(data, item.ResultType);
-
-            switch (data)
-            {
-                case byte b:
-                    return new byte[] { b };
-                case byte[] ba:
-                    return ba;
-                case Memory<byte> ba:
-                    return ba;
-                case char c:
-                    return new byte[] { Convert.ToByte(c) };
-                case char[] ca:
-                    return ca.Select(x => Convert.ToByte(x)).ToArray();
-                case string s:
-                    {
-                        Memory<byte> result = new byte[s.Length + 2];
-                        result.Span[0] = (byte)s.Length;
-                        result.Span[1] = (byte)s.Length;
-                        Encoding.ASCII.GetBytes(s).AsSpan().CopyTo(result.Span.Slice(2));
-                        return result;
-                    }
-                case Int16 i16:
-                    {
-                        Memory<byte> result = new byte[2];
-                        BinaryPrimitives.WriteInt16BigEndian(result.Span, i16);
-                        return result;
-                    }
-                case UInt16 ui16:
-                    {
-                        Memory<byte> result = new byte[2];
-                        BinaryPrimitives.WriteUInt16BigEndian(result.Span, ui16);
-                        return result;
-                    }
-                case Int32 i32:
-                    {
-                        Memory<byte> result = new byte[4];
-                        BinaryPrimitives.WriteInt32BigEndian(result.Span, i32);
-                        return result;
-                    }
-                case UInt32 ui32:
-                    {
-                        Memory<byte> result = new byte[4];
-                        BinaryPrimitives.WriteUInt32BigEndian(result.Span, ui32);
-                        return result;
-                    }
-                case Int64 i64:
-                    {
-                        Memory<byte> result = new byte[8];
-                        BinaryPrimitives.WriteInt64BigEndian(result.Span, i64);
-                        return result;
-                    }
-                case UInt64 ui64:
-                    {
-                        Memory<byte> result = new byte[8];
-                        BinaryPrimitives.WriteUInt64BigEndian(result.Span, ui64);
-                        return result;
-                    }
-            }
-            throw new InvalidCastException();
-        }
-
-        private static object ConvertMemoryToData(ReadItemSpecification item, Memory<byte> data)
-        {
-
-            if (item.ResultType == typeof(byte))
-            {
-                return data.Span[0];
-            }
-            else if (item.ResultType == typeof(byte[]) || item.ResultType == typeof(Memory<byte>))
-            {
-                return data;
-            }
-            else if (item.ResultType == typeof(char))
-            {
-                return Convert.ToChar(data.Span[0]);
-            }
-            else if (item.ResultType == typeof(char[]) || item.ResultType == typeof(Memory<char>))
-            {
-                return null; // TODO
-            }
-            else if (item.ResultType == typeof(string))
-            {
-                var length = data.Span[1];
-                return Encoding.ASCII.GetString(data.Span.Slice(2, length).ToArray());
-            }
-            else if (item.ResultType == typeof(Int16))
-            {
-                return BinaryPrimitives.ReadInt16BigEndian(data.Span);
-            }
-            else if (item.ResultType == typeof(UInt16))
-            {
-                return BinaryPrimitives.ReadUInt16BigEndian(data.Span);
-            }
-            else if (item.ResultType == typeof(Int32))
-            {
-                return BinaryPrimitives.ReadInt32BigEndian(data.Span);
-            }
-            else if (item.ResultType == typeof(UInt32))
-            {
-                return BinaryPrimitives.ReadUInt32BigEndian(data.Span);
-            }
-            else if (item.ResultType == typeof(Int64))
-            {
-                return BinaryPrimitives.ReadInt64BigEndian(data.Span);
-            }
-            else if (item.ResultType == typeof(UInt64))
-            {
-                return BinaryPrimitives.ReadUInt64BigEndian(data.Span);
-            }
-            throw new InvalidCastException();
         }
 
     }
