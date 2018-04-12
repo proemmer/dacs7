@@ -1,8 +1,6 @@
-﻿using Dacs7.Domain;
-using System;
+﻿using System;
 using Dacs7.Helper;
 using System.Globalization;
-using System.Reflection;
 
 namespace Dacs7
 {
