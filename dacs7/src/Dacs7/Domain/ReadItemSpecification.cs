@@ -1,6 +1,7 @@
 ﻿// Copyright (c) insite-gmbh. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
+using Dacs7.Protocols.SiemensPlc;
 using System;
 using System.Buffers.Binary;
 using System.Linq;
@@ -11,6 +12,8 @@ namespace Dacs7
 {
     public class ReadItemSpecification
     {
+        private int _bytesInDatagram = 0;
+
         public PlcArea Area { get; private set; }
         public ushort DbNumber { get; private set; }
         public ushort Offset { get; private set; }
@@ -21,6 +24,7 @@ namespace Dacs7
 
 
         internal int CallbackReference { get; set; }
+        internal int BytesInDatagram => _bytesInDatagram == 0 ? _bytesInDatagram = Math.Max(SiemensPlcProtocolContext.ReadItemSize, Length + SiemensPlcProtocolContext.ReadItemAckHeader) : _bytesInDatagram;  // 12 for request,  item.Length + 4 for response
 
 
         internal ReadItemSpecification()

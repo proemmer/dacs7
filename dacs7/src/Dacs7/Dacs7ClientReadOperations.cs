@@ -1,5 +1,4 @@
-﻿using Dacs7.Protocols.SiemensPlc;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -28,10 +27,7 @@ namespace Dacs7
         /// </summary>
         /// <param name="values">a list of tags with the following syntax Area.Offset,DataType[,length]</param>
         /// <returns>returns a enumerable with the read values</returns>
-        public Task<IEnumerable<object>> ReadAsync(IEnumerable<string> values)
-        {
-            return ReadAsync(CreateNodeIdCollection(values));
-        }
+        public Task<IEnumerable<object>> ReadAsync(IEnumerable<string> values) => ReadAsync(CreateNodeIdCollection(values));
 
         /// <summary>
         /// Reads data from the plc.

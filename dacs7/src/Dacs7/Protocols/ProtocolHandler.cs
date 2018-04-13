@@ -1,4 +1,5 @@
 ﻿using Dacs7.Communication;
+using Dacs7.Helper;
 using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
 using System;
@@ -99,49 +100,174 @@ namespace Dacs7.Protocols
             if (ConnectionState != ConnectionState.Opened)
                 throw new Dacs7NotConnectedException();
 
-            var id = GetNextReferenceId();
+            
             CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh;
             SocketError errorCode = SocketError.NoData;
-
 
             if(_s7Context.OptimizeReadAccess && _concurrentJobs.CurrentCount == 0)
             {
                 // TODO: optimization if we have no semaphore we can collect the read data and send them in a single request
             }
 
-
-            var sendData = DataTransferDatagram.TranslateToMemory(
-                                DataTransferDatagram.Build(_context,
-                                        S7ReadJobDatagram.TranslateToMemory(
-                                            S7ReadJobDatagram.BuildRead(_s7Context, id, vars))).FirstOrDefault());
-            
-
-            await _concurrentJobs.WaitAsync();
-            try
+            var result = vars.ToDictionary(x => x, x => null as S7DataItemSpecification);
+            foreach (var normalized in CreatePackages(_s7Context, vars))
             {
-                cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
-                _readHandler.TryAdd(cbh.Id, cbh);
-                errorCode = await _socket.SendAsync(sendData);
+                var id = GetNextReferenceId();
+                var sendData = DataTransferDatagram.TranslateToMemory(
+                                    DataTransferDatagram.Build(_context,
+                                            S7ReadJobDatagram.TranslateToMemory(
+                                                S7ReadJobDatagram.BuildRead(_s7Context, id, normalized.Items))).FirstOrDefault());
+
+
+                using (await SemaphoreGuard.Async(_concurrentJobs))
+                {
+                    cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
+                    _readHandler.TryAdd(cbh.Id, cbh);
+                    errorCode = await _socket.SendAsync(sendData);
+                }
+
+
+                if (errorCode != SocketError.Success)
+                    return new List<S7DataItemSpecification>();
+
+                try
+                {
+                    var items = normalized.Items.GetEnumerator();
+                    foreach (var item in await cbh.Event.WaitAsync(_timeout))
+                    {
+                        if(items.MoveNext())
+                        {
+                            result[items.Current] = item;
+                        }
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    throw new TimeoutException();
+                }
             }
-            finally
+            return result.Values;
+
+        }
+
+
+        private class Package
+        {
+            private int _maxSize;
+            private bool _returned;
+
+            private ReadItemSpecification _parent = null;
+            private List<ReadItemSpecification> _items = new List<ReadItemSpecification>();
+
+            public bool IsPart => _parent != null;
+
+            public bool Handled => _returned;
+
+            public bool Full => Free < SiemensPlcProtocolContext.ReadItemSize;
+
+            public int Size { get; set; }
+
+            public int Free => _maxSize - Size;
+
+            public IEnumerable<ReadItemSpecification> Items => _items;
+
+            public Package(int maxSize, ReadItemSpecification parent = null)
             {
-                _concurrentJobs.Release();
-            }
+                _maxSize = maxSize;
+                _parent = parent;
+        }
 
-
-            if (errorCode != SocketError.Success)
-                return new List<S7DataItemSpecification>();
-
-            try
+            public Package Return()
             {
-                return await cbh.Event.WaitAsync(_timeout);
+                _returned = true;
+                return this;
             }
-            catch(TaskCanceledException)
+
+            public bool TryAdd(ReadItemSpecification item)
             {
-                throw new TimeoutException();
+                var size = item.BytesInDatagram;  // 12 for request,  item.Length + 4 for response
+                if (Free >= size)
+                {
+                    _items.Add(item);
+                    Size += size;
+                    return true;
+                }
+                return false;
             }
+        }
+
+        private IEnumerable<Package> CreatePackages(SiemensPlcProtocolContext s7Context, IEnumerable<ReadItemSpecification> vars)
+        {
+            var result = new List<Package> { new Package(s7Context.ReadItemMaxLength) };
+            foreach (var item in vars.ToList().OrderByDescending(x => x.Length))
+            {
+                var currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
+                if (currentPackage == null)
+                {
+                    if (item.Length > s7Context.ReadItemMaxLength)
+                    {
+                        currentPackage = new Package(s7Context.ReadItemMaxLength, item);
+                        result.Add(currentPackage);
+
+                        // handle big items as byte array and convert them back if needed!!!!!!!!
 
 
+                        //var bytesToRead = item.Length;
+                        //var processed = 0;
+                        //while (bytesToRead > 0)
+                        //{
+                        //    var slice = Math.Min(_s7Context.ReadItemMaxLength, bytesToRead);
+                        //    if (bytesToRead == item.Length && slice != item.Length)
+                        //    {
+                        //        result = new byte[item.Length];
+                        //    }
+
+                        //    Memory<byte> partResult = (Memory<byte>)(await ReadAsync(CalculateByteArrayTag(area, offset + processed, slice))).FirstOrDefault();
+
+                        //    if (result.IsEmpty)
+                        //    {
+                        //        result = partResult;
+                        //    }
+                        //    else
+                        //    {
+                        //        partResult.CopyTo(result.Slice(processed));
+                        //    }
+
+                        //    processed += slice;
+                        //    bytesToRead -= slice;
+                        //}
+
+                        // TODO: Handle to big items!!!!
+                        throw new NotSupportedException();
+                    }
+                    else
+                    {
+                        currentPackage = new Package(s7Context.ReadItemMaxLength);
+                        result.Add(currentPackage);
+                        if (!currentPackage.TryAdd(item))
+                        {
+                            throw new InvalidOperationException();
+                        }
+                    }
+                }
+
+                if (currentPackage != null)
+                {
+                    if(currentPackage.Full)
+                    {
+                        yield return currentPackage.Return();
+                    }
+
+                    if(currentPackage.Handled)
+                    {
+                        result.Remove(currentPackage);
+                    }
+                }
+            }
+            foreach (var package in result)
+            {
+                yield return package.Return();
+            }
         }
 
         public async Task<IEnumerable<byte>> WriteAsync(IEnumerable<WriteItemSpecification> vars)

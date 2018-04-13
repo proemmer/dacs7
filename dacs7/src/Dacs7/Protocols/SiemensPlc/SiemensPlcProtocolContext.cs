@@ -1,10 +1,5 @@
 ﻿using Dacs7.Domain;
-using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-
-// Copyright (c) insite-gmbh. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
 namespace Dacs7.Protocols.SiemensPlc
 {
@@ -20,8 +15,21 @@ namespace Dacs7.Protocols.SiemensPlc
         private const int AckDataFunctionCodeOffset = MinimumAckDetectionSize;
         private const byte Prefix = 0x32;
 
+        public const int ReadHeader = 10;        // header for each telegram
+        public const int ReadParameter = 2;     // header for each telegram
+        public const int ReadItemSize = 12;      // lenght for each address specification
+
+        public const int ReadAckHeader = 12;     // 12 Header   (ACK Header)
+        public const int ReadAckParameter = 2;      // header for each telegram
+        public const int ReadItemAckHeader = 4;  // header for each telegram
+
+
+        public const int WriteItemHeader = 28; // 28 Header and some other data
+
         public ushort MaxParallelJobs { get; set; } = 10; // -> used for negotiation
         public ushort PduSize { get; set; } = 960;  // defautl pdu size -> used for negotiation
+
+
 
         public UInt16 ReadItemMaxLength { get { return (UInt16)(PduSize - 18); } }  //18 Header and some other data    // in the result message
         public UInt16 WriteItemMaxLength { get { return (UInt16)(PduSize - 28); } } //28 Header and some other data
