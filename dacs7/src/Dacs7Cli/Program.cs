@@ -198,7 +198,10 @@ namespace Dacs7Cli
                             }
                         }
                     }
-                    catch (Exception) { }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogError($"Exception in loop {ex.Message}.");
+                    }
                 }
 
                 if (readOptions.Loops > 0)

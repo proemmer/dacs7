@@ -12,8 +12,6 @@ namespace Dacs7
 {
     public class ReadItemSpecification
     {
-        private int _bytesInDatagram = 0;
-
         public PlcArea Area { get; private set; }
         public ushort DbNumber { get; private set; }
         public ushort Offset { get; private set; }
@@ -24,8 +22,8 @@ namespace Dacs7
 
 
         internal int CallbackReference { get; set; }
-        internal int BytesInDatagram => _bytesInDatagram == 0 ? _bytesInDatagram = Math.Max(SiemensPlcProtocolContext.ReadItemSize, Length + SiemensPlcProtocolContext.ReadItemAckHeader) : _bytesInDatagram;  // 12 for request,  item.Length + 4 for response
-
+        internal ReadItemSpecification Parent { get; set; }
+        internal bool IsPart => Parent != null;
 
         internal ReadItemSpecification()
         {
@@ -124,6 +122,27 @@ namespace Dacs7
         }
 
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="area">Where to read:  e.g.  DB1  or M or...</param>
+        /// <param name="offset">offset in bytes, if you address booleans, you have to pass the address in bits (byteoffset * 8 + bitoffset)</param>
+        /// <param name="length">The number of items to read</param>
+        /// <returns></returns>
+        public static ReadItemSpecification CreateChild(ReadItemSpecification item, ushort offset, ushort length)
+        {
+            return new ReadItemSpecification
+            {
+                Area = item.Area,
+                DbNumber = item.DbNumber,
+                Offset = offset,
+                Length = length,
+                VarType = item.VarType,
+                ResultType = item.ResultType,
+                Parent = item
+            };
+        }
 
 
 

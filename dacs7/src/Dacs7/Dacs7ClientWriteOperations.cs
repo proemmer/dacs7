@@ -67,5 +67,17 @@ namespace Dacs7
 
             return 0xFF;
         }
+
+
+
+
+
+
+
+
+
+
+
+
     }
 }

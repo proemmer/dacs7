@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dacs7
@@ -78,13 +79,16 @@ namespace Dacs7
 
         }
 
+
+
+
         /// <summary>
         /// Connect to the plc
         /// </summary>
         /// <returns></returns>
         public async Task ConnectAsync()
         {
-            await _protocolHandler.OpenAsync();
+            await _protocolHandler?.OpenAsync();
         }
 
         /// <summary>
@@ -93,79 +97,21 @@ namespace Dacs7
         /// <returns></returns>
         public async Task DisconnectAsync()
         {
-            await _protocolHandler.CloseAsync();
+            await _protocolHandler?.CloseAsync();
         }
 
 
 
-        /// <summary>
-        /// Register shortcuts
-        /// </summary>
-        /// <param name="values"></param>
-        /// <returns>Returns the registered shortcuts</returns>
-        public async Task<IEnumerable<string>> RegisterAsync(params string[] values) => await RegisterAsync(values as IEnumerable<string>);
 
-        /// <summary>
-        /// Register shortcuts
-        /// </summary>
-        /// <param name="values"></param>
-        /// <returns></returns>
-        public async Task<IEnumerable<string>> RegisterAsync(IEnumerable<string> values)
+
+
+        private ReadItemSpecification RegisteredOrGiven(string tag)
         {
-            var added = new List<KeyValuePair<string, ReadItemSpecification>>();
-            var enumerator = values.GetEnumerator();
-            var resList = CreateNodeIdCollection(values).Select(x =>
+            if (_registeredTags.TryGetValue(tag, out var nodeId))
             {
-                enumerator.MoveNext();
-                added.Add(new KeyValuePair<string, ReadItemSpecification>(enumerator.Current, x));
-                return x.ToString();
-            }).ToList();
-            AddRegisteredTag(added);
-            return await Task.FromResult(resList);
-        }
-
-        /// <summary>
-        /// Remove shortcuts
-        /// </summary>
-        /// <param name="values"></param>
-        /// <returns></returns>
-        public async Task<IEnumerable<string>> UnregisterAsync(params string[] values)
-        {
-            return await UnregisterAsync(values as IEnumerable<string>);
-        }
-
-        /// <summary>
-        /// Remove shortcuts
-        /// </summary>
-        /// <param name="values"></param>
-        /// <returns></returns>
-        public async Task<IEnumerable<string>> UnregisterAsync(IEnumerable<string> values)
-        {
-            var result = new List<string>();
-            foreach (var item in values)
-            {
-                if (_registeredTags.Remove(item))
-                    result.Add(item);
+                return nodeId;
             }
-
-            return await Task.FromResult(result);
-
-        }
-
-        /// <summary>
-        /// Retruns true if the given tag is already registred
-        /// </summary>
-        /// <param name="tag"></param>
-        /// <returns></returns>
-        public bool IsTagRegistered(string tag) => _registeredTags.ContainsKey(tag);
-
-
-        private void AddRegisteredTag(IEnumerable<KeyValuePair<string, ReadItemSpecification>> tags)
-        {
-            foreach (var item in tags)
-            {
-                _registeredTags.Add(item.Key, item.Value);
-            }
+            return ReadItemSpecification.CreateFromTag(tag);
         }
 
         private IEnumerable<ReadItemSpecification> CreateNodeIdCollection(IEnumerable<string> values)
@@ -183,19 +129,23 @@ namespace Dacs7
             }));
         }
 
-        private ReadItemSpecification RegisteredOrGiven(string tag)
-        {
-            if (_registeredTags.TryGetValue(tag, out var nodeId))
-            {
-                return nodeId;
-            }
-            return ReadItemSpecification.CreateFromTag(tag);
-        }
-
         private static string CalculateByteArrayTag(string area, int offset, int length)
         {
             return $"{area}.{offset},b,{length}";
         }
 
+        private void UpdateRegistration(List<KeyValuePair<string, ReadItemSpecification>> toAdd, List<KeyValuePair<string, ReadItemSpecification>> toRemove)
+        {
+            Dictionary<string, ReadItemSpecification> origin;
+            Dictionary<string, ReadItemSpecification> newDict;
+            do
+            {
+                origin = _registeredTags;
+                var tmp = origin as IEnumerable<KeyValuePair<string, ReadItemSpecification>>;
+                if(toAdd != null) tmp = tmp.Union(toAdd);
+                if (toRemove != null) tmp = tmp.Except(toRemove);
+                newDict = tmp.ToDictionary(pair => pair.Key, pair => pair.Value);
+            } while (Interlocked.CompareExchange(ref _registeredTags, newDict, origin) != origin);
+        }
     }
 }

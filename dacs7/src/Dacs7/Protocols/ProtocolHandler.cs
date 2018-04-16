@@ -14,7 +14,7 @@ namespace Dacs7.Protocols
 {
 
 
-    internal class ProtocolHandler
+    internal partial class ProtocolHandler
     {
         private ConnectionState _connectionState = ConnectionState.Closed;
         private ClientSocket _socket;
@@ -119,25 +119,53 @@ namespace Dacs7.Protocols
                                                 S7ReadJobDatagram.BuildRead(_s7Context, id, normalized.Items))).FirstOrDefault());
 
 
-                using (await SemaphoreGuard.Async(_concurrentJobs))
-                {
-                    cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
-                    _readHandler.TryAdd(cbh.Id, cbh);
-                    errorCode = await _socket.SendAsync(sendData);
-                }
-
-
-                if (errorCode != SocketError.Success)
-                    return new List<S7DataItemSpecification>();
-
                 try
                 {
-                    var items = normalized.Items.GetEnumerator();
-                    foreach (var item in await cbh.Event.WaitAsync(_timeout))
+                    IEnumerable<S7DataItemSpecification> readResults = null;
+                    using (await SemaphoreGuard.Async(_concurrentJobs))
                     {
-                        if(items.MoveNext())
+                        cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
+                        _readHandler.TryAdd(cbh.Id, cbh);
+                        errorCode = await _socket.SendAsync(sendData);
+
+                        if (errorCode != SocketError.Success)
+                            return new List<S7DataItemSpecification>();
+
+
+                        readResults = await cbh.Event.WaitAsync(_timeout);
+                    }
+
+                    if (readResults == null)
+                    {
+                        throw new TimeoutException();
+                    }
+
+                    var items = normalized.Items.GetEnumerator();
+                    foreach (var item in readResults)
+                    {
+                        if (items.MoveNext())
                         {
-                            result[items.Current] = item;
+                            if (items.Current.IsPart)
+                            {
+                                if (result.TryGetValue(items.Current.Parent, out var parent))
+                                {
+                                    parent = new S7DataItemSpecification
+                                    {
+                                        TransportSize = item.TransportSize,
+                                        Length = items.Current.Parent.Length,
+                                        Data = new byte[items.Current.Parent.Length]
+                                    };
+                                    result[items.Current.Parent] = parent;
+                                }
+
+                                parent.ReturnCode = item.ReturnCode;
+                                item.Data.CopyTo(parent.Data.Slice(items.Current.Offset - items.Current.Parent.Offset, items.Current.Length));
+                            }
+                            else
+                            {
+                                result[items.Current] = item;
+                            }
+
                         }
                     }
                 }
@@ -150,55 +178,9 @@ namespace Dacs7.Protocols
 
         }
 
-
-        private class Package
-        {
-            private int _maxSize;
-            private bool _returned;
-
-            private ReadItemSpecification _parent = null;
-            private List<ReadItemSpecification> _items = new List<ReadItemSpecification>();
-
-            public bool IsPart => _parent != null;
-
-            public bool Handled => _returned;
-
-            public bool Full => Free < SiemensPlcProtocolContext.ReadItemSize;
-
-            public int Size { get; set; }
-
-            public int Free => _maxSize - Size;
-
-            public IEnumerable<ReadItemSpecification> Items => _items;
-
-            public Package(int maxSize, ReadItemSpecification parent = null)
-            {
-                _maxSize = maxSize;
-                _parent = parent;
-        }
-
-            public Package Return()
-            {
-                _returned = true;
-                return this;
-            }
-
-            public bool TryAdd(ReadItemSpecification item)
-            {
-                var size = item.BytesInDatagram;  // 12 for request,  item.Length + 4 for response
-                if (Free >= size)
-                {
-                    _items.Add(item);
-                    Size += size;
-                    return true;
-                }
-                return false;
-            }
-        }
-
         private IEnumerable<Package> CreatePackages(SiemensPlcProtocolContext s7Context, IEnumerable<ReadItemSpecification> vars)
         {
-            var result = new List<Package> { new Package(s7Context.ReadItemMaxLength) };
+            var result = new List<Package>();
             foreach (var item in vars.ToList().OrderByDescending(x => x.Length))
             {
                 var currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
@@ -206,43 +188,47 @@ namespace Dacs7.Protocols
                 {
                     if (item.Length > s7Context.ReadItemMaxLength)
                     {
-                        currentPackage = new Package(s7Context.ReadItemMaxLength, item);
-                        result.Add(currentPackage);
+                        ushort bytesToRead = item.Length;
+                        ushort processed = 0;
+                        while (bytesToRead > 0)
+                        {
+                            var slice = Math.Min(_s7Context.ReadItemMaxLength, bytesToRead);
+                            var child = ReadItemSpecification.CreateChild(item, (ushort)(item.Offset + processed), slice);
+                            if (slice < _s7Context.ReadItemMaxLength)
+                            {
+                                currentPackage = result.FirstOrDefault(package => package.TryAdd(child));
+                            }
 
-                        // handle big items as byte array and convert them back if needed!!!!!!!!
-
-
-                        //var bytesToRead = item.Length;
-                        //var processed = 0;
-                        //while (bytesToRead > 0)
-                        //{
-                        //    var slice = Math.Min(_s7Context.ReadItemMaxLength, bytesToRead);
-                        //    if (bytesToRead == item.Length && slice != item.Length)
-                        //    {
-                        //        result = new byte[item.Length];
-                        //    }
-
-                        //    Memory<byte> partResult = (Memory<byte>)(await ReadAsync(CalculateByteArrayTag(area, offset + processed, slice))).FirstOrDefault();
-
-                        //    if (result.IsEmpty)
-                        //    {
-                        //        result = partResult;
-                        //    }
-                        //    else
-                        //    {
-                        //        partResult.CopyTo(result.Slice(processed));
-                        //    }
-
-                        //    processed += slice;
-                        //    bytesToRead -= slice;
-                        //}
-
-                        // TODO: Handle to big items!!!!
-                        throw new NotSupportedException();
+                            if (currentPackage == null)
+                            {
+                                currentPackage = new Package(s7Context.PduSize);
+                                if (currentPackage.TryAdd(child))
+                                {
+                                    if (currentPackage.Full)
+                                    {
+                                        yield return currentPackage.Return();
+                                        if (currentPackage.Handled)
+                                        {
+                                            currentPackage = null;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        result.Add(currentPackage);
+                                    }
+                                }
+                                else
+                                {
+                                    throw new InvalidOperationException();
+                                }
+                            }
+                            processed += slice;
+                            bytesToRead -= slice;
+                        }
                     }
                     else
                     {
-                        currentPackage = new Package(s7Context.ReadItemMaxLength);
+                        currentPackage = new Package(s7Context.PduSize);
                         result.Add(currentPackage);
                         if (!currentPackage.TryAdd(item))
                         {

@@ -24,6 +24,10 @@ namespace Dacs7
                     _signaled = false;
                     return _completed;
                 }
+                else if(timeout == 0)
+                {
+                    return _completed;
+                }
                 else
                 {
                     
@@ -63,8 +67,7 @@ namespace Dacs7
                 else if (!_signaled)
                     _signaled = true;
             }
-            if (toRelease != null)
-                toRelease.SetResult(value);
+            toRelease?.SetResult(value);
         }
     }
 }

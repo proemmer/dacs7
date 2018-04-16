@@ -21,7 +21,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public const int ReadAckHeader = 12;     // 12 Header   (ACK Header)
         public const int ReadAckParameter = 2;      // header for each telegram
-        public const int ReadItemAckHeader = 4;  // header for each telegram
+        public const int ReadItemAckHeader = 4;  // header for each item
 
 
         public const int WriteItemHeader = 28; // 28 Header and some other data
