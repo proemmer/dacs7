@@ -19,6 +19,7 @@ namespace Dacs7.Communication
         #endregion
 
         #region Properties
+
         public bool IsConnected { get; protected set; }
         public bool Shutdown => _shutdown;
         public int ReceiveBufferSize { get { return _configuration.ReceiveBufferSize; } }
@@ -26,9 +27,9 @@ namespace Dacs7.Communication
 
         public OnConnectionStateChangedHandler OnConnectionStateChanged;
         public OnDataReceivedHandler OnRawDataReceived;
-        public OnSocketShutdownHandler OnSocketShutdown;
 
         public abstract string Identity { get; }
+
         #endregion
 
         public SocketBase(ISocketConfiguration configuration)
@@ -49,11 +50,6 @@ namespace Dacs7.Communication
         protected virtual Task HandleSocketDown()
         {
             return PublishConnectionStateChanged(false);
-        }
-
-        protected Task PublishSocketShutdown(string identity = null)
-        {
-            return OnSocketShutdown?.Invoke(identity ?? Identity);
         }
 
         protected Task PublishConnectionStateChanged(bool state, string identity = null)
