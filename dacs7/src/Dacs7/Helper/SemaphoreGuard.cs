@@ -27,7 +27,7 @@ namespace Dacs7.Helper
         public void Dispose()
         {
             if (IsDisposed)
-                throw new ObjectDisposedException(this.ToString());
+                throw new ObjectDisposedException(ToString());
             _semaphore.Release();
             _semaphore = null;
         }

@@ -76,7 +76,7 @@ namespace Dacs7.Protocols.SiemensPlc
             if (t == typeof(bool))
                 return (byte)DataTransportSize.Bit;
 
-            if (t == typeof(byte) || t == typeof(string))
+            if (t == typeof(byte) || t == typeof(string) || t == typeof(Memory<byte>))
                 return (byte)DataTransportSize.Byte;
 
             if (t == typeof(ushort))

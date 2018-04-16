@@ -37,10 +37,11 @@ namespace Dacs7.Protocols.SiemensPlc
             if (t.IsArray)
                 t = t.GetElementType();
 
+
             if (t == typeof(bool))
                 return (byte)ItemDataTransportSize.Bit;
 
-            if (t == typeof(byte) || t == typeof(string))
+            if (t == typeof(byte) || t == typeof(string) || t == typeof(Memory<byte>))
                 return (byte)ItemDataTransportSize.Byte;
 
             if (t == typeof(char))

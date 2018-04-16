@@ -119,7 +119,7 @@ namespace Dacs7
         DataError = 0x0a,        /* the desired item is not available in the PLC, e.g. when trying to read a non existing DB*/
 
         [Description("Success")]
-        DataOk = 0xFF,
+        Success = 0xFF,
     }
 
 

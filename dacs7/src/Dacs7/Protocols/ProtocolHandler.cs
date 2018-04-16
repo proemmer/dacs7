@@ -30,6 +30,7 @@ namespace Dacs7.Protocols
         private int _referenceId;
         private readonly object _idLock = new object();
         private int _timeout = 5000;
+        private Action<ConnectionState> _connectionStateChanged;
 
         public ConnectionState ConnectionState => _connectionState;
 
@@ -53,10 +54,11 @@ namespace Dacs7.Protocols
 
         }
 
-        public ProtocolHandler(ClientSocketConfiguration config, Rfc1006ProtocolContext rfcContext, SiemensPlcProtocolContext s7Context)
+        public ProtocolHandler(ClientSocketConfiguration config, Rfc1006ProtocolContext rfcContext, SiemensPlcProtocolContext s7Context, Action<ConnectionState> connectionStateChanged)
         {
             _context = rfcContext;
             _s7Context = s7Context;
+            _connectionStateChanged = connectionStateChanged;
 
             _socket = new ClientSocket(config)
             {
@@ -92,6 +94,14 @@ namespace Dacs7.Protocols
 
         public async Task CloseAsync()
         {
+            foreach (var item in _writeHandler)
+            {
+                item.Value.Event?.Set(null);
+            }
+            foreach (var item in _readHandler)
+            {
+                item.Value.Event?.Set(null);
+            }
             await _socket.CloseAsync();
         }
 
@@ -100,17 +110,8 @@ namespace Dacs7.Protocols
             if (ConnectionState != ConnectionState.Opened)
                 throw new Dacs7NotConnectedException();
 
-            
-            CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh;
-            SocketError errorCode = SocketError.NoData;
-
-            if(_s7Context.OptimizeReadAccess && _concurrentJobs.CurrentCount == 0)
-            {
-                // TODO: optimization if we have no semaphore we can collect the read data and send them in a single request
-            }
-
             var result = vars.ToDictionary(x => x, x => null as S7DataItemSpecification);
-            foreach (var normalized in CreatePackages(_s7Context, vars))
+            foreach (var normalized in CreateReadPackages(_s7Context, vars))
             {
                 var id = GetNextReferenceId();
                 var sendData = DataTransferDatagram.TranslateToMemory(
@@ -124,15 +125,18 @@ namespace Dacs7.Protocols
                     IEnumerable<S7DataItemSpecification> readResults = null;
                     using (await SemaphoreGuard.Async(_concurrentJobs))
                     {
-                        cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
+                        var cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
                         _readHandler.TryAdd(cbh.Id, cbh);
-                        errorCode = await _socket.SendAsync(sendData);
-
-                        if (errorCode != SocketError.Success)
-                            return new List<S7DataItemSpecification>();
-
-
-                        readResults = await cbh.Event.WaitAsync(_timeout);
+                        try
+                        {
+                            if (await _socket.SendAsync(sendData) != SocketError.Success)
+                                return new List<S7DataItemSpecification>();
+                            readResults = await cbh.Event.WaitAsync(_timeout);
+                        }
+                        finally
+                        {
+                            _readHandler.TryRemove(cbh.Id, out _);
+                        }
                     }
 
                     if (readResults == null)
@@ -147,7 +151,7 @@ namespace Dacs7.Protocols
                         {
                             if (items.Current.IsPart)
                             {
-                                if (result.TryGetValue(items.Current.Parent, out var parent))
+                                if (!result.TryGetValue(items.Current.Parent, out var parent) || parent == null)
                                 {
                                     parent = new S7DataItemSpecification
                                     {
@@ -178,132 +182,71 @@ namespace Dacs7.Protocols
 
         }
 
-        private IEnumerable<Package> CreatePackages(SiemensPlcProtocolContext s7Context, IEnumerable<ReadItemSpecification> vars)
-        {
-            var result = new List<Package>();
-            foreach (var item in vars.ToList().OrderByDescending(x => x.Length))
-            {
-                var currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
-                if (currentPackage == null)
-                {
-                    if (item.Length > s7Context.ReadItemMaxLength)
-                    {
-                        ushort bytesToRead = item.Length;
-                        ushort processed = 0;
-                        while (bytesToRead > 0)
-                        {
-                            var slice = Math.Min(_s7Context.ReadItemMaxLength, bytesToRead);
-                            var child = ReadItemSpecification.CreateChild(item, (ushort)(item.Offset + processed), slice);
-                            if (slice < _s7Context.ReadItemMaxLength)
-                            {
-                                currentPackage = result.FirstOrDefault(package => package.TryAdd(child));
-                            }
 
-                            if (currentPackage == null)
-                            {
-                                currentPackage = new Package(s7Context.PduSize);
-                                if (currentPackage.TryAdd(child))
-                                {
-                                    if (currentPackage.Full)
-                                    {
-                                        yield return currentPackage.Return();
-                                        if (currentPackage.Handled)
-                                        {
-                                            currentPackage = null;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        result.Add(currentPackage);
-                                    }
-                                }
-                                else
-                                {
-                                    throw new InvalidOperationException();
-                                }
-                            }
-                            processed += slice;
-                            bytesToRead -= slice;
-                        }
-                    }
-                    else
-                    {
-                        currentPackage = new Package(s7Context.PduSize);
-                        result.Add(currentPackage);
-                        if (!currentPackage.TryAdd(item))
-                        {
-                            throw new InvalidOperationException();
-                        }
-                    }
-                }
-
-                if (currentPackage != null)
-                {
-                    if(currentPackage.Full)
-                    {
-                        yield return currentPackage.Return();
-                    }
-
-                    if(currentPackage.Handled)
-                    {
-                        result.Remove(currentPackage);
-                    }
-                }
-            }
-            foreach (var package in result)
-            {
-                yield return package.Return();
-            }
-        }
-
-        public async Task<IEnumerable<byte>> WriteAsync(IEnumerable<WriteItemSpecification> vars)
+        public async Task<IEnumerable<ItemResponseRetValue>> WriteAsync(IEnumerable<WriteItemSpecification> vars)
         {
             if (ConnectionState != ConnectionState.Opened)
                 throw new Dacs7NotConnectedException();
 
-
-            var id = GetNextReferenceId();
-            CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh;
-            SocketError errorCode = SocketError.NoData;
-
-            if (_s7Context.OptimizeWriteAccess && _concurrentJobs.CurrentCount == 0)
+            
+            var result = vars.ToDictionary(x => x, x => ItemResponseRetValue.Success);
+            foreach (var normalized in CreateWritePackages(_s7Context, vars))
             {
-                // TODO: optimization if we have no semaphore we can collect the write data and send them in a single request
-            }
-
-            var sendData = DataTransferDatagram.TranslateToMemory(
+                var id = GetNextReferenceId();
+                CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh;
+                var sendData = DataTransferDatagram.TranslateToMemory(
                                 DataTransferDatagram.Build(_context,
                                         S7WriteJobDatagram.TranslateToMemory(
-                                            S7WriteJobDatagram.BuildWrite(_s7Context, id, vars))).FirstOrDefault());
+                                            S7WriteJobDatagram.BuildWrite(_s7Context, id, normalized.Items))).FirstOrDefault());
+                try
+                {
+                    IEnumerable<S7DataItemWriteResult> writeResults = null;
+                    using (await SemaphoreGuard.Async(_concurrentJobs))
+                    {
+                        cbh = new CallbackHandler<IEnumerable<S7DataItemWriteResult>>(id);
+                        _writeHandler.TryAdd(cbh.Id, cbh);
+                        try
+                        {
+                            if (await _socket.SendAsync(sendData) != SocketError.Success)
+                                return new List<ItemResponseRetValue>();
+                            writeResults = await cbh.Event.WaitAsync(_timeout);
+                        }
+                        finally
+                        {
+                            _writeHandler.TryRemove(cbh.Id, out _);
+                        }
+                    }
 
-            await _concurrentJobs.WaitAsync();
-            try
-            {
-                cbh = new CallbackHandler<IEnumerable<S7DataItemWriteResult>>(id);
-                _writeHandler.TryAdd(cbh.Id, cbh);
-                errorCode = await _socket.SendAsync(sendData);
+                    if (writeResults == null)
+                    {
+                        throw new TimeoutException();
+                    }
+
+                    var items = normalized.Items.GetEnumerator();
+                    foreach (var item in writeResults)
+                    {
+                        if (items.MoveNext())
+                        {
+                            if (items.Current.IsPart)
+                            {
+                                if (result.TryGetValue(items.Current.Parent, out var retCode) && retCode == ItemResponseRetValue.Success)
+                                {
+                                    result[items.Current.Parent] = (ItemResponseRetValue)item.ReturnCode;
+                                }
+                            }
+                            else
+                            {
+                                result[items.Current] = (ItemResponseRetValue)item.ReturnCode;
+                            }
+                        }
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    throw new TimeoutException();
+                }
             }
-            finally
-            {
-                _concurrentJobs.Release();
-            }
-
-
-            if (errorCode != SocketError.Success)
-                return new List<byte>();
-
-
-            try
-            {
-                var result = await cbh.Event.WaitAsync(_timeout);
-                return result.Select(x => x.ReturnCode);
-            }
-            catch (TaskCanceledException)
-            {
-                throw new TimeoutException();
-            }
-
-
+            return result.Values;
         }
 
 
@@ -378,18 +321,23 @@ namespace Dacs7.Protocols
 
 
 
+
+
+
         private async Task SendConnectionRequest()
         {
             var sendData = ConnectionRequestDatagram.TranslateToMemory(ConnectionRequestDatagram.BuildCr(_context));
             var result = await _socket.SendAsync(sendData);
-            if (result == System.Net.Sockets.SocketError.Success)
-                _connectionState = ConnectionState.PendingOpenRfc1006;
+            if (result == SocketError.Success)
+            {
+                UpdateConnectionState(ConnectionState.PendingOpenRfc1006);
+            }
         }
 
-        private async Task ReceivedConnectionConfirmed()
+        private Task ReceivedConnectionConfirmed()
         {
-            _connectionState = ConnectionState.Rfc1006Opened;
-            await StartCommunicationSetup();
+            UpdateConnectionState(ConnectionState.PendingOpenRfc1006);
+            return StartCommunicationSetup();
         }
 
         private async Task StartCommunicationSetup()
@@ -404,9 +352,9 @@ namespace Dacs7.Protocols
                                                 .Build(_s7Context)))
                                                     .FirstOrDefault());
             var result = await _socket.SendAsync(sendData);
-            if (result == System.Net.Sockets.SocketError.Success)
+            if (result == SocketError.Success)
             {
-                _connectionState = ConnectionState.PendingOpenPlc;
+                UpdateConnectionState(ConnectionState.PendingOpenPlc);
             }
         }
 
@@ -419,11 +367,13 @@ namespace Dacs7.Protocols
             _s7Context.MaxParallelJobs = data.Parameter.MaxAmQCalling;
             _s7Context.PduSize = data.Parameter.PduLength;
             _concurrentJobs = new SemaphoreSlim(_s7Context.MaxParallelJobs);
-            _connectionState = ConnectionState.Opened;
+            UpdateConnectionState(ConnectionState.Opened);
             _connectEvent.Set(true);
 
             return Task.CompletedTask;
         }
+
+
 
         private Task ReceivedReadJobAck(Memory<byte> buffer)
         {
@@ -432,7 +382,6 @@ namespace Dacs7.Protocols
             if(_readHandler.TryGetValue(data.Header.Header.ProtocolDataUnitReference, out var cbh))
             {
                 cbh.Event.Set(data.Data);
-                _readHandler.TryRemove(cbh.Id, out _);
             }
 
             return Task.CompletedTask;
@@ -445,24 +394,187 @@ namespace Dacs7.Protocols
             if (_writeHandler.TryGetValue(data.Header.Header.ProtocolDataUnitReference, out var cbh))
             {
                 cbh.Event.Set(data.Data);
-                _writeHandler.TryRemove(cbh.Id, out _);
             }
 
             return Task.CompletedTask;
         }
 
-
-
-
         private Task Closed()
         {
-            _connectionState = ConnectionState.Closed;
-            if(_concurrentJobs != null)
+            UpdateConnectionState(ConnectionState.Closed);
+
+            if (_concurrentJobs != null)
             {
                 _concurrentJobs.Dispose();
                 _concurrentJobs = null;
             }
             return Task.CompletedTask;
+        }
+
+        private void UpdateConnectionState(ConnectionState state)
+        {
+            if (_connectionState != state)
+            {
+                _connectionState = state;
+                _connectionStateChanged?.Invoke(state);
+            }
+        }
+
+        private IEnumerable<ReadPackage> CreateReadPackages(SiemensPlcProtocolContext s7Context, IEnumerable<ReadItemSpecification> vars)
+        {
+            var result = new List<ReadPackage>();
+            foreach (var item in vars.ToList().OrderByDescending(x => x.Length))
+            {
+                var currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
+                if (currentPackage == null)
+                {
+                    if (item.Length > s7Context.ReadItemMaxLength)
+                    {
+                        ushort bytesToRead = item.Length;
+                        ushort processed = 0;
+                        while (bytesToRead > 0)
+                        {
+                            var slice = Math.Min(_s7Context.ReadItemMaxLength, bytesToRead);
+                            var child = ReadItemSpecification.CreateChild(item, (ushort)(item.Offset + processed), slice);
+                            if (slice < _s7Context.ReadItemMaxLength)
+                            {
+                                currentPackage = result.FirstOrDefault(package => package.TryAdd(child));
+                            }
+
+                            if (currentPackage == null)
+                            {
+                                currentPackage = new ReadPackage(s7Context.PduSize);
+                                if (currentPackage.TryAdd(child))
+                                {
+                                    if (currentPackage.Full)
+                                    {
+                                        yield return currentPackage.Return();
+                                        if (currentPackage.Handled)
+                                        {
+                                            currentPackage = null;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        result.Add(currentPackage);
+                                    }
+                                }
+                                else
+                                {
+                                    throw new InvalidOperationException();
+                                }
+                            }
+                            processed += slice;
+                            bytesToRead -= slice;
+                        }
+                    }
+                    else
+                    {
+                        currentPackage = new ReadPackage(s7Context.PduSize);
+                        result.Add(currentPackage);
+                        if (!currentPackage.TryAdd(item))
+                        {
+                            throw new InvalidOperationException();
+                        }
+                    }
+                }
+
+                if (currentPackage != null)
+                {
+                    if (currentPackage.Full)
+                    {
+                        yield return currentPackage.Return();
+                    }
+
+                    if (currentPackage.Handled)
+                    {
+                        result.Remove(currentPackage);
+                    }
+                }
+            }
+            foreach (var package in result)
+            {
+                yield return package.Return();
+            }
+        }
+
+
+        private IEnumerable<WritePackage> CreateWritePackages(SiemensPlcProtocolContext s7Context, IEnumerable<WriteItemSpecification> vars)
+        {
+            var result = new List<WritePackage>();
+            foreach (var item in vars.ToList().OrderByDescending(x => x.Length))
+            {
+                var currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
+                if (currentPackage == null)
+                {
+                    if (item.Length > s7Context.WriteItemMaxLength)
+                    {
+                        ushort bytesToWrite = item.Length;
+                        ushort processed = 0;
+                        while (bytesToWrite > 0)
+                        {
+                            var slice = Math.Min(_s7Context.WriteItemMaxLength, bytesToWrite);
+                            var child = WriteItemSpecification.CreateChild(item, (ushort)(item.Offset + processed), slice);
+                            if (slice < _s7Context.WriteItemMaxLength)
+                            {
+                                currentPackage = result.FirstOrDefault(package => package.TryAdd(child));
+                            }
+
+                            if (currentPackage == null)
+                            {
+                                currentPackage = new WritePackage(s7Context.PduSize);
+                                if (currentPackage.TryAdd(child))
+                                {
+                                    if (currentPackage.Full)
+                                    {
+                                        yield return currentPackage.Return();
+                                        if (currentPackage.Handled)
+                                        {
+                                            currentPackage = null;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        result.Add(currentPackage);
+                                    }
+                                }
+                                else
+                                {
+                                    throw new InvalidOperationException();
+                                }
+                            }
+                            processed += slice;
+                            bytesToWrite -= slice;
+                        }
+                    }
+                    else
+                    {
+                        currentPackage = new WritePackage(s7Context.PduSize);
+                        result.Add(currentPackage);
+                        if (!currentPackage.TryAdd(item))
+                        {
+                            throw new InvalidOperationException();
+                        }
+                    }
+                }
+
+                if (currentPackage != null)
+                {
+                    if (currentPackage.Full)
+                    {
+                        yield return currentPackage.Return();
+                    }
+
+                    if (currentPackage.Handled)
+                    {
+                        result.Remove(currentPackage);
+                    }
+                }
+            }
+            foreach (var package in result)
+            {
+                yield return package.Return();
+            }
         }
 
     }

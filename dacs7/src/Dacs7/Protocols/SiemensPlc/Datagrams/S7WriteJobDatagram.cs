@@ -75,7 +75,6 @@ namespace Dacs7.Protocols.SiemensPlc
             span[offset++] = datagram.Function;
             span[offset++] = datagram.ItemCount;
 
-
             foreach (var item in datagram.Items)
             {
                 S7AddressItemSpecificationDatagram.TranslateToMemory(item, result.Slice(offset));

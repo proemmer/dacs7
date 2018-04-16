@@ -24,6 +24,13 @@ namespace Dacs7.Protocols.SiemensPlc
         public const int ReadItemAckHeader = 4;  // header for each item
 
 
+        public const int WriteHeader = 10;
+        public const int WriteParameter = 2;
+        public const int WriteParameterItem = 12; // each item
+        public const int WriteDataItem = 4;       // each item + length
+
+
+
         public const int WriteItemHeader = 28; // 28 Header and some other data
 
         public ushort MaxParallelJobs { get; set; } = 10; // -> used for negotiation
@@ -34,10 +41,6 @@ namespace Dacs7.Protocols.SiemensPlc
         public UInt16 ReadItemMaxLength { get { return (UInt16)(PduSize - 18); } }  //18 Header and some other data    // in the result message
         public UInt16 WriteItemMaxLength { get { return (UInt16)(PduSize - 28); } } //28 Header and some other data
 
-
-
-        public bool OptimizeReadAccess { get; set; }  // TODO: Not implemented yet
-        public bool OptimizeWriteAccess { get; set; } // TODO: Not implemented yet
 
 
 

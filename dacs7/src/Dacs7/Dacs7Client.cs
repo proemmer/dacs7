@@ -3,16 +3,17 @@ using Dacs7.Protocols;
 using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dacs7
 {
+
+    public delegate void ConnectionStateChangedEventHandler(Dacs7Client session, Dacs7ConnectionState e);
+
+
     public partial class Dacs7Client
     {
         private Dictionary<string, ReadItemSpecification> _registeredTags = new Dictionary<string, ReadItemSpecification>();
@@ -20,6 +21,7 @@ namespace Dacs7
         private Rfc1006ProtocolContext _context;
         private SiemensPlcProtocolContext _s7Context;
         private ProtocolHandler _protocolHandler;
+        private Dacs7ConnectionState _state = Dacs7ConnectionState.Closed;
 
         /// <summary>
         /// True if the connection is fully applied
@@ -40,6 +42,11 @@ namespace Dacs7
         /// The maximum write item length of a single telegram.
         /// </summary>
         public ushort WriteItemMaxLength => _s7Context != null ? _s7Context.PduSize : (ushort)0;
+
+        /// <summary>
+        /// Register to the connection state events
+        /// </summary>
+        public event ConnectionStateChangedEventHandler ConnectionStateChanged;
 
 
         /// <summary>
@@ -74,12 +81,9 @@ namespace Dacs7
 
             };
 
-            _protocolHandler = new ProtocolHandler(_config, _context, _s7Context);
-
+            _protocolHandler = new ProtocolHandler(_config, _context, _s7Context, UpdateConnectionState);
 
         }
-
-
 
 
         /// <summary>
@@ -103,7 +107,23 @@ namespace Dacs7
 
 
 
-
+        private void UpdateConnectionState(ConnectionState state)
+        {
+            var dacs7State = Dacs7ConnectionState.Closed;
+            switch (state)
+            {
+                case ConnectionState.Closed: dacs7State = Dacs7ConnectionState.Closed; break;
+                case ConnectionState.PendingOpenRfc1006: dacs7State = Dacs7ConnectionState.Connecting; break;
+                case ConnectionState.Rfc1006Opened: dacs7State = Dacs7ConnectionState.Connecting; break;
+                case ConnectionState.PendingOpenPlc: dacs7State = Dacs7ConnectionState.Connecting; break;
+                case ConnectionState.Opened: dacs7State = Dacs7ConnectionState.Opened; break;
+            }
+            if (_state != dacs7State)
+            {
+                _state = dacs7State;
+                ConnectionStateChanged?.Invoke(this, dacs7State);
+            }
+        }
 
         private ReadItemSpecification RegisteredOrGiven(string tag)
         {
@@ -127,11 +147,6 @@ namespace Dacs7
                 result.Data = WriteItemSpecification.ConvertDataToMemory(result, item.Value);
                 return result;
             }));
-        }
-
-        private static string CalculateByteArrayTag(string area, int offset, int length)
-        {
-            return $"{area}.{offset},b,{length}";
         }
 
         private void UpdateRegistration(List<KeyValuePair<string, ReadItemSpecification>> toAdd, List<KeyValuePair<string, ReadItemSpecification>> toRemove)

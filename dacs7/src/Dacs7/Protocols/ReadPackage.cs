@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Dacs7.Protocols
 {
-    internal class Package
+    internal class ReadPackage
     {
         private int _maxSize;
         private bool _returned;
@@ -27,13 +27,13 @@ namespace Dacs7.Protocols
         public IEnumerable<ReadItemSpecification> Items => _items;
 
 
-        public Package(int pduSize)
+        public ReadPackage(int pduSize)
         {
             // minimum header = 12 read   14 readack
             _maxSize = pduSize;
         }
 
-        public Package Return()
+        public ReadPackage Return()
         {
             _returned = true;
             return this;
