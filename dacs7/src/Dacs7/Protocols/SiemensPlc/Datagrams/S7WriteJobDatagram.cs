@@ -25,7 +25,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public List<S7DataItemSpecification> Data { get; set; } = new List<S7DataItemSpecification>();
 
-        public static S7WriteJobDatagram BuildWrite(SiemensPlcProtocolContext context, int id, IEnumerable<WriteItemSpecification> vars)
+        public static S7WriteJobDatagram BuildWrite(SiemensPlcProtocolContext context, int id, IEnumerable<WriteItem> vars)
         {
             var numberOfItems = 0;
             var result = new S7WriteJobDatagram();

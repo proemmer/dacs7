@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 
 namespace Dacs7
 {
-    public class ReadItemSpecification
+    public class ReadItem
     {
         public PlcArea Area { get; private set; }
         public ushort DbNumber { get; private set; }
@@ -22,18 +22,18 @@ namespace Dacs7
 
 
         internal int CallbackReference { get; set; }
-        internal ReadItemSpecification Parent { get; set; }
+        internal ReadItem Parent { get; set; }
         internal bool IsPart => Parent != null;
 
-        internal ReadItemSpecification()
+        internal ReadItem()
         {
 
         }
 
 
-        internal virtual WriteItemSpecification Clone()
+        internal virtual WriteItem Clone()
         {
-            return new WriteItemSpecification
+            return new WriteItem
             {
                 Area = Area,
                 DbNumber = DbNumber,
@@ -45,7 +45,7 @@ namespace Dacs7
         }
 
 
-        public static ReadItemSpecification CreateFromTag(string tag)
+        public static ReadItem CreateFromTag(string tag)
         {
             var parts = tag.Split(new[] { ',' });
             var start = parts[0].Split(new[] { '.' });
@@ -67,7 +67,7 @@ namespace Dacs7
 
             offset = DetectTypes(parts[1], length, offset, out Type vtype, out Type rType);
 
-            return new ReadItemSpecification
+            return new ReadItem
             {
                 Area = selector,
                 DbNumber = db,
@@ -87,7 +87,7 @@ namespace Dacs7
         /// <param name="offset">offset in bytes, if you address booleans, you have to pass the address in bits (byteoffset * 8 + bitoffset)</param>
         /// <param name="length">The number of items to read</param>
         /// <returns></returns>
-        public static ReadItemSpecification Create<T>(string area, ushort offset, ushort length = 1)
+        public static ReadItem Create<T>(string area, ushort offset, ushort length = 1)
         {
             PlcArea selector = 0;
             ushort db = 0;
@@ -110,7 +110,7 @@ namespace Dacs7
                 rType = length > 1 ? typeof(T[]) : vtype;
             }
 
-            return new ReadItemSpecification
+            return new ReadItem
             {
                 Area = selector,
                 DbNumber = db,
@@ -130,9 +130,9 @@ namespace Dacs7
         /// <param name="offset">offset in bytes, if you address booleans, you have to pass the address in bits (byteoffset * 8 + bitoffset)</param>
         /// <param name="length">The number of items to read</param>
         /// <returns></returns>
-        public static ReadItemSpecification CreateChild(ReadItemSpecification item, ushort offset, ushort length)
+        public static ReadItem CreateChild(ReadItem item, ushort offset, ushort length)
         {
-            return new ReadItemSpecification
+            return new ReadItem
             {
                 Area = item.Area,
                 DbNumber = item.DbNumber,
@@ -146,7 +146,7 @@ namespace Dacs7
 
 
 
-        internal static object ConvertMemoryToData(ReadItemSpecification item, Memory<byte> data)
+        internal static object ConvertMemoryToData(ReadItem item, Memory<byte> data)
         {
 
             if (item.ResultType == typeof(byte))
@@ -235,7 +235,7 @@ namespace Dacs7
                     vtype = typeof(string);
                     rType = length > 1 ? typeof(string[]) : vtype;
                     break;
-                case var s when Regex.IsMatch(s, "^x\\d+$"):
+                case var s when Regex.IsMatch(s, "^x\\d+$", RegexOptions.IgnoreCase):
                     vtype = typeof(bool);
                     rType = length > 1 ? typeof(bool[]) : vtype;
                     offset = (ushort)((offset * 8) + UInt16.Parse(s.Substring(1)));

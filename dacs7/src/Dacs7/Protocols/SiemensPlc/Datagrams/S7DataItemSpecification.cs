@@ -44,7 +44,7 @@ namespace Dacs7.Protocols.SiemensPlc
         #endregion
 
         #region Helper
-        public static ushort GetDataLength(IEnumerable<WriteItemSpecification> items)
+        public static ushort GetDataLength(IEnumerable<WriteItem> items)
         {
             var fullLength = (ushort)0;
             if (items != null)

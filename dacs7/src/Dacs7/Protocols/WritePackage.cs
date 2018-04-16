@@ -12,7 +12,7 @@ namespace Dacs7.Protocols
 
         private int _size = SiemensPlcProtocolContext.WriteHeader + SiemensPlcProtocolContext.WriteParameter;
 
-        private List<WriteItemSpecification> _items = new List<WriteItemSpecification>();
+        private List<WriteItem> _items = new List<WriteItem>();
 
 
         public bool Handled => _returned;
@@ -23,7 +23,7 @@ namespace Dacs7.Protocols
 
         public int Free => _maxSize - Size;
 
-        public IEnumerable<WriteItemSpecification> Items => _items;
+        public IEnumerable<WriteItem> Items => _items;
 
 
         public WritePackage(int pduSize)
@@ -38,7 +38,7 @@ namespace Dacs7.Protocols
             return this;
         }
 
-        public bool TryAdd(WriteItemSpecification item)
+        public bool TryAdd(WriteItem item)
         {
             var size = item.Length;
             if (Free >= size)

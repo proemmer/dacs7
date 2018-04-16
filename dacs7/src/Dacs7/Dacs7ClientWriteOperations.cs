@@ -16,9 +16,9 @@ namespace Dacs7
         /// <summary>
         /// Writes data from the plc.
         /// </summary>
-        /// <param name="values">a list of <see cref="WriteItemSpecification"/>.</param>
+        /// <param name="values">a list of <see cref="WriteItem"/>.</param>
         /// <returns>returns a enumerable with the write result, 0xFF = Success</returns>
-        public Task<IEnumerable<ItemResponseRetValue>> WriteAsync(params WriteItemSpecification[] values) => WriteAsync(values as IEnumerable<WriteItemSpecification>);
+        public Task<IEnumerable<ItemResponseRetValue>> WriteAsync(params WriteItem[] values) => WriteAsync(values as IEnumerable<WriteItem>);
 
         /// <summary>
         /// Writes data from the plc.
@@ -30,9 +30,9 @@ namespace Dacs7
         /// <summary>
         /// Writes data from the plc.
         /// </summary>
-        /// <param name="values">a list of <see cref="WriteItemSpecification"/>.</param>
+        /// <param name="values">a list of <see cref="WriteItem"/>.</param>
         /// <returns>returns a enumerable with the write result, 0xFF = Success</returns>
-        public Task<IEnumerable<ItemResponseRetValue>> WriteAsync(IEnumerable<WriteItemSpecification> items)
+        public Task<IEnumerable<ItemResponseRetValue>> WriteAsync(IEnumerable<WriteItem> items)
         {
             return _protocolHandler.WriteAsync(items);
         }

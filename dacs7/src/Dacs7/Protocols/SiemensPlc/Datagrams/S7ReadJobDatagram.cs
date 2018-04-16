@@ -27,7 +27,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
 
-        public static S7ReadJobDatagram BuildRead(SiemensPlcProtocolContext context, int id, IEnumerable<ReadItemSpecification> vars)
+        public static S7ReadJobDatagram BuildRead(SiemensPlcProtocolContext context, int id, IEnumerable<ReadItem> vars)
         {
             var result = new S7ReadJobDatagram();
             result.Header.ProtocolDataUnitReference = (ushort)id;

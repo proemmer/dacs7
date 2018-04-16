@@ -3,31 +3,30 @@
 
 using System;
 using System.Buffers.Binary;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace Dacs7
 {
-    public class WriteItemSpecification : ReadItemSpecification
+    public class WriteItem : ReadItem
     {
         internal Memory<byte> Data { get; set; }
 
-        internal new WriteItemSpecification Parent { get; set; }
+        internal new WriteItem Parent { get; set; }
 
-        internal WriteItemSpecification()
+        internal WriteItem()
         {
         }
 
-        internal override WriteItemSpecification Clone()
+        internal override WriteItem Clone()
         {
             var clone = base.Clone();
             clone.Data = Data;
             return clone;
         }
 
-        internal WriteItemSpecification Clone(Memory<byte> data)
+        internal WriteItem Clone(Memory<byte> data)
         {
             var clone = base.Clone();
             clone.Data = data;
@@ -36,7 +35,7 @@ namespace Dacs7
 
 
 
-        public static WriteItemSpecification CreateFromTag(string tag, object data)
+        public static WriteItem CreateFromTag(string tag, object data)
         {
             var result = CreateFromTag(tag).Clone();
             result.Data = ConvertDataToMemory(result, data);
@@ -44,7 +43,7 @@ namespace Dacs7
         }
 
 
-        public static WriteItemSpecification Create<T>(string area, ushort offset, T data)
+        public static WriteItem Create<T>(string area, ushort offset, T data)
         {
             var result = Create<T>(area, offset, GetDataItemCount(data)).Clone();
             result.Data = ConvertDataToMemory(result, data);
@@ -59,9 +58,9 @@ namespace Dacs7
         /// <param name="offset">offset in bytes, if you address booleans, you have to pass the address in bits (byteoffset * 8 + bitoffset)</param>
         /// <param name="length">The number of items to read</param>
         /// <returns></returns>
-        public static WriteItemSpecification CreateChild(WriteItemSpecification item, ushort offset, ushort length)
+        public static WriteItem CreateChild(WriteItem item, ushort offset, ushort length)
         {
-            var result = ReadItemSpecification.CreateChild(item, offset, length).Clone();
+            var result = ReadItem.CreateChild(item, offset, length).Clone();
             result.Data = item.Data.Slice(offset - item.Offset, length);
             return result;
         }
@@ -106,7 +105,7 @@ namespace Dacs7
             return 1;
         }
 
-        internal static Memory<byte> ConvertDataToMemory(WriteItemSpecification item, object data)
+        internal static Memory<byte> ConvertDataToMemory(WriteItem item, object data)
         {
             if (data is string && item.ResultType != typeof(string))
                 data = Convert.ChangeType(data, item.ResultType);

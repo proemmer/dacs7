@@ -7,7 +7,7 @@ namespace Dacs7
 {
     public class DataValue
     {
-        private ReadItemSpecification _meta;
+        private ReadItem _meta;
         private byte _returnCode;
         private Memory<byte> _data;
         private object _value;
@@ -17,7 +17,7 @@ namespace Dacs7
         public Type Type => _meta.ResultType;
         public Memory<byte> Data => _data;
 
-        public object Value => _value ?? (_value = ReadItemSpecification.ConvertMemoryToData(_meta, _data));
+        public object Value => _value ?? (_value = ReadItem.ConvertMemoryToData(_meta, _data));
 
         public T GetValue<T>()
         {
@@ -29,7 +29,7 @@ namespace Dacs7
             return (T)Value;
         }
 
-        internal DataValue(ReadItemSpecification meta, S7DataItemSpecification data)
+        internal DataValue(ReadItem meta, S7DataItemSpecification data)
         {
             _meta = meta;
             _returnCode = data.ReturnCode;

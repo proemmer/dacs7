@@ -18,9 +18,9 @@ namespace Dacs7
         /// <summary>
         /// Reads data from the plc.
         /// </summary>
-        /// <param name="values">a list of <see cref="ReadItemSpecification"/></param>
+        /// <param name="values">a list of <see cref="ReadItem"/></param>
         /// <returns>returns a enumerable with the read values</returns>
-        public Task<IEnumerable<DataValue>> ReadAsync(params ReadItemSpecification[] values) => ReadAsync(values as IEnumerable<ReadItemSpecification>);
+        public Task<IEnumerable<DataValue>> ReadAsync(params ReadItem[] values) => ReadAsync(values as IEnumerable<ReadItem>);
 
         /// <summary>
         /// Reads data from the plc.
@@ -32,9 +32,9 @@ namespace Dacs7
         /// <summary>
         /// Reads data from the plc.
         /// </summary>
-        /// <param name="values">a list of <see cref="ReadItemSpecification"/></param>
+        /// <param name="values">a list of <see cref="ReadItem"/></param>
         /// <returns>returns a enumerable with the read values</returns>
-        public async Task<IEnumerable<DataValue>> ReadAsync(IEnumerable<ReadItemSpecification> values)
+        public async Task<IEnumerable<DataValue>> ReadAsync(IEnumerable<ReadItem> values)
         {
             var result = await _protocolHandler.ReadAsync(values);
             var enumerator = values.GetEnumerator();

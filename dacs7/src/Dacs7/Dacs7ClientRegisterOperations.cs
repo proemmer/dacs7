@@ -21,12 +21,12 @@ namespace Dacs7
         /// <returns></returns>
         public async Task<IEnumerable<string>> RegisterAsync(IEnumerable<string> values)
         {
-            var added = new List<KeyValuePair<string, ReadItemSpecification>>();
+            var added = new List<KeyValuePair<string, ReadItem>>();
             var enumerator = values.GetEnumerator();
             var resList = CreateNodeIdCollection(values).Select(x =>
             {
                 enumerator.MoveNext();
-                added.Add(new KeyValuePair<string, ReadItemSpecification>(enumerator.Current, x));
+                added.Add(new KeyValuePair<string, ReadItem>(enumerator.Current, x));
                 return x.ToString();
             }).ToList();
 
@@ -54,11 +54,11 @@ namespace Dacs7
         /// <returns></returns>
         public async Task<IEnumerable<string>> UnregisterAsync(IEnumerable<string> values)
         {
-            var removed = new List<KeyValuePair<string, ReadItemSpecification>>();
+            var removed = new List<KeyValuePair<string, ReadItem>>();
             foreach (var item in values)
             {
                 if (_registeredTags.TryGetValue(item, out var obj))
-                    removed.Add(new KeyValuePair<string, ReadItemSpecification>(item, obj));
+                    removed.Add(new KeyValuePair<string, ReadItem>(item, obj));
             }
             UpdateRegistration(null, removed);
 

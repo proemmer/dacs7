@@ -105,7 +105,7 @@ namespace Dacs7.Protocols
             await _socket.CloseAsync();
         }
 
-        public async Task<IEnumerable<S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItemSpecification> vars)
+        public async Task<IEnumerable<S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItem> vars)
         {
             if (ConnectionState != ConnectionState.Opened)
                 throw new Dacs7NotConnectedException();
@@ -183,7 +183,7 @@ namespace Dacs7.Protocols
         }
 
 
-        public async Task<IEnumerable<ItemResponseRetValue>> WriteAsync(IEnumerable<WriteItemSpecification> vars)
+        public async Task<IEnumerable<ItemResponseRetValue>> WriteAsync(IEnumerable<WriteItem> vars)
         {
             if (ConnectionState != ConnectionState.Opened)
                 throw new Dacs7NotConnectedException();
@@ -420,7 +420,7 @@ namespace Dacs7.Protocols
             }
         }
 
-        private IEnumerable<ReadPackage> CreateReadPackages(SiemensPlcProtocolContext s7Context, IEnumerable<ReadItemSpecification> vars)
+        private IEnumerable<ReadPackage> CreateReadPackages(SiemensPlcProtocolContext s7Context, IEnumerable<ReadItem> vars)
         {
             var result = new List<ReadPackage>();
             foreach (var item in vars.ToList().OrderByDescending(x => x.Length))
@@ -435,7 +435,7 @@ namespace Dacs7.Protocols
                         while (bytesToRead > 0)
                         {
                             var slice = Math.Min(_s7Context.ReadItemMaxLength, bytesToRead);
-                            var child = ReadItemSpecification.CreateChild(item, (ushort)(item.Offset + processed), slice);
+                            var child = ReadItem.CreateChild(item, (ushort)(item.Offset + processed), slice);
                             if (slice < _s7Context.ReadItemMaxLength)
                             {
                                 currentPackage = result.FirstOrDefault(package => package.TryAdd(child));
@@ -499,7 +499,7 @@ namespace Dacs7.Protocols
         }
 
 
-        private IEnumerable<WritePackage> CreateWritePackages(SiemensPlcProtocolContext s7Context, IEnumerable<WriteItemSpecification> vars)
+        private IEnumerable<WritePackage> CreateWritePackages(SiemensPlcProtocolContext s7Context, IEnumerable<WriteItem> vars)
         {
             var result = new List<WritePackage>();
             foreach (var item in vars.ToList().OrderByDescending(x => x.Length))
@@ -514,7 +514,7 @@ namespace Dacs7.Protocols
                         while (bytesToWrite > 0)
                         {
                             var slice = Math.Min(_s7Context.WriteItemMaxLength, bytesToWrite);
-                            var child = WriteItemSpecification.CreateChild(item, (ushort)(item.Offset + processed), slice);
+                            var child = WriteItem.CreateChild(item, (ushort)(item.Offset + processed), slice);
                             if (slice < _s7Context.WriteItemMaxLength)
                             {
                                 currentPackage = result.FirstOrDefault(package => package.TryAdd(child));

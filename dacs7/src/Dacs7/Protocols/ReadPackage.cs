@@ -13,7 +13,7 @@ namespace Dacs7.Protocols
         private int _sizeResponse = SiemensPlcProtocolContext.ReadAckHeader + SiemensPlcProtocolContext.ReadAckParameter;
         private int _size;
 
-        private List<ReadItemSpecification> _items = new List<ReadItemSpecification>();
+        private List<ReadItem> _items = new List<ReadItem>();
 
 
         public bool Handled => _returned;
@@ -24,7 +24,7 @@ namespace Dacs7.Protocols
 
         public int Free => _maxSize - Size;
 
-        public IEnumerable<ReadItemSpecification> Items => _items;
+        public IEnumerable<ReadItem> Items => _items;
 
 
         public ReadPackage(int pduSize)
@@ -39,7 +39,7 @@ namespace Dacs7.Protocols
             return this;
         }
 
-        public bool TryAdd(ReadItemSpecification item)
+        public bool TryAdd(ReadItem item)
         {
             var size = item.Length;
             if (Free >= size)

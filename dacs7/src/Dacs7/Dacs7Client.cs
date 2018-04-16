@@ -16,7 +16,7 @@ namespace Dacs7
 
     public partial class Dacs7Client
     {
-        private Dictionary<string, ReadItemSpecification> _registeredTags = new Dictionary<string, ReadItemSpecification>();
+        private Dictionary<string, ReadItem> _registeredTags = new Dictionary<string, ReadItem>();
         private ClientSocketConfiguration _config;
         private Rfc1006ProtocolContext _context;
         private SiemensPlcProtocolContext _s7Context;
@@ -125,38 +125,38 @@ namespace Dacs7
             }
         }
 
-        private ReadItemSpecification RegisteredOrGiven(string tag)
+        private ReadItem RegisteredOrGiven(string tag)
         {
             if (_registeredTags.TryGetValue(tag, out var nodeId))
             {
                 return nodeId;
             }
-            return ReadItemSpecification.CreateFromTag(tag);
+            return ReadItem.CreateFromTag(tag);
         }
 
-        private IEnumerable<ReadItemSpecification> CreateNodeIdCollection(IEnumerable<string> values)
+        private IEnumerable<ReadItem> CreateNodeIdCollection(IEnumerable<string> values)
         {
-            return new List<ReadItemSpecification>(values.Select(item => RegisteredOrGiven(item)));
+            return new List<ReadItem>(values.Select(item => RegisteredOrGiven(item)));
         }
 
-        private IEnumerable<WriteItemSpecification> CreateWriteNodeIdCollection(IEnumerable<KeyValuePair<string, object>> values)
+        private IEnumerable<WriteItem> CreateWriteNodeIdCollection(IEnumerable<KeyValuePair<string, object>> values)
         {
-            return new List<WriteItemSpecification>(values.Select(item =>
+            return new List<WriteItem>(values.Select(item =>
             {
                 var result = RegisteredOrGiven(item.Key).Clone();
-                result.Data = WriteItemSpecification.ConvertDataToMemory(result, item.Value);
+                result.Data = WriteItem.ConvertDataToMemory(result, item.Value);
                 return result;
             }));
         }
 
-        private void UpdateRegistration(List<KeyValuePair<string, ReadItemSpecification>> toAdd, List<KeyValuePair<string, ReadItemSpecification>> toRemove)
+        private void UpdateRegistration(List<KeyValuePair<string, ReadItem>> toAdd, List<KeyValuePair<string, ReadItem>> toRemove)
         {
-            Dictionary<string, ReadItemSpecification> origin;
-            Dictionary<string, ReadItemSpecification> newDict;
+            Dictionary<string, ReadItem> origin;
+            Dictionary<string, ReadItem> newDict;
             do
             {
                 origin = _registeredTags;
-                var tmp = origin as IEnumerable<KeyValuePair<string, ReadItemSpecification>>;
+                var tmp = origin as IEnumerable<KeyValuePair<string, ReadItem>>;
                 if(toAdd != null) tmp = tmp.Union(toAdd);
                 if (toRemove != null) tmp = tmp.Except(toRemove);
                 newDict = tmp.ToDictionary(pair => pair.Key, pair => pair.Value);
