@@ -31,6 +31,10 @@ namespace Dacs7.Protocols.Rfc1006
         public Memory<byte> Payload { get; set; }
 
 
+
+
+
+
         public static IEnumerable<DataTransferDatagram> Build(Rfc1006ProtocolContext context, Memory<byte> rawPayload)
         {
             var result = new List<DataTransferDatagram>();

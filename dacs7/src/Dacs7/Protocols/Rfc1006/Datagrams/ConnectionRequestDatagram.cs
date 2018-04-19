@@ -68,7 +68,7 @@ namespace Dacs7.Protocols.Rfc1006
             return result;
         }
 
-        public bool Correlate(ConnectionRequestDatagram o1, ConnectionConfirmedDatagram o2)
+        public static bool Correlate(ConnectionRequestDatagram o1, ConnectionConfirmedDatagram o2)
         {
             //Test ack
             if (o1.SourceTsap.Span.SequenceEqual(o2.SourceTsap.Span) && o1.DestTsap.Span.SequenceEqual(o2.DestTsap.Span))
