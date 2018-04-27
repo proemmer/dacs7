@@ -39,7 +39,7 @@ namespace Dacs7
                         cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeout));
                         registration = cts.Token.Register(() =>
                         {
-                            tcs.TrySetCanceled();
+                            tcs.TrySetResult(default);
                         }, false);
                     }
                     _waits.Enqueue(tcs);
