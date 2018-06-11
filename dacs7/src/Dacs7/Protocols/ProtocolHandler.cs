@@ -156,14 +156,14 @@ namespace Dacs7.Protocols
                                     parent = new S7DataItemSpecification
                                     {
                                         TransportSize = item.TransportSize,
-                                        Length = items.Current.Parent.Length,
-                                        Data = new byte[items.Current.Parent.Length]
+                                        Length = items.Current.Parent.NumberOfItems,
+                                        Data = new byte[items.Current.Parent.NumberOfItems]
                                     };
                                     result[items.Current.Parent] = parent;
                                 }
 
                                 parent.ReturnCode = item.ReturnCode;
-                                item.Data.CopyTo(parent.Data.Slice(items.Current.Offset - items.Current.Parent.Offset, items.Current.Length));
+                                item.Data.CopyTo(parent.Data.Slice(items.Current.Offset - items.Current.Parent.Offset, items.Current.NumberOfItems));
                             }
                             else
                             {
@@ -423,14 +423,14 @@ namespace Dacs7.Protocols
         private IEnumerable<ReadPackage> CreateReadPackages(SiemensPlcProtocolContext s7Context, IEnumerable<ReadItem> vars)
         {
             var result = new List<ReadPackage>();
-            foreach (var item in vars.ToList().OrderByDescending(x => x.Length))
+            foreach (var item in vars.ToList().OrderByDescending(x => x.NumberOfItems))
             {
                 var currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
                 if (currentPackage == null)
                 {
-                    if (item.Length > s7Context.ReadItemMaxLength)
+                    if (item.NumberOfItems > s7Context.ReadItemMaxLength)
                     {
-                        ushort bytesToRead = item.Length;
+                        ushort bytesToRead = item.NumberOfItems;
                         ushort processed = 0;
                         while (bytesToRead > 0)
                         {
@@ -502,14 +502,14 @@ namespace Dacs7.Protocols
         private IEnumerable<WritePackage> CreateWritePackages(SiemensPlcProtocolContext s7Context, IEnumerable<WriteItem> vars)
         {
             var result = new List<WritePackage>();
-            foreach (var item in vars.ToList().OrderByDescending(x => x.Length))
+            foreach (var item in vars.ToList().OrderByDescending(x => x.NumberOfItems))
             {
                 var currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
                 if (currentPackage == null)
                 {
-                    if (item.Length > s7Context.WriteItemMaxLength)
+                    if (item.NumberOfItems > s7Context.WriteItemMaxLength)
                     {
-                        ushort bytesToWrite = item.Length;
+                        ushort bytesToWrite = item.NumberOfItems;
                         ushort processed = 0;
                         while (bytesToWrite > 0)
                         {

@@ -14,11 +14,9 @@ namespace Dacs7
         public PlcArea Area { get; private set; }
         public ushort DbNumber { get; private set; }
         public int Offset { get; private set; }
-        public ushort Length { get; private set; }
+        public ushort NumberOfItems { get; private set; }
         public Type VarType { get; private set; }
         public Type ResultType { get; private set; }
-
-
 
         internal int CallbackReference { get; set; }
         internal ReadItem Parent { get; set; }
@@ -37,7 +35,7 @@ namespace Dacs7
                 Area = Area,
                 DbNumber = DbNumber,
                 Offset = Offset,
-                Length = Length,
+                NumberOfItems = NumberOfItems,
                 VarType = VarType,
                 ResultType = ResultType
             };
@@ -53,7 +51,7 @@ namespace Dacs7
                     Area = result.Area,
                     DbNumber = result.DbNumber,
                     Offset = result.Offset,
-                    Length = result.Length,
+                    NumberOfItems = result.Length,
                     VarType = result.VarType,
                     ResultType = result.ResultType
                 };
@@ -82,7 +80,7 @@ namespace Dacs7
                 Area = selector,
                 DbNumber = db,
                 Offset = offset,
-                Length = length
+                NumberOfItems = length
             });
         }
 
@@ -104,13 +102,12 @@ namespace Dacs7
                 Area = item.Area,
                 DbNumber = item.DbNumber,
                 Offset = offset,
-                Length = length,
+                NumberOfItems = length,
                 VarType = item.VarType,
                 ResultType = item.ResultType,
                 Parent = item
             };
         }
-
 
 
         internal static object ConvertMemoryToData(ReadItem item, Memory<byte> data)
@@ -130,9 +127,9 @@ namespace Dacs7
             }
             else if (item.ResultType == typeof(bool[]))
             {
-                var result = new bool[item.Length];
+                var result = new bool[item.NumberOfItems];
                 var index = 0;
-                foreach (var aa in data.Span.Slice(0, item.Length))
+                foreach (var aa in data.Span.Slice(0, item.NumberOfItems))
                 {
                     result[index++] = aa == 0x01;
                 }
@@ -144,9 +141,9 @@ namespace Dacs7
             }
             else if (item.ResultType == typeof(char[]) || item.ResultType == typeof(Memory<char>))
             {
-                var result = new char[item.Length];
+                var result = new char[item.NumberOfItems];
                 var index = 0;
-                foreach (var aa in data.Span.Slice(0, item.Length))
+                foreach (var aa in data.Span.Slice(0, item.NumberOfItems))
                 {
                     result[index++] = Convert.ToChar(aa);
                 }
@@ -183,8 +180,8 @@ namespace Dacs7
             }
             else if (item.ResultType == typeof(Int16[]))
             {
-                var result = new Int16[item.Length];
-                for (int i = 0; i < item.Length; i++)
+                var result = new Int16[item.NumberOfItems];
+                for (int i = 0; i < item.NumberOfItems; i++)
                 {
                     result[i] = BinaryPrimitives.ReadInt16BigEndian(data.Slice(i * 2).Span);
                 }
@@ -192,8 +189,8 @@ namespace Dacs7
             }
             else if (item.ResultType == typeof(UInt16[]))
             {
-                var result = new UInt16[item.Length];
-                for (int i = 0; i < item.Length; i++)
+                var result = new UInt16[item.NumberOfItems];
+                for (int i = 0; i < item.NumberOfItems; i++)
                 {
                     result[i] = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(i * 2).Span);
                 }
@@ -201,8 +198,8 @@ namespace Dacs7
             }
             else if (item.ResultType == typeof(Int32[]))
             {
-                var result = new Int32[item.Length];
-                for (int i = 0; i < item.Length; i++)
+                var result = new Int32[item.NumberOfItems];
+                for (int i = 0; i < item.NumberOfItems; i++)
                 {
                     result[i] = BinaryPrimitives.ReadInt32BigEndian(data.Slice(i * 4).Span);
                 }
@@ -210,8 +207,8 @@ namespace Dacs7
             }
             else if (item.ResultType == typeof(UInt32[]))
             {
-                var result = new UInt32[item.Length];
-                for (int i = 0; i < item.Length; i++)
+                var result = new UInt32[item.NumberOfItems];
+                for (int i = 0; i < item.NumberOfItems; i++)
                 {
                     result[i] = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(i * 4).Span);
                 }
@@ -219,8 +216,8 @@ namespace Dacs7
             }
             else if (item.ResultType == typeof(Int64[]))
             {
-                var result = new Int64[item.Length];
-                for (int i = 0; i < item.Length; i++)
+                var result = new Int64[item.NumberOfItems];
+                for (int i = 0; i < item.NumberOfItems; i++)
                 {
                     result[i] = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(i * 8).Span);
                 }
@@ -228,8 +225,8 @@ namespace Dacs7
             }
             else if (item.ResultType == typeof(UInt64[]))
             {
-                var result = new UInt64[item.Length];
-                for (int i = 0; i < item.Length; i++)
+                var result = new UInt64[item.NumberOfItems];
+                for (int i = 0; i < item.NumberOfItems; i++)
                 {
                     result[i] = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(i * 8).Span);
                 }
@@ -297,7 +294,7 @@ namespace Dacs7
             else
             {
                 result.VarType = t;
-                result.ResultType = result.Length > 1 ? typeof(T[]) : result.VarType;
+                result.ResultType = result.NumberOfItems > 1 ? typeof(T[]) : result.VarType;
             }
             return result;
         }

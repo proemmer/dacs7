@@ -24,6 +24,9 @@ namespace Dacs7.Protocols.SiemensPlc
         public Memory<byte> FillByte { get; set; }
 
 
+        public ushort ElementSize { get; set; }
+
+
         #region IDatagramPropertyConverter
         public object ConvertLength()
         {
@@ -53,7 +56,7 @@ namespace Dacs7.Protocols.SiemensPlc
                 {
                     if ((fullLength % 2) != 0)
                         fullLength++;
-                    fullLength += item.Length;
+                    fullLength += (ushort)item.Data.Length;
 
                     if (item.VarType == typeof(string))
                         fullLength += 2;
@@ -64,7 +67,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public ushort GetSpecificationLength()
         {
-            return (ushort)(4 + Length);
+            return (ushort)(4 + (ElementSize * Length));
         }
 
         public static byte GetTransportSize(Type t)
@@ -83,6 +86,69 @@ namespace Dacs7.Protocols.SiemensPlc
                 return (byte)DataTransportSize.Int;
 
             return 0;
+        }
+
+        public static byte GetTransportSize(PlcArea area, Type t, out ushort elementSize)
+        {
+            if (area == PlcArea.CT || area == PlcArea.TM)
+            {
+                elementSize = 2;
+                return (byte)DataTransportSize.OctetString;
+            }
+
+            if (t.IsArray)
+                t = t.GetElementType();
+
+            if (t == typeof(bool))
+            {
+                elementSize = 1;
+                return (byte)DataTransportSize.Bit;
+            }
+
+            if (t == typeof(byte) || t == typeof(string) || t == typeof(Memory<byte>))
+            {
+                elementSize = 1;
+                return (byte)DataTransportSize.Byte;
+            }
+
+            if (t == typeof(char))
+            {
+                elementSize = 1;
+                return (byte)DataTransportSize.OctetString;
+            }
+
+            if (t == typeof(short))
+            {
+                elementSize = 2;
+                return (byte)DataTransportSize.Int;
+            }
+
+            if (t == typeof(int))
+            {
+                elementSize = 4;
+                return (byte)DataTransportSize.Int;
+            }
+
+            if (t == typeof(ushort) )
+            {
+                elementSize = 2;
+                return (byte)DataTransportSize.Byte;
+            }
+
+            if (t == typeof(uint) )
+            {
+                elementSize = 4;
+                return (byte)DataTransportSize.Byte;
+            }
+
+            if (t == typeof(Single))
+            {
+                elementSize = 4;
+                return (byte)DataTransportSize.Real;
+            }
+
+            elementSize = 1;
+            return (byte)DataTransportSize.Byte;
         }
 
         public static ushort GetDataLength(int datalength, byte transportSize)
@@ -110,8 +176,11 @@ namespace Dacs7.Protocols.SiemensPlc
 
             span[0] = datagram.ReturnCode;
             span[1] = datagram.TransportSize;
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(2, 2), GetDataLength(datagram.Length, datagram.TransportSize));
-            datagram.Data.CopyTo(result.Slice(4, datagram.Length));
+
+
+            var size = datagram.ElementSize * datagram.Length;
+            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(2, 2), GetDataLength(size, datagram.TransportSize));
+            datagram.Data.CopyTo(result.Slice(4, size));
             return result;
         }
 
@@ -122,7 +191,8 @@ namespace Dacs7.Protocols.SiemensPlc
             {
                 ReturnCode = span[0],
                 TransportSize = span[1],
-                Length = SetDataLength(BinaryPrimitives.ReadUInt16BigEndian(span.Slice(2, 2)), span[1])
+                Length = SetDataLength(BinaryPrimitives.ReadUInt16BigEndian(span.Slice(2, 2)), span[1]),
+                ElementSize = 1
             };
             result.Data = new byte[result.Length];
             data.Slice(4, result.Length).CopyTo(result.Data);

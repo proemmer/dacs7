@@ -40,7 +40,7 @@ namespace Dacs7.Protocols
 
         public bool TryAdd(WriteItem item)
         {
-            var size = item.Length;
+            var size = item.NumberOfItems;
             if (Free >= size)
             {
                 _items.Add(item);

@@ -38,7 +38,7 @@ namespace Dacs7.Protocols.SiemensPlc
                     result.Items.Add(new S7AddressItemSpecificationDatagram
                     {
                         TransportSize = S7AddressItemSpecificationDatagram.GetTransportSize(item.Area, item.VarType),
-                        ItemSpecLength = item.Length,
+                        ItemSpecLength = item.NumberOfItems,
                         DbNumber = item.DbNumber,
                         Area = (byte)item.Area,
                         Address = S7AddressItemSpecificationDatagram.GetAddress(item.Offset, item.VarType)
@@ -48,14 +48,15 @@ namespace Dacs7.Protocols.SiemensPlc
                 foreach (var item in vars)
                 {
                     numberOfItems--;
-                    var transportSize = S7DataItemSpecification.GetTransportSize(item.VarType);
+                    var transportSize = S7DataItemSpecification.GetTransportSize(item.Area, item.VarType, out var elemetSize);
                     result.Data.Add(new S7DataItemSpecification
                     {
                         ReturnCode = 0x00,
                         TransportSize = transportSize,
-                        Length = (ushort)item.Data.Length, //S7DataItemSpecification.GetDataLength(item.Data.Length, transportSize),
+                        Length = item.NumberOfItems,
                         Data = item.Data,
-                        FillByte = numberOfItems == 0 || item.Length % 2 == 0 ? new byte[0] : new byte[1]
+                        FillByte = numberOfItems == 0 || item.NumberOfItems % 2 == 0 ? new byte[0] : new byte[1],
+                        ElementSize = elemetSize
                     });
                 }
             }
@@ -79,7 +80,6 @@ namespace Dacs7.Protocols.SiemensPlc
             {
                 S7AddressItemSpecificationDatagram.TranslateToMemory(item, result.Slice(offset));
                 offset += item.GetSpecificationLength();
-                if (offset % 2 != 0) offset++;
             }
 
             foreach (var item in datagram.Data)

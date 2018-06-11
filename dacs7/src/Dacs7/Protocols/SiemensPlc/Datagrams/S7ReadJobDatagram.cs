@@ -38,7 +38,7 @@ namespace Dacs7.Protocols.SiemensPlc
                     result.Items.Add(new S7AddressItemSpecificationDatagram
                     {
                         TransportSize = S7AddressItemSpecificationDatagram.GetTransportSize(item.Area, item.VarType),
-                        ItemSpecLength = item.Length,
+                        ItemSpecLength = item.NumberOfItems,
                         DbNumber = item.DbNumber,
                         Area = (byte)item.Area,
                         Address = S7AddressItemSpecificationDatagram.GetAddress(item.Offset, item.VarType)

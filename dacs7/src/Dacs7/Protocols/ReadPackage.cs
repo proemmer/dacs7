@@ -41,7 +41,7 @@ namespace Dacs7.Protocols
 
         public bool TryAdd(ReadItem item)
         {
-            var size = item.Length;
+            var size = item.NumberOfItems;
             if (Free >= size)
             {
                 _items.Add(item);

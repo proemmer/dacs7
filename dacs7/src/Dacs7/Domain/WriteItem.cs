@@ -105,6 +105,8 @@ namespace Dacs7
             return 1;
         }
 
+
+
         internal static Memory<byte> ConvertDataToMemory(WriteItem item, object data)
         {
             if (data is string && item.ResultType != typeof(string))
