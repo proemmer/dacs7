@@ -79,12 +79,14 @@ namespace Dacs7.Protocols.SiemensPlc
             {
                 S7AddressItemSpecificationDatagram.TranslateToMemory(item, result.Slice(offset));
                 offset += item.GetSpecificationLength();
+                if (offset % 2 != 0) offset++;
             }
 
             foreach (var item in datagram.Data)
             {
                 S7DataItemSpecification.TranslateToMemory(item, result.Slice(offset));
                 offset += item.GetSpecificationLength();
+                if (offset % 2 != 0) offset++;
             }
 
             return result;

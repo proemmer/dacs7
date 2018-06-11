@@ -17,14 +17,18 @@ namespace Dacs7Tests
 
 
         [Fact]
-        public async Task ReadBits()
+        public async Task ReadWriteBits()
         {
             await ExecuteAsync(async (client) =>
             {
                 const string datablock = "DB1";
                 var baseOffset = 10000 * 8;
-                var results = (await client.ReadAsync(ReadItem.Create<bool>(datablock, baseOffset, 1000),
-                                                       ReadItem.Create<bool>(datablock, baseOffset + 5, 100))).ToArray();
+                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, baseOffset, false),
+                       WriteItem.Create(datablock, baseOffset + 5, false))).ToArray();
+
+
+                var results = (await client.ReadAsync(ReadItem.Create<bool>(datablock, baseOffset),
+                                                       ReadItem.Create<bool>(datablock, baseOffset + 5))).ToArray();
 
 
                 Assert.Equal(2, results.Count());
@@ -32,6 +36,21 @@ namespace Dacs7Tests
                 Assert.False((bool)results[0].Value);
                 Assert.Equal(typeof(bool), results[1].Type);
                 Assert.False((bool)results[1].Value);
+
+                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, baseOffset, true),
+                                       WriteItem.Create(datablock, baseOffset + 5, true))).ToArray();
+
+                results = (await client.ReadAsync(ReadItem.Create<bool>(datablock, baseOffset),
+                                                       ReadItem.Create<bool>(datablock, baseOffset + 5))).ToArray();
+
+                Assert.Equal(2, results.Count());
+                Assert.Equal(typeof(bool), results[0].Type);
+                Assert.True((bool)results[0].Value);
+                Assert.Equal(typeof(bool), results[1].Type);
+                Assert.True((bool)results[1].Value);
+
+                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, baseOffset, false),
+                                       WriteItem.Create(datablock, baseOffset + 5, false))).ToArray();
 
             });
         }
@@ -64,9 +83,16 @@ namespace Dacs7Tests
             {
                 const string datablock = "DB1";
                 const ushort offset = 2500;
+                var resultsDefault0 = new Memory<byte>(Enumerable.Repeat((byte)0x00, 1000).ToArray());
+                var resultsDefault1 = await client.WriteAsync(WriteItem.Create(datablock, offset, resultsDefault0));
+                var resultsDefault2 = (await client.ReadAsync(ReadItem.Create<byte[]>(datablock, offset, 1000)));
+
                 var results0 = new Memory<byte>(Enumerable.Repeat((byte)0x25, 1000).ToArray());
                 var results1 = await client.WriteAsync(WriteItem.Create(datablock, offset, results0));
                 var results2 = (await client.ReadAsync(ReadItem.Create<byte[]>(datablock, offset, 1000)));
+
+
+                resultsDefault1 = await client.WriteAsync(WriteItem.Create(datablock, offset, resultsDefault0));
                 Assert.True(results0.Span.SequenceEqual(results2.FirstOrDefault().Data.Span));
             });
         }

@@ -31,6 +31,7 @@ namespace Dacs7.Protocols.SiemensPlc
             {
                 S7DataItemSpecification.TranslateToMemory(item, result.Slice(offset));
                 offset += item.GetSpecificationLength();
+                if (offset % 2 != 0) offset++;
             }
 
             return result;
@@ -52,6 +53,7 @@ namespace Dacs7.Protocols.SiemensPlc
                 var res = S7DataItemSpecification.TranslateFromMemory(data.Slice(offset));
                 result.Data.Add(res);
                 offset += res.GetSpecificationLength();
+                if (offset % 2 != 0) offset++;
             }
 
             return result;

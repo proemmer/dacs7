@@ -32,7 +32,7 @@ namespace Dacs7
                 {
                     
                     var tcs = new TaskCompletionSource<T>();
-                    CancellationTokenRegistration registration;
+                    CancellationTokenRegistration registration = default;
                     CancellationTokenSource cts = null;
                     if (timeout > -1)
                     {
@@ -42,6 +42,7 @@ namespace Dacs7
                             tcs.TrySetResult(default);
                         }, false);
                     }
+
                     _waits.Enqueue(tcs);
                     return tcs.Task.ContinueWith<T>(t => 
                     {
