@@ -1,0 +1,2 @@
+﻿read --address benjipc677c --tags RTX.DB1114.0,b,100;RTX.DB1114.100,b,500;RTX.DB1114.600,b,500;RTX.DB1114.100,b,100 -l 100 -w 2
+read --address benjipc677c --tags DB1.80000,x,1

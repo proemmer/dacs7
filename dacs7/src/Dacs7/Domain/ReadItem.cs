@@ -14,7 +14,7 @@ namespace Dacs7
     {
         public PlcArea Area { get; private set; }
         public ushort DbNumber { get; private set; }
-        public ushort Offset { get; private set; }
+        public int Offset { get; private set; }
         public ushort Length { get; private set; }
         public Type VarType { get; private set; }
         public Type ResultType { get; private set; }
@@ -87,7 +87,7 @@ namespace Dacs7
         /// <param name="offset">offset in bytes, if you address booleans, you have to pass the address in bits (byteoffset * 8 + bitoffset)</param>
         /// <param name="length">The number of items to read</param>
         /// <returns></returns>
-        public static ReadItem Create<T>(string area, ushort offset, ushort length = 1)
+        public static ReadItem Create<T>(string area, int offset, ushort length = 1)
         {
             PlcArea selector = 0;
             ushort db = 0;

@@ -1,23 +1,20 @@
 ﻿using Dacs7.Protocols.SiemensPlc;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Dacs7
 {
     public class DataValue
     {
         private ReadItem _meta;
-        private byte _returnCode;
-        private Memory<byte> _data;
         private object _value;
 
 
-        byte ReturnCode => _returnCode;
-        public Type Type => _meta.ResultType;
-        public Memory<byte> Data => _data;
+        ItemResponseRetValue ReturnCode { get; }
 
-        public object Value => _value ?? (_value = ReadItem.ConvertMemoryToData(_meta, _data));
+        public Type Type => _meta.ResultType;
+        public Memory<byte> Data { get; }
+
+        public object Value => _value ?? (_value = ReadItem.ConvertMemoryToData(_meta, Data));
 
         public T GetValue<T>()
         {
@@ -32,8 +29,8 @@ namespace Dacs7
         internal DataValue(ReadItem meta, S7DataItemSpecification data)
         {
             _meta = meta;
-            _returnCode = data.ReturnCode;
-            _data = data.Data;
+            ReturnCode = (ItemResponseRetValue)data.ReturnCode;
+            Data = data.Data;
         }
 
     }
