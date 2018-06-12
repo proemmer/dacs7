@@ -53,6 +53,26 @@ namespace Dacs7
         #endregion
     }
 
+    public class Dacs7TypeNotSupportedException : Exception
+    {
+        public Type NotSupportedType { get; private set; }
+
+        public Dacs7TypeNotSupportedException(Type notSupportedType) : base($"The Type {notSupportedType.Name} is not supported for read or write operations!")
+        {
+            NotSupportedType = notSupportedType;
+        }
+    }
+
+    public class Dacs7InvalidTagException : Exception
+    {
+        public string Tag { get; private set; }
+
+        public Dacs7InvalidTagException(string tag) : base($"The given Tag '{tag}'could not be parsed!")
+        {
+            Tag = tag;
+        }
+    }
+
     public class Dacs7ContentException : Exception
     {
         public int ErrorIndex { get; private set; }

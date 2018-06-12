@@ -161,6 +161,46 @@ namespace Dacs7Tests
         }
 
         [Fact]
+        public async Task ReadWriteSingleStrings()
+        {
+            await ExecuteAsync(async (client) =>
+            {
+                const string datablock = "DB1";
+                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10046, ""),
+                                                            WriteItem.Create(datablock, 10068, "                    "))).ToArray();
+
+
+                var results = (await client.ReadAsync(ReadItem.Create<string>(datablock, 10046, 20),
+                                                      ReadItem.Create<string>(datablock, 10068, 20))).ToArray();
+
+
+                Assert.Equal(2, results.Count());
+                Assert.Equal(typeof(string), results[0].Type);
+                Assert.Equal("", (string)results[0].Value);
+                Assert.Equal(typeof(string), results[1].Type);
+                Assert.Equal("                    ", (string)results[1].Value);
+
+                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10046, "Test1"),
+                                                        WriteItem.Create(datablock, 10068, "Test2               "))).ToArray();
+
+                results = (await client.ReadAsync(ReadItem.Create<string>(datablock, 10046, 20),
+                                                  ReadItem.Create<string>(datablock, 10068, 20))).ToArray();
+
+                Assert.Equal(2, results.Count());
+                Assert.Equal(typeof(string), results[0].Type);
+                Assert.Equal("Test1", (string)results[0].Value);
+                Assert.Equal(typeof(string), results[1].Type);
+                Assert.Equal("Test2               ", (string)results[1].Value);
+
+                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10046, ""),
+                                                            WriteItem.Create(datablock, 10068, "                    "))).ToArray();
+
+            });
+        }
+
+
+
+        [Fact]
         public async Task ReadMultibleByteArrayData()
         {
             await ExecuteAsync(async (client) =>
@@ -326,7 +366,9 @@ namespace Dacs7Tests
                 Assert.Single(results);
                 Assert.Equal(typeof(int[]), results[0].Type);
 
-                var resultValueDefault = results[0].Value as short[];
+                var resultValueDefault = results[0].GetValue<int[]>();
+
+                Assert.True(resultValueDefault.SequenceEqual(writeDataDefault));
 
                 var writeData = new int[] { 22, 21 };
                 writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeData))).ToArray();
@@ -336,7 +378,7 @@ namespace Dacs7Tests
                 Assert.Single(results);
                 Assert.Equal(typeof(int[]), results[0].Type);
 
-                var resultValue = results[0].Value as int[];
+                var resultValue = results[0].GetValue<int[]>();
 
                 Assert.True(resultValue.SequenceEqual(writeData));
 

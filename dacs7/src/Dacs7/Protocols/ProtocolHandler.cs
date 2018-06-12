@@ -435,7 +435,7 @@ namespace Dacs7.Protocols
                         while (bytesToRead > 0)
                         {
                             var slice = Math.Min(_s7Context.ReadItemMaxLength, bytesToRead);
-                            var child = ReadItem.CreateChild(item, (ushort)(item.Offset + processed), slice);
+                            var child = ReadItem.CreateChild(item, (item.Offset + processed), slice);
                             if (slice < _s7Context.ReadItemMaxLength)
                             {
                                 currentPackage = result.FirstOrDefault(package => package.TryAdd(child));

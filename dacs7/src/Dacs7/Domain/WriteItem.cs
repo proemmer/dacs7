@@ -47,6 +47,9 @@ namespace Dacs7
 
         public static WriteItem Create<T>(string area, int offset, T data)
         {
+
+
+
             var result = Create<T>(area, offset, GetDataItemCount(data)).Clone();
             result.Data = ConvertDataToMemory(result, data);
             return result;
@@ -69,50 +72,21 @@ namespace Dacs7
 
         internal static ushort GetDataItemCount<T>(T data)
         {
-
-            switch (data)
-            {
-                case byte b:
-                    return 1;
-                case byte[] ba:
-                    return (ushort)ba.Length;
-                case Memory<byte> ba:
-                    return (ushort)ba.Length;
-                case char c:
-                    return 1;
-                case char[] ca:
-                    return (ushort)ca.Length;
-                case string s:
-                    return (ushort)(s.Length + 2);
-                case Int16 i16:
-                        return 1;
-                case UInt16 ui16:
-                        return 1;
-                case Int32 i32:
-                        return 1;
-                case UInt32 ui32:
-                        return 1;
-                case Int64 i64:
-                        return 1;
-                case UInt64 ui64:
-                        return 1;
-                case bool b:
-                        return 1;
-                case Single s:
-                        return 1;
-                case Single[] bb:
-                    return (ushort)bb.Length;
-                case bool[] bb:
-                    return (ushort)bb.Length;
-                case object[] oa:
-                    return (ushort)oa.Length;
-                case IEnumerable<object> ie:
-                    return (ushort)ie.Count();
-            }
-
-            if(typeof(T).IsArray)
+            if (typeof(T).IsArray)
             {
                 return (ushort)(data as Array).Length;
+            }
+            else if (data is Memory<byte> ba)
+            {
+                return (ushort)ba.Length;
+            }
+            else if (data is string s)
+            {
+                return (ushort)(s.Length + 2);
+            }
+            else if (data is IEnumerable<object> en)
+            {
+                return (ushort)en.Count();
             }
 
             return 1;

@@ -41,7 +41,11 @@ namespace Dacs7
             };
         }
 
-
+        /// <summary>
+        /// Create a readitem from a given Tag
+        /// </summary>
+        /// <param name="tag">Format:  [Area].[Offset],[Type],[Number Of Items  or in Case of bytes and strings the length of them]</param>
+        /// <returns></returns>
         public static ReadItem CreateFromTag(string tag)
         {
             if (TagParser.TryParseTag(tag, out var result))
@@ -59,9 +63,8 @@ namespace Dacs7
             return null;
         }
 
-
         /// <summary>
-        /// 
+        /// Create a read item
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="area">Where to read:  e.g.  DB1  or M or...</param>
@@ -84,18 +87,15 @@ namespace Dacs7
             });
         }
 
-
-
-
         /// <summary>
-        /// 
+        /// Create a child read item. (More than one items are  sharing their memory)
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="area">Where to read:  e.g.  DB1  or M or...</param>
         /// <param name="offset">offset in bytes, if you address booleans, you have to pass the address in bits (byteoffset * 8 + bitoffset)</param>
         /// <param name="length">The number of items to read</param>
         /// <returns></returns>
-        public static ReadItem CreateChild(ReadItem item, int offset, ushort length)
+        internal static ReadItem CreateChild(ReadItem item, int offset, ushort length)
         {
             return new ReadItem
             {
@@ -253,54 +253,6 @@ namespace Dacs7
             throw new InvalidCastException();
         }
 
-        private static ushort DetectTypes(string type, ushort length, ushort offset, out Type vtype, out Type rType)
-        {
-            vtype = typeof(object);
-            rType = typeof(object);
-            switch (type.ToLower())
-            {
-                case "b":
-                    vtype = typeof(byte);
-                    rType = length > 1 ? typeof(byte[]) : vtype;
-                    break;
-                case "c":
-                    vtype = typeof(char);
-                    rType = length > 1 ? typeof(char[]) : vtype;
-                    break;
-                case "w":
-                    vtype = typeof(UInt16);
-                    rType = length > 1 ? typeof(UInt16[]) : vtype;
-                    break;
-                case "dw":
-                    vtype = typeof(UInt32);
-                    rType = length > 1 ? typeof(UInt32[]) : vtype;
-                    break;
-                case "i":
-                    vtype = typeof(Int16);
-                    rType = length > 1 ? typeof(Int16[]) : vtype;
-                    break;
-                case "di":
-                    vtype = typeof(Int32);
-                    rType = length > 1 ? typeof(Int32[]) : vtype;
-                    break;
-                case "r":
-                    vtype = typeof(Single);
-                    rType = length > 1 ? typeof(Single[]) : vtype;
-                    break;
-                case "s":
-                    vtype = typeof(string);
-                    rType = length > 1 ? typeof(string[]) : vtype;
-                    break;
-                case var s when Regex.IsMatch(s, "^x\\d+$", RegexOptions.IgnoreCase):
-                    vtype = typeof(bool);
-                    rType = length > 1 ? typeof(bool[]) : vtype;
-                    offset = (ushort)((offset * 8) + UInt16.Parse(s.Substring(1)));
-                    break;
-            }
-
-            return offset;
-        }
-
         private static ReadItem SetupTypes<T>(ReadItem result)
         {
             var t = typeof(T);
@@ -309,14 +261,44 @@ namespace Dacs7
                 result.VarType = t.GetElementType();
                 result.ResultType = t;
             }
+            else if(t == typeof(string) )
+            {
+                result.VarType = result.ResultType  = t;
+                result.NumberOfItems += 2;
+            }
+            else if (t == typeof(Memory<byte>))
+            {
+                result.VarType = result.ResultType = t;
+            }
             else
             {
                 result.VarType = t;
                 result.ResultType = result.NumberOfItems > 1 ? typeof(T[]) : result.VarType;
             }
+
+
+            EnsureSupportedType(result);
+
             return result;
         }
 
+        private static void EnsureSupportedType(ReadItem item)
+        {
+            if (item.ResultType == typeof(byte) || item.ResultType == typeof(byte[]) || 
+                item.ResultType == typeof(Memory<byte>) ||
+                item.ResultType == typeof(string) || item.ResultType == typeof(bool) ||
+                item.ResultType == typeof(char) || item.ResultType == typeof(char[]) ||
+                item.ResultType == typeof(UInt16) || item.ResultType == typeof(UInt16[]) ||
+                item.ResultType == typeof(UInt32) || item.ResultType == typeof(UInt32[]) ||
+                item.ResultType == typeof(Int16) || item.ResultType == typeof(Int16[]) ||
+                item.ResultType == typeof(Int32) || item.ResultType == typeof(Int32[]) ||
+                item.ResultType == typeof(Single) || item.ResultType == typeof(Single[]))
+            {
+                return;
+            }
+
+            throw new Dacs7TypeNotSupportedException(item.ResultType);
+        }
 
 
         protected static byte[] Swap4BytesInBuffer(byte[] rawdata, int offset = 0)

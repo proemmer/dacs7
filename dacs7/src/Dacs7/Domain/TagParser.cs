@@ -221,12 +221,12 @@ namespace Dacs7.Domain
                     rType = length > 1 ? typeof(Single[]) : vtype;
                     return true;
                 case "s":
-                    vtype = typeof(string);
-                    rType = length > 1 ? typeof(string[]) : vtype;
+                    vtype = rType = typeof(string);
+                    //rType = length > 1 ? typeof(string[]) : vtype;
                     return true;
                 case var s when Regex.IsMatch(s, "^x\\d+$", RegexOptions.IgnoreCase):
-                    vtype = typeof(bool);
-                    rType = length > 1 ? typeof(bool[]) : vtype;
+                    vtype = rType = typeof(bool);
+                    //rType = length > 1 ? typeof(bool[]) : vtype;
 #if NETCOREAPP21
                     offset = ((offset * 8) + Int32.Parse(type.Slice(1)));
 #else
