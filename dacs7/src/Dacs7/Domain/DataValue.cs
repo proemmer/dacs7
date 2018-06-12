@@ -1,15 +1,8 @@
 ﻿using Dacs7.Protocols.SiemensPlc;
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Dacs7
 {
-
-    public delegate string DataValueFormatter(object value, string formattedValue);
-
-
     public class DataValue
     {
         private ReadItem _meta;
@@ -33,27 +26,11 @@ namespace Dacs7
             return (T)Value;
         }
 
-        public string GetValueAsString(DataValueFormatter formatter = null)
-        {
-            var result = FormattedResult();
-            return formatter != null ? formatter(Value, result) : result;
-        }
-
         internal DataValue(ReadItem meta, S7DataItemSpecification data)
         {
             _meta = meta;
             ReturnCode = (ItemResponseRetValue)data.ReturnCode;
             Data = data.Data;
-        }
-
-
-        private string FormattedResult()
-        {
-            if(Type.IsArray)
-            {
-                return (Value as IEnumerable<object>).Aggregate((a, b) => $"{a.ToString()} {b.ToString()}").ToString();
-            }
-            return Value.ToString();
         }
 
     }

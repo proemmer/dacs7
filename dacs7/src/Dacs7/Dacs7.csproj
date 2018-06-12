@@ -45,9 +45,4 @@
     <DefineConstants>NETSTANDARD20;$(AdditionalConstants)</DefineConstants>
   </PropertyGroup>
 
-
-  <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
-
 </Project>

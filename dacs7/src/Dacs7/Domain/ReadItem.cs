@@ -4,6 +4,9 @@
 using Dacs7.Domain;
 using System;
 using System.Buffers.Binary;
+using System.Globalization;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -117,7 +120,11 @@ namespace Dacs7
             {
                 return data.Span[0];
             }
-            else if (item.ResultType == typeof(byte[]) || item.ResultType == typeof(Memory<byte>))
+            else if (item.ResultType == typeof(byte[]))
+            {
+                return data.ToArray();
+            }
+            else if(item.ResultType == typeof(Memory<byte>))
             {
                 return data;
             }
@@ -253,6 +260,167 @@ namespace Dacs7
             throw new InvalidCastException();
         }
 
+
+        internal static Memory<byte> ConvertDataToMemory(ReadItem item, object data)
+        {
+            if (data is string && item.ResultType != typeof(string))
+            {
+                data = Convert.ChangeType(data, item.ResultType, CultureInfo.InvariantCulture);
+            }
+
+            switch (data)
+            {
+                case byte b:
+                    return new byte[] { b };
+                case byte[] ba:
+                    return ba;
+                case Memory<byte> ba:
+                    return ba;
+                case bool b:
+                    {
+                        return new byte[] { b ? (byte)0x01 : (byte)0x00 };
+                    }
+                case bool[] b:
+                    {
+                        return b.Select(x => x ? (byte)0x01 : (byte)0x00).ToArray();
+                    }
+                case char c:
+                    return new byte[] { Convert.ToByte(c) };
+                case char[] ca:
+                    return ca.Select(x => Convert.ToByte(x)).ToArray();
+                case string s:
+                    {
+                        Memory<byte> result = new byte[s.Length + 2];
+                        result.Span[0] = (byte)s.Length;
+                        result.Span[1] = (byte)s.Length;
+                        Encoding.ASCII.GetBytes(s).AsSpan().CopyTo(result.Span.Slice(2));
+                        return result;
+                    }
+                case Int16 i16:
+                    {
+                        Memory<byte> result = new byte[2];
+                        BinaryPrimitives.WriteInt16BigEndian(result.Span, i16);
+                        return result;
+                    }
+                case UInt16 ui16:
+                    {
+                        Memory<byte> result = new byte[2];
+                        BinaryPrimitives.WriteUInt16BigEndian(result.Span, ui16);
+                        return result;
+                    }
+                case Int32 i32:
+                    {
+                        Memory<byte> result = new byte[4];
+                        BinaryPrimitives.WriteInt32BigEndian(result.Span, i32);
+                        return result;
+                    }
+                case UInt32 ui32:
+                    {
+                        Memory<byte> result = new byte[4];
+                        BinaryPrimitives.WriteUInt32BigEndian(result.Span, ui32);
+                        return result;
+                    }
+                case Single s:
+                    {
+                        // TODO: Find a Span method to do this
+                        return WriteSingleBigEndian(s);
+                    }
+                case Int64 i64:
+                    {
+                        Memory<byte> result = new byte[8];
+                        BinaryPrimitives.WriteInt64BigEndian(result.Span, i64);
+                        return result;
+                    }
+                case UInt64 ui64:
+                    {
+                        Memory<byte> result = new byte[8];
+                        BinaryPrimitives.WriteUInt64BigEndian(result.Span, ui64);
+                        return result;
+                    }
+                case Int16[] i16:
+                    {
+                        Memory<byte> result = new byte[2 * i16.Length];
+                        for (int i = 0; i < i16.Length; i++)
+                        {
+                            BinaryPrimitives.WriteInt16BigEndian(result.Span.Slice(i * 2), i16[i]);
+                        }
+                        return result;
+                    }
+                case UInt16[] ui16:
+                    {
+                        Memory<byte> result = new byte[2 * ui16.Length];
+                        for (int i = 0; i < ui16.Length; i++)
+                        {
+                            BinaryPrimitives.WriteUInt16BigEndian(result.Span.Slice(i * 2), ui16[i]);
+                        }
+                        return result;
+                    }
+                case Int32[] i32:
+                    {
+                        Memory<byte> result = new byte[4 * i32.Length];
+                        for (int i = 0; i < i32.Length; i++)
+                        {
+                            BinaryPrimitives.WriteInt32BigEndian(result.Span.Slice(i * 4), i32[i]);
+                        }
+                        return result;
+                    }
+                case UInt32[] ui32:
+                    {
+                        Memory<byte> result = new byte[4 * ui32.Length];
+                        for (int i = 0; i < ui32.Length; i++)
+                        {
+                            BinaryPrimitives.WriteUInt32BigEndian(result.Span.Slice(i * 4), ui32[i]);
+                        }
+                        return result;
+                    }
+                case Int64[] i64:
+                    {
+                        Memory<byte> result = new byte[8 * i64.Length];
+                        for (int i = 0; i < i64.Length; i++)
+                        {
+                            BinaryPrimitives.WriteInt64BigEndian(result.Span.Slice(i * 8), i64[i]);
+                        }
+                        return result;
+                    }
+                case UInt64[] ui64:
+                    {
+                        Memory<byte> result = new byte[8 * ui64.Length];
+                        for (int i = 0; i < ui64.Length; i++)
+                        {
+                            BinaryPrimitives.WriteUInt64BigEndian(result.Span.Slice(i * 8), ui64[i]);
+                        }
+
+                        return result;
+                    }
+                case Single[] single:
+                    {
+                        // TODO: Find a Span method to do this
+                        var buffer = new byte[4 * single.Length];
+                        for (int i = 0; i < single.Length; i++)
+                        {
+                            WriteSingleBigEndian(single[i], buffer, i * 4);
+                        }
+                        return buffer;
+                    }
+
+            }
+            throw new InvalidCastException();
+        }
+
+
+
+        private static byte[] Swap4BytesInBuffer(byte[] rawdata, int offset = 0)
+        {
+            var b = rawdata[offset];
+            rawdata[offset] = rawdata[offset + 3];
+            rawdata[offset + 3] = b;
+            b = rawdata[offset + 1];
+            rawdata[offset + 1] = rawdata[offset + 2];
+            rawdata[offset + 2] = b;
+            return rawdata;
+        }
+
+
         private static ReadItem SetupTypes<T>(ReadItem result)
         {
             var t = typeof(T);
@@ -300,15 +468,13 @@ namespace Dacs7
             throw new Dacs7TypeNotSupportedException(item.ResultType);
         }
 
-
-        protected static byte[] Swap4BytesInBuffer(byte[] rawdata, int offset = 0)
+        private static Memory<byte> WriteSingleBigEndian(Single value, byte[] buffer = null, int offset = 0)
         {
-            var b = rawdata[offset];
-            rawdata[offset] = rawdata[offset + 3];
-            rawdata[offset + 3] = b;
-            b = rawdata[offset + 1];
-            rawdata[offset + 1] = rawdata[offset + 2];
-            rawdata[offset + 2] = b;
+            var rawdata = buffer ?? new byte[Marshal.SizeOf(value)];
+            var handle = GCHandle.Alloc(rawdata, GCHandleType.Pinned);
+            Marshal.StructureToPtr(value, handle.AddrOfPinnedObject(), false);
+            handle.Free();
+            Swap4BytesInBuffer(rawdata, offset);
             return rawdata;
         }
 
