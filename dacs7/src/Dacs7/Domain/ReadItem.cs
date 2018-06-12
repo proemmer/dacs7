@@ -214,7 +214,7 @@ namespace Dacs7
             }
             else if (item.ResultType == typeof(List<Int32>))
             {
-                return ConvertMemoryToUInt16(item, data).ToList();
+                return ConvertMemoryToInt32(item, data).ToList();
             }
             else if (item.ResultType == typeof(UInt32[]))
             {
@@ -422,22 +422,41 @@ namespace Dacs7
                     {
                         return ConvertUInt16ToMemory(ui16);
                     }
-
+                case List<Int32> i32:
+                    {
+                        return ConvertIn32ToMemory(i32);
+                    }
                 case Int32[] i32:
                     {
                         return ConvertIn32ToMemory(i32);
+                    }
+                case List<UInt32> ui32:
+                    {
+                        return ConvertUInt32ToMemory(ui32);
                     }
                 case UInt32[] ui32:
                     {
                         return ConvertUInt32ToMemory(ui32);
                     }
+                case List<Int64> i64:
+                    {
+                        return ConvertInt64ToMemory(i64);
+                    }
                 case Int64[] i64:
                     {
                         return ConvertInt64ToMemory(i64);
                     }
+                case List<UInt64> ui64:
+                    {
+                        return ConvertUInt64ToMemory(ui64);
+                    }
                 case UInt64[] ui64:
                     {
                         return ConvertUInt64ToMemory(ui64);
+                    }
+                case List<Single> single:
+                    {
+                        return ConvertSingleToMemory(single);
                     }
                 case Single[] single:
                     {
@@ -573,15 +592,15 @@ namespace Dacs7
 
         private static void EnsureSupportedType(ReadItem item)
         {
-            if (item.ResultType == typeof(byte) || item.ResultType == typeof(byte[]) || 
+            if (item.ResultType == typeof(byte) || item.ResultType == typeof(byte[]) || item.ResultType == typeof(List<byte>) || 
                 item.ResultType == typeof(Memory<byte>) ||
                 item.ResultType == typeof(string) || item.ResultType == typeof(bool) ||
-                item.ResultType == typeof(char) || item.ResultType == typeof(char[]) ||
-                item.ResultType == typeof(UInt16) || item.ResultType == typeof(UInt16[]) || item.ResultType == typeof(IEnumerable<UInt16>) || item.ResultType == typeof(List<UInt16>) ||
-                item.ResultType == typeof(UInt32) || item.ResultType == typeof(UInt32[]) || item.ResultType == typeof(IEnumerable<UInt32>) ||
-                item.ResultType == typeof(Int16) || item.ResultType == typeof(Int16[]) || item.ResultType == typeof(IEnumerable<Int16>) ||
-                item.ResultType == typeof(Int32) || item.ResultType == typeof(Int32[]) || item.ResultType == typeof(IEnumerable<Int32>) ||
-                item.ResultType == typeof(Single) || item.ResultType == typeof(Single[]) || item.ResultType == typeof(IEnumerable<Single>))
+                item.ResultType == typeof(char) || item.ResultType == typeof(char[]) || item.ResultType == typeof(List<char>) ||
+                item.ResultType == typeof(UInt16) || item.ResultType == typeof(UInt16[]) || item.ResultType == typeof(List<UInt16>) ||
+                item.ResultType == typeof(UInt32) || item.ResultType == typeof(UInt32[]) || item.ResultType == typeof(List<UInt32>) ||
+                item.ResultType == typeof(Int16) || item.ResultType == typeof(Int16[]) || item.ResultType == typeof(List<Int16>) ||
+                item.ResultType == typeof(Int32) || item.ResultType == typeof(Int32[]) || item.ResultType == typeof(List<Int32>) ||
+                item.ResultType == typeof(Single) || item.ResultType == typeof(Single[]) || item.ResultType == typeof(List<Single>))
             {
                 return;
             }
@@ -593,7 +612,7 @@ namespace Dacs7
         {
             var rawdata = buffer ?? new byte[Marshal.SizeOf(value)];
             var handle = GCHandle.Alloc(rawdata, GCHandleType.Pinned);
-            Marshal.StructureToPtr(value, handle.AddrOfPinnedObject(), false);
+            Marshal.StructureToPtr(value, handle.AddrOfPinnedObject() + offset, false);
             handle.Free();
             Swap4BytesInBuffer(rawdata, offset);
             return rawdata;

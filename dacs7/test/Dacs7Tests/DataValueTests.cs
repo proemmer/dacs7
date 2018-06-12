@@ -140,9 +140,9 @@ namespace Dacs7Tests
         [Fact()]
         public void TestShortsDataValue()
         {
-            var value = (short)5;
+            var value = new List<short> { 5, 10 };
             var testValue = CreateTestValue(value);
-            Assert.Equal(value, testValue.GetValue<short>());
+            Assert.Equal(value, testValue.GetValue<List<short>>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
 
@@ -150,27 +150,27 @@ namespace Dacs7Tests
         [Fact()]
         public void TestUIntsDataValue()
         {
-            var value = (uint)5;
+            var value = new List<uint> { 5, 10 };
             var testValue = CreateTestValue(value);
-            Assert.Equal(value, testValue.GetValue<uint>());
+            Assert.Equal(value, testValue.GetValue<List<uint>>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
 
         [Fact()]
         public void TestIntsDataValue()
         {
-            var value = (int)5;
+            var value = new List<int> { 5, 10 };
             var testValue = CreateTestValue(value);
-            Assert.Equal(value, testValue.GetValue<int>());
+            Assert.Equal(value, testValue.GetValue<List<int>>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
 
         [Fact()]
         public void TestSinglesDataValue()
         {
-            var value = (Single)1.5;
+            var value = new List<Single> { (Single)5.5, (Single)10.1 };
             var testValue = CreateTestValue(value);
-            Assert.Equal(value, testValue.GetValue<Single>());
+            Assert.Equal(value, testValue.GetValue<List<Single>>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
 
