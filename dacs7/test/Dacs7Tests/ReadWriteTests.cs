@@ -11,7 +11,7 @@ using Xunit;
 
 namespace Dacs7Tests
 {
-    public class ReadTests
+    public class ReadWriteTests
     {
         private static readonly string Address = "benjipc677c";
 
@@ -134,7 +134,6 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteSingles()
         {
-            // TODO
             await ExecuteAsync(async (client) =>
             {
                 const string datablock = "DB1";
@@ -160,7 +159,6 @@ namespace Dacs7Tests
 
             });
         }
-
 
         [Fact]
         public async Task ReadMultibleByteArrayData()
@@ -203,9 +201,149 @@ namespace Dacs7Tests
             });
         }
 
+        [Fact]
+        public async Task ReadWriteMultibleWords()
+        {
+            await ExecuteAsync(async (client) =>
+            {
+                const string datablock = "DB1";
+                const int startAddress = 10022;
+                var writeDataDefault = new ushort[] { 0, 0 };
+                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
 
 
+                var results = (await client.ReadAsync(ReadItem.Create<ushort>(datablock, startAddress, 2))).ToArray();
 
+
+                Assert.Single(results);
+                Assert.Equal(typeof(ushort[]), results[0].Type);
+
+                var resultValueDefault = results[0].Value as ushort[];
+
+                var writeData = new ushort[] { 22, 21 };
+                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeData))).ToArray();
+
+                results = (await client.ReadAsync(ReadItem.Create<ushort>(datablock, startAddress, 2))).ToArray();
+
+                Assert.Single(results);
+                Assert.Equal(typeof(ushort[]), results[0].Type);
+
+                var resultValue = results[0].Value as ushort[];
+
+                Assert.True(resultValue.SequenceEqual(writeData));
+
+                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
+
+            });
+        }
+
+        [Fact]
+        public async Task ReadWriteMultibleInts()
+        {
+            await ExecuteAsync(async (client) =>
+            {
+                const string datablock = "DB1";
+                var writeDataDefault = new short[] { 0, 0 };
+                const int startAddress = 10026;
+                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
+
+
+                var results = (await client.ReadAsync(ReadItem.Create<short>(datablock, startAddress, 2))).ToArray();
+
+
+                Assert.Single(results);
+                Assert.Equal(typeof(short[]), results[0].Type);
+
+                var resultValueDefault = results[0].Value as short[];
+
+                var writeData = new short[] { 22, 21 };
+                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeData))).ToArray();
+
+                results = (await client.ReadAsync(ReadItem.Create<short>(datablock, startAddress, 2))).ToArray();
+
+                Assert.Single(results);
+                Assert.Equal(typeof(short[]), results[0].Type);
+
+                var resultValue = results[0].Value as short[];
+
+                Assert.True(resultValue.SequenceEqual(writeData));
+
+                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
+
+            });
+        }
+
+        [Fact]
+        public async Task ReadWriteMultibleDWords()
+        {
+            await ExecuteAsync(async (client) =>
+            {
+                const string datablock = "DB1";
+                var writeDataDefault = new uint[] { 0, 0 };
+                const int startAddress = 10034;
+                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
+
+
+                var results = (await client.ReadAsync(ReadItem.Create<uint>(datablock, startAddress, 2))).ToArray();
+
+
+                Assert.Single(results);
+                Assert.Equal(typeof(uint[]), results[0].Type);
+
+                var resultValueDefault = results[0].Value as uint[];
+
+                var writeData = new uint[] { 22, 21 };
+                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeData))).ToArray();
+
+                results = (await client.ReadAsync(ReadItem.Create<uint>(datablock, startAddress, 2))).ToArray();
+
+                Assert.Single(results);
+                Assert.Equal(typeof(uint[]), results[0].Type);
+
+                var resultValue = results[0].Value as uint[];
+
+                Assert.True(resultValue.SequenceEqual(writeData));
+
+                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
+
+            });
+        }
+
+        [Fact]
+        public async Task ReadWriteMultibleDInts()
+        {
+            await ExecuteAsync(async (client) =>
+            {
+                const string datablock = "DB1";
+                var writeDataDefault = new int[] { 0, 0 };
+                const int startAddress = 10038;
+                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
+
+
+                var results = (await client.ReadAsync(ReadItem.Create<int>(datablock, startAddress, 2))).ToArray();
+
+
+                Assert.Single(results);
+                Assert.Equal(typeof(int[]), results[0].Type);
+
+                var resultValueDefault = results[0].Value as short[];
+
+                var writeData = new int[] { 22, 21 };
+                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeData))).ToArray();
+
+                results = (await client.ReadAsync(ReadItem.Create<int>(datablock, startAddress, 2))).ToArray();
+
+                Assert.Single(results);
+                Assert.Equal(typeof(int[]), results[0].Type);
+
+                var resultValue = results[0].Value as int[];
+
+                Assert.True(resultValue.SequenceEqual(writeData));
+
+                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
+
+            });
+        }
 
 
 

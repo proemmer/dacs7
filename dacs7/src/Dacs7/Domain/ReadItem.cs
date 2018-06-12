@@ -178,6 +178,11 @@ namespace Dacs7
             {
                 return BinaryPrimitives.ReadUInt64BigEndian(data.Span);
             }
+            else if (item.ResultType == typeof(Single))
+            {
+                // TODO: Find a Span method to do this
+                return BitConverter.ToSingle(Swap4BytesInBuffer(data.Span.ToArray()), 0);
+            }
             else if (item.ResultType == typeof(Int16[]))
             {
                 var result = new Int16[item.NumberOfItems];
@@ -229,6 +234,19 @@ namespace Dacs7
                 for (int i = 0; i < item.NumberOfItems; i++)
                 {
                     result[i] = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(i * 8).Span);
+                }
+                return result;
+            }
+            else if (item.ResultType == typeof(Single[]))
+            {
+                // TODO: Find a Span method to do this
+                var result = new Single[item.NumberOfItems];
+                var buffer = data.Span.ToArray();
+                for (int i = 0; i < item.NumberOfItems; i++)
+                {
+                    var offset = i * 4;
+                    // we nedd the offset twice because SwapBuffer returns the whole buffer it only swaps the bytes beginning of the given context
+                    result[i] = BitConverter.ToSingle(Swap4BytesInBuffer(buffer, i * 4), offset);
                 }
                 return result;
             }
@@ -298,5 +316,19 @@ namespace Dacs7
             }
             return result;
         }
+
+
+
+        protected static byte[] Swap4BytesInBuffer(byte[] rawdata, int offset = 0)
+        {
+            var b = rawdata[offset];
+            rawdata[offset] = rawdata[offset + 3];
+            rawdata[offset + 3] = b;
+            b = rawdata[offset + 1];
+            rawdata[offset + 1] = rawdata[offset + 2];
+            rawdata[offset + 2] = b;
+            return rawdata;
+        }
+
     }
 }

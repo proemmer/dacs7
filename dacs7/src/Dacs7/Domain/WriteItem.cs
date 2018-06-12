@@ -4,7 +4,9 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Dacs7
@@ -67,6 +69,7 @@ namespace Dacs7
 
         internal static ushort GetDataItemCount<T>(T data)
         {
+
             switch (data)
             {
                 case byte b:
@@ -95,6 +98,10 @@ namespace Dacs7
                         return 1;
                 case bool b:
                         return 1;
+                case Single s:
+                        return 1;
+                case Single[] bb:
+                    return (ushort)bb.Length;
                 case bool[] bb:
                     return (ushort)bb.Length;
                 case object[] oa:
@@ -102,6 +109,12 @@ namespace Dacs7
                 case IEnumerable<object> ie:
                     return (ushort)ie.Count();
             }
+
+            if(typeof(T).IsArray)
+            {
+                return (ushort)(data as Array).Length;
+            }
+
             return 1;
         }
 
@@ -110,7 +123,9 @@ namespace Dacs7
         internal static Memory<byte> ConvertDataToMemory(WriteItem item, object data)
         {
             if (data is string && item.ResultType != typeof(string))
-                data = Convert.ChangeType(data, item.ResultType);
+            {
+                data = Convert.ChangeType(data, item.ResultType, CultureInfo.InvariantCulture);
+            }
 
             switch (data)
             {
@@ -163,6 +178,11 @@ namespace Dacs7
                         Memory<byte> result = new byte[4];
                         BinaryPrimitives.WriteUInt32BigEndian(result.Span, ui32);
                         return result;
+                    }
+                case Single s:
+                    {
+                        // TODO: Find a Span method to do this
+                        return WriteSingleBigEndian(s);
                     }
                 case Int64 i64:
                     {
@@ -231,9 +251,32 @@ namespace Dacs7
                         
                         return result;
                     }
+                case Single[] single:
+                    {
+                        // TODO: Find a Span method to do this
+                        var buffer = new byte[4 * single.Length];
+                        for (int i = 0; i < single.Length; i++)
+                        {
+                            return WriteSingleBigEndian(single[i], buffer, i * 4);
+                        }
+                        return buffer;
+                    }
+
             }
             throw new InvalidCastException();
         }
+
+
+        public static Memory<byte> WriteSingleBigEndian(Single value, byte[] buffer = null, int offset = 0)
+        {
+            var rawdata = buffer ?? new byte[Marshal.SizeOf(value)];
+            var handle = GCHandle.Alloc(rawdata, GCHandleType.Pinned);
+            Marshal.StructureToPtr(value, handle.AddrOfPinnedObject(), false);
+            handle.Free();
+            Swap4BytesInBuffer(rawdata, offset);
+            return rawdata;
+        }
+
 
     }
 }
