@@ -1,6 +1,7 @@
 ﻿// Copyright (c) insite-gmbh. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
+using Dacs7.Domain;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -40,7 +41,7 @@ namespace Dacs7
         public static WriteItem CreateFromTag(string tag, object data)
         {
             var result = CreateFromTag(tag).Clone();
-            result.Data = ConvertDataToMemory(result, data);
+            result.Data = result.ConvertDataToMemory(data);
             return result;
         }
 
@@ -48,7 +49,7 @@ namespace Dacs7
         public static WriteItem Create<T>(string area, int offset, T data)
         {
             var result = Create<T>(area, offset, GetDataItemCount(data)).Clone();
-            result.Data = ConvertDataToMemory(result, data);
+            result.Data = result.ConvertDataToMemory(data);
             return result;
         }
 

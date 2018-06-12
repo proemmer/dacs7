@@ -1,4 +1,5 @@
 ﻿using Dacs7.Communication;
+using Dacs7.Domain;
 using Dacs7.Protocols;
 using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
@@ -144,7 +145,7 @@ namespace Dacs7
             return new List<WriteItem>(values.Select(item =>
             {
                 var result = RegisteredOrGiven(item.Key).Clone();
-                result.Data = WriteItem.ConvertDataToMemory(result, item.Value);
+                result.Data = result.ConvertDataToMemory(item.Value);
                 return result;
             }));
         }

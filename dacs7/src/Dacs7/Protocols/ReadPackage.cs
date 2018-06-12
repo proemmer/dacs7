@@ -6,21 +6,17 @@ namespace Dacs7.Protocols
 {
     internal class ReadPackage
     {
-        private int _maxSize;
-        private bool _returned;
-
+        private readonly int _maxSize;
         private int _sizeRequest = SiemensPlcProtocolContext.ReadHeader + SiemensPlcProtocolContext.ReadParameter;
         private int _sizeResponse = SiemensPlcProtocolContext.ReadAckHeader + SiemensPlcProtocolContext.ReadAckParameter;
-        private int _size;
-
         private List<ReadItem> _items = new List<ReadItem>();
 
 
-        public bool Handled => _returned;
+        public bool Handled { get; private set; }
 
         public bool Full => Free < SiemensPlcProtocolContext.ReadItemSize;
 
-        public int Size => _size;
+        public int Size { get; private set; }
 
         public int Free => _maxSize - Size;
 
@@ -35,7 +31,7 @@ namespace Dacs7.Protocols
 
         public ReadPackage Return()
         {
-            _returned = true;
+            Handled = true;
             return this;
         }
 
@@ -47,7 +43,7 @@ namespace Dacs7.Protocols
                 _items.Add(item);
                 _sizeRequest += SiemensPlcProtocolContext.ReadItemSize;
                 _sizeResponse += size + SiemensPlcProtocolContext.ReadItemAckHeader;
-                _size = Math.Max(_sizeRequest, _sizeResponse);
+                Size = Math.Max(_sizeRequest, _sizeResponse);
                 return true;
             }
             return false;

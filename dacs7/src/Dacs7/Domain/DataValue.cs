@@ -1,4 +1,5 @@
-﻿using Dacs7.Protocols.SiemensPlc;
+﻿using Dacs7.Domain;
+using Dacs7.Protocols.SiemensPlc;
 using System;
 
 namespace Dacs7
@@ -14,7 +15,7 @@ namespace Dacs7
         public Type Type => _meta.ResultType;
         public Memory<byte> Data { get; }
 
-        public object Value => _value ?? (_value = ReadItem.ConvertMemoryToData(_meta, Data));
+        public object Value => _value ?? (_value = _meta.ConvertMemoryToData(Data));
 
         public T GetValue<T>()
         {

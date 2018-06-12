@@ -1,25 +1,20 @@
 ﻿using Dacs7.Protocols.SiemensPlc;
-using System;
 using System.Collections.Generic;
 
 namespace Dacs7.Protocols
 {
     internal class WritePackage
     {
-        private int _minimumSize = SiemensPlcProtocolContext.WriteParameterItem + SiemensPlcProtocolContext.WriteDataItem + 1;
-        private int _maxSize;
-        private bool _returned;
-
-        private int _size = SiemensPlcProtocolContext.WriteHeader + SiemensPlcProtocolContext.WriteParameter;
-
+        private readonly int _minimumSize = SiemensPlcProtocolContext.WriteParameterItem + SiemensPlcProtocolContext.WriteDataItem + 1;
+        private readonly int _maxSize;
         private List<WriteItem> _items = new List<WriteItem>();
 
 
-        public bool Handled => _returned;
+        public bool Handled { get; private set; }
 
         public bool Full => Free < _minimumSize;
 
-        public int Size => _size;
+        public int Size { get; private set; } = SiemensPlcProtocolContext.WriteHeader + SiemensPlcProtocolContext.WriteParameter;
 
         public int Free => _maxSize - Size;
 
@@ -34,7 +29,7 @@ namespace Dacs7.Protocols
 
         public WritePackage Return()
         {
-            _returned = true;
+            Handled = true;
             return this;
         }
 
@@ -44,8 +39,8 @@ namespace Dacs7.Protocols
             if (Free >= size)
             {
                 _items.Add(item);
-                _size += SiemensPlcProtocolContext.WriteParameterItem + SiemensPlcProtocolContext.WriteDataItem + size;
-                if (_size % 2 != 0) _size++;
+                Size += SiemensPlcProtocolContext.WriteParameterItem + SiemensPlcProtocolContext.WriteDataItem + size;
+                if (Size % 2 != 0) Size++;
                 return true;
             }
             return false;

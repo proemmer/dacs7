@@ -1,4 +1,5 @@
 ﻿using Dacs7;
+using Dacs7.Domain;
 using Dacs7.Protocols.SiemensPlc;
 using System;
 using System.Buffers.Binary;
@@ -186,7 +187,7 @@ namespace Dacs7Tests
 
 
             var ri = ReadItem.Create<T>("DB1", 0, countItems);
-            Memory<byte> itemData = ReadItem.ConvertDataToMemory(ri, value);
+            Memory<byte> itemData = ri.ConvertDataToMemory(value);
 
             Memory<byte> buffer = new byte[4 + itemData.Length];
             buffer.Span[0] = 255;
