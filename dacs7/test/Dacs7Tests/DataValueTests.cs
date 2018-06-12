@@ -2,6 +2,8 @@
 using Dacs7.Protocols.SiemensPlc;
 using System;
 using System.Buffers.Binary;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
@@ -126,15 +128,60 @@ namespace Dacs7Tests
 
 
 
+        [Fact()]
+        public void TestUShortsDataValue()
+        {
+            var value = new List<ushort> { 5, 10 };
+            var testValue = CreateTestValue(value);
+            Assert.Equal(value, testValue.GetValue<List<ushort>>());
+            Assert.Equal(value.ToString(), testValue.GetValueAsString());
+        }
+
+        [Fact()]
+        public void TestShortsDataValue()
+        {
+            var value = (short)5;
+            var testValue = CreateTestValue(value);
+            Assert.Equal(value, testValue.GetValue<short>());
+            Assert.Equal(value.ToString(), testValue.GetValueAsString());
+        }
+
+
+        [Fact()]
+        public void TestUIntsDataValue()
+        {
+            var value = (uint)5;
+            var testValue = CreateTestValue(value);
+            Assert.Equal(value, testValue.GetValue<uint>());
+            Assert.Equal(value.ToString(), testValue.GetValueAsString());
+        }
+
+        [Fact()]
+        public void TestIntsDataValue()
+        {
+            var value = (int)5;
+            var testValue = CreateTestValue(value);
+            Assert.Equal(value, testValue.GetValue<int>());
+            Assert.Equal(value.ToString(), testValue.GetValueAsString());
+        }
+
+        [Fact()]
+        public void TestSinglesDataValue()
+        {
+            var value = (Single)1.5;
+            var testValue = CreateTestValue(value);
+            Assert.Equal(value, testValue.GetValue<Single>());
+            Assert.Equal(value.ToString(), testValue.GetValueAsString());
+        }
 
 
 
         private DataValue CreateTestValue<T>(T value)
         {
             ushort countItems = 1;
-            if(typeof(T).IsArray)
+            if(value is IList l)
             {
-                countItems = (ushort)(value as Array).Length;
+                countItems = (ushort)l.Count;
             }
 
 

@@ -47,9 +47,6 @@ namespace Dacs7
 
         public static WriteItem Create<T>(string area, int offset, T data)
         {
-
-
-
             var result = Create<T>(area, offset, GetDataItemCount(data)).Clone();
             result.Data = ConvertDataToMemory(result, data);
             return result;
