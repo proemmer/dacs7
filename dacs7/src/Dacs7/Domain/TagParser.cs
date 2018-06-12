@@ -169,7 +169,7 @@ namespace Dacs7.Domain
 
                         if (!type.IsEmpty && TryDetectTypes(type, result.Length, ref offset, out Type vtype, out Type rType))
                         {
-                            result.Length = 1;
+                            if (result.Length <= 0) result.Length = 1;
                             result.Offset = offset;
                             result.VarType = vtype;
                             result.ResultType = rType;
