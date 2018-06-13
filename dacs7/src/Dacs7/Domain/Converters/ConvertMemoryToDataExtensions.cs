@@ -54,8 +54,12 @@ namespace Dacs7.Domain
             }
             else if (item.ResultType == typeof(string))
             {
+                var max = data.Span[0];
                 var length = data.Span[1];
-                return Encoding.ASCII.GetString(data.Span.Slice(2, length).ToArray());
+                var current = data.Span.Length - 2;
+
+                length = (byte)Math.Min(Math.Min((int)max, (int)length), (int)current);
+                return length > 0 ? Encoding.ASCII.GetString(data.Span.Slice(2, length).ToArray()) : string.Empty;
             }
             else if (item.ResultType == typeof(Int16))
             {

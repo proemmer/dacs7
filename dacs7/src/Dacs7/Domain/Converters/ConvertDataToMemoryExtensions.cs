@@ -41,7 +41,7 @@ namespace Dacs7.Domain
                 case string s:
                     {
                         Memory<byte> result = new byte[s.Length + 2];
-                        result.Span[0] = (byte)s.Length;
+                        result.Span[0] = (byte)(item.NumberOfItems - 2);
                         result.Span[1] = (byte)s.Length;
                         Encoding.ASCII.GetBytes(s).AsSpan().CopyTo(result.Span.Slice(2));
                         return result;

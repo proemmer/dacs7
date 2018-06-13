@@ -176,8 +176,6 @@ namespace Dacs7.Protocols.SiemensPlc
 
             span[0] = datagram.ReturnCode;
             span[1] = datagram.TransportSize;
-
-
             var size = datagram.ElementSize * datagram.Length;
             BinaryPrimitives.WriteUInt16BigEndian(span.Slice(2, 2), GetDataLength(size, datagram.TransportSize));
             datagram.Data.CopyTo(result.Slice(4, size));

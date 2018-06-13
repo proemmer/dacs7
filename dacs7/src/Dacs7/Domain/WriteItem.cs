@@ -42,6 +42,13 @@ namespace Dacs7
         {
             var result = CreateFromTag(tag).Clone();
             result.Data = result.ConvertDataToMemory(data);
+
+            if(result.ResultType == typeof(string))
+            {
+                // special handling of string because we want to write only the given string, not the whole on.
+                result.NumberOfItems = (ushort)result.Data.Length;
+            }
+
             return result;
         }
 
@@ -80,7 +87,7 @@ namespace Dacs7
             }
             else if (data is string s)
             {
-                return (ushort)(s.Length + 2);
+                return (ushort)(s.Length);
             }
             else if (data is IEnumerable<object> en)
             {

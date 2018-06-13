@@ -192,15 +192,18 @@ namespace Dacs7.Domain
                             state = TagParserState.TypeValidation;
                             return true;
                         }
+
                     }
                     break;
                 case TagParserState.TypeValidation:
                     {
+                        if (result.Length <= 0) result.Length = 1;
                         var offset = result.Offset;
+                        var length = result.Length;
 
-                        if (!type.IsEmpty && TryDetectTypes(type, result.Length, ref offset, out Type vtype, out Type rType))
+                        if (!type.IsEmpty && TryDetectTypes(type, ref length, ref offset, out Type vtype, out Type rType))
                         {
-                            if (result.Length <= 0) result.Length = 1;
+                            result.Length = length;
                             result.Offset = offset;
                             result.VarType = vtype;
                             result.ResultType = rType;
@@ -216,7 +219,7 @@ namespace Dacs7.Domain
             return false;
         }
 
-        private static bool TryDetectTypes(ReadOnlySpan<char> type, int length, ref int offset, out Type vtype, out Type rType)
+        private static bool TryDetectTypes(ReadOnlySpan<char> type, ref ushort length, ref int offset, out Type vtype, out Type rType)
         {
             vtype = typeof(object);
             rType = typeof(object);
@@ -253,6 +256,7 @@ namespace Dacs7.Domain
                     return true;
                 case "s":
                     vtype = rType = typeof(string);
+                    //length += 2;
                     //rType = length > 1 ? typeof(string[]) : vtype;
                     return true;
                 case var s when Regex.IsMatch(s, "^x\\d+$", RegexOptions.IgnoreCase):

@@ -53,7 +53,7 @@ namespace Dacs7.Protocols.SiemensPlc
                     {
                         ReturnCode = 0x00,
                         TransportSize = transportSize,
-                        Length = item.NumberOfItems,
+                        Length = (ushort)item.NumberOfItems,
                         Data = item.Data,
                         FillByte = numberOfItems == 0 || item.NumberOfItems % 2 == 0 ? new byte[0] : new byte[1],
                         ElementSize = elemetSize

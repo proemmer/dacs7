@@ -19,7 +19,7 @@ namespace Dacs7
         public PlcArea Area { get; private set; }
         public ushort DbNumber { get; private set; }
         public int Offset { get; private set; }
-        public ushort NumberOfItems { get; private set; }
+        public ushort NumberOfItems { get; internal set; }
         public Type VarType { get; private set; }
         public Type ResultType { get; private set; }
 
@@ -59,7 +59,7 @@ namespace Dacs7
                 Area = result.Area,
                 DbNumber = result.DbNumber,
                 Offset = result.Offset,
-                NumberOfItems = result.Length,
+                NumberOfItems = result.VarType == typeof(string) ? (ushort)(result.Length + 2) :  result.Length,
                 VarType = result.VarType,
                 ResultType = result.ResultType
             };
