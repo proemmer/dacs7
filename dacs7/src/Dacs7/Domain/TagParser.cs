@@ -3,6 +3,19 @@ using System.Text.RegularExpressions;
 
 namespace Dacs7.Domain
 {
+
+    public enum TagParserState
+    {
+        Nothing,
+        Area,
+        Offset,
+        Type,
+        NumberOfItems,
+        TypeValidation,
+        Success
+    }
+
+
     public class TagParser
     {
 
@@ -14,40 +27,56 @@ namespace Dacs7.Domain
             public ushort Length { get; internal set; }
             public Type VarType { get; internal set; }
             public Type ResultType { get; internal set; }
+
+
+            public TagParserState ErrorState { get; internal set; }
         }
 
-        private enum ParseState
+        public static TagParserResult ParseTag(string tag)
         {
-            ParseArea,
-            ParseOffset,
-            ReadType,
-            ParseNumberOfItems,
-            ParseType,
-            Finished
+            return ParseTag(tag, true);
         }
 
 
         // DB1.80000,x,1
         public static bool TryParseTag(string tag, out TagParserResult result)
         {
+            result = ParseTag(tag, false);
+            return result.ErrorState == TagParserState.Success;
+        }
+
+        private static TagParserResult ParseTag(string tag, bool throwException)
+        {
             var input = tag.ToLower().AsSpan();
             var indexStart = 0;
-            var state = ParseState.ParseArea;
+            var state = TagParserState.Area;
             ReadOnlySpan<char> type = null;
-            result = new TagParserResult();
+            var result = new TagParserResult();
             for (int i = 0; i < input.Length; i++)
             {
                 if (input[i] != '.' && input[i] != ',') continue;
-
-                TryExtractData(ref result, input.Slice(indexStart, i - indexStart), ref indexStart, ref state, ref type, i);
+                Parse(tag, ref result, ref indexStart, ref state, ref type, input.Slice(indexStart, i - indexStart), i, true);
             }
-            TryExtractData(ref result, input.Slice(indexStart), ref indexStart, ref state, ref type, input.Length - 1);
+            Parse(tag, ref result, ref indexStart, ref state, ref type, input.Slice(indexStart), input.Length - 1, true);
 
 
-            state = ParseState.ParseType;
-            TryExtractData(ref result, input, ref indexStart, ref state, ref type, input.Length - 1);
+            state = TagParserState.TypeValidation;
+            Parse(tag, ref result, ref indexStart, ref state, ref type, input, input.Length - 1, true);
 
-            return state == ParseState.Finished;
+            if(state == TagParserState.Success)
+            {
+                result.ErrorState = TagParserState.Success;
+            }
+            return result;
+        }
+
+        private static void Parse(string tag, ref TagParserResult result, ref int indexStart, ref TagParserState state, ref ReadOnlySpan<char> type, ReadOnlySpan<char> data, int index, bool throwException = false)
+        {
+            if (!TryExtractData(ref result, data, ref indexStart, ref state, ref type, index) && throwException)
+            {
+                result.ErrorState = state;
+                throw new Dacs7TagParserException(TagParserState.Area, data.ToString(), tag);
+            }
         }
 
         public static bool TryDetectArea(ReadOnlySpan<char> area, out PlcArea selector, out ushort db)
@@ -104,28 +133,28 @@ namespace Dacs7.Domain
 
             }
             selector = PlcArea.DB;
-            return true;
+            return false;
         }
 
 
 
-        private static bool TryExtractData(ref TagParserResult result, ReadOnlySpan<char> input, ref int indexStart, ref ParseState state, ref ReadOnlySpan<char> type, int i)
+        private static bool TryExtractData(ref TagParserResult result, ReadOnlySpan<char> input, ref int indexStart, ref TagParserState state, ref ReadOnlySpan<char> type, int i)
         {
             switch (state)
             {
-                case ParseState.ParseArea:
+                case TagParserState.Area:
                     {
                         if (TryDetectArea(input, out var selector, out var db))
                         {
                             result.Area = selector;
                             result.DbNumber = db;
                             indexStart = i + 1;
-                            state = ParseState.ParseOffset;
+                            state = TagParserState.Offset;
                             return true;
                         }
                     }
                     break;
-                case ParseState.ParseOffset:
+                case TagParserState.Offset:
                     {
                         // TODO:  !!!!!!!
 #if NETCOREAPP21
@@ -137,20 +166,21 @@ namespace Dacs7.Domain
                         {
                             result.Offset = offset;
                             indexStart = i + 1;
-                            state = ParseState.ReadType;
+                            state = TagParserState.Type;
                             return true;
                         }
                     }
                     break;
-                case ParseState.ReadType:
+                case TagParserState.Type:
                     {
                         type = input;
-                        state = ParseState.ParseNumberOfItems;
+                        state = TagParserState.NumberOfItems;
                         indexStart = i + 1;
                         return true;
                     }
-                case ParseState.ParseNumberOfItems:
+                case TagParserState.NumberOfItems:
                     {
+                        if (input.IsEmpty) return true;
                         // TODO:  !!!!!!!
 #if NETCOREAPP21
                         if (UInt16.TryParse(input, out var length))
@@ -159,11 +189,12 @@ namespace Dacs7.Domain
 #endif
                         {
                             result.Length = length;
-                            state = ParseState.ParseType;
+                            state = TagParserState.TypeValidation;
+                            return true;
                         }
                     }
                     break;
-                case ParseState.ParseType:
+                case TagParserState.TypeValidation:
                     {
                         var offset = result.Offset;
 
@@ -174,12 +205,12 @@ namespace Dacs7.Domain
                             result.VarType = vtype;
                             result.ResultType = rType;
                             indexStart = i + 1;
-                            state = ParseState.Finished;
+                            state = TagParserState.Success;
                             return true;
                         }
                     }
                     break;
-                case ParseState.Finished:
+                case TagParserState.Success:
                     return true;
             }
             return false;

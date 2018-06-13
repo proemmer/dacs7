@@ -4,31 +4,34 @@
 #if REALPLC
 
 using Dacs7;
+using Dacs7Tests.ServerHelper;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace Dacs7Tests
 {
-    public class ReadWriteTests
+    [Collection("PlcServer collection")]
+    public class ReadWriteIEnumerableTests
     {
-        private static readonly string Address = "benjipc677c";
-
+        
 
         [Fact]
         public async Task ReadWriteSingleBits()
         {
             await ExecuteAsync(async (client) =>
             {
-                const string datablock = "DB1";
-                var baseOffset = 10000 * 8;
-                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, baseOffset, false),
-                       WriteItem.Create(datablock, baseOffset + 5, false))).ToArray();
+                var originWriteTags = new Dictionary<string, object>
+                {
+                    { $"DB1.10000,x0" , false },
+                    { $"DB1.10000,x5" , false }
+                };
+                var writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
 
 
-                var results = (await client.ReadAsync(ReadItem.Create<bool>(datablock, baseOffset),
-                                                       ReadItem.Create<bool>(datablock, baseOffset + 5))).ToArray();
+                var results = (await client.ReadAsync(originWriteTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
 
                 Assert.Equal(2, results.Count());
@@ -37,11 +40,16 @@ namespace Dacs7Tests
                 Assert.Equal(typeof(bool), results[1].Type);
                 Assert.False((bool)results[1].Value);
 
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, baseOffset, true),
-                                       WriteItem.Create(datablock, baseOffset + 5, true))).ToArray();
 
-                results = (await client.ReadAsync(ReadItem.Create<bool>(datablock, baseOffset),
-                                                       ReadItem.Create<bool>(datablock, baseOffset + 5))).ToArray();
+                var writeTags = new Dictionary<string, object>
+                {
+                    { $"DB1.10000,x0" , true },
+                    { $"DB1.10000,x5" , true }
+                };
+
+                writeResults = (await client.WriteAsync(writeTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+
+                results = (await client.ReadAsync(writeTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
                 Assert.Equal(2, results.Count());
                 Assert.Equal(typeof(bool), results[0].Type);
@@ -49,8 +57,7 @@ namespace Dacs7Tests
                 Assert.Equal(typeof(bool), results[1].Type);
                 Assert.True((bool)results[1].Value);
 
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, baseOffset, false),
-                                       WriteItem.Create(datablock, baseOffset + 5, false))).ToArray();
+                writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
 
             });
         }
@@ -60,13 +67,13 @@ namespace Dacs7Tests
         {
             await ExecuteAsync(async (client) =>
             {
-                const string datablock = "DB1";
-                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10002, (ushort)0),
-                                                            WriteItem.Create(datablock, 10004, (short)0))).ToArray();
-
-
-                var results = (await client.ReadAsync(ReadItem.Create<ushort>(datablock, 10002),
-                                                      ReadItem.Create<short>(datablock, 10004))).ToArray();
+                var originWriteTags = new Dictionary<string, object>
+                {
+                    { $"DB1.10002,w" , (ushort)0 },
+                    { $"DB1.10004,i" , (short)0 }
+                };
+                var writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+                var results = (await client.ReadAsync(originWriteTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
 
                 Assert.Equal(2, results.Count());
@@ -75,11 +82,15 @@ namespace Dacs7Tests
                 Assert.Equal(typeof(short), results[1].Type);
                 Assert.Equal((short)0, (short)results[1].Value);
 
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10002, (ushort)15),
-                                                        WriteItem.Create(datablock, 10004, (short)25))).ToArray();
+                var writeTags = new Dictionary<string, object>
+                {
+                    { $"DB1.10002,w" , (ushort)15 },
+                    { $"DB1.10004,i" , (short)25 }
+                };
 
-                results = (await client.ReadAsync(ReadItem.Create<ushort>(datablock, 10002),
-                                                  ReadItem.Create<short>(datablock, 10004))).ToArray();
+                writeResults = (await client.WriteAsync(writeTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+
+                results = (await client.ReadAsync(writeTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
                 Assert.Equal(2, results.Count());
                 Assert.Equal(typeof(ushort), results[0].Type);
@@ -87,8 +98,7 @@ namespace Dacs7Tests
                 Assert.Equal(typeof(short), results[1].Type);
                 Assert.Equal((short)25, (short)results[1].Value);
 
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10002, (ushort)0),
-                                                            WriteItem.Create(datablock, 10004, (short)0))).ToArray();
+                writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
 
             });
         }
@@ -98,13 +108,15 @@ namespace Dacs7Tests
         {
             await ExecuteAsync(async (client) =>
             {
-                const string datablock = "DB1";
-                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10006, (uint)0),
-                                                            WriteItem.Create(datablock, 10010, (int)0))).ToArray();
 
+                var originWriteTags = new Dictionary<string, object>
+                {
+                    { $"DB1.10006,dw" , (uint)0 },
+                    { $"DB1.10010,di" , (int)0 }
+                };
+                var writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+                var results = (await client.ReadAsync(originWriteTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
-                var results = (await client.ReadAsync(ReadItem.Create<uint>(datablock, 10006),
-                                                      ReadItem.Create<int>(datablock, 10010))).ToArray();
 
 
                 Assert.Equal(2, results.Count());
@@ -113,11 +125,17 @@ namespace Dacs7Tests
                 Assert.Equal(typeof(int), results[1].Type);
                 Assert.Equal((int)0, (int)results[1].Value);
 
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10006, (uint)15),
-                                                        WriteItem.Create(datablock, 10010, (int)25))).ToArray();
 
-                results = (await client.ReadAsync(ReadItem.Create<uint>(datablock, 10006),
-                                                  ReadItem.Create<int>(datablock, 10010))).ToArray();
+                var writeTags = new Dictionary<string, object>
+                {
+                    { $"DB1.10006,dw" , (uint)15 },
+                    { $"DB1.10010,di" , (int)25 }
+                };
+
+                writeResults = (await client.WriteAsync(writeTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+
+                results = (await client.ReadAsync(writeTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
+
 
                 Assert.Equal(2, results.Count());
                 Assert.Equal(typeof(uint), results[0].Type);
@@ -125,8 +143,7 @@ namespace Dacs7Tests
                 Assert.Equal(typeof(int), results[1].Type);
                 Assert.Equal((int)25, (int)results[1].Value);
 
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10006, (uint)0),
-                                                            WriteItem.Create(datablock, 10010, (int)0))).ToArray();
+                writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
 
             });
         }
@@ -136,26 +153,33 @@ namespace Dacs7Tests
         {
             await ExecuteAsync(async (client) =>
             {
-                const string datablock = "DB1";
-                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10014, (Single)0.0))).ToArray();
+                var originWriteTags = new Dictionary<string, object>
+                {
+                    { $"DB1.10014,r" , (Single)0.0 }
+                };
+                var writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+                var results = (await client.ReadAsync(originWriteTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
-
-                var results = (await client.ReadAsync(ReadItem.Create<Single>(datablock, 10014))).ToArray();
 
 
                 Assert.Single(results);
                 Assert.Equal(typeof(Single), results[0].Type);
                 Assert.Equal((Single)0.0, (Single)results[0].Value);
 
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10014, (Single)0.5))).ToArray();
+                var writeTags = new Dictionary<string, object>
+                {
+                    { $"DB1.10014,r" , (Single)0.5 }
+                };
 
-                results = (await client.ReadAsync(ReadItem.Create<Single>(datablock, 10014))).ToArray();
+                writeResults = (await client.WriteAsync(writeTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+
+                results = (await client.ReadAsync(writeTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
                 Assert.Single(results);
                 Assert.Equal(typeof(Single), results[0].Type);
                 Assert.Equal((Single)0.5, (Single)results[0].Value);
 
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10014, (Single)0.0))).ToArray();
+                writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
 
             });
         }
@@ -411,16 +435,30 @@ namespace Dacs7Tests
 
         private static async Task ExecuteAsync(Func<Dacs7Client, Task> execution)
         {
-            var client = new Dacs7Client(Address);
-            try
+            var client = new Dacs7Client(PlcTestServer.Address, PlcTestServer.ConnectionType, PlcTestServer.Timeout);
+            var retries = 3;
+
+            do
             {
-                await client.ConnectAsync();
-                await execution(client);
+                try
+                {
+                    await client.ConnectAsync();
+                    await execution(client);
+                    break;
+                }
+                catch (Dacs7NotConnectedException)
+                {
+                    await Task.Delay(1000);
+                    retries--;
+                    if (retries <= 0)
+                        throw;
+                }
+                finally
+                {
+                    await client.DisconnectAsync();
+                }
             }
-            finally
-            {
-                await client.DisconnectAsync();
-            }
+            while (retries > 0);
         }
     }
 }

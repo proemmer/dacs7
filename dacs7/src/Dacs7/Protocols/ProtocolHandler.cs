@@ -29,7 +29,6 @@ namespace Dacs7.Protocols
 
         private int _referenceId;
         private readonly object _idLock = new object();
-        private int _timeout = 5000;
         private Action<ConnectionState> _connectionStateChanged;
 
         public ConnectionState ConnectionState => _connectionState;
@@ -75,7 +74,7 @@ namespace Dacs7.Protocols
             {
                 try
                 {
-                    if (!await _connectEvent.WaitAsync(_timeout))
+                    if (!await _connectEvent.WaitAsync(_s7Context.Timeout))
                     {
                         throw new Dacs7NotConnectedException();
                     }
@@ -131,7 +130,7 @@ namespace Dacs7.Protocols
                         {
                             if (await _socket.SendAsync(sendData) != SocketError.Success)
                                 return new List<S7DataItemSpecification>();
-                            readResults = await cbh.Event.WaitAsync(_timeout);
+                            readResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
                         }
                         finally
                         {
@@ -141,7 +140,7 @@ namespace Dacs7.Protocols
 
                     if (readResults == null)
                     {
-                        throw new TimeoutException();
+                        throw new Dacs7InvalidResultException();
                     }
 
                     var items = normalized.Items.GetEnumerator();
@@ -209,7 +208,7 @@ namespace Dacs7.Protocols
                         {
                             if (await _socket.SendAsync(sendData) != SocketError.Success)
                                 return new List<ItemResponseRetValue>();
-                            writeResults = await cbh.Event.WaitAsync(_timeout);
+                            writeResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
                         }
                         finally
                         {
@@ -219,7 +218,7 @@ namespace Dacs7.Protocols
 
                     if (writeResults == null)
                     {
-                        throw new TimeoutException();
+                        throw new Dacs7InvalidResultException();
                     }
 
                     var items = normalized.Items.GetEnumerator();

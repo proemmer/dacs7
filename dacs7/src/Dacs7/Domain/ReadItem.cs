@@ -53,19 +53,16 @@ namespace Dacs7
         /// <returns></returns>
         public static ReadItem CreateFromTag(string tag)
         {
-            if (TagParser.TryParseTag(tag, out var result))
+            var result = TagParser.ParseTag(tag);
+            return new ReadItem
             {
-                return new ReadItem
-                {
-                    Area = result.Area,
-                    DbNumber = result.DbNumber,
-                    Offset = result.Offset,
-                    NumberOfItems = result.Length,
-                    VarType = result.VarType,
-                    ResultType = result.ResultType
-                };
-            }
-            return null;
+                Area = result.Area,
+                DbNumber = result.DbNumber,
+                Offset = result.Offset,
+                NumberOfItems = result.Length,
+                VarType = result.VarType,
+                ResultType = result.ResultType
+            };
         }
 
         /// <summary>

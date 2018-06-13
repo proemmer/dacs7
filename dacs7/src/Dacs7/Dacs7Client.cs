@@ -55,7 +55,7 @@ namespace Dacs7
         /// </summary>
         /// <param name="address">The address of the plc  [IP or Hostname]:[Rack],[Slot]  where as rack and slot ar optional  default is Rack = 0, Slot = 2</param>
         /// <param name="connectionType">The <see cref="PlcConnectionType"/> for the connection.</param>
-        public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg)
+        public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg, int timeout = 5000)
         {
             var addressPort = address.Split(':');
             var portRackSlot = addressPort.Length > 1 ?
@@ -79,7 +79,7 @@ namespace Dacs7
 
             _s7Context = new SiemensPlcProtocolContext
             {
-
+                Timeout = timeout
             };
 
             _protocolHandler = new ProtocolHandler(_config, _context, _s7Context, UpdateConnectionState);

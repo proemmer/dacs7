@@ -11,7 +11,7 @@ namespace Dacs7.Communication
     {
         private bool _disableReconnect;
         private Socket _socket;
-        private ClientSocketConfiguration _config;
+        private readonly ClientSocketConfiguration _config;
         public override string Identity
         {
             get
@@ -121,7 +121,7 @@ namespace Dacs7.Communication
             var span = new Memory<byte>(receiveBuffer);
             try
             {
-                while (true)
+                while (_socket != null)
                 {
                     try
                     {

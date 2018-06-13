@@ -35,7 +35,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public ushort MaxParallelJobs { get; set; } = 10; // -> used for negotiation
         public ushort PduSize { get; set; } = 960;  // defautl pdu size -> used for negotiation
-
+        public int Timeout { get; set; }
 
 
         public UInt16 ReadItemMaxLength { get { return (UInt16)(PduSize - 18); } }  //18 Header and some other data    // in the result message
