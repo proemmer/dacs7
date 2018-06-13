@@ -6,7 +6,7 @@ namespace Dacs7.Communication
     {
         string Hostname { get; set; }
         int ServiceName { get; set; }
-        bool Autoconnect { get; set; }
+        int AutoconnectTime { get; set; }
         int ReceiveBufferSize { get; set; }
         string NetworkAdapter { get; set; }
         bool KeepAlive { get; set; }

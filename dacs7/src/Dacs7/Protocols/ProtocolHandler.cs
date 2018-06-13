@@ -69,25 +69,30 @@ namespace Dacs7.Protocols
 
         public async Task OpenAsync()
         {
-            await _socket.OpenAsync();
-            if (_socket.IsConnected)
+            try
             {
+                await _socket.OpenAsync();
                 try
                 {
                     if (!await _connectEvent.WaitAsync(_s7Context.Timeout))
                     {
+                        await CloseAsync();
                         throw new Dacs7NotConnectedException();
                     }
                 }
                 catch (TimeoutException)
                 {
+                    await CloseAsync();
                     throw new Dacs7NotConnectedException();
                 }
             }
-            
-            if(!_socket.IsConnected)
+            catch(Dacs7NotConnectedException)
             {
-                throw new Dacs7NotConnectedException();
+                throw;
+            }
+            catch(Exception ex)
+            {
+                throw new Dacs7NotConnectedException(ex);
             }
         }
 

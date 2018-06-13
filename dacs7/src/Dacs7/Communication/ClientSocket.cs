@@ -10,6 +10,7 @@ namespace Dacs7.Communication
     internal class ClientSocket : SocketBase
     {
         private bool _disableReconnect;
+        private bool _closeCalled;
         private Socket _socket;
         private readonly ClientSocketConfiguration _config;
         public override string Identity
@@ -50,30 +51,38 @@ namespace Dacs7.Communication
         /// Starts the server such that it is listening for 
         /// incoming connection requests.    
         /// </summary>
-        public async override Task OpenAsync()
+        public override Task OpenAsync()
+        {
+            _closeCalled = false;
+            _disableReconnect = true;
+            return InternalOpenAsync();
+        }
+
+        private async Task InternalOpenAsync(bool internalCall = false)
         {
             try
             {
-                _disableReconnect = false;
+                if (_closeCalled) return;
                 _identity = null;
                 _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
                 {
                     ReceiveBufferSize = _configuration.ReceiveBufferSize
                 };
                 await _socket.ConnectAsync(_configuration.Hostname, _configuration.ServiceName);
-                if (IsReallyConnected())
-                {
-                    if (!_configuration.KeepAlive)
-                        _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, 1);
-                    var ignore = Task.Factory.StartNew(() => StartReceive(), TaskCreationOptions.LongRunning);
-                    await PublishConnectionStateChanged(true);
-                }
-                else
-                    await HandleSocketDown();
+                EnsureConnected();
+                if (_configuration.KeepAlive)
+                    _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, 1);
+                _disableReconnect = false; // we have a connection, so enable reconnect
+
+
+                _ = Task.Factory.StartNew(() => StartReceive(), TaskCreationOptions.LongRunning);
+                await PublishConnectionStateChanged(true);
             }
             catch (Exception)
             {
+                DisposeSocket();
                 await HandleSocketDown();
+                if (!internalCall) throw;
             }
         }
 
@@ -99,18 +108,23 @@ namespace Dacs7.Communication
 
         public async override Task CloseAsync()
         {
-            _disableReconnect = true;
+            _disableReconnect = _closeCalled = true;
             await base.CloseAsync();
+            DisposeSocket();
+
+        }
+
+        private void DisposeSocket()
+        {
             if (_socket != null)
             {
                 try
-                { 
+                {
                     _socket.Dispose();
                 }
                 catch (ObjectDisposedException) { }
                 _socket = null;
             }
-
         }
 
         private async Task StartReceive()
@@ -164,17 +178,17 @@ namespace Dacs7.Communication
             finally
             {
                 ArrayPool<byte>.Shared.Return(receiveBuffer);
-                var dummy = HandleSocketDown();
+                _ = HandleSocketDown();
             }
 
         }
         protected override Task HandleSocketDown()
         {
-            var dummy = HandleReconnectAsync();
+            _ = HandleReconnectAsync();
             return PublishConnectionStateChanged(false);
         }
 
-        private bool IsReallyConnected()
+        private void EnsureConnected()
         {
             var blocking = true;
 
@@ -188,20 +202,21 @@ namespace Dacs7.Communication
             {
                 // 10035 == WSAEWOULDBLOCK
                 if (!se.SocketErrorCode.Equals(10035))
+                {
                     throw;   //Throw the Exception for handling in OnConnectedToServer
+                }
             }
 
             //restore blocking mode
             _socket.Blocking = blocking;
-            return true;
         }
 
         private async Task HandleReconnectAsync()
         {
-            if (!_disableReconnect)
+            if (!_disableReconnect && _configuration.AutoconnectTime > 0)
             {
-                await Task.Delay(_socket.ReceiveBufferSize);
-                await OpenAsync();
+                await Task.Delay(_configuration.AutoconnectTime);
+                await InternalOpenAsync(true);
             }
         }
     }

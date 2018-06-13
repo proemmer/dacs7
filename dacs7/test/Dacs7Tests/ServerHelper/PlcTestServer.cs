@@ -8,6 +8,14 @@ using Xunit;
 namespace Dacs7Tests.ServerHelper
 {
 
+    // Windows - most likely you ar running the server in a pc on wich is
+    //           installed step 7 : open a command prompt and type
+    //             "net stop s7oiehsx"    (Win32) or
+    //             "net stop s7oiehsx64"  (Win64)
+    //           And after this test :
+    //             "net start s7oiehsx"   (Win32) or
+    //             "net start s7oiehsx64" (Win64)
+
     public class PlcServerFixture : IDisposable
     {
         public PlcServerFixture()
