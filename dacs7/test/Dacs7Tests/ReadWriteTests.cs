@@ -388,6 +388,24 @@ namespace Dacs7Tests
         }
 
 
+        [Fact]
+        public async Task ReadMixedData()
+        {
+            await ExecuteAsync(async (client) =>
+            {
+                var results = (await client.ReadAsync(ReadItem.CreateFromTag("DB1.4,B,8"),
+                                                      ReadItem.CreateFromTag("DB1.38,B,8"),
+                                                      ReadItem.CreateFromTag("DB1.94,B,10"))).ToArray();
+
+
+
+                Assert.Equal(3, results.Count());
+                Assert.True(results[0].IsSuccessReturnCode);
+                Assert.True(results[1].IsSuccessReturnCode);
+                Assert.True(results[2].IsSuccessReturnCode);
+
+            });
+        }
 
 
 

@@ -35,8 +35,9 @@ namespace Dacs7
         /// <returns>returns a enumerable with the read values</returns>
         public async Task<IEnumerable<DataValue>> ReadAsync(IEnumerable<ReadItem> values)
         {
-            var result = await _protocolHandler.ReadAsync(values);
-            var enumerator = values.GetEnumerator();
+            var readItems = values as IList<ReadItem> ?? values.ToList();
+            var result = await _protocolHandler.ReadAsync(readItems);
+            var enumerator = readItems.GetEnumerator();
             return result.Select(value =>
             {
                 enumerator.MoveNext();

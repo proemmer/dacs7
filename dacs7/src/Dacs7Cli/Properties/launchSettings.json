@@ -2,7 +2,7 @@
   "profiles": {
     "Dacs7Cli": {
       "commandName": "Project",
-      "commandLineArgs": "write --address benjipc677c --tags DB1.10014,r=5.1"
+      "commandLineArgs": "read --address benjipc677c --tags DB930.4,B,8"
     }
   }
 }

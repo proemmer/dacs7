@@ -10,7 +10,9 @@ namespace Dacs7
         private object _value;
 
 
-        ItemResponseRetValue ReturnCode { get; }
+        public ItemResponseRetValue ReturnCode { get; }
+
+        public bool IsSuccessReturnCode => ReturnCode == ItemResponseRetValue.Success;
 
         public Type Type => _meta.ResultType;
         public Memory<byte> Data { get; }

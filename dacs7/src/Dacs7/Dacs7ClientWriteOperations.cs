@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Dacs7
@@ -31,10 +32,11 @@ namespace Dacs7
         /// Writes data from the plc.
         /// </summary>
         /// <param name="values">a list of <see cref="WriteItem"/>.</param>
-        /// <returns>returns a enumerable with the write result, 0xFF = Success</returns>
-        public Task<IEnumerable<ItemResponseRetValue>> WriteAsync(IEnumerable<WriteItem> items)
+        /// <returns>returns a enumerable with the write result. <see cref="ItemResponseRetValue"/></returns>
+        public Task<IEnumerable<ItemResponseRetValue>> WriteAsync(IEnumerable<WriteItem> values)
         {
-            return _protocolHandler.WriteAsync(items);
+            var writeItems = values as IList<WriteItem> ?? values.ToList();
+            return _protocolHandler.WriteAsync(writeItems);
         }
 
     }
