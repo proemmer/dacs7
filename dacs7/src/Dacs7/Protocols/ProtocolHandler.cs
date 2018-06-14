@@ -17,6 +17,7 @@ namespace Dacs7.Protocols
     internal partial class ProtocolHandler
     {
         private ConnectionState _connectionState = ConnectionState.Closed;
+        private bool _closeCalled;
         private ClientSocket _socket;
         private Rfc1006ProtocolContext _context;
         private SiemensPlcProtocolContext _s7Context;
@@ -71,6 +72,7 @@ namespace Dacs7.Protocols
         {
             try
             {
+                _closeCalled = false;
                 await _socket.OpenAsync();
                 try
                 {
@@ -98,6 +100,7 @@ namespace Dacs7.Protocols
 
         public async Task CloseAsync()
         {
+            _closeCalled = true;
             foreach (var item in _writeHandler)
             {
                 item.Value.Event?.Set(null);
@@ -145,7 +148,14 @@ namespace Dacs7.Protocols
 
                     if (readResults == null)
                     {
-                        throw new Dacs7InvalidResultException();
+                        if (_closeCalled)
+                        {
+                            throw new Dacs7NotConnectedException();
+                        }
+                        else
+                        {
+                            throw new Dacs7TimeoutException();
+                        }
                     }
 
                     var items = normalized.Items.GetEnumerator();
@@ -223,7 +233,14 @@ namespace Dacs7.Protocols
 
                     if (writeResults == null)
                     {
-                        throw new Dacs7InvalidResultException();
+                        if (_closeCalled)
+                        {
+                            throw new Dacs7NotConnectedException();
+                        }
+                        else
+                        {
+                            throw new Dacs7TimeoutException();
+                        }
                     }
 
                     var items = normalized.Items.GetEnumerator();
