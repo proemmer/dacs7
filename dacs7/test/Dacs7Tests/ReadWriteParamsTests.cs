@@ -15,7 +15,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteSingleBits()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 const string datablock = "DB1";
                 var baseOffset = 10000 * 8;
@@ -54,7 +54,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteSingleWords()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 const string datablock = "DB1";
                 var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10002, (ushort)0),
@@ -92,7 +92,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteSingleDWords()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 const string datablock = "DB1";
                 var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10006, (uint)0),
@@ -130,7 +130,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteSingles()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 const string datablock = "DB1";
                 var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10014, (Single)0.0))).ToArray();
@@ -159,7 +159,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteSingleStrings()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 const string datablock = "DB1";
                 var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10046, ""),
@@ -199,7 +199,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadMultibleByteArrayData()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 const string datablock = "DB1";
                 var results = (await client.ReadAsync(ReadItem.Create<byte[]>(datablock, 0, 1000),
@@ -219,7 +219,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteBigDBData()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 const string datablock = "DB1";
                 const ushort offset = 2500;
@@ -240,7 +240,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteMultibleWords()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 const string datablock = "DB1";
                 const int startAddress = 10022;
@@ -276,7 +276,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteMultibleInts()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 const string datablock = "DB1";
                 var writeDataDefault = new short[] { 0, 0 };
@@ -312,7 +312,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteMultibleDWords()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 const string datablock = "DB1";
                 var writeDataDefault = new uint[] { 0, 0 };
@@ -348,7 +348,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteMultibleDInts()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 const string datablock = "DB1";
                 var writeDataDefault = new int[] { 0, 0 };
@@ -387,7 +387,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadMixedData()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 var results = (await client.ReadAsync(ReadItem.CreateFromTag("DB1.4,B,8"),
                                                       ReadItem.CreateFromTag("DB1.38,B,8"),
@@ -403,34 +403,5 @@ namespace Dacs7Tests
             });
         }
 
-
-
-        private static async Task ExecuteAsync(Func<Dacs7Client, Task> execution)
-        {
-            var client = new Dacs7Client(PlcTestServer.Address, PlcTestServer.ConnectionType, PlcTestServer.Timeout);
-            var retries = 3;
-
-            do
-            {
-                try
-                {
-                    await client.ConnectAsync();
-                    await execution(client);
-                    break;
-                }
-                catch (Dacs7NotConnectedException)
-                {
-                    await Task.Delay(1000);
-                    retries--;
-                    if (retries <= 0)
-                        throw;
-                }
-                finally
-                {
-                    await client.DisconnectAsync();
-                }
-            }
-            while (retries > 0);
-        }
     }
 }

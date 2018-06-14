@@ -18,7 +18,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteSingleBits()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 var originWriteTags = new Dictionary<string, object>
                 {
@@ -62,7 +62,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteSingleWords()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 var originWriteTags = new Dictionary<string, object>
                 {
@@ -103,7 +103,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteSingleDWords()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
 
                 var originWriteTags = new Dictionary<string, object>
@@ -148,7 +148,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteSingles()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 var originWriteTags = new Dictionary<string, object>
                 {
@@ -184,7 +184,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteSingleStrings()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 var originWriteTags = new Dictionary<string, object>
                 {
@@ -229,7 +229,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadMultibleByteArrayData()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 var readTags = new Dictionary<string, object>
                 {
@@ -252,7 +252,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteBigDBData()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 var data = Enumerable.Repeat((byte)0x00, 1000).ToArray();
                 var originWriteTags = new Dictionary<string, object>
@@ -285,7 +285,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteMultibleWords()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
 
                 var originWriteTags = new Dictionary<string, object>
@@ -328,7 +328,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteMultibleInts()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
 
                 var originWriteTags = new Dictionary<string, object>
@@ -370,7 +370,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteMultibleDWords()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
 
                 var originWriteTags = new Dictionary<string, object>
@@ -414,7 +414,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadWriteMultibleDInts()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 var originWriteTags = new Dictionary<string, object>
                 {
@@ -457,7 +457,7 @@ namespace Dacs7Tests
         [Fact]
         public async Task ReadMixedData()
         {
-            await ExecuteAsync(async (client) =>
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 var originWriteTags = new Dictionary<string, object>
                 {
@@ -484,32 +484,5 @@ namespace Dacs7Tests
 
 
 
-        private static async Task ExecuteAsync(Func<Dacs7Client, Task> execution)
-        {
-            var client = new Dacs7Client(PlcTestServer.Address, PlcTestServer.ConnectionType, PlcTestServer.Timeout);
-            var retries = 3;
-
-            do
-            {
-                try
-                {
-                    await client.ConnectAsync();
-                    await execution(client);
-                    break;
-                }
-                catch (Dacs7NotConnectedException)
-                {
-                    await Task.Delay(1000);
-                    retries--;
-                    if (retries <= 0)
-                        throw;
-                }
-                finally
-                {
-                    await client.DisconnectAsync();
-                }
-            }
-            while (retries > 0);
-        }
     }
 }

@@ -3,6 +3,8 @@ using Snap7;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Dacs7Tests.ServerHelper
@@ -41,6 +43,8 @@ namespace Dacs7Tests.ServerHelper
 
     internal static class PlcTestServer
     {
+
+        
         private static readonly object _lock = new object();
         private static readonly S7Server _server = new S7Server();
         private static readonly Dictionary<int, byte[]> _dbAreas = new Dictionary<int, byte[]>
@@ -53,12 +57,15 @@ namespace Dacs7Tests.ServerHelper
         public static readonly string Address = "benjipc677c";
         public static readonly PlcConnectionType ConnectionType = PlcConnectionType.Pg;
         public static readonly int Timeout = 5000;
+        private static readonly SemaphoreSlim _semaphore = null;
 
 #else
         public static readonly string Address = "127.0.0.1";
         public static readonly PlcConnectionType ConnectionType = PlcConnectionType.Pg;
         public static readonly int Timeout = 15000;
+        private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(5);
 #endif
+
 
 
         public static int Start()
@@ -88,6 +95,38 @@ namespace Dacs7Tests.ServerHelper
         public static int Stop()
         {
             return _server.Stop();
+        }
+
+
+
+        public static async Task ExecuteClientAsync(Func<Dacs7Client, Task> execution)
+        {
+            var client = new Dacs7Client(Address, ConnectionType, Timeout);
+            var retries = 3;
+
+            do
+            {
+                await _semaphore?.WaitAsync();
+                try
+                {
+                    await client.ConnectAsync();
+                    await execution(client);
+                    break;
+                }
+                catch (Dacs7NotConnectedException)
+                {
+                    await Task.Delay(1000);
+                    retries--;
+                    if (retries <= 0)
+                        throw;
+                }
+                finally
+                {
+                    await client.DisconnectAsync();
+                    _semaphore?.Release();
+                }
+            }
+            while (retries > 0);
         }
 
 
