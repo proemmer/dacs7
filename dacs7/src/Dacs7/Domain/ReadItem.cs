@@ -26,6 +26,7 @@ namespace Dacs7
         internal int CallbackReference { get; set; }
         internal ReadItem Parent { get; set; }
         internal bool IsPart => Parent != null;
+        internal ushort ElementSize { get; set; }
 
         internal ReadItem()
         {
@@ -42,7 +43,8 @@ namespace Dacs7
                 Offset = Offset,
                 NumberOfItems = NumberOfItems,
                 VarType = VarType,
-                ResultType = ResultType
+                ResultType = ResultType,
+                ElementSize = ElementSize
             };
         }
 
@@ -54,15 +56,18 @@ namespace Dacs7
         public static ReadItem CreateFromTag(string tag)
         {
             var result = TagParser.ParseTag(tag);
-            return new ReadItem
+            var readItem = new ReadItem
             {
                 Area = result.Area,
                 DbNumber = result.DbNumber,
                 Offset = result.Offset,
                 NumberOfItems = result.VarType == typeof(string) ? (ushort)(result.Length + 2) :  result.Length,
                 VarType = result.VarType,
-                ResultType = result.ResultType
+                ResultType = result.ResultType,
+                ElementSize = GetElementSize(result.Area, result.VarType)
             };
+            ConvertHelpers.EnsureSupportedType(readItem);
+            return readItem;
         }
 
         /// <summary>
@@ -107,7 +112,8 @@ namespace Dacs7
                 NumberOfItems = length,
                 VarType = item.VarType,
                 ResultType = item.ResultType,
-                Parent = item
+                Parent = item,
+                ElementSize = item.ElementSize
             };
         }
 
@@ -142,8 +148,64 @@ namespace Dacs7
 
 
             ConvertHelpers.EnsureSupportedType(result);
-
+            result.ElementSize = GetElementSize(result.Area, result.VarType);
             return result;
         }
+
+
+
+        public static ushort GetElementSize(PlcArea area, Type t)
+        {
+            if (area == PlcArea.CT || area == PlcArea.TM)
+            {
+                return 2;
+            }
+
+            if (t.IsArray)
+                t = t.GetElementType();
+
+            if (t == typeof(bool))
+            {
+                return 1;
+            }
+
+            if (t == typeof(byte) || t == typeof(string) || t == typeof(Memory<byte>))
+            {
+                return 1;
+            }
+
+            if (t == typeof(char))
+            {
+                return 1;
+            }
+
+            if (t == typeof(short))
+            {
+                return 2;
+            }
+
+            if (t == typeof(int))
+            {
+                return 4;
+            }
+
+            if (t == typeof(ushort))
+            {
+                return 2;
+            }
+
+            if (t == typeof(uint))
+            {
+                return 4;
+            }
+
+            if (t == typeof(Single))
+            {
+                return 4;
+            }
+
+            return 1;
+        }
+
     }
 }

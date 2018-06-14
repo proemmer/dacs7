@@ -48,7 +48,7 @@ namespace Dacs7.Protocols.SiemensPlc
                 foreach (var item in vars)
                 {
                     numberOfItems--;
-                    var transportSize = S7DataItemSpecification.GetTransportSize(item.Area, item.VarType, out var elemetSize);
+                    var transportSize = S7DataItemSpecification.GetTransportSize(item.Area, item.VarType);
                     result.Data.Add(new S7DataItemSpecification
                     {
                         ReturnCode = 0x00,
@@ -56,7 +56,7 @@ namespace Dacs7.Protocols.SiemensPlc
                         Length = (ushort)item.NumberOfItems,
                         Data = item.Data,
                         FillByte = numberOfItems == 0 || item.NumberOfItems % 2 == 0 ? new byte[0] : new byte[1],
-                        ElementSize = elemetSize
+                        ElementSize = item.ElementSize
                     });
                 }
             }

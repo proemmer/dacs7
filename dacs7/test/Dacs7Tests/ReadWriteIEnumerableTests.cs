@@ -1,7 +1,4 @@
 ﻿
-#define REALPLC
-
-#if REALPLC
 
 using Dacs7;
 using Dacs7Tests.ServerHelper;
@@ -290,24 +287,31 @@ namespace Dacs7Tests
         {
             await ExecuteAsync(async (client) =>
             {
-                const string datablock = "DB2";
-                const int startAddress = 10022;
-                var writeDataDefault = new ushort[] { 0, 0 };
-                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
 
+                var originWriteTags = new Dictionary<string, object>
+                {
+                    { $"DB2.10022,w,2" , new ushort[] { 0, 0 } }
+                };
 
-                var results = (await client.ReadAsync(ReadItem.Create<ushort>(datablock, startAddress, 2))).ToArray();
+                var writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+                var results = (await client.ReadAsync(originWriteTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
 
                 Assert.Single(results);
                 Assert.Equal(typeof(ushort[]), results[0].Type);
 
                 var resultValueDefault = results[0].Value as ushort[];
+                Assert.True(resultValueDefault.SequenceEqual(originWriteTags.FirstOrDefault().Value as ushort[]));
 
                 var writeData = new ushort[] { 22, 21 };
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeData))).ToArray();
+                var writeTags = new Dictionary<string, object>
+                {
+                    { $"DB2.10022,w,2" , writeData }
+                };
 
-                results = (await client.ReadAsync(ReadItem.Create<ushort>(datablock, startAddress, 2))).ToArray();
+                writeResults = (await client.WriteAsync(writeTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+
+                results = (await client.ReadAsync(writeTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
                 Assert.Single(results);
                 Assert.Equal(typeof(ushort[]), results[0].Type);
@@ -316,7 +320,7 @@ namespace Dacs7Tests
 
                 Assert.True(resultValue.SequenceEqual(writeData));
 
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
+                writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
 
             });
         }
@@ -326,24 +330,30 @@ namespace Dacs7Tests
         {
             await ExecuteAsync(async (client) =>
             {
-                const string datablock = "DB2";
-                var writeDataDefault = new short[] { 0, 0 };
-                const int startAddress = 10026;
-                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
 
-
-                var results = (await client.ReadAsync(ReadItem.Create<short>(datablock, startAddress, 2))).ToArray();
+                var originWriteTags = new Dictionary<string, object>
+                {
+                    { $"DB2.10026,i,2" , new short[] { 0, 0 } }
+                };
+                var writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+                var results = (await client.ReadAsync(originWriteTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
 
                 Assert.Single(results);
                 Assert.Equal(typeof(short[]), results[0].Type);
 
                 var resultValueDefault = results[0].Value as short[];
+                Assert.True(resultValueDefault.SequenceEqual(originWriteTags.FirstOrDefault().Value as short[]));
 
                 var writeData = new short[] { 22, 21 };
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeData))).ToArray();
+                var writeTags = new Dictionary<string, object>
+                {
+                    { $"DB2.10026,i,2" , writeData }
+                };
 
-                results = (await client.ReadAsync(ReadItem.Create<short>(datablock, startAddress, 2))).ToArray();
+                writeResults = (await client.WriteAsync(writeTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+
+                results = (await client.ReadAsync(writeTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
                 Assert.Single(results);
                 Assert.Equal(typeof(short[]), results[0].Type);
@@ -352,7 +362,7 @@ namespace Dacs7Tests
 
                 Assert.True(resultValue.SequenceEqual(writeData));
 
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
+                writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
 
             });
         }
@@ -362,13 +372,13 @@ namespace Dacs7Tests
         {
             await ExecuteAsync(async (client) =>
             {
-                const string datablock = "DB2";
-                var writeDataDefault = new uint[] { 0, 0 };
-                const int startAddress = 10034;
-                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
 
-
-                var results = (await client.ReadAsync(ReadItem.Create<uint>(datablock, startAddress, 2))).ToArray();
+                var originWriteTags = new Dictionary<string, object>
+                {
+                    { $"DB2.10034,dw,2" , new uint[] { 0, 0 } }
+                };
+                var writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+                var results = (await client.ReadAsync(originWriteTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
 
                 Assert.Single(results);
@@ -376,10 +386,18 @@ namespace Dacs7Tests
 
                 var resultValueDefault = results[0].Value as uint[];
 
-                var writeData = new uint[] { 22, 21 };
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeData))).ToArray();
+                Assert.True(resultValueDefault.SequenceEqual(originWriteTags.FirstOrDefault().Value as uint[]));
 
-                results = (await client.ReadAsync(ReadItem.Create<uint>(datablock, startAddress, 2))).ToArray();
+                var writeData = new uint[] { 22, 21 };
+                var writeTags = new Dictionary<string, object>
+                {
+                    { $"DB2.10034,dw,2" , writeData }
+                };
+
+                writeResults = (await client.WriteAsync(writeTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+
+                results = (await client.ReadAsync(writeTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
+
 
                 Assert.Single(results);
                 Assert.Equal(typeof(uint[]), results[0].Type);
@@ -388,7 +406,7 @@ namespace Dacs7Tests
 
                 Assert.True(resultValue.SequenceEqual(writeData));
 
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
+                writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
 
             });
         }
@@ -398,13 +416,12 @@ namespace Dacs7Tests
         {
             await ExecuteAsync(async (client) =>
             {
-                const string datablock = "DB2";
-                var writeDataDefault = new int[] { 0, 0 };
-                const int startAddress = 10038;
-                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
-
-
-                var results = (await client.ReadAsync(ReadItem.Create<int>(datablock, startAddress, 2))).ToArray();
+                var originWriteTags = new Dictionary<string, object>
+                {
+                    { $"DB2.10038,di,2" , new int[] { 0, 0 } }
+                };
+                var writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+                var results = (await client.ReadAsync(originWriteTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
 
                 Assert.Single(results);
@@ -412,12 +429,17 @@ namespace Dacs7Tests
 
                 var resultValueDefault = results[0].GetValue<int[]>();
 
-                Assert.True(resultValueDefault.SequenceEqual(writeDataDefault));
+                Assert.True(resultValueDefault.SequenceEqual(originWriteTags.FirstOrDefault().Value as int[]));
 
                 var writeData = new int[] { 22, 21 };
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeData))).ToArray();
+                var writeTags = new Dictionary<string, object>
+                {
+                    { $"DB2.10038,di,2" , writeData }
+                };
 
-                results = (await client.ReadAsync(ReadItem.Create<int>(datablock, startAddress, 2))).ToArray();
+                writeResults = (await client.WriteAsync(writeTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+
+                results = (await client.ReadAsync(writeTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
                 Assert.Single(results);
                 Assert.Equal(typeof(int[]), results[0].Type);
@@ -426,7 +448,7 @@ namespace Dacs7Tests
 
                 Assert.True(resultValue.SequenceEqual(writeData));
 
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, startAddress, writeDataDefault))).ToArray();
+                writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
 
             });
         }
@@ -454,6 +476,11 @@ namespace Dacs7Tests
 
             });
         }
+
+
+
+
+
 
 
 
@@ -486,5 +513,3 @@ namespace Dacs7Tests
         }
     }
 }
-
-#endif

@@ -458,5 +458,25 @@ namespace Dacs7Tests
             Assert.Equal(typeof(Int32), result.VarType);
         }
 
+
+
+        [Fact]
+        public void ParseExceptions()
+        {
+
+            Assert.Throws<Dacs7TagParserException>(() => TagParser.ParseTag("DB.10000,di,10"));
+            Assert.Throws<Dacs7TagParserException>(() => TagParser.ParseTag("1.10000,di,10"));
+            Assert.Throws<Dacs7TagParserException>(() => TagParser.ParseTag("i1.10000,di,10"));
+            Assert.Throws<Dacs7TagParserException>(() => TagParser.ParseTag("e1.10000,di,10"));
+            Assert.Throws<Dacs7TagParserException>(() => TagParser.ParseTag("m1.10000,di,10"));
+            Assert.Throws<Dacs7TagParserException>(() => TagParser.ParseTag("q1.10000,di,10"));
+            Assert.Throws<Dacs7TagParserException>(() => TagParser.ParseTag("M1.10000,di,10"));
+
+            Assert.Throws<Dacs7TagParserException>(() => TagParser.ParseTag("M1.di,10"));
+            Assert.Throws<Dacs7TagParserException>(() => TagParser.ParseTag("M.1,10"));
+            Assert.Throws<Dacs7TagParserException>(() => TagParser.ParseTag("M.1,10"));
+
+        }
+
     }
 }

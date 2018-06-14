@@ -184,6 +184,10 @@ namespace Dacs7Tests
             {
                 countItems = (ushort)l.Count;
             }
+            else if(value is string s)
+            {
+                countItems = (ushort)s.Length;
+            }
 
 
             var ri = ReadItem.Create<T>("DB1", 0, countItems);

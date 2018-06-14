@@ -88,11 +88,10 @@ namespace Dacs7.Protocols.SiemensPlc
             return 0;
         }
 
-        public static byte GetTransportSize(PlcArea area, Type t, out ushort elementSize)
+        public static byte GetTransportSize(PlcArea area, Type t)
         {
             if (area == PlcArea.CT || area == PlcArea.TM)
             {
-                elementSize = 2;
                 return (byte)DataTransportSize.OctetString;
             }
 
@@ -101,53 +100,44 @@ namespace Dacs7.Protocols.SiemensPlc
 
             if (t == typeof(bool))
             {
-                elementSize = 1;
                 return (byte)DataTransportSize.Bit;
             }
 
             if (t == typeof(byte) || t == typeof(string) || t == typeof(Memory<byte>))
             {
-                elementSize = 1;
                 return (byte)DataTransportSize.Byte;
             }
 
             if (t == typeof(char))
             {
-                elementSize = 1;
                 return (byte)DataTransportSize.OctetString;
             }
 
             if (t == typeof(short))
             {
-                elementSize = 2;
                 return (byte)DataTransportSize.Int;
             }
 
             if (t == typeof(int))
             {
-                elementSize = 4;
                 return (byte)DataTransportSize.Int;
             }
 
             if (t == typeof(ushort) )
             {
-                elementSize = 2;
                 return (byte)DataTransportSize.Byte;
             }
 
             if (t == typeof(uint) )
             {
-                elementSize = 4;
                 return (byte)DataTransportSize.Byte;
             }
 
             if (t == typeof(Single))
             {
-                elementSize = 4;
                 return (byte)DataTransportSize.Real;
             }
 
-            elementSize = 1;
             return (byte)DataTransportSize.Byte;
         }
 

@@ -82,35 +82,36 @@ namespace Dacs7.Domain
         public static bool TryDetectArea(ReadOnlySpan<char> area, out PlcArea selector, out ushort db)
         {
             db = 0;
+            var singleElement = area.Length == 1;
             switch (area[0])
             {
                 // Inputs
-                case 'i': selector = PlcArea.IB; return true;  // English
-                case 'e': selector = PlcArea.IB; return true;  // German
-                case 'I': selector = PlcArea.IB; return true;  // English
-                case 'E': selector = PlcArea.IB; return true;  // German
+                case 'i' when singleElement: selector = PlcArea.IB; return true;  // English
+                case 'e' when singleElement: selector = PlcArea.IB; return true;  // German
+                case 'I' when singleElement: selector = PlcArea.IB; return true;  // English
+                case 'E' when singleElement: selector = PlcArea.IB; return true;  // German
 
                 // Marker
-                case 'm': selector = PlcArea.FB; return true;  // English and German
-                case 'M': selector = PlcArea.FB; return true;  // English and German
+                case 'm' when singleElement: selector = PlcArea.FB; return true;  // English and German
+                case 'M' when singleElement: selector = PlcArea.FB; return true;  // English and German
 
                 // Ouputs
-                case 'q': selector = PlcArea.QB; return true;  // English
-                case 'a': selector = PlcArea.QB; return true;  // German
+                case 'q' when singleElement: selector = PlcArea.QB; return true;  // English
+                case 'a' when singleElement: selector = PlcArea.QB; return true;  // German
 
-                case 'Q': selector = PlcArea.QB; return true;  // English
-                case 'A': selector = PlcArea.QB; return true;  // German
+                case 'Q' when singleElement: selector = PlcArea.QB; return true;  // English
+                case 'A' when singleElement: selector = PlcArea.QB; return true;  // German
 
                 // Timer
-                case 't': selector = PlcArea.TM; return true;  // English and German
-                case 'T': selector = PlcArea.TM; return true;  // English and German
+                case 't' when singleElement: selector = PlcArea.TM; return true;  // English and German
+                case 'T' when singleElement: selector = PlcArea.TM; return true;  // English and German
 
                 // Counter
-                case 'c': selector = PlcArea.CT; return true;  // English
-                case 'z': selector = PlcArea.CT; return true;  // German
+                case 'c' when singleElement: selector = PlcArea.CT; return true;  // English
+                case 'z' when singleElement: selector = PlcArea.CT; return true;  // German
 
-                case 'C': selector = PlcArea.CT; return true;  // English
-                case 'Z': selector = PlcArea.CT; return true;  // German
+                case 'C' when singleElement: selector = PlcArea.CT; return true;  // English
+                case 'Z' when singleElement: selector = PlcArea.CT; return true;  // German
 
                 case 'd' when area.Length > 2:
                 case 'D' when area.Length > 2:
@@ -261,7 +262,7 @@ namespace Dacs7.Domain
                     return true;
                 case var s when Regex.IsMatch(s, "^x\\d+$", RegexOptions.IgnoreCase):
                     vtype = rType = typeof(bool);
-                    //rType = length > 1 ? typeof(bool[]) : vtype;
+                    rType = length > 1 ? typeof(bool[]) : vtype;
 #if NETCOREAPP21
                     offset = ((offset * 8) + Int32.Parse(type.Slice(1)));
 #else
