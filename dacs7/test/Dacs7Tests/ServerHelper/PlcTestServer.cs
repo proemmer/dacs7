@@ -63,7 +63,7 @@ namespace Dacs7Tests.ServerHelper
         public static readonly string Address = "127.0.0.1";
         public static readonly PlcConnectionType ConnectionType = PlcConnectionType.Pg;
         public static readonly int Timeout = 15000;
-        private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(5);
+        private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
 #endif
 
 
