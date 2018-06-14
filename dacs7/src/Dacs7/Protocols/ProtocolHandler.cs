@@ -22,7 +22,6 @@ namespace Dacs7.Protocols
         private Rfc1006ProtocolContext _context;
         private SiemensPlcProtocolContext _s7Context;
         private AsyncAutoResetEvent<bool> _connectEvent = new AsyncAutoResetEvent<bool>();
-
         private SemaphoreSlim _concurrentJobs;
 
         private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
@@ -110,6 +109,7 @@ namespace Dacs7.Protocols
                 item.Value.Event?.Set(null);
             }
             await _socket.CloseAsync();
+            await Task.Delay(1); // This ensures that the user can call connect after reconnect. (Otherwise he has so sleep for a while)
         }
 
         public async Task<IEnumerable<S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItem> vars)

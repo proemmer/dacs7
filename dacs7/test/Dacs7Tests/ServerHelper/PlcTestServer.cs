@@ -50,7 +50,8 @@ namespace Dacs7Tests.ServerHelper
         private static readonly Dictionary<int, byte[]> _dbAreas = new Dictionary<int, byte[]>
         {
             {1, new byte[20000] },
-            {2, new byte[20000] }
+            {2, new byte[20000] },
+            {3, new byte[10] }
         };
 
 #if REALPLC
@@ -123,6 +124,7 @@ namespace Dacs7Tests.ServerHelper
                 finally
                 {
                     await client.DisconnectAsync();
+                    await Task.Delay(10);
                     _semaphore?.Release();
                 }
             }

@@ -91,18 +91,18 @@ namespace Dacs7
         /// Connect to the plc
         /// </summary>
         /// <returns></returns>
-        public async Task ConnectAsync()
+        public Task ConnectAsync()
         {
-            await _protocolHandler?.OpenAsync();
+            return _protocolHandler?.OpenAsync();
         }
 
         /// <summary>
         /// Disconnect from the plc
         /// </summary>
         /// <returns></returns>
-        public async Task DisconnectAsync()
+        public Task DisconnectAsync()
         {
-            await _protocolHandler?.CloseAsync();
+            return _protocolHandler?.CloseAsync();
         }
 
 
