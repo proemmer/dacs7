@@ -12,6 +12,7 @@ namespace Dacs7.Communication
         private bool _disableReconnect;
         private bool _closeCalled;
         private int _connectionHandle = -1;
+        private AsyncAutoResetEvent<bool> _sentEvent = new AsyncAutoResetEvent<bool>();
 
         private readonly S7OnlineConfiguration _config;
         public override string Identity
@@ -100,8 +101,9 @@ namespace Dacs7.Communication
                 int ret = Native.SCP_send(_connectionHandle, (ushort)data.Length, data.ToArray());
                 if (ret < 0)
                 {
-                    Task.FromResult(SocketError.Fault);
+                    return Task.FromResult(SocketError.Fault);
                 }
+                _sentEvent.Set(true);
             }
             catch (Exception)
             {
@@ -125,28 +127,41 @@ namespace Dacs7.Communication
 
         private void DisposeSocket()
         {
-            Native.SCP_close(_connectionHandle);
-            _connectionHandle = -1;
+            if (_connectionHandle != -1)
+            {
+                Native.SCP_close(_connectionHandle);
+                _connectionHandle = -1;
+            }
+            _sentEvent.Set(false);
         }
 
         private async Task StartReceive()
         {
-            var receiveBuffer = ArrayPool<byte>.Shared.Rent(Marshal.SizeOf(ReceiveBufferSize));
+            var receiveBuffer = ArrayPool<byte>.Shared.Rent(ReceiveBufferSize);
             var receiveOffset = 0;
             var bufferOffset = 0;
             var span = new Memory<byte>(receiveBuffer);
+            var receivedLength = new int[1];
             try
             {
                 while (_connectionHandle >= 0)
                 {
                     try
                     {
-                        var receivedLength = new int[1];
-                        Native.SCP_receive(_connectionHandle, 0, receivedLength, (ushort)receiveBuffer.Length, receiveBuffer);
+                        if (receiveOffset <= 0)
+                        {
+                            if (!await _sentEvent.WaitAsync() && _connectionHandle == -1)
+                                break;
+                        }
+
+                        var result = Native.SCP_receive(_connectionHandle, 0, receivedLength, (ushort)receiveBuffer.Length, receiveBuffer);
 
                         var received = receivedLength[0];
                         if (received == 0)
-                            return;
+                        {
+                            await Task.Delay(1);
+                            continue;
+                        }
 
                         var toProcess = received + (receiveOffset - bufferOffset);
                         var processed = 0;
@@ -174,7 +189,9 @@ namespace Dacs7.Communication
                             processed += proc;
                         } while (processed < toProcess);
                     }
-                    catch (Exception) { }
+                    catch (Exception ex)
+                    {
+                    }
                 }
             }
             finally

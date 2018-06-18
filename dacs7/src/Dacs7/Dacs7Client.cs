@@ -7,6 +7,7 @@ using Dacs7.Protocols.SiemensPlc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -57,14 +58,27 @@ namespace Dacs7
         public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg, int timeout = 5000)
         {
             var transport = new Transport();
-            if (address.Equals("S7ONLINE", StringComparison.InvariantCultureIgnoreCase))
+            if (address.StartsWith("S7ONLINE", StringComparison.InvariantCultureIgnoreCase))
             {
+                var addressPort = address.Replace("S7ONLINE:", "").Split(':');
+                var portRackSlot = addressPort.Length > 1 ?
+                            addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() :
+                            new int[] { 0, 2 };
+                if(!IPAddress.TryParse(addressPort[0], out var ipaddress))
+                {
+                    ipaddress = IPAddress.Loopback;
+                }
+
                 transport.Configuration = new S7OnlineConfiguration
                 {
                 };
 
                 transport.ProtocolContext = new FdlProtocolContext
                 {
+                    Address = ipaddress,
+                    ConnectionType = connectionType,
+                    Rack = portRackSlot.Length > 1 ? portRackSlot[1] : 0,
+                    Slot = portRackSlot.Length > 2 ? portRackSlot[2] : 2
                 };
             }
             else
@@ -127,8 +141,8 @@ namespace Dacs7
             switch (state)
             {
                 case ConnectionState.Closed: dacs7State = Dacs7ConnectionState.Closed; break;
-                case ConnectionState.PendingOpenRfc1006: dacs7State = Dacs7ConnectionState.Connecting; break;
-                case ConnectionState.Rfc1006Opened: dacs7State = Dacs7ConnectionState.Connecting; break;
+                case ConnectionState.PendingOpenTransport: dacs7State = Dacs7ConnectionState.Connecting; break;
+                case ConnectionState.TransportOpened: dacs7State = Dacs7ConnectionState.Connecting; break;
                 case ConnectionState.PendingOpenPlc: dacs7State = Dacs7ConnectionState.Connecting; break;
                 case ConnectionState.Opened: dacs7State = Dacs7ConnectionState.Opened; break;
             }

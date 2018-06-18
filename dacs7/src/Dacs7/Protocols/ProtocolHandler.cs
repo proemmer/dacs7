@@ -1,4 +1,5 @@
 ﻿using Dacs7.Communication;
+using Dacs7.Exceptions;
 using Dacs7.Helper;
 using Dacs7.Protocols.Fdl;
 using Dacs7.Protocols.Rfc1006;
@@ -92,7 +93,7 @@ namespace Dacs7.Protocols
                 await _socket.OpenAsync();
                 try
                 {
-                    if (!await _connectEvent.WaitAsync(_s7Context.Timeout))
+                    if (!await _connectEvent.WaitAsync(_s7Context.Timeout * 10))
                     {
                         await CloseAsync();
                         throw new Dacs7NotConnectedException();
@@ -129,6 +130,21 @@ namespace Dacs7.Protocols
             await Task.Delay(1); // This ensures that the user can call connect after reconnect. (Otherwise he has so sleep for a while)
         }
 
+
+        private Memory<byte> BuildForSelectedContext(Memory<byte> buffer)
+        {
+            if(_RfcContext != null)
+            {
+                return DataTransferDatagram.TranslateToMemory(DataTransferDatagram.Build(_RfcContext, buffer).FirstOrDefault());
+            }
+            else if(_FdlContext != null)
+            {
+                return RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.Build(_FdlContext, buffer));
+            }
+            throw new InvalidOperationException();
+        }
+
+
         public async Task<IEnumerable<S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItem> vars)
         {
             if (ConnectionState != ConnectionState.Opened)
@@ -138,10 +154,7 @@ namespace Dacs7.Protocols
             foreach (var normalized in CreateReadPackages(_s7Context, vars))
             {
                 var id = GetNextReferenceId();
-                var sendData = DataTransferDatagram.TranslateToMemory(
-                                    DataTransferDatagram.Build(_RfcContext,
-                                            S7ReadJobDatagram.TranslateToMemory(
-                                                S7ReadJobDatagram.BuildRead(_s7Context, id, normalized.Items))).FirstOrDefault());
+                var sendData = BuildForSelectedContext(S7ReadJobDatagram.TranslateToMemory( S7ReadJobDatagram.BuildRead(_s7Context, id, normalized.Items)));
 
 
                 try
@@ -225,10 +238,7 @@ namespace Dacs7.Protocols
             {
                 var id = GetNextReferenceId();
                 CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh;
-                var sendData = DataTransferDatagram.TranslateToMemory(
-                                DataTransferDatagram.Build(_RfcContext,
-                                        S7WriteJobDatagram.TranslateToMemory(
-                                            S7WriteJobDatagram.BuildWrite(_s7Context, id, normalized.Items))).FirstOrDefault());
+                var sendData = BuildForSelectedContext(S7WriteJobDatagram.TranslateToMemory(S7WriteJobDatagram.BuildWrite(_s7Context, id, normalized.Items)));
                 try
                 {
                     IEnumerable<S7DataItemWriteResult> writeResults = null;
@@ -289,100 +299,21 @@ namespace Dacs7.Protocols
 
 
 
-        private Task<int> OnTcpSocketRawDataReceived(string socketHandle, Memory<byte> buffer)
+        private async Task StartS7CommunicationSetup()
         {
-            if (buffer.Length > Rfc1006ProtocolContext.MinimumBufferSize)
+            var sendData = BuildForSelectedContext(S7CommSetupDatagram
+                                            .TranslateToMemory(
+                                                S7CommSetupDatagram
+                                                .Build(_s7Context)));
+            var result = await _socket.SendAsync(sendData);
+            if (result == SocketError.Success)
             {
-                if (_RfcContext.TryDetectDatagramType(buffer, out var type))
-                {
-                    return Rfc1006DatagramReceived(type, buffer);
-                }
-                // unknown datagram
+                UpdateConnectionState(ConnectionState.PendingOpenPlc);
             }
-            else
-            {
-                return Task.FromResult(0); // no data processed, buffer is to short
-            }
-            return Task.FromResult(1); // move forward
-
-        }
-
-        private async Task<int> OnS7OnlineRawDataReceived(string socketHandle, Memory<byte> buffer)
-        {
-            if (buffer.Length > Rfc1006ProtocolContext.MinimumBufferSize)
-            {
-                var processed = 0;
-                var datagram = RequestBlockDatagram.TranslateFromMemory(buffer.Slice(processed), out processed);
-                if (_s7Context.TryDetectDatagramType(datagram.UserData1, out var s7DatagramType))
-                {
-                    await SiemensPlcDatagramReceived(s7DatagramType, datagram.UserData1);
-                }
-            }
-            else
-            {
-                return 0; // no data processed, buffer is to short
-            }
-            return 1; // move forward
-
         }
 
 
-
-        private Task OnTcpSocketConnectionStateChanged(string socketHandle, bool connected)
-        {
-            if (_connectionState == ConnectionState.Closed && connected)
-            {
-                return SendConnectionRequest(ConnectionRequestDatagram.TranslateToMemory(ConnectionRequestDatagram.BuildCr(_RfcContext)));
-            }
-            else if (_connectionState == ConnectionState.Opened && !connected)
-            {
-                return Closed();
-            }
-            return Task.CompletedTask;
-        }
-
-
-        private Task OnS7OnlineConnectionStateChanged(string socketHandle, bool connected)
-        {
-            if (_connectionState == ConnectionState.Closed && connected)
-            {
-                return SendConnectionRequest(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.BuildCr(_FdlContext)));
-            }
-            else if (_connectionState == ConnectionState.Opened && !connected)
-            {
-                return Closed();
-            }
-            return Task.CompletedTask;
-        }
-
-
-
-
-
-
- 
-
-        private async Task<int> Rfc1006DatagramReceived(Type datagramType, Memory<byte> buffer)
-        {
-            var processed = 0;
-            if (datagramType == typeof(ConnectionConfirmedDatagram))
-            {
-                var res = ConnectionConfirmedDatagram.TranslateFromMemory(buffer, out processed);
-                await ReceivedConnectionConfirmed();
-            }
-            else if (datagramType == typeof(DataTransferDatagram))
-            {
-                var datagram = DataTransferDatagram.TranslateFromMemory(buffer.Slice(processed), _RfcContext, out var needMoreData, out processed);
-                if (!needMoreData && _s7Context.TryDetectDatagramType(datagram.Payload, out var s7DatagramType))
-                {
-                    await SiemensPlcDatagramReceived(s7DatagramType, datagram.Payload);
-                }
-            }
-
-            return processed;
-        }
-
-        private Task SiemensPlcDatagramReceived(Type datagramType, Memory<byte> buffer)
+        private Task S7DatagramReceived(Type datagramType, Memory<byte> buffer)
         {
             if (datagramType == typeof(S7CommSetupAckDataDatagram))
             {
@@ -402,42 +333,11 @@ namespace Dacs7.Protocols
 
 
 
-        private async Task SendConnectionRequest(Memory<byte> sendData)
+        private Task TransportOpened()
         {
-            var result = await _socket.SendAsync(sendData);
-            if (result == SocketError.Success)
-            {
-                UpdateConnectionState(ConnectionState.PendingOpenRfc1006);
-            }
+            UpdateConnectionState(ConnectionState.TransportOpened);
+            return StartS7CommunicationSetup();
         }
-
-
-        private Task ReceivedConnectionConfirmed()
-        {
-            UpdateConnectionState(ConnectionState.PendingOpenRfc1006);
-            return StartCommunicationSetup();
-        }
-
-        private async Task StartCommunicationSetup()
-        {
-            var sendData = DataTransferDatagram
-                                    .TranslateToMemory(
-                                        DataTransferDatagram
-                                        .Build(_RfcContext,
-                                            S7CommSetupDatagram
-                                            .TranslateToMemory(
-                                                S7CommSetupDatagram
-                                                .Build(_s7Context)))
-                                                    .FirstOrDefault());
-            var result = await _socket.SendAsync(sendData);
-            if (result == SocketError.Success)
-            {
-                UpdateConnectionState(ConnectionState.PendingOpenPlc);
-            }
-        }
-
-
-            
 
         private Task ReceivedCommunicationSetupAck(Memory<byte> buffer)
         {
@@ -450,8 +350,6 @@ namespace Dacs7.Protocols
 
             return Task.CompletedTask;
         }
-
-
 
         private Task ReceivedReadJobAck(Memory<byte> buffer)
         {

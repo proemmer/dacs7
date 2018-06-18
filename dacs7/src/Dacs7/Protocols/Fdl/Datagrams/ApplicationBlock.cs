@@ -7,8 +7,8 @@ namespace Dacs7.Protocols.Fdl
     internal class ApplicationBlock
     {
         //Application Block
-        public byte Opcode { get; set; }                       // class of communication   (00 = request, 01=confirm, 02=indication)
-        public byte Subsystem { get; set; }                    // number of source-task (only necessary for MTK-user !!!!!)
+        public byte Opcode { get; set; } = 0xFF;                      // class of communication   (00 = request, 01=confirm, 02=indication)
+        public byte Subsystem { get; set; } = 0xFF;                 // number of source-task (only necessary for MTK-user !!!!!)
         public ushort Id { get; set; }                         // identification of FDL-USER
         public ServiceCode Service { get; set; }                    // identification of service (00 -> SDA, send data with acknowlege)
         public RemoteAddress LocalAddress { get; set; }        // only for network-connection !!!

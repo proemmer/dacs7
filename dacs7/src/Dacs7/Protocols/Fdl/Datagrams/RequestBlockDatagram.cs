@@ -12,15 +12,12 @@ namespace Dacs7.Protocols.Fdl
         public ApplicationBlock ApplicationBlock { get; set; }
 
         public byte[] Reserved { get; set; } = new byte[12];
-        public byte[] Reverence { get; set; } = new byte[2];
-        public Memory<byte> UserData1 { get; set; } = new byte[260];
-        public Memory<byte> UserData2 { get; set; } = new byte[260];
+        public byte[] Reverence { get; set; }
+        public Memory<byte> UserData1 { get; set; } 
+        public Memory<byte> UserData2 { get; set; } 
 
 
-
-
-
-        public static RequestBlockDatagram BuildCr(FdlProtocolContext context)
+        public static RequestBlockDatagram Build(FdlProtocolContext context, Memory<byte> rawPayload)
         {
             var result = new RequestBlockDatagram
             {
@@ -30,11 +27,11 @@ namespace Dacs7.Protocols.Fdl
                     User = context.User,
                     RbType = 2,
                     Priority = 1,
-                    Subsystem = 0x7a,
-                    OpCode = 128,
-                    Response = 0xff,
-                    FillLength1 = 12,
-                    SegLength1 = 0,
+                    Subsystem = 0x40,
+                    OpCode = 0,
+                    Response = 0xffff,
+                    FillLength1 = (ushort)rawPayload.Length,
+                    SegLength1 = (ushort)rawPayload.Length,
                     Offset1 = 80,
                     FillLength2 = 0,
                     SegLength2 = 0,
@@ -42,8 +39,8 @@ namespace Dacs7.Protocols.Fdl
                 },
                 ApplicationBlock = new ApplicationBlock
                 {
-                    Opcode = 0,
-                    Subsystem = 0,
+                    Opcode = context.OpCode,
+                    Subsystem = context.Subsystem,
                     Id = 0,
                     Service = ServiceCode.FdlReadValue,
                     LocalAddress = new RemoteAddress
@@ -73,8 +70,9 @@ namespace Dacs7.Protocols.Fdl
 
             //  66 + 12 bytes reserved!!
             result.Reverence = new byte[2];
-            result.UserData1 = new byte[260];
-            result.UserData2 = new byte[260];
+            result.UserData1 = new byte[result.Header.FillLength1];
+            if(!rawPayload.IsEmpty) rawPayload.CopyTo(result.UserData1);
+            result.UserData2 = new byte[result.Header.FillLength2];
             return result;
         }
 
@@ -149,11 +147,11 @@ namespace Dacs7.Protocols.Fdl
 
             if (datagram.Header.SegLength1 > 0)
             {
-                datagram.UserData1.CopyTo(result.Slice(datagram.Header.Offset1, datagram.Header.SegLength1));
+                datagram.UserData1.Slice(0, datagram.Header.SegLength1).CopyTo(result.Slice(datagram.Header.Offset1, datagram.Header.SegLength1));
             }
             if (datagram.Header.SegLength2 > 0)
             {
-                datagram.UserData2.CopyTo(result.Slice(340, 260));
+                datagram.UserData2.Slice(0, datagram.Header.SegLength2).CopyTo(result.Slice(datagram.Header.Offset2, datagram.Header.SegLength2));
             }
 
             return result;
@@ -222,24 +220,28 @@ namespace Dacs7.Protocols.Fdl
                 }
             };
 
-
+            var neededLength = result.Header.Length + result.Header.SegLength1 + result.Header.SegLength1;
             //  66 + 12 bytes reserved!!
 
-
+            if (neededLength > data.Length)
+            {
+                processed = 0;
+                return null;
+            }
             result.Reverence = new byte[] { span[78], span[79] };
 
             result.UserData1 = new byte[result.Header.FillLength1];
             if (result.Header.FillLength1 > 0)
             {
-                span.Slice(result.Header.Offset1, result.Header.FillLength1).CopyTo(result.UserData1.Span);
+                span.Slice(result.Header.Offset1, result.Header.SegLength1).CopyTo(result.UserData1.Span);
             }
             result.UserData2 = new byte[result.Header.FillLength1];
             if (result.Header.FillLength2 > 0)
             {
-                span.Slice(result.Header.Offset2, result.Header.FillLength2).CopyTo(result.UserData2.Span);
+                span.Slice(result.Header.Offset2, result.Header.SegLength2).CopyTo(result.UserData2.Span);
             }
 
-            processed = 600;
+            processed = neededLength;
             return result;
         }
 
