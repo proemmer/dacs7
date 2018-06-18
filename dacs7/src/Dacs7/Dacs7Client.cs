@@ -1,6 +1,7 @@
 ﻿using Dacs7.Communication;
 using Dacs7.Domain;
 using Dacs7.Protocols;
+using Dacs7.Protocols.Fdl;
 using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
 using System;
@@ -18,8 +19,6 @@ namespace Dacs7
     public partial class Dacs7Client
     {
         private Dictionary<string, ReadItem> _registeredTags = new Dictionary<string, ReadItem>();
-        private ClientSocketConfiguration _config;
-        private Rfc1006ProtocolContext _context;
         private SiemensPlcProtocolContext _s7Context;
         private ProtocolHandler _protocolHandler;
         private Dacs7ConnectionState _state = Dacs7ConnectionState.Closed;
@@ -57,32 +56,46 @@ namespace Dacs7
         /// <param name="connectionType">The <see cref="PlcConnectionType"/> for the connection.</param>
         public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg, int timeout = 5000)
         {
-            var addressPort = address.Split(':');
-            var portRackSlot = addressPort.Length > 1 ?
-                                        addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() :
-                                        new int[] { 102, 0, 2 };
-
-            _config = new ClientSocketConfiguration
+            var transport = new Transport();
+            if (address.Equals("S7ONLINE", StringComparison.InvariantCultureIgnoreCase))
             {
-                Hostname = addressPort[0],
-                ServiceName = portRackSlot.Length > 0 ? portRackSlot[0] : 102
-            };
+                transport.Configuration = new S7OnlineConfiguration
+                {
+                };
 
-
-
-            _context = new Rfc1006ProtocolContext
+                transport.ProtocolContext = new FdlProtocolContext
+                {
+                };
+            }
+            else
             {
-                DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType,
-                                                                 portRackSlot.Length > 1 ? portRackSlot[1] : 0,
-                                                                 portRackSlot.Length > 2 ? portRackSlot[2] : 2)
-            };
+                var addressPort = address.Split(':');
+                var portRackSlot = addressPort.Length > 1 ?
+                                            addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() :
+                                            new int[] { 102, 0, 2 };
+
+                transport.Configuration = new ClientSocketConfiguration
+                {
+                    Hostname = addressPort[0],
+                    ServiceName = portRackSlot.Length > 0 ? portRackSlot[0] : 102
+                };
+
+
+
+                transport.ProtocolContext = new Rfc1006ProtocolContext
+                {
+                    DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType,
+                                                                     portRackSlot.Length > 1 ? portRackSlot[1] : 0,
+                                                                     portRackSlot.Length > 2 ? portRackSlot[2] : 2)
+                };
+            }
 
             _s7Context = new SiemensPlcProtocolContext
             {
                 Timeout = timeout
             };
 
-            _protocolHandler = new ProtocolHandler(_config, _context, _s7Context, UpdateConnectionState);
+            _protocolHandler = new ProtocolHandler(transport, _s7Context, UpdateConnectionState);
 
         }
 

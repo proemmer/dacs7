@@ -1,18 +1,19 @@
-﻿using System;
-using System.Threading.Tasks;
-using System.Net.Sockets;
-using System.Net;
+﻿using Dacs7.Communication.S7Online;
+using System;
 using System.Buffers;
+using System.Net.Sockets;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace Dacs7.Communication
 {
-
-    internal class ClientSocket : SocketBase
+    internal class S7OnlineClient : SocketBase
     {
         private bool _disableReconnect;
         private bool _closeCalled;
-        private Socket _socket;
-        private readonly ClientSocketConfiguration _config;
+        private int _connectionHandle = -1;
+
+        private readonly S7OnlineConfiguration _config;
         public override string Identity
         {
             get
@@ -20,28 +21,28 @@ namespace Dacs7.Communication
 
                 if (_identity == null)
                 {
-                    if (_socket != null)
-                    {
-                        var epLocal = _socket.LocalEndPoint as IPEndPoint;
-                        IPEndPoint epRemote = null;
-                        try
-                        {
-                            epRemote = _socket.RemoteEndPoint as IPEndPoint;
-                            _identity = $"{epLocal.Address}:{epLocal.Port}-{(epRemote != null ? epRemote.Address.ToString() : _configuration.Hostname)}:{(epRemote != null ? epRemote.Port : _configuration.ServiceName)}";
-                        }
-                        catch (Exception)
-                        {
-                            return string.Empty;
-                        };
-                    }
-                    else
-                        return string.Empty;
+                    //if (_socket != null)
+                    //{
+                    //    var epLocal = _socket.LocalEndPoint as IPEndPoint;
+                    //    IPEndPoint epRemote = null;
+                    //    try
+                    //    {
+                    //        epRemote = _socket.RemoteEndPoint as IPEndPoint;
+                    //        _identity = $"{epLocal.Address}:{epLocal.Port}-{(epRemote != null ? epRemote.Address.ToString() : _configuration.Hostname)}:{(epRemote != null ? epRemote.Port : _configuration.ServiceName)}";
+                    //    }
+                    //    catch (Exception)
+                    //    {
+                    //        return string.Empty;
+                    //    };
+                    //}
+                    //else
+                    //    return string.Empty;
                 }
                 return _identity;
             }
         }
 
-        public ClientSocket(ClientSocketConfiguration configuration) : base(configuration)
+        public S7OnlineClient(S7OnlineConfiguration configuration) : base(configuration)
         {
             _config = configuration;
         }
@@ -64,21 +65,26 @@ namespace Dacs7.Communication
             {
                 if (_closeCalled) return;
                 _identity = null;
-                _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+
+
+                // Connect
+                _connectionHandle = Native.SCP_open("S7ONLINE");    // TODO: Configurable
+
+                if (_connectionHandle >= 0)
                 {
-                    ReceiveBufferSize = _configuration.ReceiveBufferSize
-                };
-                await _socket.ConnectAsync(_configuration.Hostname, _configuration.ServiceName);
-                EnsureConnected();
-                if (_configuration.KeepAlive)
-                    _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, 1);
-                _disableReconnect = false; // we have a connection, so enable reconnect
+
+                    _disableReconnect = false; // we have a connection, so enable reconnect
 
 
-                _ = Task.Factory.StartNew(() => StartReceive(), TaskCreationOptions.LongRunning);
-                await PublishConnectionStateChanged(true);
+                    _ = Task.Factory.StartNew(() => StartReceive(), TaskCreationOptions.LongRunning);
+                    await PublishConnectionStateChanged(true);
+                }
+                else
+                {
+                    throw new Exception($"{Native.SCP_get_errno()}"); // todo create real exception
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 DisposeSocket();
                 await HandleSocketDown();
@@ -86,12 +92,16 @@ namespace Dacs7.Communication
             }
         }
 
-        public override async Task<SocketError> SendAsync(Memory<byte> data)
+        public override Task<SocketError> SendAsync(Memory<byte> data)
         {
             // Write the locally buffered data to the network.
             try
             {
-                var result = await _socket.SendAsync(new ArraySegment<byte>(data.ToArray()), SocketFlags.None);
+                int ret = Native.SCP_send(_connectionHandle, (ushort)data.Length, data.ToArray());
+                if (ret < 0)
+                {
+                    Task.FromResult(SocketError.Fault);
+                }
             }
             catch (Exception)
             {
@@ -101,9 +111,9 @@ namespace Dacs7.Communication
                 //{
                 //    throw;
                 //}
-                return SocketError.Fault;
+                return Task.FromResult(SocketError.Fault);
             }
-            return SocketError.Success;
+            return Task.FromResult( SocketError.Success);
         }
 
         public async override Task CloseAsync()
@@ -111,38 +121,30 @@ namespace Dacs7.Communication
             _disableReconnect = _closeCalled = true;
             await base.CloseAsync();
             DisposeSocket();
-
         }
 
         private void DisposeSocket()
         {
-            if (_socket != null)
-            {
-                try
-                {
-                    _socket.Dispose();
-                }
-                catch (ObjectDisposedException) { }
-                _socket = null;
-            }
+            Native.SCP_close(_connectionHandle);
+            _connectionHandle = -1;
         }
 
         private async Task StartReceive()
         {
-            var receiveBuffer = ArrayPool<byte>.Shared.Rent(_socket.ReceiveBufferSize * 2);
+            var receiveBuffer = ArrayPool<byte>.Shared.Rent(Marshal.SizeOf(ReceiveBufferSize));
             var receiveOffset = 0;
             var bufferOffset = 0;
             var span = new Memory<byte>(receiveBuffer);
             try
             {
-                while (_socket != null)
+                while (_connectionHandle >= 0)
                 {
                     try
                     {
-                        var buffer = new ArraySegment<byte>(receiveBuffer, receiveOffset, _socket.ReceiveBufferSize);
-                        
-                        var received = await _socket.ReceiveAsync(buffer, SocketFlags.Partial);
-                        
+                        var receivedLength = new int[1];
+                        Native.SCP_receive(_connectionHandle, 0, receivedLength, (ushort)receiveBuffer.Length, receiveBuffer);
+
+                        var received = receivedLength[0];
                         if (received == 0)
                             return;
 
@@ -154,11 +156,11 @@ namespace Dacs7.Communication
                             var length = toProcess - processed;
                             var slice = span.Slice(off, length);
                             var proc = await ProcessData(slice);
-                            if(proc == 0)
+                            if (proc == 0)
                             {
                                 if (length > 0)
                                 {
-                                    
+
                                     receiveOffset += received;
                                     bufferOffset = receiveOffset - (toProcess - processed);
                                 }
@@ -172,7 +174,7 @@ namespace Dacs7.Communication
                             processed += proc;
                         } while (processed < toProcess);
                     }
-                    catch(Exception){}
+                    catch (Exception) { }
                 }
             }
             finally
@@ -188,28 +190,6 @@ namespace Dacs7.Communication
             return PublishConnectionStateChanged(false);
         }
 
-        private void EnsureConnected()
-        {
-            var blocking = true;
-
-            try
-            {
-                blocking = _socket.Blocking;
-                _socket.Blocking = false;
-                _socket.Send(new byte[0], 0, 0);
-            }
-            catch (SocketException se)
-            {
-                // 10035 == WSAEWOULDBLOCK
-                if (!se.SocketErrorCode.Equals(10035))
-                {
-                    throw;   //Throw the Exception for handling in OnConnectedToServer
-                }
-            }
-
-            //restore blocking mode
-            _socket.Blocking = blocking;
-        }
 
         private async Task HandleReconnectAsync()
         {

@@ -1,5 +1,6 @@
 ﻿using Dacs7.Communication;
 using Dacs7.Helper;
+using Dacs7.Protocols.Fdl;
 using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
 using System;
@@ -18,8 +19,9 @@ namespace Dacs7.Protocols
     {
         private ConnectionState _connectionState = ConnectionState.Closed;
         private bool _closeCalled;
-        private ClientSocket _socket;
-        private Rfc1006ProtocolContext _context;
+        private SocketBase _socket;
+        private Rfc1006ProtocolContext _RfcContext;
+        private FdlProtocolContext _FdlContext;
         private SiemensPlcProtocolContext _s7Context;
         private AsyncAutoResetEvent<bool> _connectEvent = new AsyncAutoResetEvent<bool>();
         private SemaphoreSlim _concurrentJobs;
@@ -53,17 +55,32 @@ namespace Dacs7.Protocols
 
         }
 
-        public ProtocolHandler(ClientSocketConfiguration config, Rfc1006ProtocolContext rfcContext, SiemensPlcProtocolContext s7Context, Action<ConnectionState> connectionStateChanged)
+        public ProtocolHandler( Transport transport,
+                                SiemensPlcProtocolContext s7Context, 
+                                Action<ConnectionState> connectionStateChanged)
         {
-            _context = rfcContext;
+            
             _s7Context = s7Context;
             _connectionStateChanged = connectionStateChanged;
 
-            _socket = new ClientSocket(config)
+            if (transport.ProtocolContext is Rfc1006ProtocolContext rfcContext)
             {
-                OnRawDataReceived = OnRawDataReceived,
-                OnConnectionStateChanged = OnConnectionStateChanged
-            };
+                _RfcContext = rfcContext;
+                _socket = new ClientSocket(transport.Configuration as ClientSocketConfiguration)
+                {
+                    OnRawDataReceived = OnTcpSocketRawDataReceived,
+                    OnConnectionStateChanged = OnTcpSocketConnectionStateChanged
+                };
+            }
+            else if(transport.ProtocolContext is FdlProtocolContext fdlContext)
+            {
+                _FdlContext = fdlContext;
+                _socket = new S7OnlineClient(transport.Configuration as S7OnlineConfiguration)
+                {
+                    OnRawDataReceived = OnS7OnlineRawDataReceived,
+                    OnConnectionStateChanged = OnS7OnlineConnectionStateChanged
+                };
+            }
         }
 
 
@@ -122,7 +139,7 @@ namespace Dacs7.Protocols
             {
                 var id = GetNextReferenceId();
                 var sendData = DataTransferDatagram.TranslateToMemory(
-                                    DataTransferDatagram.Build(_context,
+                                    DataTransferDatagram.Build(_RfcContext,
                                             S7ReadJobDatagram.TranslateToMemory(
                                                 S7ReadJobDatagram.BuildRead(_s7Context, id, normalized.Items))).FirstOrDefault());
 
@@ -209,7 +226,7 @@ namespace Dacs7.Protocols
                 var id = GetNextReferenceId();
                 CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh;
                 var sendData = DataTransferDatagram.TranslateToMemory(
-                                DataTransferDatagram.Build(_context,
+                                DataTransferDatagram.Build(_RfcContext,
                                         S7WriteJobDatagram.TranslateToMemory(
                                             S7WriteJobDatagram.BuildWrite(_s7Context, id, normalized.Items))).FirstOrDefault());
                 try
@@ -272,11 +289,11 @@ namespace Dacs7.Protocols
 
 
 
-        private Task<int> OnRawDataReceived(string socketHandle, Memory<byte> buffer)
+        private Task<int> OnTcpSocketRawDataReceived(string socketHandle, Memory<byte> buffer)
         {
             if (buffer.Length > Rfc1006ProtocolContext.MinimumBufferSize)
             {
-                if (_context.TryDetectDatagramType(buffer, out var type))
+                if (_RfcContext.TryDetectDatagramType(buffer, out var type))
                 {
                     return Rfc1006DatagramReceived(type, buffer);
                 }
@@ -290,11 +307,32 @@ namespace Dacs7.Protocols
 
         }
 
-        private Task OnConnectionStateChanged(string socketHandle, bool connected)
+        private async Task<int> OnS7OnlineRawDataReceived(string socketHandle, Memory<byte> buffer)
+        {
+            if (buffer.Length > Rfc1006ProtocolContext.MinimumBufferSize)
+            {
+                var processed = 0;
+                var datagram = RequestBlockDatagram.TranslateFromMemory(buffer.Slice(processed), out processed);
+                if (_s7Context.TryDetectDatagramType(datagram.UserData1, out var s7DatagramType))
+                {
+                    await SiemensPlcDatagramReceived(s7DatagramType, datagram.UserData1);
+                }
+            }
+            else
+            {
+                return 0; // no data processed, buffer is to short
+            }
+            return 1; // move forward
+
+        }
+
+
+
+        private Task OnTcpSocketConnectionStateChanged(string socketHandle, bool connected)
         {
             if (_connectionState == ConnectionState.Closed && connected)
             {
-                return SendConnectionRequest();
+                return SendConnectionRequest(ConnectionRequestDatagram.TranslateToMemory(ConnectionRequestDatagram.BuildCr(_RfcContext)));
             }
             else if (_connectionState == ConnectionState.Opened && !connected)
             {
@@ -302,6 +340,27 @@ namespace Dacs7.Protocols
             }
             return Task.CompletedTask;
         }
+
+
+        private Task OnS7OnlineConnectionStateChanged(string socketHandle, bool connected)
+        {
+            if (_connectionState == ConnectionState.Closed && connected)
+            {
+                return SendConnectionRequest(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.BuildCr(_FdlContext)));
+            }
+            else if (_connectionState == ConnectionState.Opened && !connected)
+            {
+                return Closed();
+            }
+            return Task.CompletedTask;
+        }
+
+
+
+
+
+
+ 
 
         private async Task<int> Rfc1006DatagramReceived(Type datagramType, Memory<byte> buffer)
         {
@@ -313,7 +372,7 @@ namespace Dacs7.Protocols
             }
             else if (datagramType == typeof(DataTransferDatagram))
             {
-                var datagram = DataTransferDatagram.TranslateFromMemory(buffer.Slice(processed), _context, out var needMoreData, out processed);
+                var datagram = DataTransferDatagram.TranslateFromMemory(buffer.Slice(processed), _RfcContext, out var needMoreData, out processed);
                 if (!needMoreData && _s7Context.TryDetectDatagramType(datagram.Payload, out var s7DatagramType))
                 {
                     await SiemensPlcDatagramReceived(s7DatagramType, datagram.Payload);
@@ -343,17 +402,15 @@ namespace Dacs7.Protocols
 
 
 
-
-
-        private async Task SendConnectionRequest()
+        private async Task SendConnectionRequest(Memory<byte> sendData)
         {
-            var sendData = ConnectionRequestDatagram.TranslateToMemory(ConnectionRequestDatagram.BuildCr(_context));
             var result = await _socket.SendAsync(sendData);
             if (result == SocketError.Success)
             {
                 UpdateConnectionState(ConnectionState.PendingOpenRfc1006);
             }
         }
+
 
         private Task ReceivedConnectionConfirmed()
         {
@@ -366,7 +423,7 @@ namespace Dacs7.Protocols
             var sendData = DataTransferDatagram
                                     .TranslateToMemory(
                                         DataTransferDatagram
-                                        .Build(_context,
+                                        .Build(_RfcContext,
                                             S7CommSetupDatagram
                                             .TranslateToMemory(
                                                 S7CommSetupDatagram

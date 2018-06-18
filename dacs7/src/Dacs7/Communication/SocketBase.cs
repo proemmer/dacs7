@@ -13,7 +13,7 @@ namespace Dacs7.Communication
         public delegate Task OnSocketShutdownHandler(string socketHandle);
 
         #region Fields
-        protected ISocketConfiguration _configuration;
+        protected IConfiguration _configuration;
         private bool _shutdown;
         protected string _identity;
         #endregion
@@ -32,7 +32,7 @@ namespace Dacs7.Communication
 
         #endregion
 
-        public SocketBase(ISocketConfiguration configuration)
+        public SocketBase(IConfiguration configuration)
         {
             _configuration = configuration;
         }

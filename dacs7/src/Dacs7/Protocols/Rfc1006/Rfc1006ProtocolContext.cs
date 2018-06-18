@@ -12,7 +12,7 @@ namespace Dacs7.Protocols.Rfc1006
     /// Context class for the protocol instance
     /// Contains all properties for the protocol
     /// </summary>
-    internal class Rfc1006ProtocolContext
+    internal class Rfc1006ProtocolContext : IProtocolContext
     {
         private int _frameSize;
 
