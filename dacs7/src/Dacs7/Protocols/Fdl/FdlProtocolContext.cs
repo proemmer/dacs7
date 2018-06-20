@@ -1,5 +1,4 @@
-﻿using Dacs7.Protocols.Fdl;
-using System;
+﻿using System;
 using System.Net;
 using System.Threading;
 

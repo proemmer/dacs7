@@ -135,11 +135,11 @@ namespace Dacs7.Protocols
         {
             if(_RfcContext != null)
             {
-                return DataTransferDatagram.TranslateToMemory(DataTransferDatagram.Build(_RfcContext, buffer).FirstOrDefault());
+                return BuildForTcp(buffer);
             }
             else if(_FdlContext != null)
             {
-                return RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.Build(_FdlContext, buffer));
+                return BuildForS7Online(buffer);
             }
             throw new InvalidOperationException();
         }
@@ -319,9 +319,17 @@ namespace Dacs7.Protocols
             {
                 return ReceivedCommunicationSetupAck(buffer);
             }
+            else if (datagramType == typeof(S7CommSetupDatagram))
+            {
+                return ReceivedCommunicationSetupJob(buffer);
+            }
             else if(datagramType == typeof(S7ReadJobAckDatagram))
             {
                 return ReceivedReadJobAck(buffer);
+            }
+            else if (datagramType == typeof(S7ReadJobDatagram))
+            {
+                return ReceivedReadJob(buffer);
             }
             else if(datagramType == typeof(S7WriteJobAckDatagram))
             {
@@ -330,8 +338,20 @@ namespace Dacs7.Protocols
             return Task.CompletedTask;
         }
 
+  
 
-
+        private async Task ReceivedCommunicationSetupJob(Memory<byte> buffer)
+        {
+            var sendData = BuildForSelectedContext(S7CommSetupAckDataDatagram
+                                                    .TranslateToMemory(
+                                                        S7CommSetupAckDataDatagram
+                                                        .BuildFrom(_s7Context, S7CommSetupDatagram.TranslateFromMemory(buffer))));
+            var result = await _socket.SendAsync(sendData);
+            if (result == SocketError.Success)
+            {
+                //UpdateConnectionState(ConnectionState.PendingOpenPlc);
+            }
+        }
 
         private Task TransportOpened()
         {
@@ -358,6 +378,18 @@ namespace Dacs7.Protocols
             if(_readHandler.TryGetValue(data.Header.Header.ProtocolDataUnitReference, out var cbh))
             {
                 cbh.Event.Set(data.Data);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private Task ReceivedReadJob(Memory<byte> buffer)
+        {
+            var data = S7ReadJobDatagram.TranslateFromMemory(buffer);
+
+            if (_readHandler.TryGetValue(data.Header.ProtocolDataUnitReference, out var cbh))
+            {
+                cbh.Event.Set(null);
             }
 
             return Task.CompletedTask;

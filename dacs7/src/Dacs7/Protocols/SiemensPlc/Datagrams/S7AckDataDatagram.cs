@@ -26,7 +26,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static Memory<byte> TranslateToMemory(S7AckDataDatagram datagram)
         {
-            var result = S7HeaderDatagram.TranslateToMemory(datagram.Header);
+            var result = S7HeaderDatagram.TranslateToMemory(datagram.Header, datagram.Header.GetHeaderSize() + datagram.Error.GetSize() + datagram.Header.ParamLength + datagram.Header.DataLength);
             S7HeaderErrorCodesDatagram.TranslateToMemory(datagram.Error, result.Slice(datagram.Header.GetHeaderSize()));
             return result;
         }

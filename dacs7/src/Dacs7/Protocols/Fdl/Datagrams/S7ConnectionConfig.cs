@@ -18,7 +18,7 @@ namespace Dacs7.Protocols.Fdl
         public byte B14 { get; set; }
         public byte B15 { get; set; } = 0x01;
         public byte B16 { get; set; }
-        public byte B17 { get; set; } = 0x01;
+        public byte B17 { get; set; } = 0x02;
         public byte ConnectionType { get; set; }
         public byte RackSlot { get; set; }
         public byte B20 { get; set; }
@@ -48,7 +48,7 @@ namespace Dacs7.Protocols.Fdl
 
         public static Memory<byte> TranslateToMemory(S7ConnectionConfig config)
         {
-            var mem = new Memory<byte>(new byte[34]);
+            var mem = new Memory<byte>(new byte[126]);
 
             mem.Span[0] = config.RoutingEnabled;
             mem.Span[1] = config.B01;

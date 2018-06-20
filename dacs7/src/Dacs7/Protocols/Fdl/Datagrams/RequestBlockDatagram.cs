@@ -29,7 +29,7 @@ namespace Dacs7.Protocols.Fdl
                     Priority = 1,
                     Subsystem = 0x40,
                     OpCode = 0,
-                    Response = 0xffff,
+                    Response = 0x4102,
                     FillLength1 = (ushort)rawPayload.Length,
                     SegLength1 = (ushort)rawPayload.Length,
                     Offset1 = 80,
@@ -87,57 +87,57 @@ namespace Dacs7.Protocols.Fdl
             var result = new Memory<byte>(new byte[length]);  // check if we could use ArrayBuffer
             var span = result.Span;
 
-            //BinaryPrimitives.WriteUInt16BigEndian(span.Slice(0, 2), datagram.Header.Reserved[0]);
-            //BinaryPrimitives.WriteUInt16BigEndian(span.Slice(2, 2), datagram.Header.Reserved[1]);
+            //BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(0, 2), datagram.Header.Reserved[0]);
+            //BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(2, 2), datagram.Header.Reserved[1]);
             span[4] = datagram.Header.Length;
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(5, 2), datagram.Header.User);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(5, 2), datagram.Header.User);
             span[7] = datagram.Header.RbType;
             span[8] = datagram.Header.Priority;
             //span[9] = datagram.Header.Reserved1;
-            //BinaryPrimitives.WriteUInt16BigEndian(span.Slice(10, 2), datagram.Header.Reserved2);
+            //BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(10, 2), datagram.Header.Reserved2);
             span[12] = datagram.Header.Subsystem;
             span[13] = datagram.Header.OpCode;
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(14, 2), datagram.Header.Response);
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(16, 2), datagram.Header.FillLength1);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(14, 2), datagram.Header.Response);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(16, 2), datagram.Header.FillLength1);
             //span[18] = datagram.Header.Reserved3;
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(19, 2), datagram.Header.SegLength1);
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(21, 2), datagram.Header.Offset1);
-            //BinaryPrimitives.WriteUInt16BigEndian(span.Slice(23, 2), datagram.Header.Reserved4);
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(25, 2), datagram.Header.FillLength2);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(19, 2), datagram.Header.SegLength1);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(21, 2), datagram.Header.Offset1);
+            //BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(23, 2), datagram.Header.Reserved4);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(25, 2), datagram.Header.FillLength2);
             //span[27] = datagram.Header.Reserved5;
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(28, 2), datagram.Header.SegLength2);
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(30, 2), datagram.Header.Offset2);
-            //BinaryPrimitives.WriteUInt16BigEndian(span.Slice(32, 2), datagram.Header.Reserved6);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(28, 2), datagram.Header.SegLength2);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(30, 2), datagram.Header.Offset2);
+            //BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(32, 2), datagram.Header.Reserved6);
 
 
 
             span[34] = datagram.ApplicationBlock.Opcode;
             span[35] = datagram.ApplicationBlock.Subsystem;
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(36, 2), datagram.ApplicationBlock.Id);
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(38, 2), (ushort)datagram.ApplicationBlock.Service);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(36, 2), datagram.ApplicationBlock.Id);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(38, 2), (ushort)datagram.ApplicationBlock.Service);
             span[40] = datagram.ApplicationBlock.LocalAddress.Station;
             span[41] = datagram.ApplicationBlock.LocalAddress.Segment;
             span[42] = datagram.ApplicationBlock.Ssap;
             span[43] = datagram.ApplicationBlock.Dsap;
             span[44] = datagram.ApplicationBlock.RemoteAddress.Station;
             span[45] = datagram.ApplicationBlock.RemoteAddress.Segment;
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(46, 2), (ushort)datagram.ApplicationBlock.ServiceClass);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(46, 2), (ushort)datagram.ApplicationBlock.ServiceClass);
 
-            BinaryPrimitives.WriteInt32BigEndian(span.Slice(48, 4), datagram.ApplicationBlock.Receive1Sdu.BufferPtr);
+            BinaryPrimitives.WriteInt32LittleEndian(span.Slice(48, 4), datagram.ApplicationBlock.Receive1Sdu.BufferPtr);
             span[52] = datagram.ApplicationBlock.Receive1Sdu.Length;
 
             span[53] = datagram.ApplicationBlock.Reserved1;
             span[54] = datagram.ApplicationBlock.Reserved;
 
 
-            BinaryPrimitives.WriteInt32BigEndian(span.Slice(55, 4), datagram.ApplicationBlock.Send1Sdu.BufferPtr);
+            BinaryPrimitives.WriteInt32LittleEndian(span.Slice(55, 4), datagram.ApplicationBlock.Send1Sdu.BufferPtr);
             span[59] = datagram.ApplicationBlock.Send1Sdu.Length;
 
 
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(60, 2), datagram.ApplicationBlock.LinkSatus);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(60, 2), datagram.ApplicationBlock.LinkSatus);
 
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(62, 2), datagram.ApplicationBlock.Reserved2[0]);
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(64, 2), datagram.ApplicationBlock.Reserved2[1]);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(62, 2), datagram.ApplicationBlock.Reserved2[0]);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(64, 2), datagram.ApplicationBlock.Reserved2[1]);
 
 
 
@@ -165,31 +165,31 @@ namespace Dacs7.Protocols.Fdl
                 Header = new RequestBlockHeader
                 {
                     Length = span[4],
-                    User = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(5, 2)),
+                    User = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(5, 2)),
                     RbType = span[7],
                     Priority = span[8],
                     //Reserved1 = span[9],
-                    //Reserved2 = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(10, 2)),
+                    //Reserved2 = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(10, 2)),
                     Subsystem = span[12],
                     OpCode = span[13],
-                    Response = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(14, 2)),
-                    FillLength1 = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(16, 2)),
+                    Response = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(14, 2)),
+                    FillLength1 = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(16, 2)),
                     //Reserved3 = span[18],
-                    SegLength1 = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(19, 2)),
-                    Offset1 = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(21, 2)),
-                    //Reserved4 = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(23, 2)),
-                    FillLength2 = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(25, 2)),
+                    SegLength1 = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(19, 2)),
+                    Offset1 = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(21, 2)),
+                    //Reserved4 = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(23, 2)),
+                    FillLength2 = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(25, 2)),
                     //Reserved5 = span[27],
-                    SegLength2 = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(28, 2)),
-                    Offset2 = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(30, 2)),
-                    //Reserved6 = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(32, 2)),
+                    SegLength2 = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(28, 2)),
+                    Offset2 = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(30, 2)),
+                    //Reserved6 = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(32, 2)),
                 },
                 ApplicationBlock = new ApplicationBlock
                 {
                     Opcode = span[34],
                     Subsystem = span[35],
-                    Id = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(36, 2)),
-                    Service = (ServiceCode)BinaryPrimitives.ReadUInt16BigEndian(span.Slice(38, 2)),
+                    Id = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(36, 2)),
+                    Service = (ServiceCode)BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(38, 2)),
                     LocalAddress = new RemoteAddress
                     {
                         Station = span[40],
@@ -202,25 +202,25 @@ namespace Dacs7.Protocols.Fdl
                         Station = span[44],
                         Segment = span[45],
                     },
-                    ServiceClass = (ServiceClass)BinaryPrimitives.ReadUInt16BigEndian(span.Slice(46, 2)),
+                    ServiceClass = (ServiceClass)BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(46, 2)),
                     Receive1Sdu = new LinkServiceDataUnit
                     {
-                        BufferPtr = BinaryPrimitives.ReadInt32BigEndian(span.Slice(48, 4)),
+                        BufferPtr = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(48, 4)),
                         Length = span[52]
                     },
                     Reserved1 = span[53],
                     Reserved = span[54],
                     Send1Sdu = new LinkServiceDataUnit
                     {
-                        BufferPtr = BinaryPrimitives.ReadInt32BigEndian(span.Slice(55, 4)),
+                        BufferPtr = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(55, 4)),
                         Length = span[59]
                     },
-                    LinkSatus = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(60, 2)),
-                    Reserved2 = new ushort[] { BinaryPrimitives.ReadUInt16BigEndian(span.Slice(62, 2)), BinaryPrimitives.ReadUInt16BigEndian(span.Slice(64, 2)) }
+                    LinkSatus = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(60, 2)),
+                    Reserved2 = new ushort[] { BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(62, 2)), BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(64, 2)) }
                 }
             };
 
-            var neededLength = result.Header.Length + result.Header.SegLength1 + result.Header.SegLength1;
+            var neededLength = result.Header.Length + result.Header.SegLength1 + result.Header.SegLength2;
             //  66 + 12 bytes reserved!!
 
             if (neededLength > data.Length)
@@ -235,7 +235,7 @@ namespace Dacs7.Protocols.Fdl
             {
                 span.Slice(result.Header.Offset1, result.Header.SegLength1).CopyTo(result.UserData1.Span);
             }
-            result.UserData2 = new byte[result.Header.FillLength1];
+            result.UserData2 = new byte[result.Header.FillLength2];
             if (result.Header.FillLength2 > 0)
             {
                 span.Slice(result.Header.Offset2, result.Header.SegLength2).CopyTo(result.UserData2.Span);

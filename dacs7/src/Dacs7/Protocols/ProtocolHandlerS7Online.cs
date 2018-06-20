@@ -59,9 +59,9 @@ namespace Dacs7.Protocols
                         }
                     case S7OnlineStates.ConnectState2:
                         {
-                            if(datagram.Header.Response == 0x0100)
+                            //if(datagram.Header.Response == 0x02)
                             {
-                                _s7OnlineState = S7OnlineStates.ConnectState2;
+                                _s7OnlineState = S7OnlineStates.Connected;
                                 await TransportOpened();
                                 processed = buffer.Length;
                             }
@@ -74,7 +74,7 @@ namespace Dacs7.Protocols
                         break;
                     case S7OnlineStates.Connected:
                         {
-                            var data = datagram.UserData1.Slice(datagram.Header.SegLength1);
+                            var data = datagram.UserData1.Slice(0, datagram.Header.SegLength1);
                             if (_s7Context.TryDetectDatagramType(data, out var s7DatagramType))
                             {
                                 await S7DatagramReceived(s7DatagramType, data);
@@ -84,7 +84,6 @@ namespace Dacs7.Protocols
                             {
                                 return 0; // no data processed, buffer is to short
                             }
-                            return 1; // move forward
                         }
                 }
             }
@@ -92,7 +91,11 @@ namespace Dacs7.Protocols
             return 1; // move forward
         }
 
-
+        private Memory<byte> BuildForS7Online(Memory<byte> buffer)
+        {
+            var dg = RequestBlockDatagram.Build(_FdlContext, buffer);
+            return RequestBlockDatagram.TranslateToMemory(dg);
+        }
 
         private Task OnS7OnlineConnectionStateChanged(string socketHandle, bool connected)
         {

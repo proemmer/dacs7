@@ -1,4 +1,5 @@
 ﻿using Dacs7.Communication.S7Online;
+using Dacs7.Exceptions;
 using System;
 using System.Buffers;
 using System.Net.Sockets;
@@ -73,19 +74,16 @@ namespace Dacs7.Communication
 
                 if (_connectionHandle >= 0)
                 {
-
                     _disableReconnect = false; // we have a connection, so enable reconnect
-
-
                     _ = Task.Factory.StartNew(() => StartReceive(), TaskCreationOptions.LongRunning);
                     await PublishConnectionStateChanged(true);
                 }
                 else
                 {
-                    throw new Exception($"{Native.SCP_get_errno()}"); // todo create real exception
+                    throw new S7OnlineException(); // todo create real exception
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 DisposeSocket();
                 await HandleSocketDown();
@@ -148,16 +146,14 @@ namespace Dacs7.Communication
                 {
                     try
                     {
-                        if (receiveOffset <= 0)
-                        {
-                            if (!await _sentEvent.WaitAsync() && _connectionHandle == -1)
-                                break;
-                        }
 
-                        var result = Native.SCP_receive(_connectionHandle, 0, receivedLength, (ushort)receiveBuffer.Length, receiveBuffer);
+                        //await _sentEvent.WaitAsync();
+
+                        // 0xffff  wait forever
+                        var result = Native.SCP_receive(_connectionHandle, 0xffff, receivedLength, (ushort)ReceiveBufferSize, receiveBuffer);
 
                         var received = receivedLength[0];
-                        if (received == 0)
+                        if (result == -1 || received == 0)
                         {
                             await Task.Delay(1);
                             continue;
@@ -189,9 +185,7 @@ namespace Dacs7.Communication
                             processed += proc;
                         } while (processed < toProcess);
                     }
-                    catch (Exception ex)
-                    {
-                    }
+                    catch (Exception){}
                 }
             }
             finally

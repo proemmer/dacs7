@@ -12,7 +12,11 @@ namespace Dacs7.Protocols.SiemensPlc
         private const int MinimumDataSize = 10;
         private const int MinimumAckDetectionSize = MinimumDataSize + 2;
         private const int PduTypeOffset = 1;
+        private const int JobFunctionCodeOffset = MinimumDataSize;
         private const int AckDataFunctionCodeOffset = MinimumAckDetectionSize;
+
+        // 0x32 = S7comm
+        // 0x72 = S7commPlus (1200/1500)
         private const byte Prefix = 0x32;
 
         public const int ReadHeader = 10;        // header for each telegram
@@ -68,6 +72,22 @@ namespace Dacs7.Protocols.SiemensPlc
 
         private bool TryDetectJobType(Memory<byte> memory, out Type datagramType)
         {
+            if (memory.Length > MinimumDataSize)
+            {
+                switch ((FunctionCode)memory.Span[JobFunctionCodeOffset])  // Function Type
+                {
+                    case FunctionCode.SetupComm:
+                        datagramType = typeof(S7CommSetupDatagram);
+                        return true;
+                    case FunctionCode.ReadVar:   
+                        datagramType = typeof(S7ReadJobDatagram);
+                        return true;
+                    case FunctionCode.WriteVar:
+                        datagramType = typeof(S7WriteJobDatagram);
+                        return true;
+                }
+
+            }
             datagramType = null;
             return false;
         }

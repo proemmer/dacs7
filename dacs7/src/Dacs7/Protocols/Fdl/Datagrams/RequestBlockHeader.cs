@@ -43,7 +43,7 @@ namespace Dacs7.Protocols.Fdl
         /// <summary>
         /// Return parameter (same as the parameter "l_status" in the application block). 
         /// </summary>
-        public UInt16 Response { get; set; }
+        public UInt16 Response { get; set; } = 0x4102;
 
         /// <summary>
         /// Number of relevant bytes in data buffer 1. 

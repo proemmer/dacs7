@@ -15,7 +15,6 @@ namespace Dacs7.Exceptions
         }
 
 
-
         private string GetErrTxt(int number)
         {
             switch (number)

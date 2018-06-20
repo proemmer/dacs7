@@ -24,11 +24,11 @@ namespace Dacs7.Protocols.Rfc1006
 
         public byte ClassOption { get; set; } // = 0x00;                 // PDU Class 0 and no Option
 
-        public byte ParmCodeTpduSize { get; set; } // = 0xc0;
+        public byte ParmCodeTpduSize { get; set; } = 0xc0;
 
-        public byte Unknown { get; set; } // = 0x01;
+        public byte SizeTpduReceivingLength { get; set; } 
 
-        public byte SizeTpduReceiving { get; set; }
+        public Memory<byte> SizeTpduReceiving { get; set; }              // Allowed sizes: 128(7), 256(8), 512(9), 1024(10), 2048(11) octets
 
         public byte ParmCodeSrcTsap { get; set; } = 0xc1;
 
@@ -47,7 +47,7 @@ namespace Dacs7.Protocols.Rfc1006
         public ConnectionConfirmedDatagram BuildCc(Rfc1006ProtocolContext context, ConnectionRequestDatagram req)
         {
             context.CalcLength(context, out byte li, out ushort length);
-            context.SizeTpduSending = req.SizeTpduReceiving;
+            req.SizeTpduReceiving.Span.CopyTo(context.SizeTpduSending.Span);
             var result = new ConnectionConfirmedDatagram
             {
                 Li = li,
@@ -84,22 +84,40 @@ namespace Dacs7.Protocols.Rfc1006
                 DstRef = BinaryPrimitives.ReadInt16BigEndian(span.Slice(6, 2)),
                 SrcRef = BinaryPrimitives.ReadInt16BigEndian(span.Slice(8, 2)),
                 ClassOption = span[10],
-                ParmCodeTpduSize = span[11],
-                Unknown = span[12],
-                SizeTpduReceiving = span[13],
+
             };
 
-            var offset = 14;
-            result.ParmCodeSrcTsap = span[offset++];
-            result.SourceTsapLength = span[offset++];
-            
-            result.SourceTsap = data.Slice(offset, (int)result.SourceTsapLength);
-            offset += (int)result.SourceTsapLength;
 
-            result.ParmCodeDestTsap = span[offset++];
-            result.DestTsapLength = span[offset++];
-            result.SourceTsap = data.Slice(offset, result.DestTsapLength);
-            offset += (int)result.DestTsapLength;
+            int offset;
+            for (offset = 11; offset < data.Length;)
+            {
+                switch(span[offset])
+                {
+                    case 0xc0:
+                        result.ParmCodeTpduSize = span[offset++];
+                        result.SizeTpduReceivingLength = span[offset++];
+                        result.SizeTpduReceiving = data.Slice(offset, (int)result.SizeTpduReceivingLength);
+                        offset += (int)result.SizeTpduReceivingLength;
+                        break;
+                    case 0xc1:
+
+                        result.ParmCodeSrcTsap = span[offset++];
+                        result.SourceTsapLength = span[offset++];
+                        result.SourceTsap = data.Slice(offset, (int)result.SourceTsapLength);
+                        offset += (int)result.SourceTsapLength;
+                        break;
+                    case 0xc2:
+                        result.ParmCodeDestTsap = span[offset++];
+                        result.DestTsapLength = span[offset++];
+                        result.SourceTsap = data.Slice(offset, result.DestTsapLength);
+                        offset += (int)result.DestTsapLength;
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+
 
             processed = offset;
             return result;

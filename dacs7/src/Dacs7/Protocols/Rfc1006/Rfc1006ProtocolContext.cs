@@ -46,8 +46,8 @@ namespace Dacs7.Protocols.Rfc1006
 
         public Memory<byte> SourceTsap { get; set; } = new byte[] { 0x01, 0x00 };
         public Memory<byte> DestTsap { get; set; } 
-        public byte SizeTpduReceiving { get; set; }
-        public byte SizeTpduSending { get; set; }
+        public Memory<byte> SizeTpduReceiving { get; set; }
+        public Memory<byte> SizeTpduSending { get; set; }
 
         public IList<Tuple<Memory<byte>, int>> FrameBuffer { get; set; } = new List<Tuple<Memory<byte>, int>>();
 
@@ -71,7 +71,8 @@ namespace Dacs7.Protocols.Rfc1006
             var b = -1;
             for (var i = frameSize; i > 0; i = i >> 1, ++b) ;
             b = Math.Max(TpduSizeMin, Math.Min(TpduSizeMax, b));
-            SizeTpduSending = SizeTpduReceiving = (byte)b;
+            SizeTpduReceiving = new byte[] { (byte)b };
+            SizeTpduSending = new byte[] { (byte)b };
             _frameSize = frameSize;
         }
 
