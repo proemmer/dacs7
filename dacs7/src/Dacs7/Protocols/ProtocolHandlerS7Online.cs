@@ -13,82 +13,119 @@ namespace Dacs7.Protocols
     {
         private enum S7OnlineStates
         {
+            Disconnected,
             ConnectState1,
             ConnectState2,
             ConnectState3,
+            ConnectState4,
+            ConnectState5,
             Connected,
         }
 
         private S7OnlineStates _s7OnlineState;
 
 
-        private async Task<int> OnS7OnlineRawDataReceived(string socketHandle, Memory<byte> buffer)
-        {
 
+        private async Task<int> S7OnlineHandler(string socketHandle, Memory<byte> buffer)
+        {
+            var processed = 0;
+            var datagram = !buffer.IsEmpty ? RequestBlockDatagram.TranslateFromMemory(buffer.Slice(processed), out processed) : null;
+            switch (_s7OnlineState)
+            {
+                case S7OnlineStates.Disconnected:
+                    {
+                        if(_FdlContext.IsEthernet)
+                        {
+                            if (await SendS7Online(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.BuildEthernet1(_FdlContext))))
+                            {
+                                _s7OnlineState = S7OnlineStates.ConnectState3;
+                            }
+                        }
+                        else
+                        {
+                            if (await SendS7Online(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.BuildCreateRemote(_FdlContext))))
+                            {
+                                _s7OnlineState = S7OnlineStates.ConnectState1;
+                            }
+                        }
+
+                        return processed;
+                    }
+                case S7OnlineStates.ConnectState1:
+                    {
+                        if (await SendS7Online(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.BuildReadFdlOnConnect(_FdlContext))))
+                        {
+                            _s7OnlineState = S7OnlineStates.ConnectState2;
+                        }
+
+                        return processed;
+                    }
+                case S7OnlineStates.ConnectState2:
+                    {
+                        if (await SendS7Online(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.BuildEthernet1(_FdlContext))))
+                        {
+                            _s7OnlineState = S7OnlineStates.ConnectState3;
+                        }
+
+                        return processed;
+                    }
+                case S7OnlineStates.ConnectState3:
+                    { 
+                        if (datagram.Header.OpCode == 0x00 && datagram.Header.Response == 0x01)
+                        {
+                            _FdlContext.OpCode = datagram.ApplicationBlock.Opcode;
+                            _FdlContext.Subsystem = datagram.ApplicationBlock.Subsystem;
+                        }
+
+                        if (await SendS7Online(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.BuildEthernet2(_FdlContext))))
+                        {
+                            _s7OnlineState = S7OnlineStates.ConnectState4;
+                        }
+
+                        return processed;
+                    }
+                case S7OnlineStates.ConnectState4:
+                    {
+                        if (datagram.Header.Response == 0x01)
+                        {
+                            _s7OnlineState = S7OnlineStates.Connected;
+                            await TransportOpened();
+                            processed = buffer.Length;
+                            _s7OnlineState = S7OnlineStates.Connected;
+                            UpdateConnectionState(ConnectionState.PendingOpenTransport);
+                        }
+                        else
+                            throw new S7OnlineException();
+                        return processed;
+                    }
+                case S7OnlineStates.Connected:
+                    {
+                       
+                        if (datagram == null)
+                            return processed;
+
+                        var data = datagram.UserData1.Slice(0, datagram.Header.SegLength1);
+                        if (_s7Context.TryDetectDatagramType(data, out var s7DatagramType))
+                        {
+                            await S7DatagramReceived(s7DatagramType, data);
+                            return processed;
+                        }
+                        else
+                        {
+                            return 0; // no data processed, buffer is to short
+                        }
+                    }
+            }
+            return 1; // move forward
+        }
+
+        private Task<int> OnS7OnlineRawDataReceived(string socketHandle, Memory<byte> buffer)
+        {
             if (buffer.Length >= FdlProtocolContext.MinimumBufferSize)
             {
-                var processed = 0;
-                var datagram = RequestBlockDatagram.TranslateFromMemory(buffer.Slice(processed), out processed);
-                if (datagram == null)
-                    return processed;
-
-                switch (_s7OnlineState)
-                {
-                    case S7OnlineStates.ConnectState1:
-                        {
-                            if (datagram.Header.OpCode == 0x00 && datagram.Header.Response == 0x0100)
-                            {
-                                _FdlContext.OpCode = datagram.ApplicationBlock.Opcode;
-                                _FdlContext.Subsystem = datagram.ApplicationBlock.Subsystem;
-                            }
-
-                            var request = RequestBlockDatagram.Build(_FdlContext, S7ConnectionConfig.TranslateToMemory(S7ConnectionConfig.BuildS7ConnectionConfig(_FdlContext)));
-                            request.Header.OpCode = 1;
-                            request.ApplicationBlock.Ssap = 2;
-                            request.ApplicationBlock.RemoteAddress.Station = 114;
-
-                            var result = await _socket.SendAsync(RequestBlockDatagram.TranslateToMemory(request));
-                            if (result == SocketError.Success)
-                            {
-                                processed = buffer.Length;
-                            }
-
-
-                            _s7OnlineState = S7OnlineStates.ConnectState2;
-                            return processed;
-                        }
-                    case S7OnlineStates.ConnectState2:
-                        {
-                            //if(datagram.Header.Response == 0x02)
-                            {
-                                _s7OnlineState = S7OnlineStates.Connected;
-                                await TransportOpened();
-                                processed = buffer.Length;
-                            }
-                            return processed;
-                        }
-                    case S7OnlineStates.ConnectState3:
-                        {
-
-                        }
-                        break;
-                    case S7OnlineStates.Connected:
-                        {
-                            var data = datagram.UserData1.Slice(0, datagram.Header.SegLength1);
-                            if (_s7Context.TryDetectDatagramType(data, out var s7DatagramType))
-                            {
-                                await S7DatagramReceived(s7DatagramType, data);
-                                return processed;
-                            }
-                            else
-                            {
-                                return 0; // no data processed, buffer is to short
-                            }
-                        }
-                }
+                return S7OnlineHandler(socketHandle, buffer);
             }
-
-            return 1; // move forward
+            return Task.FromResult(1); // move forward
         }
 
         private Memory<byte> BuildForS7Online(Memory<byte> buffer)
@@ -101,23 +138,24 @@ namespace Dacs7.Protocols
         {
             if (_connectionState == ConnectionState.Closed && connected)
             {
-                return SendS7OnlineConnectionRequest1();
+                return S7OnlineHandler(socketHandle, Memory<byte>.Empty);
             }
             else if (_connectionState == ConnectionState.Opened && !connected)
             {
+                _s7OnlineState = S7OnlineStates.Disconnected;
                 return Closed();
             }
             return Task.CompletedTask;
         }
 
-        private async Task SendS7OnlineConnectionRequest1()
+        private async Task<bool> SendS7Online(Memory<byte> buffer)
         {
-            var result = await _socket.SendAsync(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.Build(_FdlContext, Memory<byte>.Empty)));
-            if (result == SocketError.Success)
-            {
-                UpdateConnectionState(ConnectionState.PendingOpenTransport);
-            }
+            var result = await _socket.SendAsync(buffer);
+            return result == SocketError.Success;
         }
+
+
+
 
     }
 }

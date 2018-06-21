@@ -13,9 +13,85 @@ namespace Dacs7.Protocols.Fdl
 
         public byte[] Reserved { get; set; } = new byte[12];
         public byte[] Reverence { get; set; }
-        public Memory<byte> UserData1 { get; set; } 
-        public Memory<byte> UserData2 { get; set; } 
+        public Memory<byte> UserData1 { get; set; }
+        public Memory<byte> UserData2 { get; set; }
 
+
+        /// <summary>
+        /// First message if non ethernet connection
+        /// </summary>
+        /// <returns></returns>
+        private static RequestBlockDatagram BuildInternal(FdlProtocolContext context, Memory<byte> buffer)
+        {
+            var request = Build(context, buffer);
+            request.Header.Subsystem = 0x22;
+            request.Header.Response = 0xFF;
+            request.Header.Priority = 1;
+
+            request.ApplicationBlock.Service = ServiceCode.FdlLifeListCreateRemote;
+            return request;
+        }
+
+        public static RequestBlockDatagram BuildCreateRemote(FdlProtocolContext context)
+        {
+            return Build(context, new byte[0x80]);
+        }
+
+        /// <summary>
+        /// Second message if non ethernet connection
+        /// </summary>
+        /// <returns></returns>
+        public static RequestBlockDatagram BuildReadFdlOnConnect(FdlProtocolContext context)
+        {
+            var request = BuildInternal(context, new byte[0xF2]);
+            request.ApplicationBlock.Service = ServiceCode.FdlReadValue;
+            return request;
+        }
+
+        /// <summary>
+        /// First message if ethernet connection
+        /// </summary>
+        /// <returns></returns>
+        public static RequestBlockDatagram BuildEthernet1(FdlProtocolContext context)
+        {
+            var request = Build(context, Memory<byte>.Empty);
+            //request.Header.Response = 0xFF;
+            //request.Header.Subsystem = 0x40;
+            return request;
+        }
+
+        /// <summary>
+        /// Second message if ethernet connection
+        /// </summary>
+        /// <returns></returns>
+        public static RequestBlockDatagram BuildEthernet2(FdlProtocolContext context)
+        {
+            var cc = S7ConnectionConfig.BuildS7ConnectionConfig(context);
+            var request = Build(context, S7ConnectionConfig.TranslateToMemory(cc));
+            //request.Header.Response = 0xFF;
+            //request.Header.Subsystem = 0x40;
+            request.Header.OpCode = 1;
+            request.Header.FillLength1 = request.Header.SegLength1 = 126;
+            request.ApplicationBlock.Ssap = 2;
+            request.ApplicationBlock.RemoteAddress.Station = 114;
+            return request;
+        }
+
+        /// <summary>
+        /// Third message if ethernet connection
+        /// </summary>
+        /// <returns></returns>
+        public static RequestBlockDatagram BuildEthernet3(FdlProtocolContext context)
+        {
+            var request = Build(context, new byte[] { 0xF0, 0, 0, 1, 0, 1, 3, 0xc0 });
+            //request.Header.Response = 0xFF;
+            //request.Header.Subsystem = 0x40;
+            request.Header.OpCode = 1;
+            request.Header.FillLength1 = request.Header.SegLength1 = 126;
+            request.ApplicationBlock.Ssap = 2;
+            request.ApplicationBlock.RemoteAddress.Station = 114;
+            return request;
+        }
 
         public static RequestBlockDatagram Build(FdlProtocolContext context, Memory<byte> rawPayload)
         {
@@ -29,11 +105,11 @@ namespace Dacs7.Protocols.Fdl
                     Priority = 1,
                     Subsystem = 0x40,
                     OpCode = 0,
-                    Response = 0x4102,
-                    FillLength1 = (ushort)rawPayload.Length,
+                    Response = 0xFF,
+                    FillLength1 = 260, //  (ushort)rawPayload.Length,
                     SegLength1 = (ushort)rawPayload.Length,
                     Offset1 = 80,
-                    FillLength2 = 0,
+                    FillLength2 = 260,
                     SegLength2 = 0,
                     Offset2 = 0,
                 },
@@ -71,7 +147,7 @@ namespace Dacs7.Protocols.Fdl
             //  66 + 12 bytes reserved!!
             result.Reverence = new byte[2];
             result.UserData1 = new byte[result.Header.FillLength1];
-            if(!rawPayload.IsEmpty) rawPayload.CopyTo(result.UserData1);
+            if (!rawPayload.IsEmpty) rawPayload.CopyTo(result.UserData1);
             result.UserData2 = new byte[result.Header.FillLength2];
             return result;
         }

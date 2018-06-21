@@ -12,15 +12,27 @@ namespace Dacs7.Protocols.Fdl
 
         public static int MinimumBufferSize = 80;
 
-        public UInt16 User => GetNextReferenceId();
+        public UInt16 User => 1; // GetNextReferenceId();
 
         public byte OpCode { get; set; } = 0xFF;
+
+        /// <summary>
+        /// When this is One it is a MPI Connection, zero means TCP Connection!
+        /// </summary>
         public byte Subsystem { get; set; } = 0xFF;
 
+
+        public bool IsEthernet => Address != null;
+        public bool EnableRouting => RoutingAddress != null;
+
+
+
+        public int MpiAddress { get; set; }
         public PlcConnectionType ConnectionType { get; set; }
         public int Rack { get; set; }
         public int Slot { get; set; }
         public IPAddress Address { get; set; }
+        public IPAddress RoutingAddress { get; set; }
 
         internal UInt16 GetNextReferenceId()
         {

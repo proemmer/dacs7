@@ -2,8 +2,10 @@
 using Dacs7.Exceptions;
 using System;
 using System.Buffers;
+using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Dacs7.Communication
@@ -13,6 +15,7 @@ namespace Dacs7.Communication
         private bool _disableReconnect;
         private bool _closeCalled;
         private int _connectionHandle = -1;
+        private Task _receiveTask;
         private AsyncAutoResetEvent<bool> _sentEvent = new AsyncAutoResetEvent<bool>();
 
         private readonly S7OnlineConfiguration _config;
@@ -75,7 +78,7 @@ namespace Dacs7.Communication
                 if (_connectionHandle >= 0)
                 {
                     _disableReconnect = false; // we have a connection, so enable reconnect
-                    _ = Task.Factory.StartNew(() => StartReceive(), TaskCreationOptions.LongRunning);
+                    _receiveTask = Task.Factory.StartNew(() => StartReceive(), TaskCreationOptions.LongRunning);
                     await PublishConnectionStateChanged(true);
                 }
                 else
@@ -85,7 +88,7 @@ namespace Dacs7.Communication
             }
             catch (Exception)
             {
-                DisposeSocket();
+                await DisposeSocket();
                 await HandleSocketDown();
                 if (!internalCall) throw;
             }
@@ -96,9 +99,13 @@ namespace Dacs7.Communication
             // Write the locally buffered data to the network.
             try
             {
-                int ret = Native.SCP_send(_connectionHandle, (ushort)data.Length, data.ToArray());
+                var sendData = data.ToArray();
+                int ret = Native.SCP_send(_connectionHandle, (ushort)data.Length, sendData);
                 if (ret < 0)
                 {
+                    File.AppendAllText("TraceOut.txt", $"===  Start Sent {data.Length} bytes ====");
+                    File.AppendAllText("TraceOut.txt", Encoding.ASCII.GetString(sendData));
+                    File.AppendAllText("TraceOut.txt", $"===  End Sent ====");
                     return Task.FromResult(SocketError.Fault);
                 }
                 _sentEvent.Set(true);
@@ -120,10 +127,10 @@ namespace Dacs7.Communication
         {
             _disableReconnect = _closeCalled = true;
             await base.CloseAsync();
-            DisposeSocket();
+            await DisposeSocket();
         }
 
-        private void DisposeSocket()
+        private async Task DisposeSocket()
         {
             if (_connectionHandle != -1)
             {
@@ -131,6 +138,11 @@ namespace Dacs7.Communication
                 _connectionHandle = -1;
             }
             _sentEvent.Set(false);
+
+            if (_receiveTask != null)
+            {
+                await _receiveTask;
+            }
         }
 
         private async Task StartReceive()
@@ -166,6 +178,9 @@ namespace Dacs7.Communication
                             var off = bufferOffset + processed;
                             var length = toProcess - processed;
                             var slice = span.Slice(off, length);
+                            File.AppendAllText("TraceIn.txt", $"===  Start Received {length} bytes ====");
+                            File.AppendAllText("TraceIn.txt", Encoding.ASCII.GetString(slice.ToArray()));
+                            File.AppendAllText("TraceIn.txt", $"===  End Received ====");
                             var proc = await ProcessData(slice);
                             if (proc == 0)
                             {
@@ -185,7 +200,7 @@ namespace Dacs7.Communication
                             processed += proc;
                         } while (processed < toProcess);
                     }
-                    catch (Exception){}
+                    catch (Exception ex) when (!(ex is S7OnlineException)) { }
                 }
             }
             finally

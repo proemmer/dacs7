@@ -19,6 +19,7 @@ namespace Dacs7.Protocols.Fdl
         public LinkServiceDataUnit Receive1Sdu { get; set; }
         public byte Reserved1{ get; set; }                   // (reserved for FDL !!!!!!!!!!)
         public byte Reserved{ get; set; }                     // (reserved for FDL !!!!!!!!!!)
+
         public LinkServiceDataUnit Send1Sdu { get; set; }
         public ushort LinkSatus{ get; set; }                   // link-status of service or update_state for srd-indication
 

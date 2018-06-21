@@ -37,12 +37,28 @@ namespace Dacs7.Protocols.Fdl
 
         public static S7ConnectionConfig BuildS7ConnectionConfig(FdlProtocolContext context)
         {
-            return new S7ConnectionConfig
+            var result = new S7ConnectionConfig
             {
                 RackSlot = (byte)(context.Slot + context.Rack * 32),
-                ConnectionType = (byte)context.ConnectionType,
-                Destination = context.Address.GetAddressBytes()
+                ConnectionType = (byte)context.ConnectionType
             };
+
+            if(context.IsEthernet)
+            {
+                result.Destination = context.Address.GetAddressBytes();
+            }
+            else
+            {
+                result.Destination = new byte[] { (byte)context.MpiAddress, 0x00, 0x00, 0x00 };
+            }
+
+            if(context.EnableRouting)
+            {
+                result.RoutingEnabled = 0x01;
+                // TODO!
+            }
+
+            return result;
         }
 
 

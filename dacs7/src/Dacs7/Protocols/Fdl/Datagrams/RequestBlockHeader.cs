@@ -21,7 +21,7 @@ namespace Dacs7.Protocols.Fdl
         /// <summary>
         /// Type of request block used (= 2). 
         /// </summary>
-        public byte RbType { get; set; }
+        public byte RbType { get; set; } = 2;
 
         /// <summary>
         ///  Priority of the job. 

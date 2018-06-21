@@ -60,7 +60,7 @@ namespace Dacs7
             var transport = new Transport();
             if (address.StartsWith("S7ONLINE", StringComparison.InvariantCultureIgnoreCase))
             {
-                var addressPort = address.Replace("S7ONLINE:", "").Split(':');
+                var addressPort = address.Substring(9).Split(':');
                 var portRackSlot = addressPort.Length > 1 ?
                             addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() :
                             new int[] { 0, 2 };
