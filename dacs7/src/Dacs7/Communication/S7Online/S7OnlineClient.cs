@@ -103,11 +103,14 @@ namespace Dacs7.Communication
                 int ret = Native.SCP_send(_connectionHandle, (ushort)data.Length, sendData);
                 if (ret < 0)
                 {
-                    File.AppendAllText("TraceOut.txt", $"===  Start Sent {data.Length} bytes ====");
-                    File.AppendAllText("TraceOut.txt", Encoding.ASCII.GetString(sendData));
-                    File.AppendAllText("TraceOut.txt", $"===  End Sent ====");
                     return Task.FromResult(SocketError.Fault);
                 }
+                File.AppendAllText("TraceOut.txt", $"===  Start Sent {data.Length} bytes ====");
+                File.AppendAllText("TraceOut.txt", Environment.NewLine);
+                File.AppendAllText("TraceOut.txt", ByteArrayToString(sendData));
+                File.AppendAllText("TraceOut.txt", Environment.NewLine);
+                File.AppendAllText("TraceOut.txt", $"===  End Sent ====");
+                File.AppendAllText("TraceOut.txt", Environment.NewLine);
                 _sentEvent.Set(true);
             }
             catch (Exception)
@@ -179,8 +182,11 @@ namespace Dacs7.Communication
                             var length = toProcess - processed;
                             var slice = span.Slice(off, length);
                             File.AppendAllText("TraceIn.txt", $"===  Start Received {length} bytes ====");
-                            File.AppendAllText("TraceIn.txt", Encoding.ASCII.GetString(slice.ToArray()));
+                            File.AppendAllText("TraceIn.txt", Environment.NewLine);
+                            File.AppendAllText("TraceIn.txt", ByteArrayToString(slice.ToArray()));
+                            File.AppendAllText("TraceIn.txt", Environment.NewLine);
                             File.AppendAllText("TraceIn.txt", $"===  End Received ====");
+                            File.AppendAllText("TraceIn.txt", Environment.NewLine);
                             var proc = await ProcessData(slice);
                             if (proc == 0)
                             {
@@ -214,6 +220,14 @@ namespace Dacs7.Communication
         {
             _ = HandleReconnectAsync();
             return PublishConnectionStateChanged(false);
+        }
+
+        public static string ByteArrayToString(byte[] ba)
+        {
+            StringBuilder hex = new StringBuilder(ba.Length * 2);
+            foreach (byte b in ba)
+                hex.AppendFormat("{0:x2}", b);
+            return hex.ToString();
         }
 
 

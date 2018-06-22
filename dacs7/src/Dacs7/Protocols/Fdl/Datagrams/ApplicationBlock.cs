@@ -7,8 +7,8 @@ namespace Dacs7.Protocols.Fdl
     internal class ApplicationBlock
     {
         //Application Block
-        public byte Opcode { get; set; } = 0x00;                      // class of communication   (00 = request, 01=confirm, 02=indication)
-        public byte Subsystem { get; set; } = 0x01;                 // number of source-task (only necessary for MTK-user !!!!!)
+        public ComClass Opcode { get; set; } = ComClass.Request;                      // class of communication   (00 = request, 01=confirm, 02=indication)
+        public byte Subsystem { get; set; } = 0x22;                 // number of source-task (only necessary for MTK-user !!!!!)
         public ushort Id { get; set; }                         // identification of FDL-USER
         public ServiceCode Service { get; set; }                    // identification of service (00 -> SDA, send data with acknowlege)
         public RemoteAddress LocalAddress { get; set; }        // only for network-connection !!!
@@ -21,10 +21,11 @@ namespace Dacs7.Protocols.Fdl
         public byte Reserved{ get; set; }                     // (reserved for FDL !!!!!!!!!!)
 
         public LinkServiceDataUnit Send1Sdu { get; set; }
-        public ushort LinkSatus{ get; set; }                   // link-status of service or update_state for srd-indication
+        public LinkStatus LinkSatus { get; set; }                   // link-status of service or update_state for srd-indication
 
-        public ushort[] Reserved2{ get; set; }               // for concatenated lists       (reserved for FDL !!!!!!!!!!)
-                                                             
+        public ushort[] Reserved2 { get; set; } = new ushort[2];              // for concatenated lists       (reserved for FDL !!!!!!!!!!)
+
+
     }
 
 

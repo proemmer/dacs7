@@ -8,18 +8,22 @@ namespace Dacs7.Protocols.Fdl
     {
         private readonly object _userLock = new object();
         private int _user = -1;
-
-
+        internal const byte NettoDataOffset = 12;
+        public static ushort UserDataMaxSize = 260;
         public static int MinimumBufferSize = 80;
 
         public UInt16 User => 1; // GetNextReferenceId();
 
-        public byte OpCode { get; set; } = 0xFF;
+        public ComClass OpCode { get; set; } = ComClass.Request;
+
+        public byte RemoteAddress { get; set; }
+        public byte RemoteSap { get; set; }
+        public byte LocalSap { get; set; }
 
         /// <summary>
         /// When this is One it is a MPI Connection, zero means TCP Connection!
         /// </summary>
-        public byte Subsystem { get; set; } = 0xFF;
+        public byte Subsystem { get; set; } = 0x40;
 
 
         public bool IsEthernet => Address != null;

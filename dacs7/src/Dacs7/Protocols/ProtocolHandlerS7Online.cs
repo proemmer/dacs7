@@ -43,7 +43,7 @@ namespace Dacs7.Protocols
                         }
                         else
                         {
-                            if (await SendS7Online(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.BuildCreateRemote(_FdlContext))))
+                            if (await SendS7Online(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.BuildStationRequest(_FdlContext))))
                             {
                                 _s7OnlineState = S7OnlineStates.ConnectState1;
                             }
@@ -53,7 +53,7 @@ namespace Dacs7.Protocols
                     }
                 case S7OnlineStates.ConnectState1:
                     {
-                        if (await SendS7Online(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.BuildReadFdlOnConnect(_FdlContext))))
+                        if (await SendS7Online(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.BuildReadBusParameter(_FdlContext))))
                         {
                             _s7OnlineState = S7OnlineStates.ConnectState2;
                         }

@@ -12,10 +12,13 @@ namespace Dacs7.Protocols.Fdl
         public ApplicationBlock ApplicationBlock { get; set; }
 
         public byte[] Reserved { get; set; } = new byte[12];
-        public byte[] Reverence { get; set; }
+        public byte[] Reverence { get; set; } = new byte[2];
         public Memory<byte> UserData1 { get; set; }
         public Memory<byte> UserData2 { get; set; }
 
+
+
+        
 
         /// <summary>
         /// First message if non ethernet connection
@@ -26,27 +29,24 @@ namespace Dacs7.Protocols.Fdl
             var request = Build(context, buffer);
             request.Header.Subsystem = 0x22;
             request.Header.Response = 0xFF;
-            request.Header.Priority = 1;
+            request.Header.Priority = Priority.High;
 
             request.ApplicationBlock.Service = ServiceCode.FdlLifeListCreateRemote;
             return request;
         }
 
-        public static RequestBlockDatagram BuildCreateRemote(FdlProtocolContext context)
+
+        /// <summary>
+        /// requests list of intact stations  
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        public static RequestBlockDatagram BuildStationRequest(FdlProtocolContext context)
         {
             return Build(context, new byte[0x80]);
         }
 
-        /// <summary>
-        /// Second message if non ethernet connection
-        /// </summary>
-        /// <returns></returns>
-        public static RequestBlockDatagram BuildReadFdlOnConnect(FdlProtocolContext context)
-        {
-            var request = BuildInternal(context, new byte[0xF2]);
-            request.ApplicationBlock.Service = ServiceCode.FdlReadValue;
-            return request;
-        }
+
 
         /// <summary>
         /// First message if ethernet connection
@@ -70,7 +70,7 @@ namespace Dacs7.Protocols.Fdl
             var request = Build(context, S7ConnectionConfig.TranslateToMemory(cc));
             //request.Header.Response = 0xFF;
             //request.Header.Subsystem = 0x40;
-            request.Header.OpCode = 1;
+            request.Header.OpCode = ComClass.Confirm;
             request.Header.FillLength1 = request.Header.SegLength1 = 126;
             request.ApplicationBlock.Ssap = 2;
             request.ApplicationBlock.RemoteAddress.Station = 114;
@@ -86,7 +86,7 @@ namespace Dacs7.Protocols.Fdl
             var request = Build(context, new byte[] { 0xF0, 0, 0, 1, 0, 1, 3, 0xc0 });
             //request.Header.Response = 0xFF;
             //request.Header.Subsystem = 0x40;
-            request.Header.OpCode = 1;
+            request.Header.OpCode = ComClass.Confirm;
             request.Header.FillLength1 = request.Header.SegLength1 = 126;
             request.ApplicationBlock.Ssap = 2;
             request.ApplicationBlock.RemoteAddress.Station = 114;
@@ -102,14 +102,14 @@ namespace Dacs7.Protocols.Fdl
                     Length = 80,
                     User = context.User,
                     RbType = 2,
-                    Priority = 1,
+                    Priority = Priority.High,
                     Subsystem = 0x40,
                     OpCode = 0,
                     Response = 0xFF,
-                    FillLength1 = 260, //  (ushort)rawPayload.Length,
+                    FillLength1 = FdlProtocolContext.UserDataMaxSize, //  (ushort)rawPayload.Length,
                     SegLength1 = (ushort)rawPayload.Length,
                     Offset1 = 80,
-                    FillLength2 = 260,
+                    FillLength2 = 0,
                     SegLength2 = 0,
                     Offset2 = 0,
                 },
@@ -153,7 +153,133 @@ namespace Dacs7.Protocols.Fdl
         }
 
 
+        public static RequestBlockDatagram BuildSda(FdlProtocolContext context, Memory<byte> rawPayload)
+        {
+            var result = new RequestBlockDatagram
+            {
+                Header = new RequestBlockHeader
+                {
+                    User = context.User,
+                    FillLength1 = (ushort)(FdlProtocolContext.NettoDataOffset + rawPayload.Length), //  13 to 258
+                    SegLength1 = FdlProtocolContext.UserDataMaxSize, // 15..260
+                    Offset1 = 80
+                },
+                ApplicationBlock = new ApplicationBlock
+                {
+                    Opcode = context.OpCode,    // request
+                    Subsystem = context.Subsystem,  // reserved for cp
+                    Service = ServiceCode.SendDataWithAck, // SDA
+                    LocalAddress = new RemoteAddress
+                    {
 
+                    },
+                    Ssap = context.LocalSap, // 0 to 62  or Default
+                    Dsap = context.RemoteSap, // 0 to 62  or Default
+                    RemoteAddress = new RemoteAddress
+                    {
+                        Station = context.RemoteAddress,  // 0 to 126
+                    },
+                    ServiceClass = ServiceClass.Low,  // Priority of the send frame low/high
+                    Receive1Sdu = new LinkServiceDataUnit
+                    {
+                    },
+                    Send1Sdu = new LinkServiceDataUnit
+                    {
+                        Length = (byte)rawPayload.Length, //  1 to 246
+                    }
+                }
+            };
+
+
+            //  66 + 12 bytes reserved!!
+            result.UserData1 = new byte[result.Header.SegLength1];
+            if (!rawPayload.IsEmpty)
+            {
+                result.UserData1.Span[0] = FdlProtocolContext.NettoDataOffset;
+                rawPayload.CopyTo(result.UserData1.Slice(FdlProtocolContext.NettoDataOffset));
+            }
+            result.UserData2 = new byte[result.Header.SegLength2];
+            return result;
+        }
+
+
+        public static RequestBlockDatagram BuildAwaitIndication(FdlProtocolContext context)
+        {
+            var result = new RequestBlockDatagram
+            {
+                Header = new RequestBlockHeader
+                {
+                    User = context.User,
+                    FillLength1 = 0, //  13 to 258
+                    SegLength1 = FdlProtocolContext.UserDataMaxSize, // 15..260
+                    Offset1 = 80
+                },
+                ApplicationBlock = new ApplicationBlock
+                {
+                    Opcode = context.OpCode,    // request
+                    Subsystem = context.Subsystem,  // reserved for cp
+                    Service = ServiceCode.AwaitIndication,
+                    LocalAddress = new RemoteAddress
+                    {
+
+                    },
+                    Dsap = context.RemoteSap, // 0 to 62  or Default
+                    RemoteAddress = new RemoteAddress
+                    {
+                        Station = context.RemoteAddress,  // 0 to 126
+                    },
+                    ServiceClass = ServiceClass.Low,  // Priority of the send frame low/high
+                    Receive1Sdu = new LinkServiceDataUnit
+                    {
+                        Length = 255 // // maximum length
+                    },
+                    Send1Sdu = new LinkServiceDataUnit
+                    {
+                        Length = 1, //  1 to 246
+                    }
+                }
+            };
+
+
+            //  66 + 12 bytes reserved!!
+            result.UserData1 = new byte[result.Header.SegLength1];
+            result.UserData2 = new byte[result.Header.SegLength2];
+            return result;
+        }
+
+        public static RequestBlockDatagram BuildWithdrawIndication(FdlProtocolContext context)
+        {
+            var result = BuildAwaitIndication(context);
+            result.ApplicationBlock.Service = ServiceCode.WithdrawIndication;
+            return result;
+        }
+
+
+        public static RequestBlockDatagram BuildReadBusParameter(FdlProtocolContext context)
+        {
+            var result = new RequestBlockDatagram
+            {
+                Header = new RequestBlockHeader
+                {
+                    User = context.User,
+                    FillLength1 = 0, //  13 to 258
+                    SegLength1 = 242, // Length of bus parameter struct
+                    Offset1 = 80,
+                },
+                ApplicationBlock = new ApplicationBlock
+                {
+                    Opcode = context.OpCode,    // request
+                    Subsystem = context.Subsystem,  // reserved for cp
+                    Service = ServiceCode.FdlReadValue, 
+                }
+            };
+
+
+            //  66 + 12 bytes reserved!!
+            result.UserData1 = new byte[result.Header.SegLength1];
+            result.UserData2 = new byte[result.Header.SegLength2];
+            return result;
+        }
 
 
 
@@ -168,11 +294,11 @@ namespace Dacs7.Protocols.Fdl
             span[4] = datagram.Header.Length;
             BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(5, 2), datagram.Header.User);
             span[7] = datagram.Header.RbType;
-            span[8] = datagram.Header.Priority;
+            span[8] = (byte)datagram.Header.Priority;
             //span[9] = datagram.Header.Reserved1;
             //BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(10, 2), datagram.Header.Reserved2);
             span[12] = datagram.Header.Subsystem;
-            span[13] = datagram.Header.OpCode;
+            span[13] = (byte)datagram.Header.OpCode;
             BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(14, 2), datagram.Header.Response);
             BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(16, 2), datagram.Header.FillLength1);
             //span[18] = datagram.Header.Reserved3;
@@ -187,7 +313,7 @@ namespace Dacs7.Protocols.Fdl
 
 
 
-            span[34] = datagram.ApplicationBlock.Opcode;
+            span[34] = (byte)datagram.ApplicationBlock.Opcode;
             span[35] = datagram.ApplicationBlock.Subsystem;
             BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(36, 2), datagram.ApplicationBlock.Id);
             BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(38, 2), (ushort)datagram.ApplicationBlock.Service);
@@ -210,7 +336,7 @@ namespace Dacs7.Protocols.Fdl
             span[59] = datagram.ApplicationBlock.Send1Sdu.Length;
 
 
-            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(60, 2), datagram.ApplicationBlock.LinkSatus);
+            BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(60, 2), (ushort)datagram.ApplicationBlock.LinkSatus);
 
             BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(62, 2), datagram.ApplicationBlock.Reserved2[0]);
             BinaryPrimitives.WriteUInt16LittleEndian(span.Slice(64, 2), datagram.ApplicationBlock.Reserved2[1]);
@@ -243,11 +369,11 @@ namespace Dacs7.Protocols.Fdl
                     Length = span[4],
                     User = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(5, 2)),
                     RbType = span[7],
-                    Priority = span[8],
+                    Priority = (Priority)span[8],
                     //Reserved1 = span[9],
                     //Reserved2 = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(10, 2)),
                     Subsystem = span[12],
-                    OpCode = span[13],
+                    OpCode = (ComClass)span[13],
                     Response = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(14, 2)),
                     FillLength1 = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(16, 2)),
                     //Reserved3 = span[18],
@@ -262,7 +388,7 @@ namespace Dacs7.Protocols.Fdl
                 },
                 ApplicationBlock = new ApplicationBlock
                 {
-                    Opcode = span[34],
+                    Opcode = (ComClass)span[34],
                     Subsystem = span[35],
                     Id = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(36, 2)),
                     Service = (ServiceCode)BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(38, 2)),
@@ -291,7 +417,7 @@ namespace Dacs7.Protocols.Fdl
                         BufferPtr = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(55, 4)),
                         Length = span[59]
                     },
-                    LinkSatus = BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(60, 2)),
+                    LinkSatus = (LinkStatus)BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(60, 2)),
                     Reserved2 = new ushort[] { BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(62, 2)), BinaryPrimitives.ReadUInt16LittleEndian(span.Slice(64, 2)) }
                 }
             };

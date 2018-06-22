@@ -65,7 +65,37 @@ namespace Dacs7.Protocols.Rfc1006
 
         public static Memory<byte> TranslateToMemory(ConnectionConfirmedDatagram datagram)
         {
-            return new Memory<byte>();
+            var length = datagram.Tkpt.Length;
+            var result = new Memory<byte>(new byte[length]);  // check if we could use ArrayBuffer
+            var span = result.Span;
+
+            span[0] = datagram.Tkpt.Sync1;
+            span[1] = datagram.Tkpt.Sync2;
+            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(2, 2), datagram.Tkpt.Length);
+            span[4] = datagram.Li;
+            span[5] = datagram.PduType;
+            BinaryPrimitives.WriteInt16BigEndian(span.Slice(6, 2), datagram.DstRef);
+            BinaryPrimitives.WriteInt16BigEndian(span.Slice(8, 2), datagram.DstRef);
+            span[10] = datagram.ClassOption;
+            span[11] = datagram.ParmCodeTpduSize;
+
+            var offset = 11;
+            span[offset++] = datagram.ParmCodeTpduSize;
+            span[offset++] = datagram.SizeTpduReceivingLength;
+            datagram.SizeTpduReceiving.CopyTo(result.Slice(offset));
+            offset += (int)datagram.SizeTpduReceivingLength;
+
+            span[offset++] = datagram.ParmCodeSrcTsap;
+            span[offset++] = datagram.SourceTsapLength;
+            datagram.SourceTsap.CopyTo(result.Slice(offset));
+            offset += (int)datagram.SourceTsapLength;
+
+            span[offset++] = datagram.ParmCodeDestTsap;
+            span[offset++] = datagram.DestTsapLength;
+            datagram.DestTsap.CopyTo(result.Slice(offset));
+            offset += (int)datagram.DestTsapLength;
+
+            return result;
         }
 
         public static ConnectionConfirmedDatagram TranslateFromMemory(Memory<byte> data, out int processed)
