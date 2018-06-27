@@ -10,6 +10,7 @@ namespace Dacs7
         private readonly static Task<T> _completed = Task.FromResult<T>(default);
         private readonly Queue<TaskCompletionSource<T>> _waits = new Queue<TaskCompletionSource<T>>();
         private bool _signaled;
+        private T _lastValue;
 
         public AsyncAutoResetEvent()
         {
@@ -22,7 +23,9 @@ namespace Dacs7
                 if (_signaled)
                 {
                     _signaled = false;
-                    return _completed;
+                    var result = _lastValue;
+                    _lastValue = default;
+                    return Task.FromResult(_lastValue);
                 }
                 else if(timeout == 0)
                 {
@@ -66,7 +69,10 @@ namespace Dacs7
                 if (_waits.Count > 0)
                     toRelease = _waits.Dequeue();
                 else if (!_signaled)
+                {
                     _signaled = true;
+                    _lastValue = value;
+                }
             }
             toRelease?.SetResult(value);
         }

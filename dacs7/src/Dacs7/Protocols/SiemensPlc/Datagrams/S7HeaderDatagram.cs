@@ -35,9 +35,9 @@ namespace Dacs7.Protocols.SiemensPlc
         }
 
 
-        public static Memory<byte> TranslateToMemory(S7HeaderDatagram datagram)
+        public static Memory<byte> TranslateToMemory(S7HeaderDatagram datagram, int length = -1)
         {
-            var length = datagram.GetMemorySize();
+            length = length == -1 ?  datagram.GetMemorySize() : length;
             var result = new Memory<byte>(new byte[length]);  // check if we could use ArrayBuffer
             var span = result.Span;
 

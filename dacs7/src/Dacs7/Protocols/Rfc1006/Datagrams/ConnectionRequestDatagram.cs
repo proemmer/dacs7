@@ -30,9 +30,9 @@ namespace Dacs7.Protocols.Rfc1006
         public byte ParmCodeTpduSize { get; set; } = 0xc0;              // code that identifies TPDU size
 
 
-        public byte Unknown { get; set; } = 0x01;
+        public byte SizeTpduReceivingLength { get; set; } = 0x01;
 
-        public byte SizeTpduReceiving { get; set; }
+        public Memory<byte> SizeTpduReceiving { get; set; }             // Allowed sizes: 128(7), 256(8), 512(9), 1024(10), 2048(11) octets
 
         public byte ParmCodeSrcTsap { get; set; } = 0xc1;
 
@@ -91,12 +91,14 @@ namespace Dacs7.Protocols.Rfc1006
             BinaryPrimitives.WriteInt16BigEndian(span.Slice(6, 2), datagram.DstRef);
             BinaryPrimitives.WriteInt16BigEndian(span.Slice(8, 2), datagram.DstRef);
             span[10] = datagram.ClassOption;
-            span[11] = datagram.ParmCodeTpduSize;
-            span[12] = datagram.Unknown;
-            span[13] = datagram.SizeTpduReceiving;
 
 
-            var offset = 14;
+            var offset = 11;
+            span[offset++] = datagram.ParmCodeTpduSize;
+            span[offset++] = datagram.SizeTpduReceivingLength;
+            datagram.SizeTpduReceiving.CopyTo(result.Slice(offset));
+            offset += (int)datagram.SizeTpduReceivingLength;
+
             span[offset++] = datagram.ParmCodeSrcTsap;
             span[offset++] = datagram.SourceTsapLength;
             datagram.SourceTsap.CopyTo(result.Slice(offset));
@@ -125,22 +127,38 @@ namespace Dacs7.Protocols.Rfc1006
                 PduType = span[5],
                 DstRef = BinaryPrimitives.ReadInt16BigEndian(span.Slice(6, 2)),
                 SrcRef = BinaryPrimitives.ReadInt16BigEndian(span.Slice(8, 2)),
-                ClassOption = span[10],
-                ParmCodeTpduSize = span[11],
-                Unknown = span[12],
-                SizeTpduReceiving = span[13],
+                ClassOption = span[10]
             };
 
-            var offset = 14;
-            result.ParmCodeSrcTsap = span[offset++];
-            result.SourceTsapLength = span[offset++];
-            result.SourceTsap = data.Slice(offset, (int)result.SourceTsapLength);
-            offset += (int)result.SourceTsapLength;
+            int offset;
+            for (offset = 11; offset < data.Length;)
+            {
+                switch (span[offset])
+                {
+                    case 0xc0:
+                        result.ParmCodeTpduSize = span[offset++];
+                        result.SizeTpduReceivingLength = span[offset++];
+                        result.SizeTpduReceiving = data.Slice(offset, (int)result.SizeTpduReceivingLength);
+                        offset += (int)result.SizeTpduReceivingLength;
+                        break;
+                    case 0xc1:
 
-            result.ParmCodeDestTsap = span[offset++];
-            result.DestTsapLength = span[offset++];
-            result.DestTsap = data.Slice(offset, result.DestTsapLength);
-            offset += (int)result.DestTsapLength;
+                        result.ParmCodeSrcTsap = span[offset++];
+                        result.SourceTsapLength = span[offset++];
+                        result.SourceTsap = data.Slice(offset, (int)result.SourceTsapLength);
+                        offset += (int)result.SourceTsapLength;
+                        break;
+                    case 0xc2:
+                        result.ParmCodeDestTsap = span[offset++];
+                        result.DestTsapLength = span[offset++];
+                        result.DestTsap = data.Slice(offset, result.DestTsapLength);
+                        offset += (int)result.DestTsapLength;
+                        break;
+                    default:
+                        break;
+                }
+
+            }
 
             return result;
         }

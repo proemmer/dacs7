@@ -12,6 +12,27 @@ namespace Dacs7.Protocols.SiemensPlc
         public S7CommSetupParameterDatagram Parameter { get; set; } = new S7CommSetupParameterDatagram();
 
 
+        public static S7CommSetupAckDataDatagram BuildFrom(SiemensPlcProtocolContext context, S7CommSetupDatagram incoming)
+        {
+            context.MaxParallelJobs = Math.Min(incoming.Parameter.MaxAmQCalling, context.MaxParallelJobs);
+            context.MaxParallelJobs = Math.Min(incoming.Parameter.MaxAmQCalled, context.MaxParallelJobs);
+            context.PduSize = Math.Min(incoming.Parameter.PduLength, context.PduSize);
+
+
+            //TODO we need a parameter for the UnitId
+            var result = new S7CommSetupAckDataDatagram
+            {
+                Parameter = new S7CommSetupParameterDatagram
+                {
+                    MaxAmQCalling =  context.MaxParallelJobs,
+                    MaxAmQCalled = context.MaxParallelJobs,
+                    PduLength = context.PduSize
+                }
+            };
+            result.Header.Header.ParamLength = 8;
+            return result;
+        }
+
         public static Memory<byte> TranslateToMemory(S7CommSetupAckDataDatagram datagram)
         {
             var result = S7AckDataDatagram.TranslateToMemory(datagram.Header);

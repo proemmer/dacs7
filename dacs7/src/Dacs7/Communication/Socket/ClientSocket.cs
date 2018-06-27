@@ -27,7 +27,7 @@ namespace Dacs7.Communication
                         try
                         {
                             epRemote = _socket.RemoteEndPoint as IPEndPoint;
-                            _identity = $"{epLocal.Address}:{epLocal.Port}-{(epRemote != null ? epRemote.Address.ToString() : _configuration.Hostname)}:{(epRemote != null ? epRemote.Port : _configuration.ServiceName)}";
+                            _identity = $"{epLocal.Address}:{epLocal.Port}-{(epRemote != null ? epRemote.Address.ToString() : _config.Hostname)}:{(epRemote != null ? epRemote.Port : _config.ServiceName)}";
                         }
                         catch (Exception)
                         {
@@ -68,9 +68,9 @@ namespace Dacs7.Communication
                 {
                     ReceiveBufferSize = _configuration.ReceiveBufferSize
                 };
-                await _socket.ConnectAsync(_configuration.Hostname, _configuration.ServiceName);
+                await _socket.ConnectAsync(_config.Hostname, _config.ServiceName);
                 EnsureConnected();
-                if (_configuration.KeepAlive)
+                if (_config.KeepAlive)
                     _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, 1);
                 _disableReconnect = false; // we have a connection, so enable reconnect
 

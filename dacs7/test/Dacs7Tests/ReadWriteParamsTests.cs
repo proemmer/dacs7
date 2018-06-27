@@ -196,6 +196,7 @@ namespace Dacs7Tests
 
 
 
+
         [Fact]
         public async Task ReadMultibleByteArrayData()
         {
