@@ -60,6 +60,7 @@ namespace Dacs7
             var transport = new Transport();
             if (address.StartsWith("S7ONLINE", StringComparison.InvariantCultureIgnoreCase))
             {
+                // This is currently a not working interface!!!!
                 var addressPort = address.Substring(9).Split(':');
                 var portRackSlot = addressPort.Length > 1 ?
                             addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() :

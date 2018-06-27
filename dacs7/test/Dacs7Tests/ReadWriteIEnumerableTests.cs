@@ -225,6 +225,49 @@ namespace Dacs7Tests
         }
 
 
+        [Fact]
+        public async Task ReadWriteSingleStrings2()
+        {
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
+            {
+                var originWriteTags = new Dictionary<string, object>
+                {
+                    { $"DB2.10090,s,20" , "" },
+                    { $"DB2.10112,s,20" , "                    " }
+                };
+                var writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+                var results = (await client.ReadAsync(originWriteTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
+
+
+                Assert.Equal(2, results.Count());
+                Assert.Equal(typeof(string), results[0].Type);
+                Assert.Equal("", (string)results[0].Value);
+                Assert.Equal(typeof(string), results[1].Type);
+                Assert.Equal("                    ", (string)results[1].Value);
+
+
+                var writeTags = new Dictionary<string, object>
+                {
+                    { $"DB2.10046,s,20" , "A PARTIAL STRING".PadLeft(20).Substring(0, 18) },
+                    { $"DB2.10068,s,20" , "A FULLY STRING IT IS".PadLeft(20) }
+                };
+
+                writeResults = (await client.WriteAsync(writeTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+
+                results = (await client.ReadAsync(writeTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
+
+
+                Assert.Equal(2, results.Count());
+                Assert.Equal(typeof(string), results[0].Type);
+                Assert.Equal("A PARTIAL STRING".PadLeft(20).Substring(0, 18), (string)results[0].Value);
+                Assert.Equal(typeof(string), results[1].Type);
+                Assert.Equal("A FULLY STRING IT IS".PadLeft(20), (string)results[1].Value);
+
+                writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
+
+            });
+        }
+
 
         [Fact]
         public async Task ReadMultibleByteArrayData()

@@ -151,7 +151,7 @@ namespace Dacs7.Protocols.Rfc1006
                     case 0xc2:
                         result.ParmCodeDestTsap = span[offset++];
                         result.DestTsapLength = span[offset++];
-                        result.SourceTsap = data.Slice(offset, result.DestTsapLength);
+                        result.DestTsap = data.Slice(offset, result.DestTsapLength);
                         offset += (int)result.DestTsapLength;
                         break;
                     default:
