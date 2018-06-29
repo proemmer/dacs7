@@ -104,7 +104,7 @@ namespace Dacs7.Protocols.Fdl
                     RbType = 2,
                     Priority = Priority.High,
                     Subsystem = 0x40,
-                    OpCode = 0,
+                    OpCode = ComClass.Request,
                     Response = 0xFF,
                     FillLength1 = FdlProtocolContext.UserDataMaxSize, //  (ushort)rawPayload.Length,
                     SegLength1 = (ushort)rawPayload.Length,

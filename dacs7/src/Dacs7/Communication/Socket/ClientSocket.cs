@@ -9,8 +9,6 @@ namespace Dacs7.Communication
 
     internal class ClientSocket : SocketBase
     {
-        private bool _disableReconnect;
-        private bool _closeCalled;
         private Socket _socket;
         private readonly ClientSocketConfiguration _config;
         public override string Identity
@@ -51,18 +49,17 @@ namespace Dacs7.Communication
         /// Starts the server such that it is listening for 
         /// incoming connection requests.    
         /// </summary>
-        public override Task OpenAsync()
+        public override async Task OpenAsync()
         {
-            _closeCalled = false;
-            _disableReconnect = true;
-            return InternalOpenAsync();
+            await base.OpenAsync();
+            await InternalOpenAsync();
         }
 
-        private async Task InternalOpenAsync(bool internalCall = false)
+        protected override async Task InternalOpenAsync(bool internalCall = false)
         {
             try
             {
-                if (_closeCalled) return;
+                if (_shutdown) return;
                 _identity = null;
                 _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
                 {
@@ -108,7 +105,6 @@ namespace Dacs7.Communication
 
         public async override Task CloseAsync()
         {
-            _disableReconnect = _closeCalled = true;
             await base.CloseAsync();
             DisposeSocket();
 
@@ -211,13 +207,5 @@ namespace Dacs7.Communication
             _socket.Blocking = blocking;
         }
 
-        private async Task HandleReconnectAsync()
-        {
-            if (!_disableReconnect && _configuration.AutoconnectTime > 0)
-            {
-                await Task.Delay(_configuration.AutoconnectTime);
-                await InternalOpenAsync(true);
-            }
-        }
     }
 }

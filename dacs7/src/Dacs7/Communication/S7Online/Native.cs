@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Dacs7.Communication
+namespace Dacs7.Communication.S7Online
 {
 
     internal class Native

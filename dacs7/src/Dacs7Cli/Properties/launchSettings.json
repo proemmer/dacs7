@@ -2,7 +2,7 @@
   "profiles": {
     "Dacs7Cli": {
       "commandName": "Project",
-      "commandLineArgs": "read --address 192.168.0.148 --tags DB1.528,S,20"
+      "commandLineArgs": "read --address S7Online:192.168.1.101 --tags DB1.10112,S,20"
     }
   }
 }

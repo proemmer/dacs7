@@ -107,6 +107,7 @@ namespace Dacs7.Protocols
             }
             catch(Dacs7NotConnectedException)
             {
+                await CloseAsync();
                 throw;
             }
             catch(Exception ex)

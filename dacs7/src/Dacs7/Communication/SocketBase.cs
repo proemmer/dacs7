@@ -13,8 +13,9 @@ namespace Dacs7.Communication
         public delegate Task OnSocketShutdownHandler(string socketHandle);
 
         #region Fields
+        protected bool _disableReconnect;
         protected IConfiguration _configuration;
-        private bool _shutdown;
+        protected bool _shutdown;
         protected string _identity;
         #endregion
 
@@ -37,13 +38,20 @@ namespace Dacs7.Communication
             _configuration = configuration;
         }
 
-        public abstract Task OpenAsync();
+        public virtual Task OpenAsync()
+        {
+            _shutdown = false;
+            _disableReconnect = true;
+            return Task.CompletedTask;
+        }
 
         public virtual Task CloseAsync()
         {
-            _shutdown = true;
+            _shutdown = _disableReconnect = true;
             return Task.CompletedTask;
         }
+
+        protected abstract Task InternalOpenAsync(bool internalCall = false);
 
         public abstract Task<SocketError> SendAsync(Memory<byte> data);
 
@@ -71,6 +79,18 @@ namespace Dacs7.Communication
         protected Task<int> ProcessData(Memory<byte> receivedData, string identity = null)
         {
             return OnRawDataReceived?.Invoke(identity ?? Identity, receivedData);
+        }
+
+        protected virtual async Task HandleReconnectAsync()
+        {
+            if (!_disableReconnect && _configuration.AutoconnectTime > 0)
+            {
+                await Task.Delay(_configuration.AutoconnectTime);
+                if (!_disableReconnect)
+                {
+                    await InternalOpenAsync(true);
+                }
+            }
         }
     }
 }

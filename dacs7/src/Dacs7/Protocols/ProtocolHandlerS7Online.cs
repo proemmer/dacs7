@@ -20,6 +20,7 @@ namespace Dacs7.Protocols
             ConnectState4,
             ConnectState5,
             Connected,
+            Broken
         }
 
         private S7OnlineStates _s7OnlineState;
@@ -91,11 +92,13 @@ namespace Dacs7.Protocols
                             _s7OnlineState = S7OnlineStates.Connected;
                             await TransportOpened();
                             processed = buffer.Length;
-                            _s7OnlineState = S7OnlineStates.Connected;
                             UpdateConnectionState(ConnectionState.PendingOpenTransport);
                         }
                         else
+                        {
+                            _s7OnlineState = S7OnlineStates.Broken;
                             throw new S7OnlineException();
+                        }
                         return processed;
                     }
                 case S7OnlineStates.Connected:

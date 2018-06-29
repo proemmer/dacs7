@@ -1,4 +1,5 @@
 ﻿using Dacs7.Communication;
+using Dacs7.Communication.S7Online;
 using System;
 
 namespace Dacs7.Exceptions
