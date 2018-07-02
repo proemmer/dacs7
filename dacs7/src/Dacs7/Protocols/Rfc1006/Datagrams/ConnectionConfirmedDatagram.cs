@@ -117,31 +117,44 @@ namespace Dacs7.Protocols.Rfc1006
 
             };
 
-
             int offset;
             for (offset = 11; offset < data.Length;)
             {
-                switch(span[offset])
+                switch (span[offset])
                 {
                     case 0xc0:
-                        result.ParmCodeTpduSize = span[offset++];
-                        result.SizeTpduReceivingLength = span[offset++];
-                        result.SizeTpduReceiving = data.Slice(offset, result.SizeTpduReceivingLength);
-                        offset += result.SizeTpduReceivingLength;
+                        {
+                            result.ParmCodeTpduSize = span[offset++];
+                            result.SizeTpduReceivingLength = span[offset++];
+                            var tmp = new byte[result.SizeTpduReceivingLength];
+                            data.Slice(offset, result.SizeTpduReceivingLength).CopyTo(tmp);
+                            result.SizeTpduReceiving = tmp;
+                            offset += result.SizeTpduReceivingLength;
+                        }
                         break;
-                    case 0xc1:
 
-                        result.ParmCodeSrcTsap = span[offset++];
-                        result.SourceTsapLength = span[offset++];
-                        result.SourceTsap = data.Slice(offset, result.SourceTsapLength);
-                        offset += result.SourceTsapLength;
+                    case 0xc1:
+                        {
+                            result.ParmCodeSrcTsap = span[offset++];
+                            result.SourceTsapLength = span[offset++];
+                            var tmp = new byte[result.SourceTsapLength];
+                            data.Slice(offset, result.SourceTsapLength).CopyTo(tmp);
+                            result.SourceTsap = tmp;
+                            offset += result.SourceTsapLength;
+                        }
                         break;
+
                     case 0xc2:
-                        result.ParmCodeDestTsap = span[offset++];
-                        result.DestTsapLength = span[offset++];
-                        result.DestTsap = data.Slice(offset, result.DestTsapLength);
-                        offset += result.DestTsapLength;
+                        {
+                            result.ParmCodeDestTsap = span[offset++];
+                            result.DestTsapLength = span[offset++];
+                            var tmp = new byte[result.DestTsapLength];
+                            data.Slice(offset, result.DestTsapLength).CopyTo(tmp);
+                            result.DestTsap = tmp;
+                            offset += result.DestTsapLength;
+                        }
                         break;
+
                     default:
                         break;
                 }
