@@ -107,6 +107,7 @@ namespace Dacs7.Protocols
             }
             catch(Dacs7NotConnectedException)
             {
+                await CloseAsync();
                 throw;
             }
             catch(Exception ex)
@@ -342,14 +343,19 @@ namespace Dacs7.Protocols
 
         private async Task ReceivedCommunicationSetupJob(Memory<byte> buffer)
         {
+            var data = S7CommSetupDatagram.TranslateFromMemory(buffer);
             var sendData = BuildForSelectedContext(S7CommSetupAckDataDatagram
                                                     .TranslateToMemory(
                                                         S7CommSetupAckDataDatagram
-                                                        .BuildFrom(_s7Context, S7CommSetupDatagram.TranslateFromMemory(buffer))));
+                                                        .BuildFrom(_s7Context, data)));
             var result = await _socket.SendAsync(sendData);
             if (result == SocketError.Success)
             {
                 //UpdateConnectionState(ConnectionState.PendingOpenPlc);
+                _s7Context.MaxParallelJobs = data.Parameter.MaxAmQCalling;
+                _s7Context.PduSize = data.Parameter.PduLength;
+                _concurrentJobs = new SemaphoreSlim(_s7Context.MaxParallelJobs);
+                UpdateConnectionState(ConnectionState.Opened);
             }
         }
 

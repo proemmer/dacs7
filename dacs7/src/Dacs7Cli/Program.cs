@@ -150,7 +150,7 @@ namespace Dacs7Cli
             }
             catch (Exception ex)
             {
-                _logger?.LogError($"An error occured in Write: {ex.Message}");
+                _logger?.LogError($"An error occured in Write: {ex.Message} - {ex.InnerException?.Message}");
                 return 1;
             }
             finally
@@ -214,7 +214,7 @@ namespace Dacs7Cli
             }
             catch (Exception ex)
             {
-                _logger?.LogError($"An error occured in Read: {ex.Message}");
+                _logger?.LogError($"An error occured in Read: {ex.Message} - {ex.InnerException?.Message}");
                 return 1;
             }
             finally

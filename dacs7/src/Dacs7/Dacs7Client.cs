@@ -78,8 +78,8 @@ namespace Dacs7
                 {
                     Address = ipaddress,
                     ConnectionType = connectionType,
-                    Rack = portRackSlot.Length > 1 ? portRackSlot[1] : 0,
-                    Slot = portRackSlot.Length > 2 ? portRackSlot[2] : 2
+                    Rack = portRackSlot.Length > 0 ? portRackSlot[0] : 0,
+                    Slot = portRackSlot.Length > 1 ? portRackSlot[1] : 2
                 };
             }
             else

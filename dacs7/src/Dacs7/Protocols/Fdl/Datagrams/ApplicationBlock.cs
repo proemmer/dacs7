@@ -8,10 +8,10 @@ namespace Dacs7.Protocols.Fdl
     {
         //Application Block
         public ComClass Opcode { get; set; } = ComClass.Request;                      // class of communication   (00 = request, 01=confirm, 02=indication)
-        public byte Subsystem { get; set; } = 0x22;                 // number of source-task (only necessary for MTK-user !!!!!)
+        public byte Subsystem { get; set; } = 0x00;                 // number of source-task (only necessary for MTK-user !!!!!)
         public ushort Id { get; set; }                         // identification of FDL-USER
         public ServiceCode Service { get; set; }                    // identification of service (00 -> SDA, send data with acknowlege)
-        public RemoteAddress LocalAddress { get; set; }        // only for network-connection !!!
+        public RemoteAddress LocalAddress { get; set; }         // only for network-connection !!!
         public byte Ssap { get; set; }                         // source-service-access-point
         public byte Dsap { get; set; }                         // destination-service-access-point
         public RemoteAddress RemoteAddress { get; set; }       // address of the remote-station

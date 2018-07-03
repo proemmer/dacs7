@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Dacs7.Communication
+namespace Dacs7.Communication.S7Online
 {
 
     internal class Native
@@ -24,7 +24,7 @@ namespace Dacs7.Communication
         public static extern int SCP_send(int handle, ushort length, byte[] data);
 
         [DllImport("S7onlinx.dll")]
-        public static extern int SCP_receive(int handle, ushort timeout, int[] recievendlength, ushort length, byte[] data);
+        public static extern int SCP_receive(int handle, ushort timeout, int[] receivendlength, ushort length, byte[] data);
 
         [DllImport("S7onlinx.dll")]
         public static extern int SCP_get_errno();

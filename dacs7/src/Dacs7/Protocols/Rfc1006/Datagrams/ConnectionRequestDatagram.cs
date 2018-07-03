@@ -97,17 +97,17 @@ namespace Dacs7.Protocols.Rfc1006
             span[offset++] = datagram.ParmCodeTpduSize;
             span[offset++] = datagram.SizeTpduReceivingLength;
             datagram.SizeTpduReceiving.CopyTo(result.Slice(offset));
-            offset += (int)datagram.SizeTpduReceivingLength;
+            offset += datagram.SizeTpduReceivingLength;
 
             span[offset++] = datagram.ParmCodeSrcTsap;
             span[offset++] = datagram.SourceTsapLength;
             datagram.SourceTsap.CopyTo(result.Slice(offset));
-            offset += (int)datagram.SourceTsapLength;
+            offset += datagram.SourceTsapLength;
 
             span[offset++] = datagram.ParmCodeDestTsap;
             span[offset++] = datagram.DestTsapLength;
             datagram.DestTsap.CopyTo(result.Slice(offset));
-            offset += (int)datagram.DestTsapLength;
+            offset += datagram.DestTsapLength;
 
             return result;
         }
@@ -136,24 +136,38 @@ namespace Dacs7.Protocols.Rfc1006
                 switch (span[offset])
                 {
                     case 0xc0:
-                        result.ParmCodeTpduSize = span[offset++];
-                        result.SizeTpduReceivingLength = span[offset++];
-                        result.SizeTpduReceiving = data.Slice(offset, (int)result.SizeTpduReceivingLength);
-                        offset += (int)result.SizeTpduReceivingLength;
+                        {
+                            result.ParmCodeTpduSize = span[offset++];
+                            result.SizeTpduReceivingLength = span[offset++];
+                            var tmp = new byte[result.SizeTpduReceivingLength];
+                            data.Slice(offset, result.SizeTpduReceivingLength).CopyTo(tmp);
+                            result.SizeTpduReceiving = tmp;
+                            offset += result.SizeTpduReceivingLength;
+                        }
                         break;
-                    case 0xc1:
 
-                        result.ParmCodeSrcTsap = span[offset++];
-                        result.SourceTsapLength = span[offset++];
-                        result.SourceTsap = data.Slice(offset, (int)result.SourceTsapLength);
-                        offset += (int)result.SourceTsapLength;
+                    case 0xc1:
+                        {
+                            result.ParmCodeSrcTsap = span[offset++];
+                            result.SourceTsapLength = span[offset++];
+                            var tmp = new byte[result.SourceTsapLength];
+                            data.Slice(offset, result.SourceTsapLength).CopyTo(tmp);
+                            result.SourceTsap = tmp;
+                            offset += result.SourceTsapLength;
+                        }
                         break;
+
                     case 0xc2:
-                        result.ParmCodeDestTsap = span[offset++];
-                        result.DestTsapLength = span[offset++];
-                        result.DestTsap = data.Slice(offset, result.DestTsapLength);
-                        offset += (int)result.DestTsapLength;
+                        {
+                            result.ParmCodeDestTsap = span[offset++];
+                            result.DestTsapLength = span[offset++];
+                            var tmp = new byte[result.DestTsapLength];
+                            data.Slice(offset, result.DestTsapLength).CopyTo(tmp);
+                            result.DestTsap = tmp;
+                            offset += result.DestTsapLength;
+                        }
                         break;
+
                     default:
                         break;
                 }

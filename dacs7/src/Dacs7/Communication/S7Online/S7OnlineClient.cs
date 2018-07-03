@@ -1,10 +1,10 @@
-﻿using Dacs7.Communication.S7Online;
+﻿
+using Dacs7.Communication.S7Online;
 using Dacs7.Exceptions;
 using System;
 using System.Buffers;
 using System.IO;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,8 +12,7 @@ namespace Dacs7.Communication
 {
     internal class S7OnlineClient : SocketBase
     {
-        private bool _disableReconnect;
-        private bool _closeCalled;
+
         private int _connectionHandle = -1;
         private Task _receiveTask;
         private AsyncAutoResetEvent<bool> _sentEvent = new AsyncAutoResetEvent<bool>();
@@ -57,18 +56,17 @@ namespace Dacs7.Communication
         /// Starts the server such that it is listening for 
         /// incoming connection requests.    
         /// </summary>
-        public override Task OpenAsync()
+        public override async Task OpenAsync()
         {
-            _closeCalled = false;
-            _disableReconnect = true;
-            return InternalOpenAsync();
+            await base.OpenAsync();
+            await InternalOpenAsync();
         }
 
-        private async Task InternalOpenAsync(bool internalCall = false)
+        protected override async Task InternalOpenAsync(bool internalCall = false)
         {
             try
             {
-                if (_closeCalled) return;
+                if (_shutdown) return;
                 _identity = null;
 
 
@@ -128,7 +126,6 @@ namespace Dacs7.Communication
 
         public async override Task CloseAsync()
         {
-            _disableReconnect = _closeCalled = true;
             await base.CloseAsync();
             await DisposeSocket();
         }
@@ -228,16 +225,6 @@ namespace Dacs7.Communication
             foreach (byte b in ba)
                 hex.AppendFormat("{0:x2}", b);
             return hex.ToString();
-        }
-
-
-        private async Task HandleReconnectAsync()
-        {
-            if (!_disableReconnect && _configuration.AutoconnectTime > 0)
-            {
-                await Task.Delay(_configuration.AutoconnectTime);
-                await InternalOpenAsync(true);
-            }
         }
     }
 }
