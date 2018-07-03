@@ -270,7 +270,26 @@ namespace Dacs7.Protocols.Fdl
                 {
                     Opcode = context.OpCode,    // request
                     Subsystem = context.Subsystem,  // reserved for cp
-                    Service = ServiceCode.FdlReadValue, 
+                    Service = ServiceCode.FdlReadValue,
+                    LocalAddress = new RemoteAddress
+                    {
+
+                    },
+
+                    RemoteAddress = new RemoteAddress
+                    {
+
+                    },
+
+                    Receive1Sdu = new LinkServiceDataUnit
+                    {
+
+                    },
+
+                    Send1Sdu = new LinkServiceDataUnit
+                    {
+
+                    },
                 }
             };
 
@@ -285,7 +304,7 @@ namespace Dacs7.Protocols.Fdl
 
         public static Memory<byte> TranslateToMemory(RequestBlockDatagram datagram)
         {
-            var length = datagram.Header.Length + datagram.Header.FillLength1 + datagram.Header.FillLength2;
+            var length = datagram.Header.Length + datagram.Header.SegLength1 + datagram.Header.SegLength2;
             var result = new Memory<byte>(new byte[length]);  // check if we could use ArrayBuffer
             var span = result.Span;
 

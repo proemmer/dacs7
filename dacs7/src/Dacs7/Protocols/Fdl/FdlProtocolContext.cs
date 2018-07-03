@@ -23,7 +23,7 @@ namespace Dacs7.Protocols.Fdl
         /// <summary>
         /// When this is One it is a MPI Connection, zero means TCP Connection!
         /// </summary>
-        public byte Subsystem { get; set; } = 0x40;
+        public byte Subsystem { get; set; } = 0x00;
 
 
         public bool IsEthernet => Address != null;

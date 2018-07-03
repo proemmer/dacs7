@@ -19,6 +19,7 @@ namespace Dacs7.Protocols
             ConnectState3,
             ConnectState4,
             ConnectState5,
+            ConnectState6,
             Connected,
             Broken
         }
@@ -96,6 +97,7 @@ namespace Dacs7.Protocols
                         if (await SendS7Online(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.BuildEthernet2(_FdlContext))))
                         {
                             _s7OnlineState = S7OnlineStates.ConnectState4;
+                            processed = buffer.Length;
                         }
                         else
                         {
@@ -107,10 +109,19 @@ namespace Dacs7.Protocols
                     }
                 case S7OnlineStates.ConnectState4:
                     {
-                        if (datagram.Header.Response == 0x00)
+                        if (datagram.Header.Response == 0x01 || datagram.Header.Response == 0x02)
                         {
-                            _s7OnlineState = S7OnlineStates.ConnectState5;
-                            processed = buffer.Length;
+                            if (await SendS7Online(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.BuildEthernet3(_FdlContext))))
+                            {
+
+                                _s7OnlineState = S7OnlineStates.ConnectState5;
+                                processed = buffer.Length;
+                            }
+                            else
+                            {
+                                _s7OnlineState = S7OnlineStates.Broken;
+                                throw new S7OnlineException();
+                            }
                         }
                         else
                         {
@@ -120,6 +131,30 @@ namespace Dacs7.Protocols
                         return processed;
                     }
                 case S7OnlineStates.ConnectState5:
+                    {
+                        if (datagram.Header.Response == 0x02)
+                        {
+                            if (await SendS7Online(RequestBlockDatagram.TranslateToMemory(RequestBlockDatagram.BuildReadBusParameter(_FdlContext))))
+                            {
+
+                                _s7OnlineState = S7OnlineStates.ConnectState5;
+                                processed = buffer.Length;
+                            }
+                            else
+                            {
+                                _s7OnlineState = S7OnlineStates.Broken;
+                                throw new S7OnlineException();
+                            }
+
+                        }
+                        else
+                        {
+                            _s7OnlineState = S7OnlineStates.Broken;
+                            throw new S7OnlineException();
+                        }
+                        return processed;
+                    }
+                case S7OnlineStates.ConnectState6:
                     {
                         if (datagram.Header.Response == 0x02)
                         {
