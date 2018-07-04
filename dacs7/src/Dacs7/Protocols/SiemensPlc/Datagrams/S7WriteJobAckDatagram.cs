@@ -22,9 +22,6 @@ namespace Dacs7.Protocols.SiemensPlc
         public List<S7DataItemWriteResult> Data { get; set; } = new List<S7DataItemWriteResult>();
 
 
-
-
-
         public static Memory<byte> TranslateToMemory(S7WriteJobAckDatagram datagram)
         {
             var result = S7AckDataDatagram.TranslateToMemory(datagram.Header);
