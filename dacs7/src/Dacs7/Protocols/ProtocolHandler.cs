@@ -4,6 +4,7 @@ using Dacs7.Helper;
 using Dacs7.Protocols.Fdl;
 using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -18,7 +19,6 @@ namespace Dacs7.Protocols
 
     internal partial class ProtocolHandler
     {
-        private ConnectionState _connectionState = ConnectionState.Closed;
         private bool _closeCalled;
         private SocketBase _socket;
         private Rfc1006ProtocolContext _RfcContext;
@@ -26,6 +26,7 @@ namespace Dacs7.Protocols
         private SiemensPlcProtocolContext _s7Context;
         private AsyncAutoResetEvent<bool> _connectEvent = new AsyncAutoResetEvent<bool>();
         private SemaphoreSlim _concurrentJobs;
+        private ILogger _logger;
 
         private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
         private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>> _writeHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>>();
@@ -34,7 +35,7 @@ namespace Dacs7.Protocols
         private readonly object _idLock = new object();
         private Action<ConnectionState> _connectionStateChanged;
 
-        public ConnectionState ConnectionState => _connectionState;
+        public ConnectionState ConnectionState { get; private set; } = ConnectionState.Closed;
 
         internal UInt16 GetNextReferenceId()
         {
@@ -58,29 +59,35 @@ namespace Dacs7.Protocols
 
         public ProtocolHandler( Transport transport,
                                 SiemensPlcProtocolContext s7Context, 
-                                Action<ConnectionState> connectionStateChanged)
+                                Action<ConnectionState> connectionStateChanged,
+                                ILoggerFactory loggerFactory)
         {
-            
+            _logger = loggerFactory?.CreateLogger<ProtocolHandler>();
             _s7Context = s7Context;
             _connectionStateChanged = connectionStateChanged;
+            _logger?.LogDebug("S7Protocol-Timeout is {0} ms", _s7Context.Timeout);
 
             if (transport.ProtocolContext is Rfc1006ProtocolContext rfcContext)
             {
+                _logger?.LogDebug("Creating clientSocket for RFC1006 protocol!");
                 _RfcContext = rfcContext;
-                _socket = new ClientSocket(transport.Configuration as ClientSocketConfiguration)
+                _socket = new ClientSocket(transport.Configuration as ClientSocketConfiguration, loggerFactory)
                 {
                     OnRawDataReceived = OnTcpSocketRawDataReceived,
                     OnConnectionStateChanged = OnTcpSocketConnectionStateChanged
                 };
+                _logger?.LogDebug("ClientSocket created!");
             }
             else if(transport.ProtocolContext is FdlProtocolContext fdlContext)
             {
+                _logger?.LogDebug("Creating S7OnlineClient for FDL protocol!");
                 _FdlContext = fdlContext;
-                _socket = new S7OnlineClient(transport.Configuration as S7OnlineConfiguration)
+                _socket = new S7OnlineClient(transport.Configuration as S7OnlineConfiguration, loggerFactory)
                 {
                     OnRawDataReceived = OnS7OnlineRawDataReceived,
                     OnConnectionStateChanged = OnS7OnlineConnectionStateChanged
                 };
+                _logger?.LogDebug("S7OnlineClient created!");
             }
         }
 
@@ -427,9 +434,9 @@ namespace Dacs7.Protocols
 
         private void UpdateConnectionState(ConnectionState state)
         {
-            if (_connectionState != state)
+            if (ConnectionState != state)
             {
-                _connectionState = state;
+                ConnectionState = state;
                 _connectionStateChanged?.Invoke(state);
             }
         }

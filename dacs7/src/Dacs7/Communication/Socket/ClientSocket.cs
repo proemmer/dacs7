@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Net;
 using System.Buffers;
+using Microsoft.Extensions.Logging;
 
 namespace Dacs7.Communication
 {
@@ -39,7 +40,7 @@ namespace Dacs7.Communication
             }
         }
 
-        public ClientSocket(ClientSocketConfiguration configuration) : base(configuration)
+        public ClientSocket(ClientSocketConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration, loggerFactory?.CreateLogger<ClientSocket>())
         {
             _config = configuration;
         }
@@ -65,8 +66,10 @@ namespace Dacs7.Communication
                 {
                     ReceiveBufferSize = _configuration.ReceiveBufferSize
                 };
+                _logger?.LogDebug("Socket connecting. ({0}:{1})", _config.Hostname, _config.ServiceName);
                 await _socket.ConnectAsync(_config.Hostname, _config.ServiceName);
                 EnsureConnected();
+                _logger?.LogDebug("Socket connected. ({0}:{1})", _config.Hostname, _config.ServiceName);
                 if (_config.KeepAlive)
                     _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, 1);
                 _disableReconnect = false; // we have a connection, so enable reconnect
@@ -125,6 +128,8 @@ namespace Dacs7.Communication
 
         private async Task StartReceive()
         {
+            var connectionInfo = _socket.RemoteEndPoint.ToString();
+            _logger?.LogDebug("Socket connection receive loop started. ({0})", connectionInfo);
             var receiveBuffer = ArrayPool<byte>.Shared.Rent(_socket.ReceiveBufferSize * 2);
             var receiveOffset = 0;
             var bufferOffset = 0;
@@ -175,6 +180,7 @@ namespace Dacs7.Communication
             {
                 ArrayPool<byte>.Shared.Return(receiveBuffer);
                 _ = HandleSocketDown();
+                _logger?.LogDebug("Socket connection receive loop ended. ({0})", connectionInfo);
             }
 
         }

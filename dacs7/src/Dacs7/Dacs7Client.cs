@@ -4,6 +4,7 @@ using Dacs7.Protocols;
 using Dacs7.Protocols.Fdl;
 using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,7 @@ namespace Dacs7
         private SiemensPlcProtocolContext _s7Context;
         private ProtocolHandler _protocolHandler;
         private Dacs7ConnectionState _state = Dacs7ConnectionState.Closed;
+        private ILogger _logger;
 
         /// <summary>
         /// True if the connection is fully applied
@@ -55,11 +57,13 @@ namespace Dacs7
         /// </summary>
         /// <param name="address">The address of the plc  [IP or Hostname]:[Rack],[Slot]  where as rack and slot ar optional  default is Rack = 0, Slot = 2</param>
         /// <param name="connectionType">The <see cref="PlcConnectionType"/> for the connection.</param>
-        public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg, int timeout = 5000)
+        public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg, int timeout = 5000, ILoggerFactory loggerFactory = null)
         {
+            _logger = loggerFactory?.CreateLogger<Dacs7Client>();
             var transport = new Transport();
             if (address.StartsWith("S7ONLINE", StringComparison.InvariantCultureIgnoreCase))
             {
+                _logger?.LogDebug("Start configuring dacs7 with S7Online interface");
                 // This is currently a not working interface!!!!
                 var addressPort = address.Substring(9).Split(':');
                 var portRackSlot = addressPort.Length > 1 ?
@@ -81,9 +85,11 @@ namespace Dacs7
                     Rack = portRackSlot.Length > 0 ? portRackSlot[0] : 0,
                     Slot = portRackSlot.Length > 1 ? portRackSlot[1] : 2
                 };
+                _logger?.LogDebug("S7Online interface configured.");
             }
             else
             {
+                _logger?.LogDebug("Start configuring dacs7 with Socket interface");
                 var addressPort = address.Split(':');
                 var portRackSlot = addressPort.Length > 1 ?
                                             addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() :
@@ -94,15 +100,20 @@ namespace Dacs7
                     Hostname = addressPort[0],
                     ServiceName = portRackSlot.Length > 0 ? portRackSlot[0] : 102
                 };
+                _logger?.LogDebug("Transport-Configuration: {0}.", transport.Configuration);
 
 
-
+                var rack = portRackSlot.Length > 1 ? portRackSlot[1] : 0;
+                var slot = portRackSlot.Length > 2 ? portRackSlot[2] : 2;
                 transport.ProtocolContext = new Rfc1006ProtocolContext
                 {
                     DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType,
-                                                                     portRackSlot.Length > 1 ? portRackSlot[1] : 0,
-                                                                     portRackSlot.Length > 2 ? portRackSlot[2] : 2)
+                                                                     rack,
+                                                                     slot)
                 };
+
+                _logger?.LogDebug("Rfc1006 Configuration: connectionType={0}; Rack={1}; Slot={2}", Enum.GetName(typeof(PlcConnectionType), connectionType), rack, slot);
+                _logger?.LogDebug("Socket interface configured.");
             }
 
             _s7Context = new SiemensPlcProtocolContext
@@ -110,7 +121,7 @@ namespace Dacs7
                 Timeout = timeout
             };
 
-            _protocolHandler = new ProtocolHandler(transport, _s7Context, UpdateConnectionState);
+            _protocolHandler = new ProtocolHandler(transport, _s7Context, UpdateConnectionState, loggerFactory);
 
         }
 

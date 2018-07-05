@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -17,6 +18,7 @@ namespace Dacs7.Communication
         protected IConfiguration _configuration;
         protected bool _shutdown;
         protected string _identity;
+        protected ILogger _logger;
         #endregion
 
         #region Properties
@@ -33,9 +35,10 @@ namespace Dacs7.Communication
 
         #endregion
 
-        public SocketBase(IConfiguration configuration)
+        public SocketBase(IConfiguration configuration, ILogger logger)
         {
             _configuration = configuration;
+            _logger = logger;
         }
 
         public virtual Task OpenAsync()

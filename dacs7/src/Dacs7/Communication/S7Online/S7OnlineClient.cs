@@ -1,6 +1,7 @@
 ﻿
 using Dacs7.Communication.S7Online;
 using Dacs7.Exceptions;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Buffers;
 using System.IO;
@@ -46,7 +47,7 @@ namespace Dacs7.Communication
             }
         }
 
-        public S7OnlineClient(S7OnlineConfiguration configuration) : base(configuration)
+        public S7OnlineClient(S7OnlineConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration, loggerFactory?.CreateLogger<S7OnlineClient>())
         {
             _config = configuration;
         }

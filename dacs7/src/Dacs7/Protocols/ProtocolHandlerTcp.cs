@@ -35,11 +35,11 @@ namespace Dacs7.Protocols
 
         private Task OnTcpSocketConnectionStateChanged(string socketHandle, bool connected)
         {
-            if (_connectionState == ConnectionState.Closed && connected)
+            if (ConnectionState == ConnectionState.Closed && connected)
             {
                 return SendTcpConnectionRequest();
             }
-            else if (_connectionState == ConnectionState.Opened && !connected)
+            else if (ConnectionState == ConnectionState.Opened && !connected)
             {
                 return Closed();
             }

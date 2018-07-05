@@ -1,13 +1,7 @@
-﻿using CommandLine;
-using Dacs7;
-using Dacs7Cli.Options;
+﻿using Dacs7Cli.Options;
+using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace Dacs7Cli
 {
@@ -16,39 +10,48 @@ namespace Dacs7Cli
 
     class Program
     {
-        private static ILoggerFactory _factory;
-        private static ILogger _logger;
 
-        static int Main(string[] args)
+
+        public static int Main(string[] args)
         {
             try
             {
-                var options = Parser.Default.ParseArguments<ReadOptions, WriteOptions/*, WatchOptions, WatchAlarmsOptions*/>(args);
-                if (options.Tag == ParserResultType.Parsed)
+                var app = new CommandLineApplication
                 {
-                    try
-                    {
-                        return options.MapResult(
-                            (ReadOptions o) => Read(Configure(o)).ConfigureAwait(false).GetAwaiter().GetResult(),
-                            (WriteOptions o) => Write(Configure(o)).ConfigureAwait(false).GetAwaiter().GetResult(),
-                            //(WatchOptions o) => Watch(Configure(o)).ConfigureAwait(false).GetAwaiter().GetResult(),
-                            //(WatchAlarmsOptions o) => WatchAlarms(Configure(o)).ConfigureAwait(false).GetAwaiter().GetResult(),
-                            _ => 1);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError($"An error occured: {ex.Message}");
-                        return 1;
-                    }
-                    finally
-                    {
-                        _factory?.Dispose();
-                    }
+                    FullName = "DacS7Cli",
+                    Description = "DacS7 Commandline INterfac"
+                };
 
-                }
+                ReadCommand.Register(app);
+                WriteCommand.Register(app);
+
+                app.Command("help", cmd =>
+                {
+                    cmd.Description = "Get help for the application, or a specific command";
+
+                    var commandArgument = cmd.Argument("<COMMAND>", "The command to get help for");
+                    cmd.OnExecute(() =>
+                    {
+                        app.ShowHelp(commandArgument.Value);
+                        return 0;
+                    });
+                });
+
+
+                app.OnExecute(() =>
+                {
+                    app.ShowHelp();
+                    return 0;
+                });
+
+                return app.Execute(args);
             }
-            catch(Exception){}
-            return 1;
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occured: {ex.Message}");
+                return 1;
+            }
+
         }
 
 
@@ -127,115 +130,6 @@ namespace Dacs7Cli
         //}
 
 
-        private static async Task<int> Write(WriteOptions writeOptions)
-        {
-            var client = new Dacs7Client(writeOptions.Address);
-            try
-            {
-                await client.ConnectAsync();
-
-                var write = writeOptions.Tags.Select(x =>
-                {
-                    var s = x.Split('=');
-                    return KeyValuePair.Create<string, object>(s[0], s[1]);
-                }
-                ).ToList();
-
-                await client.WriteAsync(write);
-
-                foreach (var item in write)
-                {
-                    _logger?.LogInformation($"Write: {item.Key}={item.Value}");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError($"An error occured in Write: {ex.Message} - {ex.InnerException?.Message}");
-                return 1;
-            }
-            finally
-            {
-                await client.DisconnectAsync();
-            }
-
-            return 0;
-        }
-
-        private static async Task<int> Read(ReadOptions readOptions)
-        {
-            var client = new Dacs7Client(readOptions.Address);
-
-            try
-            {
-                long msTotal = 0;
-                await client.ConnectAsync();
-
-                if (readOptions.RegisterItems)
-                {
-                    await client.RegisterAsync(readOptions.Tags);
-                }
-
-                for (int i = 0; i < readOptions.Loops; i++)
-                {
-                    if(i > 0 && readOptions.Wait > 0)
-                    {
-                        await Task.Delay(readOptions.Wait);
-                    }
-
-                    try
-                    {
-                        var sw = new Stopwatch();
-                        sw.Start();
-                        var results = await client.ReadAsync(readOptions.Tags);
-                        sw.Stop();
-                        msTotal += sw.ElapsedMilliseconds;
-                        _logger?.LogDebug($"ReadTime: {sw.Elapsed}");
-
-                        var resultEnumerator = results.GetEnumerator();
-                        foreach (var item in readOptions.Tags)
-                        {
-                            if (resultEnumerator.MoveNext())
-                            {
-                                _logger?.LogInformation($"Read: {item}={resultEnumerator.Current.Data}   -  {resultEnumerator.Current.Value}");
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger?.LogError($"Exception in loop {ex.Message}.");
-                    }
-                }
-
-                if (readOptions.Loops > 0)
-                {
-                    _logger?.LogInformation($"Average read time over loops is {msTotal / readOptions.Loops}ms");
-                    await Task.Delay(readOptions.Wait);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError($"An error occured in Read: {ex.Message} - {ex.InnerException?.Message}");
-                return 1;
-            }
-            finally
-            {
-                if (readOptions.RegisterItems)
-                {
-                    await client.UnregisterAsync(readOptions.Tags);
-                }
-
-                await client.DisconnectAsync();
-            }
-
-            return 0;
-        }
-
-        private static T Configure<T>(T options) where T : OptionsBase
-        {
-            _factory = new LoggerFactory().AddConsole(options.Debug ? LogLevel.Debug : LogLevel.Information);
-            _logger = _factory.CreateLogger<Program>();
-            return options;
-        }
 
 
     }

@@ -29,5 +29,10 @@ namespace Dacs7.Communication
                 KeepAlive = keepAlive != null
             };
         }
+
+        public override string ToString()
+        {
+            return $"Hostname={Hostname}; ServiceName={ServiceName}; ReceiveBufferSize={ReceiveBufferSize}; KeepAlive={KeepAlive}";
+        }
     }
 }

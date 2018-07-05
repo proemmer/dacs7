@@ -208,11 +208,11 @@ namespace Dacs7.Protocols
 
         private Task OnS7OnlineConnectionStateChanged(string socketHandle, bool connected)
         {
-            if (_connectionState == ConnectionState.Closed && connected)
+            if (ConnectionState == ConnectionState.Closed && connected)
             {
                 return S7OnlineHandler(socketHandle, Memory<byte>.Empty);
             }
-            else if (_connectionState == ConnectionState.Opened && !connected)
+            else if (ConnectionState == ConnectionState.Opened && !connected)
             {
                 _s7OnlineState = S7OnlineStates.Disconnected;
                 return Closed();
