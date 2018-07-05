@@ -19,7 +19,7 @@ namespace Dacs7Cli
                 var app = new CommandLineApplication
                 {
                     FullName = "DacS7Cli",
-                    Description = "DacS7 Commandline INterfac"
+                    Description = "DacS7 Commandline Interface"
                 };
 
                 ReadCommand.Register(app);
