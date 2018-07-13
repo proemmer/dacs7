@@ -1,5 +1,6 @@
 ﻿using Dacs7.Protocols.Rfc1006;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -53,6 +54,7 @@ namespace Dacs7.Protocols
             if (datagramType == typeof(ConnectionConfirmedDatagram))
             {
                 var res = ConnectionConfirmedDatagram.TranslateFromMemory(buffer, out processed);
+                _RfcContext.UpdateFrameSize(res);
                 await TransportOpened();
             }
             else if (datagramType == typeof(DataTransferDatagram))
@@ -66,6 +68,7 @@ namespace Dacs7.Protocols
 
             return processed;
         }
+
 
 
         private async Task SendTcpConnectionRequest()

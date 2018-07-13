@@ -41,7 +41,7 @@ namespace Dacs7.Protocols.Rfc1006
             var payload = rawPayload;
             do
             {
-                var frame = payload.Slice(0, Math.Min(payload.Length, context.FrameSize));
+                var frame = payload.Slice(0, Math.Min(payload.Length, context.FrameSizeSending));
                 payload = payload.Slice(frame.Length);
                 var current = new DataTransferDatagram()
                 {

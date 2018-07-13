@@ -312,7 +312,7 @@ namespace Dacs7.Protocols
             var sendData = BuildForSelectedContext(S7CommSetupDatagram
                                             .TranslateToMemory(
                                                 S7CommSetupDatagram
-                                                .Build(_s7Context)));
+                                                .Build(_s7Context, GetNextReferenceId())));
             var result = await _socket.SendAsync(sendData);
             if (result == SocketError.Success)
             {
@@ -359,9 +359,10 @@ namespace Dacs7.Protocols
             if (result == SocketError.Success)
             {
                 //UpdateConnectionState(ConnectionState.PendingOpenPlc);
-                _s7Context.MaxParallelJobs = data.Parameter.MaxAmQCalling;
+                _s7Context.MaxAmQCalling = data.Parameter.MaxAmQCalling;
+                _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalling;
                 _s7Context.PduSize = data.Parameter.PduLength;
-                _concurrentJobs = new SemaphoreSlim(_s7Context.MaxParallelJobs);
+                _concurrentJobs = new SemaphoreSlim(_s7Context.MaxAmQCalling);
                 UpdateConnectionState(ConnectionState.Opened);
             }
         }
@@ -375,9 +376,10 @@ namespace Dacs7.Protocols
         private Task ReceivedCommunicationSetupAck(Memory<byte> buffer)
         {
             var data = S7CommSetupAckDataDatagram.TranslateFromMemory(buffer);
-            _s7Context.MaxParallelJobs = data.Parameter.MaxAmQCalling;
+            _s7Context.MaxAmQCalling = data.Parameter.MaxAmQCalling;
+            _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalled;
             _s7Context.PduSize = data.Parameter.PduLength;
-            _concurrentJobs = new SemaphoreSlim(_s7Context.MaxParallelJobs);
+            _concurrentJobs = new SemaphoreSlim(_s7Context.MaxAmQCalling);
             UpdateConnectionState(ConnectionState.Opened);
             _connectEvent.Set(true);
 

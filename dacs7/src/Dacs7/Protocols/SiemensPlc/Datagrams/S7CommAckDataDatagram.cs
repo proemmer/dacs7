@@ -14,8 +14,8 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7CommSetupAckDataDatagram BuildFrom(SiemensPlcProtocolContext context, S7CommSetupDatagram incoming)
         {
-            context.MaxParallelJobs = Math.Min(incoming.Parameter.MaxAmQCalling, context.MaxParallelJobs);
-            context.MaxParallelJobs = Math.Min(incoming.Parameter.MaxAmQCalled, context.MaxParallelJobs);
+            context.MaxAmQCalling = Math.Min(incoming.Parameter.MaxAmQCalling, context.MaxAmQCalling);
+            context.MaxAmQCalled = Math.Min(incoming.Parameter.MaxAmQCalled, context.MaxAmQCalled);
             context.PduSize = Math.Min(incoming.Parameter.PduLength, context.PduSize);
 
 
@@ -24,8 +24,8 @@ namespace Dacs7.Protocols.SiemensPlc
             {
                 Parameter = new S7CommSetupParameterDatagram
                 {
-                    MaxAmQCalling =  context.MaxParallelJobs,
-                    MaxAmQCalled = context.MaxParallelJobs,
+                    MaxAmQCalling =  context.MaxAmQCalling,
+                    MaxAmQCalled = context.MaxAmQCalled,
                     PduLength = context.PduSize
                 }
             };

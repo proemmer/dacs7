@@ -37,7 +37,8 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public const int WriteItemHeader = 28; // 28 Header and some other data
 
-        public ushort MaxParallelJobs { get; set; } = 10; // -> used for negotiation
+        public ushort MaxAmQCalling { get; set; } = 10; // -> used for negotiation
+        public ushort MaxAmQCalled { get; set; } = 10; // -> used for negotiation
         public ushort PduSize { get; set; } = 960;  // defautl pdu size -> used for negotiation
         public int Timeout { get; set; }
 

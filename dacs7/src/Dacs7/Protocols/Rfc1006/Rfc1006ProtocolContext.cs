@@ -31,6 +31,8 @@ namespace Dacs7.Protocols.Rfc1006
 
         public int Port { get; set; }
         public bool IsClient { get; set; }
+
+        public int FrameSizeSending { get; set; }
         public int FrameSize
         {
             get
@@ -39,7 +41,8 @@ namespace Dacs7.Protocols.Rfc1006
             }
             set
             {
-                if(_frameSize != value)
+                FrameSizeSending = value;
+                if (_frameSize != value)
                     CalculateTpduSize(value);
             }
         }
@@ -115,6 +118,12 @@ namespace Dacs7.Protocols.Rfc1006
 
             datagramType = null;
             return false;
+        }
+
+        public void UpdateFrameSize(ConnectionConfirmedDatagram res)
+        {
+            res.SizeTpduReceiving.CopyTo(SizeTpduSending);
+            FrameSizeSending = 1 << res.SizeTpduReceiving.Span[0];
         }
 
 

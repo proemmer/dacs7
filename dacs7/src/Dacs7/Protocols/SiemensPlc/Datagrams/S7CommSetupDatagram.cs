@@ -22,18 +22,19 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
 
-        public static S7CommSetupDatagram Build(SiemensPlcProtocolContext context)
+        public static S7CommSetupDatagram Build(SiemensPlcProtocolContext context, int id)
         {
             //TODO we need a parameter for the UnitId
             var result = new S7CommSetupDatagram
             {
                 Parameter = new S7CommSetupParameterDatagram
                 {
-                    MaxAmQCalling = context.MaxParallelJobs,
-                    MaxAmQCalled = context.MaxParallelJobs,
+                    MaxAmQCalling = context.MaxAmQCalling,
+                    MaxAmQCalled = context.MaxAmQCalled,
                     PduLength = context.PduSize
                 }
             };
+            result.Header.ProtocolDataUnitReference = (ushort)id;
             return result;
         }
 

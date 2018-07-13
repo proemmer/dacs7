@@ -2,7 +2,7 @@
   "profiles": {
     "Dacs7Cli": {
       "commandName": "Project",
-      "commandLineArgs": "read  --address 192.168.0.148 -d -t     M.0,W"
+      "commandLineArgs": "read  --address 192.168.0.148 -d -t -j=1    M.0,W"
     }
   }
 }

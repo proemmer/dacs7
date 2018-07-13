@@ -23,6 +23,7 @@ namespace Dacs7Cli
                 var registerOption = cmd.Option("-r | --register", "Register items for fast performing.", CommandOptionType.NoValue);
                 var loopsOption = cmd.Option("-l | --loops", "Specify the number of read loops.", CommandOptionType.SingleValue);
                 var waitOption = cmd.Option("-s | --wait", "Wait time between loops in ms.", CommandOptionType.SingleValue);
+                var maxJobsOption = cmd.Option("-j | --jobs", "Maximum number of concurrent jobs.", CommandOptionType.SingleValue);
 
                 var tagsArguments = cmd.Argument("tags", "Tags to read.", true);
 
@@ -39,7 +40,8 @@ namespace Dacs7Cli
                             //RegisterItems = registerOption.HasValue(),
                             //Loops = loopsOption.HasValue() ? Int32.Parse(loopsOption.Value()) : 1,
                             //Wait = waitOption.HasValue() ? Int32.Parse(waitOption.Value()) : 0,
-                            Tags = tagsArguments.Values
+                            Tags = tagsArguments.Values,
+                            MaxJobs = maxJobsOption.HasValue() ? Int32.Parse(maxJobsOption.Value()) : 10,
                         }.Configure();
                         return await Write(writeOptions, writeOptions.LoggerFactory);
                     }
@@ -54,7 +56,11 @@ namespace Dacs7Cli
 
         internal static async Task<int> Write(WriteOptions writeOptions, ILoggerFactory loggerFactory)
         {
-            var client = new Dacs7Client(writeOptions.Address, PlcConnectionType.Pg, 5000, loggerFactory);
+            var client = new Dacs7Client(writeOptions.Address, PlcConnectionType.Pg, 5000, loggerFactory)
+            {
+                MaxAmQCalled = (ushort)writeOptions.MaxJobs,
+                MaxAmQCalling = (ushort)writeOptions.MaxJobs
+            };
             var logger = loggerFactory?.CreateLogger("Dacs7Cli.Write");
             try
             {

@@ -32,9 +32,61 @@ namespace Dacs7
         public bool IsConnected => _protocolHandler != null && _protocolHandler?.ConnectionState == ConnectionState.Opened;
 
         /// <summary>
+        /// Maximum Jobs calling
+        /// </summary>
+        public ushort MaxAmQCalling
+        {
+            get => _s7Context != null ? _s7Context.MaxAmQCalling : (ushort)0;
+            set
+            {
+                if(_s7Context != null && _state == Dacs7ConnectionState.Closed)
+                {
+                    _s7Context.MaxAmQCalling = value;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Value of {nameof(MaxAmQCalling)} can only be changed while connection is closed!");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Maximum Jos waiting for response
+        /// </summary>
+        public ushort MaxAmQCalled
+        {
+            get => _s7Context != null ? _s7Context.MaxAmQCalled : (ushort)0;
+            set
+            {
+                if (_s7Context != null && _state == Dacs7ConnectionState.Closed)
+                {
+                    _s7Context.MaxAmQCalled = value;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Value of {nameof(MaxAmQCalled)} can only be changed while connection is closed!");
+                }
+            }
+        }
+
+        /// <summary>
         /// The negotiated pdu size.
         /// </summary>
-        public ushort PduSize => _s7Context != null ? _s7Context.PduSize : (ushort)0;
+        public ushort PduSize
+        {
+            get => _s7Context != null ? _s7Context.PduSize : (ushort)0;
+            set
+            {
+                if (_s7Context != null && _state == Dacs7ConnectionState.Closed)
+                {
+                    _s7Context.PduSize = value;
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Value of {nameof(PduSize)} can only be changed while connection is closed!");
+                }
+            }
+        }
 
         /// <summary>
         /// The maximum read item length of a single telegram.
@@ -109,7 +161,7 @@ namespace Dacs7
                 {
                     DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType,
                                                                      rack,
-                                                                     slot)
+                                                                     slot),
                 };
 
                 _logger?.LogDebug("Rfc1006 Configuration: connectionType={0}; Rack={1}; Slot={2}", Enum.GetName(typeof(PlcConnectionType), connectionType), rack, slot);
