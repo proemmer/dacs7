@@ -14,9 +14,9 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public byte PduType { get; set; }
 
-        public UInt16 RedundancyIdentification { get; set; } = UInt16.MaxValue;
+        public UInt16 RedundancyIdentification { get; set; } = UInt16.MinValue;
 
-        public UInt16 ProtocolDataUnitReference { get; set; } = UInt16.MaxValue;
+        public UInt16 ProtocolDataUnitReference { get; set; } = UInt16.MinValue;
 
         public UInt16 ParamLength { get; set; }
 

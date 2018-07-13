@@ -89,7 +89,7 @@ namespace Dacs7.Protocols.Rfc1006
             span[4] = datagram.Li;
             span[5] = datagram.PduType;
             BinaryPrimitives.WriteInt16BigEndian(span.Slice(6, 2), datagram.DstRef);
-            BinaryPrimitives.WriteInt16BigEndian(span.Slice(8, 2), datagram.DstRef);
+            BinaryPrimitives.WriteInt16BigEndian(span.Slice(8, 2), datagram.SrcRef);
             span[10] = datagram.ClassOption;
 
 
