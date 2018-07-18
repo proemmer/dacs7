@@ -5,12 +5,12 @@ using System.Threading.Tasks;
 
 namespace Dacs7
 {
-    internal class AsyncAutoResetEvent<T>
+    public class AsyncAutoResetEvent<T>
     {
         private readonly static Task<T> _completed = Task.FromResult<T>(default);
         private readonly Queue<TaskCompletionSource<T>> _waits = new Queue<TaskCompletionSource<T>>();
         private bool _signaled;
-        private T _lastValue;
+        private T _lastValue = default;
 
         public AsyncAutoResetEvent()
         {
@@ -22,18 +22,18 @@ namespace Dacs7
             {
                 if (_signaled)
                 {
-                    _signaled = false;
-                    var result = _lastValue;
+                    var result = Task.FromResult(_lastValue);
                     _lastValue = default;
-                    return Task.FromResult(_lastValue);
+                    _signaled = false;
+                    return result;
                 }
-                else if(timeout == 0)
+                else if (timeout == 0)
                 {
                     return _completed;
                 }
                 else
                 {
-                    
+
                     var tcs = new TaskCompletionSource<T>();
                     CancellationTokenRegistration registration = default;
                     CancellationTokenSource cts = null;
@@ -45,9 +45,8 @@ namespace Dacs7
                             tcs.TrySetResult(default);
                         }, false);
                     }
-
                     _waits.Enqueue(tcs);
-                    return tcs.Task.ContinueWith<T>(t => 
+                    return tcs.Task.ContinueWith<T>(t =>
                     {
                         if (cts != null)
                         {
@@ -61,20 +60,28 @@ namespace Dacs7
                 }
             }
         }
-        public void Set(T value)
+        public bool Set(T value)
         {
             TaskCompletionSource<T> toRelease = null;
             lock (_waits)
             {
                 if (_waits.Count > 0)
+                {
                     toRelease = _waits.Dequeue();
+                }
                 else if (!_signaled)
                 {
                     _signaled = true;
                     _lastValue = value;
                 }
+                else
+                {
+                    // Could not set because it is already set.
+                    return false;
+                }
             }
             toRelease?.SetResult(value);
+            return true;
         }
     }
 }

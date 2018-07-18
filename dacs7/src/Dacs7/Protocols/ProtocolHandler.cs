@@ -27,6 +27,7 @@ namespace Dacs7.Protocols
         private AsyncAutoResetEvent<bool> _connectEvent = new AsyncAutoResetEvent<bool>();
         private SemaphoreSlim _concurrentJobs;
         private ILogger _logger;
+        private static List<S7DataItemSpecification> _defaultReadJobResult = new List<S7DataItemSpecification>();
 
         private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
         private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>> _writeHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>>();
@@ -192,7 +193,7 @@ namespace Dacs7.Protocols
                         }
                         else
                         {
-                            throw new Dacs7TimeoutException();
+                            throw new Dacs7ReadTimeoutException(id);
                         }
                     }
 
@@ -274,7 +275,7 @@ namespace Dacs7.Protocols
                         }
                         else
                         {
-                            throw new Dacs7TimeoutException();
+                            throw new Dacs7WriteTimeoutException(id);
                         }
                     }
 
@@ -392,7 +393,15 @@ namespace Dacs7.Protocols
 
             if(_readHandler.TryGetValue(data.Header.Header.ProtocolDataUnitReference, out var cbh))
             {
+                if (data.Data == null)
+                {
+                    _logger.LogWarning("No data from read ack received for reference {0}", data.Header.Header.ProtocolDataUnitReference);
+                }
                 cbh.Event.Set(data.Data);
+            }
+            else
+            {
+                _logger.LogWarning("No read handler found for received read ack reference {0}", data.Header.Header.ProtocolDataUnitReference);
             }
 
             return Task.CompletedTask;
@@ -404,7 +413,11 @@ namespace Dacs7.Protocols
 
             if (_readHandler.TryGetValue(data.Header.ProtocolDataUnitReference, out var cbh))
             {
-                cbh.Event.Set(null);
+                cbh.Event.Set(_defaultReadJobResult);
+            }
+            else
+            {
+                _logger.LogWarning("No read handler found for received read job reference {0}", data.Header.ProtocolDataUnitReference);
             }
 
             return Task.CompletedTask;
@@ -416,7 +429,16 @@ namespace Dacs7.Protocols
 
             if (_writeHandler.TryGetValue(data.Header.Header.ProtocolDataUnitReference, out var cbh))
             {
+                if(data.Data == null)
+                {
+                    _logger.LogWarning("No data from write ack received for reference {0}", data.Header.Header.ProtocolDataUnitReference);
+                }
+
                 cbh.Event.Set(data.Data);
+            }
+            else
+            {
+                _logger.LogWarning("No write handler found for received write ack reference {0}", data.Header.Header.ProtocolDataUnitReference);
             }
 
             return Task.CompletedTask;

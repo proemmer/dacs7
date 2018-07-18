@@ -64,7 +64,8 @@ namespace Dacs7.Communication
                 _identity = null;
                 _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
                 {
-                    ReceiveBufferSize = _configuration.ReceiveBufferSize
+                    ReceiveBufferSize = _configuration.ReceiveBufferSize,
+                    NoDelay = true
                 };
                 _logger?.LogDebug("Socket connecting. ({0}:{1})", _config.Hostname, _config.ServiceName);
                 await _socket.ConnectAsync(_config.Hostname, _config.ServiceName);
@@ -173,7 +174,13 @@ namespace Dacs7.Communication
                             processed += proc;
                         } while (processed < toProcess);
                     }
-                    catch(Exception){}
+                    catch(Exception ex)
+                    {
+                        if (_socket != null && !_shutdown)
+                        {
+                            _logger?.LogError("Socket exception ({0}): {1}", connectionInfo, ex.Message);
+                        }
+                    }
                 }
             }
             finally

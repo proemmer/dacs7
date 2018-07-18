@@ -42,7 +42,11 @@ namespace Dacs7Cli
                             Tags = tagsArguments.Values,
                             MaxJobs = maxJobsOption.HasValue() ? Int32.Parse(maxJobsOption.Value()) : 10,
                         }.Configure();
-                        return await Read(readOptions, readOptions.LoggerFactory);
+                        var result = await Read(readOptions, readOptions.LoggerFactory);
+
+                        await Task.Delay(500);
+
+                        return result;
                     }
                     finally
                     {

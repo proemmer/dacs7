@@ -114,7 +114,7 @@ namespace Dacs7Tests.ServerHelper
                     await execution(client);
                     break;
                 }
-                catch (Exception ex) when (ex is Dacs7NotConnectedException || ex is Dacs7TimeoutException) // because of snap7
+                catch (Exception ex) when (ex is Dacs7NotConnectedException || ex is Dacs7ReadTimeoutException) // because of snap7
                 {
                     await Task.Delay(1000);
                     retries--;
