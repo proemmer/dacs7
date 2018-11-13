@@ -1,6 +1,7 @@
 ﻿using Dacs7.Communication;
 using Dacs7.Exceptions;
 using Dacs7.Helper;
+using Dacs7.Metadata;
 using Dacs7.Protocols.Fdl;
 using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
@@ -29,6 +30,7 @@ namespace Dacs7.Protocols
         private ILogger _logger;
         private static List<S7DataItemSpecification> _defaultReadJobResult = new List<S7DataItemSpecification>();
 
+        private ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>> _blockInfoHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>>();
         private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
         private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>> _writeHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>>();
 
@@ -132,6 +134,10 @@ namespace Dacs7.Protocols
                 item.Value.Event?.Set(null);
             }
             foreach (var item in _readHandler)
+            {
+                item.Value.Event?.Set(null);
+            }
+            foreach (var item in _blockInfoHandler)
             {
                 item.Value.Event?.Set(null);
             }
@@ -307,6 +313,55 @@ namespace Dacs7.Protocols
         }
 
 
+        public async Task<S7PlcBlockInfoAckDatagram> ReadBlockInfoAsync(PlcBlockType type, int blocknumber)
+        {
+            if (ConnectionState != ConnectionState.Opened)
+                throw new Dacs7NotConnectedException();
+
+            var id = GetNextReferenceId();
+            var sendData = BuildForSelectedContext(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlockInfoRequest(_s7Context, id, type, blocknumber)));
+
+
+            try
+            {
+                S7PlcBlockInfoAckDatagram blockinfoResult = null;
+                using (await SemaphoreGuard.Async(_concurrentJobs))
+                {
+                    var cbh = new CallbackHandler<S7PlcBlockInfoAckDatagram>(id);
+                    _blockInfoHandler.TryAdd(cbh.Id, cbh);
+                    try
+                    {
+                        if (await _socket.SendAsync(sendData) != SocketError.Success)
+                            return null;
+                        blockinfoResult = await cbh.Event.WaitAsync(_s7Context.Timeout);
+                    }
+                    finally
+                    {
+                        _readHandler.TryRemove(cbh.Id, out _);
+                    }
+                }
+
+                if (blockinfoResult == null)
+                {
+                    if (_closeCalled)
+                    {
+                        throw new Dacs7NotConnectedException();
+                    }
+                    else
+                    {
+                        throw new Dacs7ReadTimeoutException(id);
+                    }
+                }
+
+                return blockinfoResult;
+            }
+            catch (TaskCanceledException)
+            {
+                throw new TimeoutException();
+            }
+        }
+
+
 
         private async Task StartS7CommunicationSetup()
         {
@@ -343,6 +398,10 @@ namespace Dacs7.Protocols
             else if(datagramType == typeof(S7WriteJobAckDatagram))
             {
                 return ReceivedWriteJobAck(buffer);
+            }
+            else if(datagramType == typeof(S7PlcBlockInfoAckDatagram))
+            {
+                return ReceivedS7PlcBlockInfoAckDatagram(buffer);
             }
             return Task.CompletedTask;
         }
@@ -439,6 +498,26 @@ namespace Dacs7.Protocols
             else
             {
                 _logger.LogWarning("No write handler found for received write ack reference {0}", data.Header.Header.ProtocolDataUnitReference);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private Task ReceivedS7PlcBlockInfoAckDatagram(Memory<byte> buffer)
+        {
+            var data = S7PlcBlockInfoAckDatagram.TranslateFromMemory(buffer);
+
+            if (_blockInfoHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out var cbh))
+            {
+                if (data.UserData.Data == null)
+                {
+                    _logger.LogWarning("No data from read ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
+                }
+                cbh.Event.Set(data);
+            }
+            else
+            {
+                _logger.LogWarning("No read handler found for received read ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
             }
 
             return Task.CompletedTask;

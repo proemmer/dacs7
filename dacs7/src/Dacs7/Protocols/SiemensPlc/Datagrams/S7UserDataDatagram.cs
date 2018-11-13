@@ -1,9 +1,12 @@
-﻿using System;
+﻿using Dacs7.Domain;
+using Dacs7.Metadata;
+using Dacs7.Protocols.SiemensPlc.Datagrams;
+using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Dacs7.Protocols.SiemensPlc.Datagrams
+namespace Dacs7.Protocols.SiemensPlc
 {
     internal class S7UserDataDatagram
     {
@@ -18,6 +21,43 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
         public S7UserDataParameter Parameter { get; set; }
 
         public S7UserData Data { get; set; }
+
+
+
+
+
+
+        public static S7UserDataDatagram BuildBlockInfoRequest(SiemensPlcProtocolContext context, int id, PlcBlockType blockType, int blockNumber)
+        {
+            var result = new S7UserDataDatagram
+            {
+                Parameter = new S7UserDataParameter
+                {
+                    ParamDataLength = 4,
+                    TypeAndGroup = ((byte)UserDataFunctionType.Request << 4) | (byte)UserDataFunctionGroup.Block,
+                    SubFunction = (byte)UserDataSubFunctionBlock.BlockInfo,
+                    SequenceNumber = 0,
+                    Unknown = (byte)UserDataParamTypeType.Request 
+                },
+                Data = new S7UserData
+                {
+                    ReturnCode = (byte)ItemResponseRetValue.Success,
+                    TransportSize = (byte)DataTransportSize.OctetString,
+                }
+            };
+
+            result.Header.ProtocolDataUnitReference = (ushort)id;
+            result.Header.DataLength = 12;
+            result.Header.ParamLength = 8;
+
+            result.Data.Data = new byte[] { 0x30, (byte)blockType, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41 };
+            Encoding.Default.GetBytes(string.Format("{0:00000}", blockNumber)).AsSpan().CopyTo(result.Data.Data.Span.Slice(2, 5));
+            result.Data.UserDataLength = (ushort)result.Data.Data.Length;
+
+            return result;
+        }
+
+
 
 
 
@@ -41,6 +81,7 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
             var result = new S7UserDataDatagram
             {
                 Header = S7HeaderDatagram.TranslateFromMemory(data),
+                Data = new S7UserData()
             };
 
             result.Parameter = S7UserDataParameter.TranslateFromMemory(data.Slice(result.Header.GetHeaderSize()));
@@ -48,6 +89,9 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
             result.Data.ReturnCode = span[offset++];
             result.Data.TransportSize = span[offset++];
             result.Data.UserDataLength = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2));
+            offset += 2;
+            result.Data.Data = new byte[result.Data.UserDataLength];
+            data.Slice(offset, result.Data.UserDataLength).CopyTo(result.Data.Data);
             return result;
         }
     }

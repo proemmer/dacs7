@@ -2,7 +2,7 @@
   "profiles": {
     "Dacs7Cli": {
       "commandName": "Project",
-      "commandLineArgs": "read  --address 160.52.52.168 -d -t -l=10000    M.0,B,800"
+      "commandLineArgs": "blockinfo --address 192.168.0.148 -d -t     DB250"
     }
   }
 }

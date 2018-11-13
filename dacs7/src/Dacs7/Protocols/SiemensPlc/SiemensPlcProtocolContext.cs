@@ -64,6 +64,8 @@ namespace Dacs7.Protocols.SiemensPlc
                         return TryDetectJobType(memory, out datagramType);
                     case PduType.AckData: // ACKData
                         return TryDetectAckDataType(memory, out datagramType);
+                    case PduType.UserData: // ACKData
+                        return TryDetectUserDataDataType(memory, out datagramType);
                 }
 
             }
@@ -115,5 +117,22 @@ namespace Dacs7.Protocols.SiemensPlc
             return false;
         }
 
+
+        private bool TryDetectUserDataDataType(Memory<byte> memory, out Type datagramType)
+        {
+            if (memory.Length > 22)
+            {
+                // currently we do not support other types
+                switch ((UserDataSubFunctionBlock)memory.Span[16])  // Function Type
+                {
+                    case UserDataSubFunctionBlock.BlockInfo:  // Write Var
+                        datagramType = typeof(S7PlcBlockInfoAckDatagram);
+                        return true;
+                }
+
+            }
+            datagramType = null;
+            return false;
+        }
     }
 }

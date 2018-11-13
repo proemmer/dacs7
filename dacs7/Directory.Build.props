@@ -1,0 +1,10 @@
+<Project>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+	<RuntimeFrameworkVersion>2.1.5</RuntimeFrameworkVersion>
+  </PropertyGroup>
+
+
+
+</Project>
