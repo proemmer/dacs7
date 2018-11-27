@@ -7,6 +7,7 @@ using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,6 +34,7 @@ namespace Dacs7.Protocols
         private ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>> _blockInfoHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>>();
         private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
         private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>> _writeHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>>();
+        private ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>> _alarmHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>>();
 
         private int _referenceId;
         private readonly object _idLock = new object();
@@ -141,23 +143,15 @@ namespace Dacs7.Protocols
             {
                 item.Value.Event?.Set(null);
             }
+            foreach (var item in _alarmHandler)
+            {
+                item.Value.Event?.Set(null);
+            }
             await _socket.CloseAsync();
             await Task.Delay(1); // This ensures that the user can call connect after reconnect. (Otherwise he has so sleep for a while)
         }
 
 
-        private Memory<byte> BuildForSelectedContext(Memory<byte> buffer)
-        {
-            if(_RfcContext != null)
-            {
-                return BuildForTcp(buffer);
-            }
-            else if(_FdlContext != null)
-            {
-                return BuildForS7Online(buffer);
-            }
-            throw new InvalidOperationException();
-        }
 
 
         public async Task<IEnumerable<S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItem> vars)
@@ -337,7 +331,7 @@ namespace Dacs7.Protocols
                     }
                     finally
                     {
-                        _readHandler.TryRemove(cbh.Id, out _);
+                        _blockInfoHandler.TryRemove(cbh.Id, out _);
                     }
                 }
 
@@ -362,6 +356,89 @@ namespace Dacs7.Protocols
         }
 
 
+        public async Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync()
+        {
+            if (ConnectionState != ConnectionState.Opened)
+                throw new Dacs7NotConnectedException();
+
+            var id = GetNextReferenceId();
+            var sequenceNumber = (byte)0x00;
+            var alarms = new List<S7PlcAlarmItemDatagram>();
+            List<byte[]> memory = new List<byte[]>();
+            try
+            {
+               
+                S7PendingAlarmAckDatagram alarmResults = null;
+                do
+                {
+                    var sendData = BuildForSelectedContext(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildPendingAlarmRequest(_s7Context, id, sequenceNumber)));
+
+                    using (await SemaphoreGuard.Async(_concurrentJobs))
+                    {
+                        var cbh = new CallbackHandler<S7PendingAlarmAckDatagram>(id);
+                        _alarmHandler.TryAdd(cbh.Id, cbh);
+                        try
+                        {
+                            if (await _socket.SendAsync(sendData) != SocketError.Success)
+                                return null;
+
+                            alarmResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
+
+                        }
+                        finally
+                        {
+                            _alarmHandler.TryRemove(cbh.Id, out _);
+                        }
+                    }
+
+                    if (alarmResults == null)
+                    {
+                        if (_closeCalled)
+                        {
+                            throw new Dacs7NotConnectedException();
+                        }
+                        else
+                        {
+                            throw new Dacs7ReadTimeoutException(id);
+                        }
+                    }
+
+                    byte[] data = ArrayPool<byte>.Shared.Rent(alarmResults.UserData.Data.Data.Length);
+                    alarmResults.UserData.Data.Data.CopyTo(data);
+                    memory.Add(data);
+                    sequenceNumber = alarmResults.UserData.Parameter.SequenceNumber;
+                } while (alarmResults.UserData.Parameter.LastDataUnit == 0x01);
+
+
+                alarms = S7PendingAlarmAckDatagram.TranslateFromSslData(BufferFactory.Create(memory.ToArray()));
+
+            }
+            finally
+            {
+                foreach (var item in memory)
+                {
+                    ArrayPool<byte>.Shared.Return(item);
+                }
+            }
+
+
+            return alarms; // TODO:  change the IPlcAlarm interface!
+        }
+
+
+
+        private Memory<byte> BuildForSelectedContext(Memory<byte> buffer)
+        {
+            if (_RfcContext != null)
+            {
+                return BuildForTcp(buffer);
+            }
+            else if (_FdlContext != null)
+            {
+                return BuildForS7Online(buffer);
+            }
+            throw new InvalidOperationException();
+        }
 
         private async Task StartS7CommunicationSetup()
         {
@@ -375,7 +452,6 @@ namespace Dacs7.Protocols
                 UpdateConnectionState(ConnectionState.PendingOpenPlc);
             }
         }
-
 
         private Task S7DatagramReceived(Type datagramType, Memory<byte> buffer)
         {
@@ -403,10 +479,12 @@ namespace Dacs7.Protocols
             {
                 return ReceivedS7PlcBlockInfoAckDatagram(buffer);
             }
+            else if (datagramType == typeof(S7PendingAlarmAckDatagram))
+            {
+                return ReceivedS7PendingAlarmsAckDatagram(buffer);
+            }
             return Task.CompletedTask;
         }
-
-  
 
         private async Task ReceivedCommunicationSetupJob(Memory<byte> buffer)
         {
@@ -523,6 +601,26 @@ namespace Dacs7.Protocols
             return Task.CompletedTask;
         }
 
+        private Task ReceivedS7PendingAlarmsAckDatagram(Memory<byte> buffer)
+        {
+            var data = S7PendingAlarmAckDatagram.TranslateFromMemory(buffer);
+
+            if (_alarmHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out var cbh))
+            {
+                if (data.UserData.Data == null)
+                {
+                    _logger.LogWarning("No data from read ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
+                }
+                cbh.Event.Set(data);
+            }
+            else
+            {
+                _logger.LogWarning("No read handler found for received read ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
+            }
+
+            return Task.CompletedTask;
+        }
+
         private Task Closed()
         {
             UpdateConnectionState(ConnectionState.Closed);
@@ -621,7 +719,6 @@ namespace Dacs7.Protocols
                 yield return package.Return();
             }
         }
-
 
         private IEnumerable<WritePackage> CreateWritePackages(SiemensPlcProtocolContext s7Context, IEnumerable<WriteItem> vars)
         {

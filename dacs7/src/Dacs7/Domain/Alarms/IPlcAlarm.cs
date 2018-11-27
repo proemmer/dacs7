@@ -21,12 +21,12 @@ namespace Dacs7
         /// <summary>
         /// Id of the alarm
         /// </summary>
-        int Id { get; }
+        ushort Id { get; }
 
         /// <summary>
         /// Message number of the alarm
         /// </summary>
-        UInt32 MsgNumber { get; }
+        uint MsgNumber { get; }
 
         /// <summary>
         /// Associate values
