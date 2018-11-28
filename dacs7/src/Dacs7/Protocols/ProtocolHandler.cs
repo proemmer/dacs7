@@ -31,14 +31,11 @@ namespace Dacs7.Protocols
         private AsyncAutoResetEvent<bool> _connectEvent = new AsyncAutoResetEvent<bool>();
         private SemaphoreSlim _concurrentJobs;
         private ILogger _logger;
-        private static List<S7DataItemSpecification> _defaultReadJobResult = new List<S7DataItemSpecification>();
+        
+        
+        
+        
 
-        private ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>> _blockInfoHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>>();
-        private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
-        private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>> _writeHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>>();
-        private ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>> _alarmHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>>();
-        private CallbackHandler<S7AlarmUpdateAckDatagram> _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
-        private ConcurrentDictionary<ushort, CallbackHandler<S7AlarmIndicationDatagram>> _alarmIndicationHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7AlarmIndicationDatagram>>();
 
         private int _referenceId;
         private readonly object _idLock = new object();
@@ -162,375 +159,6 @@ namespace Dacs7.Protocols
 
 
 
-
-        public async Task<IEnumerable<S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItem> vars)
-        {
-            if (ConnectionState != ConnectionState.Opened)
-                throw new Dacs7NotConnectedException();
-
-            var result = vars.ToDictionary(x => x, x => null as S7DataItemSpecification);
-            foreach (var normalized in CreateReadPackages(_s7Context, vars))
-            {
-                var id = GetNextReferenceId();
-                var sendData = BuildForSelectedContext(S7ReadJobDatagram.TranslateToMemory( S7ReadJobDatagram.BuildRead(_s7Context, id, normalized.Items)));
-
-
-                try
-                {
-                    IEnumerable<S7DataItemSpecification> readResults = null;
-                    using (await SemaphoreGuard.Async(_concurrentJobs))
-                    {
-                        var cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
-                        _readHandler.TryAdd(cbh.Id, cbh);
-                        try
-                        {
-                            if (await _socket.SendAsync(sendData) != SocketError.Success)
-                                return new List<S7DataItemSpecification>();
-                            readResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
-                        }
-                        finally
-                        {
-                            _readHandler.TryRemove(cbh.Id, out _);
-                        }
-                    }
-
-                    if (readResults == null)
-                    {
-                        if (_closeCalled)
-                        {
-                            throw new Dacs7NotConnectedException();
-                        }
-                        else
-                        {
-                            throw new Dacs7ReadTimeoutException(id);
-                        }
-                    }
-
-                    var items = normalized.Items.GetEnumerator();
-                    foreach (var item in readResults)
-                    {
-                        if (items.MoveNext())
-                        {
-                            if (items.Current.IsPart)
-                            {
-                                if (!result.TryGetValue(items.Current.Parent, out var parent) || parent == null)
-                                {
-                                    parent = new S7DataItemSpecification
-                                    {
-                                        TransportSize = item.TransportSize,
-                                        Length = items.Current.Parent.NumberOfItems,
-                                        Data = new byte[items.Current.Parent.NumberOfItems]
-                                    };
-                                    result[items.Current.Parent] = parent;
-                                }
-
-                                parent.ReturnCode = item.ReturnCode;
-                                item.Data.CopyTo(parent.Data.Slice(items.Current.Offset - items.Current.Parent.Offset, items.Current.NumberOfItems));
-                            }
-                            else
-                            {
-                                result[items.Current] = item;
-                            }
-
-                        }
-                    }
-                }
-                catch (TaskCanceledException)
-                {
-                    throw new TimeoutException();
-                }
-            }
-            return result.Values;
-
-        }
-
-
-        public async Task<IEnumerable<ItemResponseRetValue>> WriteAsync(IEnumerable<WriteItem> vars)
-        {
-            if (ConnectionState != ConnectionState.Opened)
-                throw new Dacs7NotConnectedException();
-
-            
-            var result = vars.ToDictionary(x => x, x => ItemResponseRetValue.Success);
-            foreach (var normalized in CreateWritePackages(_s7Context, vars))
-            {
-                var id = GetNextReferenceId();
-                CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh;
-                var sendData = BuildForSelectedContext(S7WriteJobDatagram.TranslateToMemory(S7WriteJobDatagram.BuildWrite(_s7Context, id, normalized.Items)));
-                try
-                {
-                    IEnumerable<S7DataItemWriteResult> writeResults = null;
-                    using (await SemaphoreGuard.Async(_concurrentJobs))
-                    {
-                        cbh = new CallbackHandler<IEnumerable<S7DataItemWriteResult>>(id);
-                        _writeHandler.TryAdd(cbh.Id, cbh);
-                        try
-                        {
-                            if (await _socket.SendAsync(sendData) != SocketError.Success)
-                                return new List<ItemResponseRetValue>();
-                            writeResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
-                        }
-                        finally
-                        {
-                            _writeHandler.TryRemove(cbh.Id, out _);
-                        }
-                    }
-
-                    if (writeResults == null)
-                    {
-                        if (_closeCalled)
-                        {
-                            throw new Dacs7NotConnectedException();
-                        }
-                        else
-                        {
-                            throw new Dacs7WriteTimeoutException(id);
-                        }
-                    }
-
-                    var items = normalized.Items.GetEnumerator();
-                    foreach (var item in writeResults)
-                    {
-                        if (items.MoveNext())
-                        {
-                            if (items.Current.IsPart)
-                            {
-                                if (result.TryGetValue(items.Current.Parent, out var retCode) && retCode == ItemResponseRetValue.Success)
-                                {
-                                    result[items.Current.Parent] = (ItemResponseRetValue)item.ReturnCode;
-                                }
-                            }
-                            else
-                            {
-                                result[items.Current] = (ItemResponseRetValue)item.ReturnCode;
-                            }
-                        }
-                    }
-                }
-                catch (TaskCanceledException)
-                {
-                    throw new TimeoutException();
-                }
-            }
-            return result.Values;
-        }
-
-
-        public async Task<S7PlcBlockInfoAckDatagram> ReadBlockInfoAsync(PlcBlockType type, int blocknumber)
-        {
-            if (ConnectionState != ConnectionState.Opened)
-                throw new Dacs7NotConnectedException();
-
-            var id = GetNextReferenceId();
-            var sendData = BuildForSelectedContext(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlockInfoRequest(_s7Context, id, type, blocknumber)));
-
-
-            try
-            {
-                S7PlcBlockInfoAckDatagram blockinfoResult = null;
-                using (await SemaphoreGuard.Async(_concurrentJobs))
-                {
-                    var cbh = new CallbackHandler<S7PlcBlockInfoAckDatagram>(id);
-                    _blockInfoHandler.TryAdd(cbh.Id, cbh);
-                    try
-                    {
-                        if (await _socket.SendAsync(sendData) != SocketError.Success)
-                            return null;
-                        blockinfoResult = await cbh.Event.WaitAsync(_s7Context.Timeout);
-                    }
-                    finally
-                    {
-                        _blockInfoHandler.TryRemove(cbh.Id, out _);
-                    }
-                }
-
-                if (blockinfoResult == null)
-                {
-                    if (_closeCalled)
-                    {
-                        throw new Dacs7NotConnectedException();
-                    }
-                    else
-                    {
-                        throw new Dacs7ReadTimeoutException(id);
-                    }
-                }
-
-                return blockinfoResult;
-            }
-            catch (TaskCanceledException)
-            {
-                throw new TimeoutException();
-            }
-        }
-
-
-        public async Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync()
-        {
-            if (ConnectionState != ConnectionState.Opened)
-                throw new Dacs7NotConnectedException();
-
-            var id = GetNextReferenceId();
-            var sequenceNumber = (byte)0x00;
-            var alarms = new List<IPlcAlarm>();
-            var memory = Memory<byte>.Empty;
-            var currentPosition = 0;
-            var totalLength = 0;
-            try
-            {
-               
-                S7PendingAlarmAckDatagram alarmResults = null;
-                do
-                {
-                    var sendData = BuildForSelectedContext(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildPendingAlarmRequest(_s7Context, id, sequenceNumber)));
-
-                    using (await SemaphoreGuard.Async(_concurrentJobs))
-                    {
-                        var cbh = new CallbackHandler<S7PendingAlarmAckDatagram>(id);
-                        _alarmHandler.TryAdd(cbh.Id, cbh);
-                        try
-                        {
-                            if (await _socket.SendAsync(sendData) != SocketError.Success)
-                                return null;
-
-                            alarmResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
-
-                        }
-                        finally
-                        {
-                            _alarmHandler.TryRemove(cbh.Id, out _);
-                        }
-                    }
-
-                    if (alarmResults == null)
-                    {
-                        if (_closeCalled)
-                        {
-                            throw new Dacs7NotConnectedException();
-                        }
-                        else
-                        {
-                            throw new Dacs7ReadTimeoutException(id);
-                        }
-                    }
-
-                    if (memory.IsEmpty)
-                    {
-                        totalLength = BinaryPrimitives.ReadUInt16BigEndian(alarmResults.UserData.Data.Data.Span.Slice(4, 2)) + 6; // 6 is the header
-                        memory = ArrayPool<byte>.Shared.Rent(totalLength);
-                    }
-
-                    alarmResults.UserData.Data.Data.CopyTo(memory.Slice(currentPosition, alarmResults.UserData.Data.Data.Length));
-                    currentPosition += alarmResults.UserData.Data.Data.Length;
-                    sequenceNumber = alarmResults.UserData.Parameter.SequenceNumber;
-                } while (alarmResults.UserData.Parameter.LastDataUnit == 0x01);
-
-
-                alarms = S7PendingAlarmAckDatagram.TranslateFromSslData(memory, totalLength);
-
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(memory.ToArray());
-            }
-
-
-            return alarms; // TODO:  change the IPlcAlarm interface!
-        }
-
-
-        private async Task<bool> EnableAlarmUpdatesAsync()
-        {
-            CallbackHandler<S7AlarmUpdateAckDatagram> cbh;
-            if (_alarmUpdateHandler.Id == 0)
-            {
-                var id = GetNextReferenceId();
-                var sendData = BuildForSelectedContext(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildAlarmUpdateRequest(_s7Context, id)));
-                using (await SemaphoreGuard.Async(_concurrentJobs))
-                {
-                    if (_alarmUpdateHandler.Id == 0)
-                    {
-                        cbh = new CallbackHandler<S7AlarmUpdateAckDatagram>(id);
-                        _alarmUpdateHandler = cbh;
-                        try
-                        {
-                            if (await _socket.SendAsync(sendData) != SocketError.Success)
-                                return false;
-
-                            await cbh.Event.WaitAsync(_s7Context.Timeout);
-                        }
-                        catch (Exception)
-                        {
-                            _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
-                            return false;
-                        }
-                    }
-                }
-            }
-            return true;
-        }
-
-        internal async Task<bool> DisableAlarmUpdatesAsync()
-        {
-            if (_alarmUpdateHandler.Id != 0)
-            {
-                var sendData = BuildForSelectedContext(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildAlarmUpdateRequest(_s7Context, _alarmUpdateHandler.Id, false)));
-                using (await SemaphoreGuard.Async(_concurrentJobs))
-                {
-                    if (_alarmUpdateHandler.Id != 0)
-                    {
-
-                        try
-                        {
-                            if (await _socket.SendAsync(sendData) != SocketError.Success)
-                                return false;
-
-                            await _alarmUpdateHandler.Event.WaitAsync(_s7Context.Timeout);
-                            _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
-                        }
-                        catch (Exception)
-                        {
-                            return false;
-                        }
-                    }
-                }
-            }
-            return true;
-        }
-
-
-        public async Task<AlarmUpdateResult> ReceiveAlarmUpdatesAsync(CancellationToken ct)
-        {
-            if (ConnectionState != ConnectionState.Opened)
-                throw new Dacs7NotConnectedException();
-
-            if(!await EnableAlarmUpdatesAsync())
-                throw new Dacs7NotConnectedException();
-
-            var userId = GetNextReferenceId();
-            try
-            {
-                var waitHandler = new CallbackHandler<S7AlarmIndicationDatagram>(userId);
-                if (_alarmIndicationHandler.TryAdd(waitHandler.Id, waitHandler))
-                {
-                    var result = await waitHandler.Event.WaitAsync(ct);
-                    if (result != null)
-                    {
-                        return new AlarmUpdateResult(_alarmUpdateHandler.Id == 0, result.AlarmMessage.Alarms.ToList(), () => DisableAlarmUpdatesAsync());
-                    }
-                }
-            }
-            finally
-            {
-                _alarmIndicationHandler.TryRemove(userId, out _);
-            }
-
-            return new AlarmUpdateResult(_alarmUpdateHandler.Id == 0, () => DisableAlarmUpdatesAsync());
-        }
-
-
-
-
         private Memory<byte> BuildForSelectedContext(Memory<byte> buffer)
         {
             if (_RfcContext != null)
@@ -544,19 +172,6 @@ namespace Dacs7.Protocols
             throw new InvalidOperationException();
         }
 
-        private async Task StartS7CommunicationSetup()
-        {
-            var sendData = BuildForSelectedContext(S7CommSetupDatagram
-                                            .TranslateToMemory(
-                                                S7CommSetupDatagram
-                                                .Build(_s7Context, GetNextReferenceId())));
-            var result = await _socket.SendAsync(sendData);
-            if (result == SocketError.Success)
-            {
-                UpdateConnectionState(ConnectionState.PendingOpenPlc);
-            }
-        }
-
         private Task S7DatagramReceived(Type datagramType, Memory<byte> buffer)
         {
             if (datagramType == typeof(S7CommSetupAckDataDatagram))
@@ -567,7 +182,7 @@ namespace Dacs7.Protocols
             {
                 return ReceivedCommunicationSetupJob(buffer);
             }
-            else if(datagramType == typeof(S7ReadJobAckDatagram))
+            else if (datagramType == typeof(S7ReadJobAckDatagram))
             {
                 return ReceivedReadJobAck(buffer);
             }
@@ -575,11 +190,11 @@ namespace Dacs7.Protocols
             {
                 return ReceivedReadJob(buffer);
             }
-            else if(datagramType == typeof(S7WriteJobAckDatagram))
+            else if (datagramType == typeof(S7WriteJobAckDatagram))
             {
                 return ReceivedWriteJobAck(buffer);
             }
-            else if(datagramType == typeof(S7PlcBlockInfoAckDatagram))
+            else if (datagramType == typeof(S7PlcBlockInfoAckDatagram))
             {
                 return ReceivedS7PlcBlockInfoAckDatagram(buffer);
             }
@@ -596,6 +211,20 @@ namespace Dacs7.Protocols
                 return ReceivedS7AlarmIndicationDatagram(buffer);
             }
             return Task.CompletedTask;
+        }
+
+
+        private async Task StartS7CommunicationSetup()
+        {
+            var sendData = BuildForSelectedContext(S7CommSetupDatagram
+                                            .TranslateToMemory(
+                                                S7CommSetupDatagram
+                                                .Build(_s7Context, GetNextReferenceId())));
+            var result = await _socket.SendAsync(sendData);
+            if (result == SocketError.Success)
+            {
+                UpdateConnectionState(ConnectionState.PendingOpenPlc);
+            }
         }
 
         private async Task ReceivedCommunicationSetupJob(Memory<byte> buffer)
@@ -636,138 +265,7 @@ namespace Dacs7.Protocols
             return Task.CompletedTask;
         }
 
-        private Task ReceivedReadJobAck(Memory<byte> buffer)
-        {
-            var data = S7ReadJobAckDatagram.TranslateFromMemory(buffer);
 
-            if(_readHandler.TryGetValue(data.Header.Header.ProtocolDataUnitReference, out var cbh))
-            {
-                if (data.Data == null)
-                {
-                    _logger.LogWarning("No data from read ack received for reference {0}", data.Header.Header.ProtocolDataUnitReference);
-                }
-                cbh.Event.Set(data.Data);
-            }
-            else
-            {
-                _logger.LogWarning("No read handler found for received read ack reference {0}", data.Header.Header.ProtocolDataUnitReference);
-            }
-
-            return Task.CompletedTask;
-        }
-
-        private Task ReceivedReadJob(Memory<byte> buffer)
-        {
-            var data = S7ReadJobDatagram.TranslateFromMemory(buffer);
-
-            if (_readHandler.TryGetValue(data.Header.ProtocolDataUnitReference, out var cbh))
-            {
-                cbh.Event.Set(_defaultReadJobResult);
-            }
-            else
-            {
-                _logger.LogWarning("No read handler found for received read job reference {0}", data.Header.ProtocolDataUnitReference);
-            }
-
-            return Task.CompletedTask;
-        }
-
-        private Task ReceivedWriteJobAck(Memory<byte> buffer)
-        {
-            var data = S7WriteJobAckDatagram.TranslateFromMemory(buffer);
-
-            if (_writeHandler.TryGetValue(data.Header.Header.ProtocolDataUnitReference, out var cbh))
-            {
-                if(data.Data == null)
-                {
-                    _logger.LogWarning("No data from write ack received for reference {0}", data.Header.Header.ProtocolDataUnitReference);
-                }
-
-                cbh.Event.Set(data.Data);
-            }
-            else
-            {
-                _logger.LogWarning("No write handler found for received write ack reference {0}", data.Header.Header.ProtocolDataUnitReference);
-            }
-
-            return Task.CompletedTask;
-        }
-
-        private Task ReceivedS7PlcBlockInfoAckDatagram(Memory<byte> buffer)
-        {
-            var data = S7PlcBlockInfoAckDatagram.TranslateFromMemory(buffer);
-
-            if (_blockInfoHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out var cbh))
-            {
-                if (data.UserData.Data == null)
-                {
-                    _logger.LogWarning("No data from blockinfo ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
-                }
-                cbh.Event.Set(data);
-            }
-            else
-            {
-                _logger.LogWarning("No block info handler found for received read ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
-            }
-
-            return Task.CompletedTask;
-        }
-
-        private Task ReceivedS7PendingAlarmsAckDatagram(Memory<byte> buffer)
-        {
-            var data = S7PendingAlarmAckDatagram.TranslateFromMemory(buffer);
-
-            if (_alarmHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out var cbh))
-            {
-                if (data.UserData.Data == null)
-                {
-                    _logger.LogWarning("No data from pending alarm  ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
-                }
-                cbh.Event.Set(data);
-            }
-            else
-            {
-                _logger.LogWarning("No read handler found for received pending alarm ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
-            }
-
-            return Task.CompletedTask;
-        }
-
-        private Task ReceivedS7AlarmUpdateAckDatagram(Memory<byte> buffer)
-        {
-            var data = S7AlarmUpdateAckDatagram.TranslateFromMemory(buffer);
-
-            if (_alarmUpdateHandler.Id != 0)
-            {
-                if (data.UserData.Data == null)
-                {
-                    _logger.LogWarning("No data from alarm update ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
-                }
-                _alarmUpdateHandler.Event.Set(data);
-            }
-            else
-            {
-                _logger.LogWarning("No read handler found for received alarm update ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
-            }
-
-            return Task.CompletedTask;
-        }
-
-        private Task ReceivedS7AlarmIndicationDatagram(Memory<byte> buffer)
-        {
-            var data = S7AlarmIndicationDatagram.TranslateFromMemory(buffer);
-            if (data.UserData.Data == null)
-            {
-                _logger.LogWarning("No data from alarm update ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
-            }
-
-            foreach (var handler in _alarmIndicationHandler.Values)
-            {
-                handler.Event.Set(data);
-            }
-
-            return Task.CompletedTask;
-        }
 
         private Task Closed()
         {
@@ -790,161 +288,7 @@ namespace Dacs7.Protocols
             }
         }
 
-        private IEnumerable<ReadPackage> CreateReadPackages(SiemensPlcProtocolContext s7Context, IEnumerable<ReadItem> vars)
-        {
-            var result = new List<ReadPackage>();
-            foreach (var item in vars.ToList().OrderByDescending(x => x.NumberOfItems))
-            {
-                var currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
-                if (currentPackage == null)
-                {
-                    if (item.NumberOfItems > s7Context.ReadItemMaxLength)
-                    {
-                        ushort bytesToRead = item.NumberOfItems;
-                        ushort processed = 0;
-                        while (bytesToRead > 0)
-                        {
-                            var slice = Math.Min(_s7Context.ReadItemMaxLength, bytesToRead);
-                            var child = ReadItem.CreateChild(item, (item.Offset + processed), slice);
-                            if (slice < _s7Context.ReadItemMaxLength)
-                            {
-                                currentPackage = result.FirstOrDefault(package => package.TryAdd(child));
-                            }
 
-                            if (currentPackage == null)
-                            {
-                                currentPackage = new ReadPackage(s7Context.PduSize);
-                                if (currentPackage.TryAdd(child))
-                                {
-                                    if (currentPackage.Full)
-                                    {
-                                        yield return currentPackage.Return();
-                                        if (currentPackage.Handled)
-                                        {
-                                            currentPackage = null;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        result.Add(currentPackage);
-                                    }
-                                }
-                                else
-                                {
-                                    throw new InvalidOperationException();
-                                }
-                            }
-                            processed += slice;
-                            bytesToRead -= slice;
-                        }
-                    }
-                    else
-                    {
-                        currentPackage = new ReadPackage(s7Context.PduSize);
-                        result.Add(currentPackage);
-                        if (!currentPackage.TryAdd(item))
-                        {
-                            throw new InvalidOperationException();
-                        }
-                    }
-                }
-
-                if (currentPackage != null)
-                {
-                    if (currentPackage.Full)
-                    {
-                        yield return currentPackage.Return();
-                    }
-
-                    if (currentPackage.Handled)
-                    {
-                        result.Remove(currentPackage);
-                    }
-                }
-            }
-            foreach (var package in result)
-            {
-                yield return package.Return();
-            }
-        }
-
-        private IEnumerable<WritePackage> CreateWritePackages(SiemensPlcProtocolContext s7Context, IEnumerable<WriteItem> vars)
-        {
-            var result = new List<WritePackage>();
-            foreach (var item in vars.ToList().OrderByDescending(x => x.NumberOfItems))
-            {
-                var currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
-                if (currentPackage == null)
-                {
-                    if (item.NumberOfItems > s7Context.WriteItemMaxLength)
-                    {
-                        ushort bytesToWrite = item.NumberOfItems;
-                        ushort processed = 0;
-                        while (bytesToWrite > 0)
-                        {
-                            var slice = Math.Min(_s7Context.WriteItemMaxLength, bytesToWrite);
-                            var child = WriteItem.CreateChild(item, (ushort)(item.Offset + processed), slice);
-                            if (slice < _s7Context.WriteItemMaxLength)
-                            {
-                                currentPackage = result.FirstOrDefault(package => package.TryAdd(child));
-                            }
-
-                            if (currentPackage == null)
-                            {
-                                currentPackage = new WritePackage(s7Context.PduSize);
-                                if (currentPackage.TryAdd(child))
-                                {
-                                    if (currentPackage.Full)
-                                    {
-                                        yield return currentPackage.Return();
-                                        if (currentPackage.Handled)
-                                        {
-                                            currentPackage = null;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        result.Add(currentPackage);
-                                    }
-                                }
-                                else
-                                {
-                                    throw new InvalidOperationException();
-                                }
-                            }
-                            processed += slice;
-                            bytesToWrite -= slice;
-                        }
-                    }
-                    else
-                    {
-                        currentPackage = new WritePackage(s7Context.PduSize);
-                        result.Add(currentPackage);
-                        if (!currentPackage.TryAdd(item))
-                        {
-                            throw new InvalidOperationException();
-                        }
-                    }
-                }
-
-                if (currentPackage != null)
-                {
-                    if (currentPackage.Full)
-                    {
-                        yield return currentPackage.Return();
-                    }
-
-                    if (currentPackage.Handled)
-                    {
-                        result.Remove(currentPackage);
-                    }
-                }
-            }
-            foreach (var package in result)
-            {
-                yield return package.Return();
-            }
-        }
 
     }
 }

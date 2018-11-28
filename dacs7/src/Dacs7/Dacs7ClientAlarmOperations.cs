@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Dacs7
+namespace Dacs7.Alarms
 {
-    public partial class Dacs7Client
+    public static class Dacs7ClientAlarmExtensions
     {
-        public Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync()
-            => _protocolHandler.ReadPendingAlarmsAsync();
+        public static Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync(this Dacs7Client client)
+            => client.ProtocolHandler.ReadPendingAlarmsAsync();
 
-        public Task<AlarmUpdateResult> ReceiveAlarmUpdatesAsync(CancellationToken ct)
-            => _protocolHandler.ReceiveAlarmUpdatesAsync(ct);
+        public static Task<AlarmUpdateResult> ReceiveAlarmUpdatesAsync(this Dacs7Client client, CancellationToken ct)
+            => client.ProtocolHandler.ReceiveAlarmUpdatesAsync(ct);
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Dacs7.Metadata;
 using System;
 
-namespace Dacs7
+namespace Dacs7.Metadata
 {
     public interface IPlcBlockInfo
     {

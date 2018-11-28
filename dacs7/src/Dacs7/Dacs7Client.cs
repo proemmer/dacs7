@@ -22,14 +22,16 @@ namespace Dacs7
     {
         private Dictionary<string, ReadItem> _registeredTags = new Dictionary<string, ReadItem>();
         private SiemensPlcProtocolContext _s7Context;
-        private ProtocolHandler _protocolHandler;
         private Dacs7ConnectionState _state = Dacs7ConnectionState.Closed;
         private ILogger _logger;
+
+        internal ProtocolHandler ProtocolHandler { get; private set; }
+        internal Dictionary<string, ReadItem> RegisteredTags => _registeredTags;
 
         /// <summary>
         /// True if the connection is fully applied
         /// </summary>
-        public bool IsConnected => _protocolHandler != null && _protocolHandler?.ConnectionState == ConnectionState.Opened;
+        public bool IsConnected => ProtocolHandler != null && ProtocolHandler?.ConnectionState == ConnectionState.Opened;
 
         /// <summary>
         /// Maximum Jobs calling
@@ -173,7 +175,7 @@ namespace Dacs7
                 Timeout = timeout
             };
 
-            _protocolHandler = new ProtocolHandler(transport, _s7Context, UpdateConnectionState, loggerFactory);
+            ProtocolHandler = new ProtocolHandler(transport, _s7Context, UpdateConnectionState, loggerFactory);
 
         }
 
@@ -182,20 +184,14 @@ namespace Dacs7
         /// Connect to the plc
         /// </summary>
         /// <returns></returns>
-        public Task ConnectAsync()
-        {
-            return _protocolHandler?.OpenAsync();
-        }
+        public Task ConnectAsync() => ProtocolHandler?.OpenAsync();
 
         /// <summary>
         /// Disconnect from the plc
         /// </summary>
         /// <returns></returns>
-        public Task DisconnectAsync()
-        {
-            return _protocolHandler?.CloseAsync();
-        }
-
+        public Task DisconnectAsync() => ProtocolHandler?.CloseAsync();
+    
 
 
 
@@ -217,7 +213,7 @@ namespace Dacs7
             }
         }
 
-        private ReadItem RegisteredOrGiven(string tag)
+        internal ReadItem RegisteredOrGiven(string tag)
         {
             if (_registeredTags.TryGetValue(tag, out var nodeId))
             {
@@ -226,22 +222,7 @@ namespace Dacs7
             return ReadItem.CreateFromTag(tag);
         }
 
-        private IEnumerable<ReadItem> CreateNodeIdCollection(IEnumerable<string> values)
-        {
-            return new List<ReadItem>(values.Select(item => RegisteredOrGiven(item)));
-        }
-
-        private IEnumerable<WriteItem> CreateWriteNodeIdCollection(IEnumerable<KeyValuePair<string, object>> values)
-        {
-            return new List<WriteItem>(values.Select(item =>
-            {
-                var result = RegisteredOrGiven(item.Key).Clone();
-                result.Data = result.ConvertDataToMemory(item.Value);
-                return result;
-            }));
-        }
-
-        private void UpdateRegistration(List<KeyValuePair<string, ReadItem>> toAdd, List<KeyValuePair<string, ReadItem>> toRemove)
+        internal void UpdateRegistration(List<KeyValuePair<string, ReadItem>> toAdd, List<KeyValuePair<string, ReadItem>> toRemove)
         {
             Dictionary<string, ReadItem> origin;
             Dictionary<string, ReadItem> newDict;

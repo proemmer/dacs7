@@ -1,4 +1,5 @@
 ﻿using Dacs7;
+using Dacs7.Alarms;
 using Dacs7Cli.Options;
 using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Logging;

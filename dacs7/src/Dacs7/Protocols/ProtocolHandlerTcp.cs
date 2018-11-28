@@ -1,10 +1,7 @@
 ﻿using Dacs7.Protocols.Rfc1006;
 using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Dacs7.Protocols

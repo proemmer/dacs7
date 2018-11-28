@@ -47,10 +47,7 @@ namespace Dacs7.Protocols.SiemensPlc
         public UInt16 WriteItemMaxLength { get { return (UInt16)(PduSize - 28); } } //28 Header and some other data
 
 
-
-
-
-
+        #region datagram detection
 
         public bool TryDetectDatagramType(Memory<byte> memory, out Type datagramType)
         {
@@ -117,7 +114,6 @@ namespace Dacs7.Protocols.SiemensPlc
             return false;
         }
 
-
         private bool TryDetectUserDataDataType(Memory<byte> memory, out Type datagramType)
         {
             if (memory.Length > 22)
@@ -158,5 +154,7 @@ namespace Dacs7.Protocols.SiemensPlc
             datagramType = null;
             return false;
         }
+
+        #endregion
     }
 }

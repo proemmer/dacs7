@@ -1,9 +1,8 @@
-﻿using Dacs7.Metadata;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
-namespace Dacs7
+namespace Dacs7.Metadata
 {
-    public partial class Dacs7Client
+    public static class Dacs7ClientMetadataExtensions
     {
 
         /// <summary>
@@ -12,9 +11,9 @@ namespace Dacs7
         /// <param name="blockType">Specify the block type to read. e.g. DB   <see cref="PlcBlockType"/></param>
         /// <param name="blocknumber">Specify the Number of the block</param>
         /// <returns><see cref="IPlcBlockInfo"/> where you have access tho the detailed meta data of the block.</returns>
-        public async Task<IPlcBlockInfo> ReadBlockInfoAsync(PlcBlockType type, int blocknumber)
+        public static async Task<IPlcBlockInfo> ReadBlockInfoAsync(this Dacs7Client client, PlcBlockType type, int blocknumber)
         {
-            var result =  await _protocolHandler.ReadBlockInfoAsync(type, blocknumber);
+            var result =  await client.ProtocolHandler.ReadBlockInfoAsync(type, blocknumber);
             if(result != null)
             {
                 return new PlcBlockInfo
