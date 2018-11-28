@@ -1,7 +1,9 @@
-﻿using System;
-using System.Buffers;
+﻿using Dacs7.Alarms;
+using Dacs7.Domain;
+using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
@@ -9,6 +11,9 @@ namespace Dacs7.Protocols.SiemensPlc
     internal class S7PendingAlarmAckDatagram
     {
         public S7UserDataDatagram UserData { get; set; }
+
+        public ushort TotalLength { get; set; }
+
 
         public static S7PendingAlarmAckDatagram TranslateFromMemory(Memory<byte> data)
         {
@@ -20,28 +25,50 @@ namespace Dacs7.Protocols.SiemensPlc
         }
 
 
-        public static List<S7PlcAlarmItemDatagram> TranslateFromSslData(ReadOnlySequence<byte> sequence)
+
+        public static List<IPlcAlarm> TranslateFromSslData(Memory<byte> memory, int size)
         {
-            var functionCode = sequence.Slice(0);
+            // We do not need the header
+            var result = new List<IPlcAlarm>();
+            var offset = 6;
+            var span = memory.Span;
+            while (offset < size)
+            {
+                var item = new S7PlcAlarmItemDatagram
+                {
+                    Length = span[offset++],
+                    TransportSize = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2))
+                };
+                offset += 2;
+                item.AlarmType = span[offset++] == 4 ? AlarmMessageType.Alarm_S : AlarmMessageType.Unknown;
+                item.MsgNumber = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(offset, 4));
+                offset += 2; // 2 is correct, we use the offset twice
+                item.Id = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2));
+                offset += 2;
 
-            // TODO: find out how we can work with ReadOnlySequence<byte>  !!!!!!
+                item.EventState = span[offset++];// 0x00 == going   0x01  == coming
+                item.State = span[offset++];// isAck
+                item.AckStateGoing = span[offset++];
+                item.AckStateComing = span[offset++]; // 0x00 == no ack  0x01  == ack
 
-            //              result.BlockType = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
-            //result.LengthOfInfo = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
-            //result.Unknown1 = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
-            //result.Const1 = span[offset++];
-            //result.Const2 = span[offset++];
+                if (size >= offset + 12)
+                {
+                    item.Coming = S7PlcAlarmDetails.ExtractDetails(ref span, ref offset);
+                    
+                }
+                if (size >= offset + 12)
+                {
+                    item.Going = S7PlcAlarmDetails.ExtractDetails(ref span, ref offset);
+                }
 
-            return new List<S7PlcAlarmItemDatagram>();
+                result.Add(item);
+            }
+
+            return result;
         }
 
 
-        public static DateTime GetDt(Span<byte> b)
-        {
-            var dt = new DateTime(1984, 1, 1, 0, 0, 0, 0);
-            dt = dt.AddMilliseconds(BinaryPrimitives.ReadUInt32BigEndian(b));
-            dt = dt.AddDays(BinaryPrimitives.ReadUInt16BigEndian(b.Slice(4)));
-            return dt;
-        }
+
+        
     }
 }

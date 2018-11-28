@@ -4,15 +4,16 @@ using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dacs7Cli
 {
-    internal static class ReadAlarmsCommand
+    internal static class WatchAlarmsCommand
     {
         internal static void Register(CommandLineApplication app)
         {
-            app.Command("readalarms", cmd =>
+            app.Command("watchalarms", cmd =>
             {
                 cmd.Description = "Read alarms from the plc.";
 
@@ -67,11 +68,36 @@ namespace Dacs7Cli
                 {
                     var sw = new Stopwatch();
                     sw.Start();
-                    var results = await client.ReadPendingAlarmsAsync();
-                    foreach (var alarm in results)
+                    var c = new CancellationTokenSource();
+                    _ = Task.Factory.StartNew(() =>
                     {
-                        Console.WriteLine($"Alarm update: ID: {alarm.Id}   MsgNumber: {alarm.MsgNumber}  IsAck: {alarm.IsAck} ", alarm);
+                        Console.ReadKey();
+                        c.Cancel();
+                    });
+
+
+                    while (true)
+                    {
+                        var results = await client.ReceiveAlarmUpdatesAsync(c.Token);
+                        if (results.HasAlarms)
+                        {
+                            foreach (var alarm in results.Alarms)
+                            {
+                                Console.WriteLine($"Alarm update: ID: {alarm.Id}   MsgNumber: {alarm.MsgNumber}  IsAck: {alarm.IsAck} ", alarm);
+                            }
+                        }
+                        else if (!results.ChannelClosed)
+                        {
+                            await results.CloseUpdateChannel();
+                            break;
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
+
+
                     sw.Stop();
                     msTotal += sw.ElapsedMilliseconds;
                     logger?.LogDebug($"ReadAlarmsTime: {sw.Elapsed}");

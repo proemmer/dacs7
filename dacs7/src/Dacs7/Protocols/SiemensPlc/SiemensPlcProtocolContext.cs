@@ -143,6 +143,12 @@ namespace Dacs7.Protocols.SiemensPlc
                                 case UserDataSubFunctionCpu.AlarmInit:  // Pending Alarms
                                     datagramType = typeof(S7PendingAlarmAckDatagram);
                                     return true;
+                                case UserDataSubFunctionCpu.Msgs:  // Registration Ok
+                                    datagramType = typeof(S7AlarmUpdateAckDatagram);
+                                    return true;
+                                case UserDataSubFunctionCpu.AlarmInd:  // Alarm Received
+                                    datagramType = typeof(S7AlarmIndicationDatagram);
+                                    return true;
                             }
                         }
                         break;

@@ -12,11 +12,37 @@ namespace Dacs7
         private bool _signaled;
         private T _lastValue = default;
 
-        public AsyncAutoResetEvent()
+
+        /// <summary>
+        /// Waits async of an event or the given timeout.
+        /// </summary>
+        /// <param name="timeout">Maximnm time to wait  (-1 = endless wait)</param>
+        /// <returns>The value which wase applied on calling set.</returns>
+        public Task<T> WaitAsync(int timeout = -1)
         {
+            if (timeout == 0)
+            {
+                return WaitAsync(new CancellationToken(timeout == 0));
+            }
+            else if (timeout > -1)
+            {
+                var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeout));
+                return WaitAsync(cts.Token).ContinueWith<T>(t =>
+                {
+                    if (cts != null) cts.Dispose();
+                    return t.Result;
+                });
+            }
+            return WaitAsync(CancellationToken.None);
         }
 
-        public Task<T> WaitAsync(int timeout = -1)
+
+        /// <summary>
+        /// Waits async of an event or the when it will be cancelled by the <see cref="CancellationToken"/>.
+        /// </summary>
+        /// <param name="token">The waiting phase can be cancelled by the source of the given token.</param>
+        /// <returns>The value which wase applied on calling set.</returns>
+        public Task<T> WaitAsync(CancellationToken token)
         {
             lock (_waits)
             {
@@ -27,39 +53,41 @@ namespace Dacs7
                     _signaled = false;
                     return result;
                 }
-                else if (timeout == 0)
+                else if (token.IsCancellationRequested)
                 {
                     return _completed;
                 }
                 else
                 {
-
-                    var tcs = new TaskCompletionSource<T>();
                     CancellationTokenRegistration registration = default;
-                    CancellationTokenSource cts = null;
-                    if (timeout > -1)
+                    var tcs = new TaskCompletionSource<T>();
+                    if (token != CancellationToken.None)
                     {
-                        cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeout));
-                        registration = cts.Token.Register(() =>
+                        registration = token.Register(() =>
                         {
                             tcs.TrySetResult(default);
                         }, false);
                     }
+
                     _waits.Enqueue(tcs);
                     return tcs.Task.ContinueWith<T>(t =>
                     {
-                        if (cts != null)
+                        if (token != CancellationToken.None)
                         {
                             registration.Dispose();
-                            cts.Dispose();
                         }
                         return t.Result;
                     });
-
-
                 }
             }
         }
+
+
+        /// <summary>
+        /// Set a value for the Event.
+        /// </summary>
+        /// <param name="value">Vslue to set</param>
+        /// <returns>true if the value could be set.</returns>
         public bool Set(T value)
         {
             TaskCompletionSource<T> toRelease = null;

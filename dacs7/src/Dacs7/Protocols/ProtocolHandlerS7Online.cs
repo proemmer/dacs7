@@ -1,4 +1,5 @@
-﻿using Dacs7.Exceptions;
+﻿using Dacs7.Alarms;
+using Dacs7.Exceptions;
 using Dacs7.Protocols.Fdl;
 using Dacs7.Protocols.Rfc1006;
 using System;
@@ -23,6 +24,8 @@ namespace Dacs7.Protocols
             Connected,
             Broken
         }
+
+
 
         private S7OnlineStates _s7OnlineState;
 
