@@ -10,7 +10,7 @@ namespace Dacs7.Communication
 
     internal class ClientSocket : SocketBase
     {
-        private Socket _socket;
+        private System.Net.Sockets.Socket _socket;
         private readonly ClientSocketConfiguration _config;
         public override string Identity
         {
@@ -62,7 +62,7 @@ namespace Dacs7.Communication
             {
                 if (_shutdown) return;
                 _identity = null;
-                _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+                _socket = new System.Net.Sockets.Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
                 {
                     ReceiveBufferSize = _configuration.ReceiveBufferSize,
                     NoDelay = true

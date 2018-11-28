@@ -46,7 +46,7 @@ namespace Dacs7.ReadWrite
         }
 
 
-        private static  IEnumerable<ReadItem> CreateNodeIdCollection(this Dacs7Client client, IEnumerable<string> values)
+        internal static  IEnumerable<ReadItem> CreateNodeIdCollection(this Dacs7Client client, IEnumerable<string> values)
         {
             return new List<ReadItem>(values.Select(item => client.RegisteredOrGiven(item)));
         }

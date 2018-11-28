@@ -19,7 +19,7 @@ namespace Dacs7.Protocols
                 throw new Dacs7NotConnectedException();
 
             var id = GetNextReferenceId();
-            var sendData = BuildForSelectedContext(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlockInfoRequest(_s7Context, id, type, blocknumber)));
+            var sendData = _transport.Build(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlockInfoRequest(_s7Context, id, type, blocknumber)));
 
 
             try
@@ -31,7 +31,7 @@ namespace Dacs7.Protocols
                     _blockInfoHandler.TryAdd(cbh.Id, cbh);
                     try
                     {
-                        if (await _socket.SendAsync(sendData) != SocketError.Success)
+                        if (await _transport.Client.SendAsync(sendData) != SocketError.Success)
                             return null;
                         blockinfoResult = await cbh.Event.WaitAsync(_s7Context.Timeout);
                     }

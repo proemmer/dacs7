@@ -25,7 +25,7 @@ namespace Dacs7.Protocols
             {
                 var id = GetNextReferenceId();
                 CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh;
-                var sendData = BuildForSelectedContext(S7WriteJobDatagram.TranslateToMemory(S7WriteJobDatagram.BuildWrite(_s7Context, id, normalized.Items)));
+                var sendData = _transport.Build(S7WriteJobDatagram.TranslateToMemory(S7WriteJobDatagram.BuildWrite(_s7Context, id, normalized.Items)));
                 try
                 {
                     IEnumerable<S7DataItemWriteResult> writeResults = null;
@@ -35,7 +35,7 @@ namespace Dacs7.Protocols
                         _writeHandler.TryAdd(cbh.Id, cbh);
                         try
                         {
-                            if (await _socket.SendAsync(sendData) != SocketError.Success)
+                            if (await _transport.Client.SendAsync(sendData) != SocketError.Success)
                                 return new List<ItemResponseRetValue>();
                             writeResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
                         }

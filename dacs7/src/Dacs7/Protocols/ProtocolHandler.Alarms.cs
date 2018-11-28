@@ -37,7 +37,7 @@ namespace Dacs7.Protocols
                 S7PendingAlarmAckDatagram alarmResults = null;
                 do
                 {
-                    var sendData = BuildForSelectedContext(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildPendingAlarmRequest(_s7Context, id, sequenceNumber)));
+                    var sendData = _transport.Build(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildPendingAlarmRequest(_s7Context, id, sequenceNumber)));
 
                     using (await SemaphoreGuard.Async(_concurrentJobs))
                     {
@@ -45,7 +45,7 @@ namespace Dacs7.Protocols
                         _alarmHandler.TryAdd(cbh.Id, cbh);
                         try
                         {
-                            if (await _socket.SendAsync(sendData) != SocketError.Success)
+                            if (await _transport.Client.SendAsync(sendData) != SocketError.Success)
                                 return null;
 
                             alarmResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
@@ -129,7 +129,7 @@ namespace Dacs7.Protocols
             if (_alarmUpdateHandler.Id == 0)
             {
                 var id = GetNextReferenceId();
-                var sendData = BuildForSelectedContext(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildAlarmUpdateRequest(_s7Context, id)));
+                var sendData = _transport.Build(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildAlarmUpdateRequest(_s7Context, id)));
                 using (await SemaphoreGuard.Async(_concurrentJobs))
                 {
                     if (_alarmUpdateHandler.Id == 0)
@@ -138,7 +138,7 @@ namespace Dacs7.Protocols
                         _alarmUpdateHandler = cbh;
                         try
                         {
-                            if (await _socket.SendAsync(sendData) != SocketError.Success)
+                            if (await _transport.Client.SendAsync(sendData) != SocketError.Success)
                                 return false;
 
                             await cbh.Event.WaitAsync(_s7Context.Timeout);
@@ -158,7 +158,7 @@ namespace Dacs7.Protocols
         {
             if (_alarmUpdateHandler.Id != 0)
             {
-                var sendData = BuildForSelectedContext(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildAlarmUpdateRequest(_s7Context, _alarmUpdateHandler.Id, false)));
+                var sendData = _transport.Build(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildAlarmUpdateRequest(_s7Context, _alarmUpdateHandler.Id, false)));
                 using (await SemaphoreGuard.Async(_concurrentJobs))
                 {
                     if (_alarmUpdateHandler.Id != 0)
@@ -166,7 +166,7 @@ namespace Dacs7.Protocols
 
                         try
                         {
-                            if (await _socket.SendAsync(sendData) != SocketError.Success)
+                            if (await _transport.Client.SendAsync(sendData) != SocketError.Success)
                                 return false;
 
                             await _alarmUpdateHandler.Event.WaitAsync(_s7Context.Timeout);

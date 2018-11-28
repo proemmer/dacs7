@@ -1,49 +1,37 @@
-﻿using Dacs7.Alarms;
-using Dacs7.Communication;
-using Dacs7.Exceptions;
-using Dacs7.Helper;
-using Dacs7.Metadata;
+﻿using Dacs7.Communication;
 using Dacs7.Protocols.Fdl;
 using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Buffers;
-using System.Buffers.Binary;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dacs7.Protocols
 {
-
+    internal delegate Task OnUpdateConnectionState(ConnectionState state);
+    internal delegate Task<bool> OnDetectAndReceive(Memory<byte> payload);
+    internal delegate ConnectionState OnGetConnectionState();
 
     internal partial class ProtocolHandler
     {
         private bool _closeCalled;
-        private SocketBase _socket;
-        private Rfc1006ProtocolContext _RfcContext;
-        private FdlProtocolContext _FdlContext;
+        private readonly Transport _transport;
         private SiemensPlcProtocolContext _s7Context;
         private AsyncAutoResetEvent<bool> _connectEvent = new AsyncAutoResetEvent<bool>();
         private SemaphoreSlim _concurrentJobs;
         private ILogger _logger;
         
         
-        
-        
-
-
+       
         private int _referenceId;
         private readonly object _idLock = new object();
         private Action<ConnectionState> _connectionStateChanged;
 
         public ConnectionState ConnectionState { get; private set; } = ConnectionState.Closed;
 
-        internal UInt16 GetNextReferenceId()
+        internal ushort GetNextReferenceId()
         {
             var id = Interlocked.Increment(ref _referenceId);
 
@@ -69,32 +57,17 @@ namespace Dacs7.Protocols
                                 ILoggerFactory loggerFactory)
         {
             _logger = loggerFactory?.CreateLogger<ProtocolHandler>();
+            _transport = transport;
             _s7Context = s7Context;
             _connectionStateChanged = connectionStateChanged;
             _logger?.LogDebug("S7Protocol-Timeout is {0} ms", _s7Context.Timeout);
 
-            if (transport.ProtocolContext is Rfc1006ProtocolContext rfcContext)
-            {
-                _logger?.LogDebug("Creating clientSocket for RFC1006 protocol!");
-                _RfcContext = rfcContext;
-                _socket = new ClientSocket(transport.Configuration as ClientSocketConfiguration, loggerFactory)
-                {
-                    OnRawDataReceived = OnTcpSocketRawDataReceived,
-                    OnConnectionStateChanged = OnTcpSocketConnectionStateChanged
-                };
-                _logger?.LogDebug("ClientSocket created!");
-            }
-            else if(transport.ProtocolContext is FdlProtocolContext fdlContext)
-            {
-                _logger?.LogDebug("Creating S7OnlineClient for FDL protocol!");
-                _FdlContext = fdlContext;
-                _socket = new S7OnlineClient(transport.Configuration as S7OnlineConfiguration, loggerFactory)
-                {
-                    OnRawDataReceived = OnS7OnlineRawDataReceived,
-                    OnConnectionStateChanged = OnS7OnlineConnectionStateChanged
-                };
-                _logger?.LogDebug("S7OnlineClient created!");
-            }
+
+            transport.OnUpdateConnectionState = UpdateConnectionState;
+            transport.OnDetectAndReceive = DetectAndReceive;
+            transport.OnGetConnectionState = () => ConnectionState;
+            transport.ConfigureClient(loggerFactory);
+
         }
 
 
@@ -103,7 +76,7 @@ namespace Dacs7.Protocols
             try
             {
                 _closeCalled = false;
-                await _socket.OpenAsync();
+                await _transport.Client.OpenAsync();
                 try
                 {
                     if (!await _connectEvent.WaitAsync(_s7Context.Timeout * 10))
@@ -153,23 +126,20 @@ namespace Dacs7.Protocols
                 _alarmUpdateHandler.Event?.Set(null);
                 await DisableAlarmUpdatesAsync();
             }
-            await _socket.CloseAsync();
+            await _transport.Client.CloseAsync();
             await Task.Delay(1); // This ensures that the user can call connect after reconnect. (Otherwise he has so sleep for a while)
         }
 
 
 
-        private Memory<byte> BuildForSelectedContext(Memory<byte> buffer)
+        private async Task<bool> DetectAndReceive(Memory<byte> payload)
         {
-            if (_RfcContext != null)
+            if (_s7Context.TryDetectDatagramType(payload, out var s7DatagramType))
             {
-                return BuildForTcp(buffer);
+                await S7DatagramReceived(s7DatagramType, payload);
+                return true;
             }
-            else if (_FdlContext != null)
-            {
-                return BuildForS7Online(buffer);
-            }
-            throw new InvalidOperationException();
+            return false;
         }
 
         private Task S7DatagramReceived(Type datagramType, Memory<byte> buffer)
@@ -213,28 +183,27 @@ namespace Dacs7.Protocols
             return Task.CompletedTask;
         }
 
-
         private async Task StartS7CommunicationSetup()
         {
-            var sendData = BuildForSelectedContext(S7CommSetupDatagram
+            var sendData = _transport.Build(S7CommSetupDatagram
                                             .TranslateToMemory(
                                                 S7CommSetupDatagram
                                                 .Build(_s7Context, GetNextReferenceId())));
-            var result = await _socket.SendAsync(sendData);
+            var result = await _transport.Client.SendAsync(sendData);
             if (result == SocketError.Success)
             {
-                UpdateConnectionState(ConnectionState.PendingOpenPlc);
+                await UpdateConnectionState(ConnectionState.PendingOpenPlc);
             }
         }
 
         private async Task ReceivedCommunicationSetupJob(Memory<byte> buffer)
         {
             var data = S7CommSetupDatagram.TranslateFromMemory(buffer);
-            var sendData = BuildForSelectedContext(S7CommSetupAckDataDatagram
+            var sendData = _transport.Build(S7CommSetupAckDataDatagram
                                                     .TranslateToMemory(
                                                         S7CommSetupAckDataDatagram
                                                         .BuildFrom(_s7Context, data)));
-            var result = await _socket.SendAsync(sendData);
+            var result = await _transport.Client.SendAsync(sendData);
             if (result == SocketError.Success)
             {
                 //UpdateConnectionState(ConnectionState.PendingOpenPlc);
@@ -242,14 +211,8 @@ namespace Dacs7.Protocols
                 _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalling;
                 _s7Context.PduSize = data.Parameter.PduLength;
                 _concurrentJobs = new SemaphoreSlim(_s7Context.MaxAmQCalling);
-                UpdateConnectionState(ConnectionState.Opened);
+                await UpdateConnectionState(ConnectionState.Opened);
             }
-        }
-
-        private Task TransportOpened()
-        {
-            UpdateConnectionState(ConnectionState.TransportOpened);
-            return StartS7CommunicationSetup();
         }
 
         private Task ReceivedCommunicationSetupAck(Memory<byte> buffer)
@@ -259,30 +222,30 @@ namespace Dacs7.Protocols
             _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalled;
             _s7Context.PduSize = data.Parameter.PduLength;
             _concurrentJobs = new SemaphoreSlim(_s7Context.MaxAmQCalling);
-            UpdateConnectionState(ConnectionState.Opened);
+            _ = UpdateConnectionState(ConnectionState.Opened);
             _connectEvent.Set(true);
 
             return Task.CompletedTask;
         }
 
-
-
-        private Task Closed()
-        {
-            UpdateConnectionState(ConnectionState.Closed);
-
-            if (_concurrentJobs != null)
-            {
-                _concurrentJobs.Dispose();
-                _concurrentJobs = null;
-            }
-            return Task.CompletedTask;
-        }
-
-        private void UpdateConnectionState(ConnectionState state)
+        private async Task UpdateConnectionState(ConnectionState state)
         {
             if (ConnectionState != state)
             {
+
+                if (state == ConnectionState.TransportOpened)
+                {
+                    await StartS7CommunicationSetup();
+                }
+                else if(state == ConnectionState.Closed)
+                {
+                    if (_concurrentJobs != null)
+                    {
+                        _concurrentJobs.Dispose();
+                        _concurrentJobs = null;
+                    }
+                }
+
                 ConnectionState = state;
                 _connectionStateChanged?.Invoke(state);
             }

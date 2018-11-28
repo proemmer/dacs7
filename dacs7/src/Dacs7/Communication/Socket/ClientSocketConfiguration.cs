@@ -17,7 +17,7 @@ namespace Dacs7.Communication
         {
         }
 
-        public static ClientSocketConfiguration FromSocket(Socket socket)
+        public static ClientSocketConfiguration FromSocket(System.Net.Sockets.Socket socket)
         {
             var ep = socket.RemoteEndPoint as IPEndPoint;
             var keepAlive = socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.KeepAlive);

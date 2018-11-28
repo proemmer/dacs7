@@ -25,7 +25,7 @@ namespace Dacs7.Protocols
             foreach (var normalized in CreateReadPackages(_s7Context, vars))
             {
                 var id = GetNextReferenceId();
-                var sendData = BuildForSelectedContext(S7ReadJobDatagram.TranslateToMemory(S7ReadJobDatagram.BuildRead(_s7Context, id, normalized.Items)));
+                var sendData = _transport.Build(S7ReadJobDatagram.TranslateToMemory(S7ReadJobDatagram.BuildRead(_s7Context, id, normalized.Items)));
 
 
                 try
@@ -37,7 +37,7 @@ namespace Dacs7.Protocols
                         _readHandler.TryAdd(cbh.Id, cbh);
                         try
                         {
-                            if (await _socket.SendAsync(sendData) != SocketError.Success)
+                            if (await _transport.Client.SendAsync(sendData) != SocketError.Success)
                                 return new List<S7DataItemSpecification>();
                             readResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
                         }
