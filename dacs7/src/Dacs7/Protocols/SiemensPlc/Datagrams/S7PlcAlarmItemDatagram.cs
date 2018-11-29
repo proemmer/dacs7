@@ -15,7 +15,9 @@ namespace Dacs7.Protocols.SiemensPlc
         public ushort Id { get; set; }
         public ushort Unknown2 { get; set; }
 
-    
+        /// <summary>
+        /// 0x00 == going   0x01  == coming
+        /// </summary>
         public byte EventState{ get; set; }
 
         public byte State{ get; set; }
@@ -30,7 +32,8 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
         public bool IsAck => AlarmType == AlarmMessageType.Alarm_Ack;
-
+        public bool IsGoing => EventState == 0x00;
+        public bool IsComing => EventState == 0x01;
     }
 
     public class S7PlcAlarmDetails : IPlcAlarmDetails

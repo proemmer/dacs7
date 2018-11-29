@@ -28,5 +28,7 @@
 
 
         bool IsAck { get; }
+        bool IsGoing { get; }
+        bool IsComing { get; }
     }
 }
