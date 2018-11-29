@@ -9,6 +9,11 @@ namespace Dacs7.ReadWrite
     {
 
         /// <summary>
+        /// The maximum write item length of a single telegram.
+        /// </summary>
+        public static ushort GetWriteItemMaxLength(this Dacs7Client client) => client.S7Context != null ? client.S7Context.WriteItemMaxLength : (ushort)0;
+
+        /// <summary>
         /// Writes data from the plc.
         /// </summary>
         /// <param name="values">a list of tags with the following syntax Area.Offset,DataType[,length]</param>

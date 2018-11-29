@@ -1,7 +1,4 @@
-﻿using Dacs7.Communication;
-using Dacs7.Protocols.Fdl;
-using Dacs7.Protocols.Rfc1006;
-using Dacs7.Protocols.SiemensPlc;
+﻿using Dacs7.Protocols.SiemensPlc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Sockets;
@@ -22,9 +19,6 @@ namespace Dacs7.Protocols
         private AsyncAutoResetEvent<bool> _connectEvent = new AsyncAutoResetEvent<bool>();
         private SemaphoreSlim _concurrentJobs;
         private ILogger _logger;
-        
-        
-       
         private int _referenceId;
         private readonly object _idLock = new object();
         private Action<ConnectionState> _connectionStateChanged;
@@ -227,6 +221,8 @@ namespace Dacs7.Protocols
 
             return Task.CompletedTask;
         }
+
+
 
         private async Task UpdateConnectionState(ConnectionState state)
         {

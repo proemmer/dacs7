@@ -6,6 +6,12 @@ namespace Dacs7.ReadWrite
 {
     public static class Dacs7ClientReadExtensions
     {
+        ///// <summary>
+        ///// The maximum read item length of a single telegram.
+        ///// </summary>
+        public static ushort GetReadItemMaxLength(this Dacs7Client client) => client.S7Context != null ? client.S7Context.ReadItemMaxLength : (ushort)0;
+
+
 
         /// <summary>
         /// Reads data from the plc.

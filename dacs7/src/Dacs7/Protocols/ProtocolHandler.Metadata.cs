@@ -62,7 +62,6 @@ namespace Dacs7.Protocols
         }
 
 
-
         private Task ReceivedS7PlcBlockInfoAckDatagram(Memory<byte> buffer)
         {
             var data = S7PlcBlockInfoAckDatagram.TranslateFromMemory(buffer);

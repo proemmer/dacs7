@@ -29,6 +29,7 @@ namespace Dacs7
 
         internal ProtocolHandler ProtocolHandler { get; private set; }
         internal Dictionary<string, ReadItem> RegisteredTags => _registeredTags;
+        internal SiemensPlcProtocolContext S7Context => _s7Context;
 
         /// <summary>
         /// True if the connection is fully applied
@@ -92,15 +93,6 @@ namespace Dacs7
             }
         }
 
-        /// <summary>
-        /// The maximum read item length of a single telegram.
-        /// </summary>
-        public ushort ReadItemMaxLength => _s7Context != null ? _s7Context.ReadItemMaxLength : (ushort)0;
-
-        /// <summary>
-        /// The maximum write item length of a single telegram.
-        /// </summary>
-        public ushort WriteItemMaxLength => _s7Context != null ? _s7Context.PduSize : (ushort)0;
 
         /// <summary>
         /// Register to the connection state events
