@@ -110,7 +110,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
             if (t == typeof(char))
             {
-                return (byte)DataTransportSize.Byte;
+                return (byte)DataTransportSize.OctetString;
             }
 
             if (t == typeof(short))

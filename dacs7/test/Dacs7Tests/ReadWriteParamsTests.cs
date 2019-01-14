@@ -364,7 +364,13 @@ namespace Dacs7Tests
                                                ReadItem.Create<char[]>(datablock, 86, 8),
                                                ReadItem.Create<char[]>(datablock, 94, 8),
                                                ReadItem.Create<char[]>(datablock, 116, 8),
-                                               ReadItem.Create<char[]>(datablock, 144, 10) };
+                                               ReadItem.Create<char[]>(datablock, 0, 8),
+                                               ReadItem.Create<char[]>(datablock, 8, 8) ,
+                                               ReadItem.Create<char[]>(datablock, 16, 8) ,
+                                               ReadItem.Create<char[]>(datablock, 76, 6) ,
+                                               ReadItem.Create<char[]>(datablock, 24, 4) ,
+                                               ReadItem.Create<char[]>(datablock, 42, 4) ,
+                                               ReadItem.Create<char[]>(datablock, 56, 4)   };
 
                 var results = (await client.ReadAsync(data)).ToArray();
 

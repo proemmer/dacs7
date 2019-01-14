@@ -1,4 +1,5 @@
-﻿using Dacs7;
+﻿//#define REALPLC
+using Dacs7;
 using Snap7;
 using System;
 using System.Collections.Generic;
@@ -6,6 +7,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+
+
 
 namespace Dacs7Tests.ServerHelper
 {
@@ -55,8 +58,9 @@ namespace Dacs7Tests.ServerHelper
             {141, new byte[20000] },
         };
 
+
 #if REALPLC
-        public static readonly string Address = "benjipc677c";
+        public static readonly string Address = "192.168.0.148";
         public static readonly PlcConnectionType ConnectionType = PlcConnectionType.Pg;
         public static readonly int Timeout = 5000;
         private static readonly SemaphoreSlim _semaphore = null;
@@ -111,7 +115,7 @@ namespace Dacs7Tests.ServerHelper
 
             do
             {
-                await _semaphore?.WaitAsync();
+                if(_semaphore != null) await _semaphore.WaitAsync();
                 try
                 {
                     await client.ConnectAsync();
@@ -129,7 +133,7 @@ namespace Dacs7Tests.ServerHelper
                 {
                     await client.DisconnectAsync();
                     await Task.Delay(10);
-                    _semaphore?.Release();
+                    if (_semaphore != null) _semaphore.Release();
                 }
             }
             while (retries > 0);
