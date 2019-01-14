@@ -1,4 +1,5 @@
-﻿using Dacs7.Protocols.SiemensPlc;
+﻿using Dacs7.Protocols.Rfc1006;
+using Dacs7.Protocols.SiemensPlc;
 using System;
 using System.Collections.Generic;
 
@@ -7,8 +8,8 @@ namespace Dacs7.Protocols
     internal class ReadPackage
     {
         private readonly int _maxSize;
-        private int _sizeRequest = SiemensPlcProtocolContext.ReadHeader + SiemensPlcProtocolContext.ReadParameter;
-        private int _sizeResponse = SiemensPlcProtocolContext.ReadAckHeader + SiemensPlcProtocolContext.ReadAckParameter;
+        private int _sizeRequest = Rfc1006ProtocolContext.DataHeaderSize +  SiemensPlcProtocolContext.ReadHeader + SiemensPlcProtocolContext.ReadParameter;
+        private int _sizeResponse = Rfc1006ProtocolContext.DataHeaderSize + SiemensPlcProtocolContext.ReadAckHeader + SiemensPlcProtocolContext.ReadAckParameter;
         private List<ReadItem> _items = new List<ReadItem>();
 
 
