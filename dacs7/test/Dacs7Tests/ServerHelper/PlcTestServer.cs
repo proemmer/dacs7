@@ -51,7 +51,8 @@ namespace Dacs7Tests.ServerHelper
         {
             {1, new byte[20000] },
             {2, new byte[20000] },
-            {3, new byte[10] }
+            {3, new byte[10] },
+            {141, new byte[20000] },
         };
 
 #if REALPLC
@@ -100,9 +101,12 @@ namespace Dacs7Tests.ServerHelper
 
 
 
-        public static async Task ExecuteClientAsync(Func<Dacs7Client, Task> execution)
+        public static async Task ExecuteClientAsync(Func<Dacs7Client, Task> execution, ushort pduSize = 960)
         {
-            var client = new Dacs7Client(Address, ConnectionType, Timeout);
+            var client = new Dacs7Client(Address, ConnectionType, Timeout)
+            {
+                PduSize = pduSize
+            };
             var retries = 3;
 
             do

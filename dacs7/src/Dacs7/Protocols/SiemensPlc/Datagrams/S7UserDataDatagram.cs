@@ -37,7 +37,7 @@ namespace Dacs7.Protocols.SiemensPlc
                     TypeAndGroup = ((byte)UserDataFunctionType.Request << 4) | (byte)UserDataFunctionGroup.Block,
                     SubFunction = (byte)UserDataSubFunctionBlock.BlockInfo,
                     SequenceNumber = 0,
-                    Unknown = (byte)UserDataParamTypeType.Request 
+                    ParameterType = (byte)UserDataParamTypeType.Request 
                 },
                 Data = new S7UserData
                 {
@@ -57,8 +57,64 @@ namespace Dacs7.Protocols.SiemensPlc
             return result;
         }
 
+        public static S7UserDataDatagram BuildPendingAlarmRequest(SiemensPlcProtocolContext context, ushort id, byte sequenceNumber)
+        {
+            var data = sequenceNumber == 0 ? new byte[] { 0x00, 0x01, 0x12, 0x08, 0x1a, 0x00, 0x01, 0x34, 0x00, 0x00, 0x00, 0x04 } : new byte[0]; ;
+            var result = new S7UserDataDatagram
+            {
+                Parameter = new S7UserDataParameter
+                {
+                    ParamDataLength = sequenceNumber == 0 ? (byte)4 : (byte)8,
+                    TypeAndGroup = ((byte)UserDataFunctionType.Request << 4) | (byte)UserDataFunctionGroup.Cpu,
+                    SubFunction = (byte)UserDataSubFunctionCpu.AlarmInit,
+                    SequenceNumber = sequenceNumber,
+                    ParameterType = sequenceNumber == 0 ? (byte)UserDataParamTypeType.Request : (byte)UserDataParamTypeType.Response
+                },
+                Data = new S7UserData
+                {
+                    Data = data,
+                    UserDataLength = (ushort)data.Length,
+                    ReturnCode = data.Length > 0 ? (byte)ItemResponseRetValue.Success : (byte)ItemResponseRetValue.DataError,
+                    TransportSize = data.Length > 0 ? (byte)DataTransportSize.OctetString : (byte)DataTransportSize.Null
+                }
+            };
+
+            result.Header.ProtocolDataUnitReference = id;
+            result.Header.DataLength = sequenceNumber == 0 ? (ushort)16 : (ushort)4;
+            result.Header.ParamLength = sequenceNumber == 0 ? (ushort)8 : (ushort)12;
+
+            return result;
+        }
 
 
+        public static S7UserDataDatagram BuildAlarmUpdateRequest(SiemensPlcProtocolContext s7Context, ushort id, bool activate = true)
+        {
+            var data = new byte[] { 0x86, 0x00, 0x61, 0x73, 0x6d, 0x65, 0x73, 0x73, 0x00, 0x00, activate ? (byte)0x09 : (byte)0x08, 0x00 };
+            var result = new S7UserDataDatagram
+            {
+                Parameter = new S7UserDataParameter
+                {
+                    ParamDataLength = 4,
+                    TypeAndGroup = ((byte)UserDataFunctionType.Request << 4) | (byte)UserDataFunctionGroup.Cpu,
+                    SubFunction = (byte)UserDataSubFunctionCpu.Msgs,
+                    SequenceNumber = 0,
+                    ParameterType = (byte)UserDataParamTypeType.Request
+                },
+                Data = new S7UserData
+                {
+                    Data = data,
+                    UserDataLength = (ushort)data.Length,
+                    ReturnCode = data.Length > 0 ? (byte)ItemResponseRetValue.Success : (byte)ItemResponseRetValue.DataError,
+                    TransportSize = data.Length > 0 ? (byte)DataTransportSize.OctetString : (byte)DataTransportSize.Null
+                }
+            };
+
+            result.Header.ProtocolDataUnitReference = id;
+            result.Header.DataLength = 16;
+            result.Header.ParamLength = 8;
+
+            return result;
+        }
 
 
 
@@ -94,5 +150,7 @@ namespace Dacs7.Protocols.SiemensPlc
             data.Slice(offset, result.Data.UserDataLength).CopyTo(result.Data.Data);
             return result;
         }
+
+
     }
 }

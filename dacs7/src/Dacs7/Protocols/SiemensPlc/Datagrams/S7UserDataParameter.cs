@@ -7,7 +7,7 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
     {
         public byte[] ParamHeader { get; set; } = new byte[] { 0x00, 0x01, 0x12 }; // Always 0x00 0x01 0x12
         public byte ParamDataLength { get; set; } // par len 0x04 or 0x08
-        public byte Unknown { get; set; } // unknown
+        public byte ParameterType { get; set; } // unknown
 
         public byte TypeAndGroup { get; set; }
         // type and group  (4 bits type and 4 bits group)     0000 ....   = Type: Follow  (0) // .... 0100   = SZL functions (4)
@@ -31,7 +31,7 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
 
             datagram.ParamHeader.CopyTo(span.Slice(0, 3));
             span[3] = datagram.ParamDataLength;
-            span[4] = datagram.Unknown;
+            span[4] = datagram.ParameterType;
             span[5] = datagram.TypeAndGroup;
             span[6] = datagram.SubFunction;
             span[7] = datagram.SequenceNumber;
@@ -52,7 +52,7 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
             var result = new S7UserDataParameter();
             span.Slice(0, 3).CopyTo(result.ParamHeader);
             result.ParamDataLength = span[3];
-            result.Unknown = span[4];
+            result.ParameterType = span[4];
             result.TypeAndGroup = span[5];
             result.SubFunction = span[6];
             result.SequenceNumber = span[7];

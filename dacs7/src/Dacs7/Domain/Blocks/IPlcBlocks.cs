@@ -1,4 +1,4 @@
-﻿namespace Dacs7
+﻿namespace Dacs7.Metadata
 {
 
     public interface IPlcBlocks

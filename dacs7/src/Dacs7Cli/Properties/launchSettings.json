@@ -2,7 +2,7 @@
   "profiles": {
     "Dacs7Cli": {
       "commandName": "Project",
-      "commandLineArgs": "blockinfo --address 192.168.0.148 -d -t     DB250"
+      "commandLineArgs": "watchalarms --address 192.168.0.148 -d "
     }
   }
 }

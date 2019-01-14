@@ -47,10 +47,7 @@ namespace Dacs7.Protocols.SiemensPlc
         public UInt16 WriteItemMaxLength { get { return (UInt16)(PduSize - 28); } } //28 Header and some other data
 
 
-
-
-
-
+        #region datagram detection
 
         public bool TryDetectDatagramType(Memory<byte> memory, out Type datagramType)
         {
@@ -117,22 +114,47 @@ namespace Dacs7.Protocols.SiemensPlc
             return false;
         }
 
-
         private bool TryDetectUserDataDataType(Memory<byte> memory, out Type datagramType)
         {
             if (memory.Length > 22)
             {
-                // currently we do not support other types
-                switch ((UserDataSubFunctionBlock)memory.Span[16])  // Function Type
+                switch ((UserDataFunctionGroup)(memory.Span[15] & 0x0F))
                 {
-                    case UserDataSubFunctionBlock.BlockInfo:  // Write Var
-                        datagramType = typeof(S7PlcBlockInfoAckDatagram);
-                        return true;
+                    case UserDataFunctionGroup.Block:
+                        {
+                            // currently we do not support other types
+                            switch ((UserDataSubFunctionBlock)memory.Span[16])  // Function Type
+                            {
+                                case UserDataSubFunctionBlock.BlockInfo:  // Write Var
+                                    datagramType = typeof(S7PlcBlockInfoAckDatagram);
+                                    return true;
+                            }
+                        }
+                        break;
+                    case UserDataFunctionGroup.Cpu:
+                        {
+                            // currently we do not support other types
+                            switch ((UserDataSubFunctionCpu)memory.Span[16])  // Function Type
+                            {
+                                case UserDataSubFunctionCpu.AlarmInit:  // Pending Alarms
+                                    datagramType = typeof(S7PendingAlarmAckDatagram);
+                                    return true;
+                                case UserDataSubFunctionCpu.Msgs:  // Registration Ok
+                                    datagramType = typeof(S7AlarmUpdateAckDatagram);
+                                    return true;
+                                case UserDataSubFunctionCpu.AlarmInd:  // Alarm Received
+                                    datagramType = typeof(S7AlarmIndicationDatagram);
+                                    return true;
+                            }
+                        }
+                        break;
                 }
 
             }
             datagramType = null;
             return false;
         }
+
+        #endregion
     }
 }
