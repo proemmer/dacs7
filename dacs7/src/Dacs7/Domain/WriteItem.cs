@@ -32,8 +32,6 @@ namespace Dacs7
             return clone;
         }
 
-
-
         public static WriteItem CreateFromTag(string tag, object data)
         {
             var result = CreateFromTag(tag).Clone();

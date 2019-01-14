@@ -4,6 +4,7 @@ using Dacs7;
 using Dacs7.ReadWrite;
 using Dacs7Tests.ServerHelper;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -346,6 +347,35 @@ namespace Dacs7Tests
 
             });
         }
+
+        [Fact]
+        public async Task ReadWriteMultibleCharsLongerThanPDUSize()
+        {
+            const string datablock = "DB141";
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
+            {
+                
+                var data = new List<ReadItem>{ ReadItem.Create<char[]>(datablock, 28, 14),
+                                               ReadItem.Create<char[]>(datablock, 46, 10),
+                                               ReadItem.Create<char[]>(datablock, 106, 10),
+                                               ReadItem.Create<char[]>(datablock, 124, 10),
+                                               ReadItem.Create<char[]>(datablock, 134, 10),
+                                               ReadItem.Create<char[]>(datablock, 60, 8),
+                                               ReadItem.Create<char[]>(datablock, 86, 8),
+                                               ReadItem.Create<char[]>(datablock, 94, 8),
+                                               ReadItem.Create<char[]>(datablock, 116, 8),
+                                               ReadItem.Create<char[]>(datablock, 144, 10) };
+
+                var results = (await client.ReadAsync(data)).ToArray();
+
+                Assert.True(results.All(x => x.IsSuccessReturnCode));
+
+                var writeResults = await client.WriteAsync(data.Select((r, i) => r.From(results[i].Data)).ToArray());
+
+                Assert.True(writeResults.All(x => x == ItemResponseRetValue.Success));
+            }, 240);
+        }
+
 
         [Fact]
         public async Task ReadWriteMultibleDInts()
