@@ -91,9 +91,7 @@ namespace Dacs7.Protocols.SiemensPlc
         public static byte GetTransportSize(PlcArea area, Type t)
         {
             if (area == PlcArea.CT || area == PlcArea.TM)
-            {
                 return (byte)DataTransportSize.OctetString;
-            }
 
             if (t.IsArray)
                 t = t.GetElementType();

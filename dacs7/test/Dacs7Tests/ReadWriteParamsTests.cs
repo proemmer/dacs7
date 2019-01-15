@@ -374,10 +374,65 @@ namespace Dacs7Tests
 
                 var results = (await client.ReadAsync(data)).ToArray();
 
+                Assert.Equal(data.Count, results.Length);
                 Assert.True(results.All(x => x.IsSuccessReturnCode));
 
                 var writeResults = await client.WriteAsync(data.Select((r, i) => r.From(results[i].Data)).ToArray());
 
+                Assert.Equal(data.Count, writeResults.Count());
+                Assert.True(writeResults.All(x => x == ItemResponseRetValue.Success));
+            }, 240);
+        }
+
+
+        [Fact]
+        public async Task ReadWriteMultibleCharsStringLongerThanPDUSize()
+        {
+            const string datablock = "DB141";
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
+            {
+
+                var data = new List<ReadItem>{ ReadItem.Create<char[]>(datablock, 28, 14),
+                                               ReadItem.Create<char[]>(datablock, 46, 10),
+                                               ReadItem.Create<string>(datablock, 106, 10),
+                                               ReadItem.Create<char[]>(datablock, 124, 10),
+                                               ReadItem.Create<char[]>(datablock, 134, 10),
+                                               ReadItem.Create<char[]>(datablock, 60, 8),
+                                               ReadItem.Create<char[]>(datablock, 86, 8),
+                                               ReadItem.Create<char[]>(datablock, 94, 8),
+                                               ReadItem.Create<char[]>(datablock, 116, 8),
+                                               ReadItem.Create<char[]>(datablock, 0, 8),
+                                               ReadItem.Create<char[]>(datablock, 8, 8) ,
+                                               ReadItem.Create<char[]>(datablock, 16, 8) ,
+                                               ReadItem.Create<char[]>(datablock, 76, 6) ,
+                                               ReadItem.Create<char[]>(datablock, 24, 4) ,
+                                               ReadItem.Create<char[]>(datablock, 42, 4) ,
+                                               ReadItem.Create<char[]>(datablock, 56, 4)   };
+
+                var results = (await client.ReadAsync(data)).ToArray();
+
+                Assert.Equal(data.Count, results.Length);
+                Assert.True(results.All(x => x.IsSuccessReturnCode));
+
+                var writeResults = await client.WriteAsync(data.Select((r, i) => r.From(results[i].Data)).ToArray());
+
+                Assert.Equal(data.Count, writeResults.Count());
+                Assert.True(writeResults.All(x => x == ItemResponseRetValue.Success));
+            }, 240);
+        }
+
+
+        [Fact]
+        public async Task WriteString()
+        {
+            const string datablock = "DB2";
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
+            {
+
+                var data = new List<WriteItem>{ WriteItem.Create<string>(datablock, 18, 250, "Das ist ein test!")};
+
+                var writeResults = await client.WriteAsync(data);
+                Assert.Equal(data.Count, writeResults.Count());
                 Assert.True(writeResults.All(x => x == ItemResponseRetValue.Success));
             }, 240);
         }

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Dacs7.Domain
+﻿namespace Dacs7.Domain
 {
     internal enum ItemDataTransportSize
     {
@@ -39,81 +37,5 @@ namespace Dacs7.Domain
         Real = 7, /* real access, length is in bytes */
         OctetString = 9 /* octet string, length is in bytes */
     }
-
-    internal static class TransportSizeHelper
-    {
-        public static byte DataTypeToTransportSize(Type t)
-        {
-            if (t.IsArray)
-                t = t.GetElementType();
-
-            if (t == typeof(bool))
-                return (byte)ItemDataTransportSize.Bit;
-
-            if (t == typeof(byte))
-                return (byte)ItemDataTransportSize.Byte;
-
-            if (t == typeof(char))
-                return (byte)ItemDataTransportSize.Char;
-
-            if (t == typeof(ushort))
-                return (byte)ItemDataTransportSize.Word;
-
-            if (t == typeof(short))
-                return (byte)ItemDataTransportSize.Int;
-
-            if (t == typeof(uint))
-                return (byte)ItemDataTransportSize.Dword;
-
-            if (t == typeof(int))
-                return (byte)ItemDataTransportSize.Dint;
-
-            if (t == typeof(Single))
-                return (byte)ItemDataTransportSize.Real;
-
-            return 0;
-        }
-
-        public static int DataTypeToSizeByte(Type t, PlcArea area)
-        {
-            if (t.IsArray)
-                t = t.GetElementType();
-
-            if (area == PlcArea.CT || area == PlcArea.TM)
-                return 1;
-
-            if (t == typeof(bool) || t == typeof(byte) || t == typeof(char))
-                return 1;
-
-            if (t == typeof(Int16) || t == typeof(UInt16))
-                return 2;
-
-            if (t == typeof(Int32) || t == typeof(UInt32) || t == typeof(double))
-                return 4;
-
-
-            return 0;
-        }
-
-
-        public static byte DataTypeToResultTransportSize(Type t)
-        {
-
-            if (t.IsArray)
-                t = t.GetElementType();
-
-            if (t == typeof(bool))
-                return (byte)DataTransportSize.Bit;
-
-            if (t == typeof(byte))
-                return (byte)DataTransportSize.Byte;
-
-            if (t == typeof(ushort))
-                return (byte)DataTransportSize.Int;
-
-            return 0;
-        }
-
-    }
-
+    
 }

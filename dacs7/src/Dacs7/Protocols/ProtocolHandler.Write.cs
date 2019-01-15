@@ -91,6 +91,10 @@ namespace Dacs7.Protocols
 
             if (_writeHandler.TryGetValue(data.Header.Header.ProtocolDataUnitReference, out var cbh))
             {
+                if(data.Header.Error.ErrorClass != 0)
+                {
+                    _logger.LogError("Error while writing data for reference {0}. ErrorClass: {1}  ErrorCode:{2}", data.Header.Header.ProtocolDataUnitReference, data.Header.Error.ErrorClass, data.Header.Error.ErrorCode);
+                }
                 if (data.Data == null)
                 {
                     _logger.LogWarning("No data from write ack received for reference {0}", data.Header.Header.ProtocolDataUnitReference);
