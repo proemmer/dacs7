@@ -19,6 +19,10 @@ namespace Dacs7.Domain
                 {
                     data = dataS.ToCharArray();
                 }
+                else if (item.ResultType == typeof(byte[]))
+                {
+                    data = Encoding.ASCII.GetBytes(dataS);
+                }
                 else
                     data = Convert.ChangeType(data, item.ResultType, CultureInfo.InvariantCulture);
             }
@@ -45,10 +49,18 @@ namespace Dacs7.Domain
                     return ca.Select(x => Convert.ToByte(x)).ToArray();
                 case string s:
                     {
-                        Memory<byte> result = new byte[s.Length + 2];
-                        result.Span[0] = (byte)(item.NumberOfItems - 2);
-                        result.Span[1] = (byte)s.Length;
-                        Encoding.ASCII.GetBytes(s).AsSpan().CopyTo(result.Span.Slice(2));
+                        Memory<byte> result = new byte[s.Length + ReadItem.StringHeaderSize];
+
+                        if (ReadItem.StringHeaderSize == 2)
+                        {
+                            result.Span[0] = (byte)(item.NumberOfItems - ReadItem.StringHeaderSize);
+                            result.Span[1] = (byte)s.Length;
+                        }
+                        else if(ReadItem.StringHeaderSize == 1)
+                        {
+                            result.Span[0] = (byte)s.Length;
+                        }
+                        Encoding.ASCII.GetBytes(s).AsSpan().CopyTo(result.Span.Slice(ReadItem.StringHeaderSize));
                         return result;
                     }
                 case Int16 i16:

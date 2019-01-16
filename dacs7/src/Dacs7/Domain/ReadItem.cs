@@ -3,19 +3,17 @@
 
 using Dacs7.Domain;
 using System;
-using System.Buffers.Binary;
-using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace Dacs7
 {
     public class ReadItem
     {
+
+        public const int StringHeaderSize = 1;
+
+
         public PlcArea Area { get; private set; }
         public ushort DbNumber { get; private set; }
         public int Offset { get; private set; }
@@ -60,8 +58,8 @@ namespace Dacs7
             {
                 Area = result.Area,
                 DbNumber = result.DbNumber,
-                Offset = result.Offset,
-                NumberOfItems = result.VarType == typeof(string) ? (ushort)(result.Length + 2) :  result.Length,
+                Offset = result.VarType == typeof(string) && ReadItem.StringHeaderSize == 1 ? result.Offset + 1 : result.Offset,
+                NumberOfItems = result.VarType == typeof(string) ? (ushort)(result.Length + ReadItem.StringHeaderSize) :  result.Length,
                 VarType = result.VarType,
                 ResultType = result.ResultType,
                 ElementSize = GetElementSize(result.Area, result.VarType)
@@ -134,7 +132,11 @@ namespace Dacs7
             else if(t == typeof(string) )
             {
                 result.VarType = result.ResultType  = t;
-                result.NumberOfItems += 2;
+                if (ReadItem.StringHeaderSize == 1)
+                {
+                    result.Offset++;
+                }
+                result.NumberOfItems += ReadItem.StringHeaderSize;
             }
             else if (t == typeof(Memory<byte>))
             {
