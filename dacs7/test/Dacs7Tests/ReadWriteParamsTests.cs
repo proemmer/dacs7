@@ -423,13 +423,36 @@ namespace Dacs7Tests
 
 
         [Fact]
-        public async Task WriteString()
+        public async Task WriteMultiCharsAndString()
         {
-            const string datablock = "DB2";
+            const string datablock = "DB962";
             await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
 
-                var data = new List<WriteItem>{ WriteItem.Create<string>(datablock, 18, 250, "Das ist ein test!")};
+                var data = new List<WriteItem>{ WriteItem.Create<char[]>(datablock, 60, 14, "|010101010101|".ToCharArray()),
+                                                WriteItem.Create<char[]>(datablock, 2, 10, "|01010101|".ToCharArray()),
+                                                WriteItem.Create<string>(datablock, 12, 8, "|123456|"),
+                                                WriteItem.Create<char[]>(datablock, 36, 6, "|1234|".ToCharArray()),
+                                                WriteItem.Create<char[]>(datablock, 24, 4, "|12|".ToCharArray()),
+                                                WriteItem.Create<char[]>(datablock, 30, 4, "|12|".ToCharArray()),
+                                                WriteItem.Create<char[]>(datablock, 44, 4, "|12|".ToCharArray())};
+
+                var writeResults = await client.WriteAsync(data);
+                Assert.Equal(data.Count, writeResults.Count());
+                Assert.True(writeResults.All(x => x == ItemResponseRetValue.Success));
+            }, 240);
+        }
+
+
+
+        [Fact]
+        public async Task WriteString()
+        {
+            const string datablock = "DB962";
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
+            {
+
+                var data = new List<WriteItem>{ WriteItem.Create<string>(datablock, 12, 8, "12345678")};
 
                 var writeResults = await client.WriteAsync(data);
                 Assert.Equal(data.Count, writeResults.Count());

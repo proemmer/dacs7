@@ -13,9 +13,14 @@ namespace Dacs7.Domain
 
         public static Memory<byte> ConvertDataToMemory(this ReadItem item, object data)
         {
-            if (data is string && item.ResultType != typeof(string))
+            if (data is string dataS && item.ResultType != typeof(string))
             {
-                data = Convert.ChangeType(data, item.ResultType, CultureInfo.InvariantCulture);
+                if(item.ResultType == typeof(char[]))
+                {
+                    data = dataS.ToCharArray();
+                }
+                else
+                    data = Convert.ChangeType(data, item.ResultType, CultureInfo.InvariantCulture);
             }
 
             switch (data)

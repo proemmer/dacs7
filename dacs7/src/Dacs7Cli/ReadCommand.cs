@@ -99,7 +99,7 @@ namespace Dacs7Cli
                         {
                             if (resultEnumerator.MoveNext())
                             {
-                                logger?.LogInformation($"Read: {item}={resultEnumerator.Current.Data}   -  {resultEnumerator.Current.Value}");
+                                logger?.LogInformation($"Read: {item}={resultEnumerator.Current.Data}   -  {GetValue(resultEnumerator.Current.Value)}");
                             }
                         }
                     }
@@ -131,6 +131,22 @@ namespace Dacs7Cli
             }
 
             return 0;
+        }
+
+
+        private static string GetValue(object v)
+        {
+            if(v is string s)
+            {
+                return s;
+            }
+            if(v is char[] c)
+            {
+                return new string(c);
+            }
+            if(v != null)
+                return v.ToString();
+            return "[null]";
         }
 
     }
