@@ -461,6 +461,42 @@ namespace Dacs7Tests
         }
 
 
+
+        [Fact]
+        public async Task ReadWriteString()
+        {
+            const string datablock = "DB962";
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
+            {
+                var data0 = new List<WriteItem> { WriteItem.Create<string>(datablock, 58, 14, "XXXXXXXXXXXXXX") };
+
+                var writeResults1 = await client.WriteAsync(data0);
+                Assert.Equal(data0.Count, writeResults1.Count());
+                Assert.True(writeResults1.All(x => x == ItemResponseRetValue.Success));
+
+
+                var data1 = new List<ReadItem> { ReadItem.Create<string>(datablock, 58, 14) };
+
+                var readResults1 = await client.ReadAsync(data1);
+
+                var data = new List<WriteItem> { WriteItem.Create<string>(datablock, 58, 14, "1234567890ABCD") };
+
+                var writeResults2 = await client.WriteAsync(data);
+                Assert.Equal(data.Count, writeResults2.Count());
+                Assert.True(writeResults2.All(x => x == ItemResponseRetValue.Success));
+
+
+                var readResults2 = await client.ReadAsync(data1);
+
+
+                Assert.False( readResults1.FirstOrDefault().Data.Span.SequenceEqual(readResults2.FirstOrDefault().Data.Span));
+
+
+            }, 240);
+        }
+
+
+
         [Fact]
         public async Task ReadWriteMultibleDInts()
         {

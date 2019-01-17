@@ -11,7 +11,7 @@ namespace Dacs7
     public class ReadItem
     {
 
-        public const int StringHeaderSize = 1;
+        public const int StringHeaderSize = 2;
 
 
         public PlcArea Area { get; private set; }
