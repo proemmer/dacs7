@@ -58,7 +58,7 @@ namespace Dacs7.Protocols.SiemensPlc
                         fullLength++;
                     fullLength += (ushort)item.Data.Length;
 
-                    // No special handling for string because have already translated it to an byte array
+                    // No special handling for string because we have already translated it to a byte array
                     //if (item.VarType == typeof(string))
                     //    fullLength += 2;
                 }
