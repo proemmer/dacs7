@@ -80,7 +80,7 @@ namespace Dacs7
         {
             if (!TagParser.TryDetectArea(area.AsSpan(), out var selector, out var db ))
             {
-                throw new ArgumentException($"Invalid area <{area}>");
+                ExceptionThrowHelper.ThrowInvalidAreaException(area);
             }
 
             return SetupTypes<T>(new ReadItem

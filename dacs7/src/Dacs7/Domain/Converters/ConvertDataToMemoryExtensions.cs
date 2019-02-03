@@ -163,7 +163,8 @@ namespace Dacs7.Domain
                     }
 
             }
-            throw new InvalidCastException();
+            ExceptionThrowHelper.ThrowInvalidCastException();
+            return null;
         }
 
         private static Memory<byte> ConvertSingleToMemory(IList<float> single)

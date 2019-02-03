@@ -158,7 +158,8 @@ namespace Dacs7.Domain
             {
                 return ConvertMemoryToSingle(item, data).ToList();
             }
-            throw new InvalidCastException();
+            ExceptionThrowHelper.ThrowInvalidCastException();
+            return null;
         }
 
         private static Single[] ConvertMemoryToSingle(ReadItem item, Memory<byte> data)

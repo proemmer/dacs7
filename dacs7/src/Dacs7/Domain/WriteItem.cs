@@ -96,8 +96,7 @@ namespace Dacs7
             if (result.VarType == typeof(string))
             {
                 var length = (ushort)result.Data.Length;
-                if (length > result.NumberOfItems)
-                    throw new ArgumentOutOfRangeException(nameof(result.Data), $"The given string is to long!");
+                if (length > result.NumberOfItems) ExceptionThrowHelper.ThrowStringToLongException(nameof(result.Data));
                 // special handling of string because we want to write only the given string, not the whole on.
                 result.NumberOfItems = (ushort)result.Data.Length;
             }
@@ -108,7 +107,7 @@ namespace Dacs7
                     // If the number of items is greater then 1, the result is a array
                     // but bit arrays are not supported!
                     // this code area is called, if you create a write item from tag without length specification, but an array as value
-                    throw new Dacs7TypeNotSupportedException(typeof(bool[]));
+                    ExceptionThrowHelper.ThrowTypeNotSupportedException(typeof(bool[]));
                 }
             }
             else
@@ -116,7 +115,7 @@ namespace Dacs7
                 var expectedSize = result.NumberOfItems * result.ElementSize;
                 if (result.Data.Length != expectedSize)
                 {
-                    throw new ArgumentOutOfRangeException($"Given number of elements {result.NumberOfItems} and given number of values {result.Data.Length / result.ElementSize} are not matching!");
+                    ExceptionThrowHelper.ThrowInvalidWriteResult(result);
                 }
             }
             return result;

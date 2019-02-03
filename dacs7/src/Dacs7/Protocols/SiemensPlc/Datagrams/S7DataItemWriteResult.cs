@@ -5,7 +5,7 @@ using System;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
-    internal class S7DataItemWriteResult
+    internal struct S7DataItemWriteResult
     {
         public byte ReturnCode { get; set; }
 

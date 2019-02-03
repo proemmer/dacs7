@@ -1,4 +1,5 @@
-﻿using Dacs7.Protocols.SiemensPlc;
+﻿using Dacs7.Exceptions;
+using Dacs7.Protocols.SiemensPlc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Sockets;
@@ -76,13 +77,13 @@ namespace Dacs7.Protocols
                     if (!await _connectEvent.WaitAsync(_s7Context.Timeout * 10))
                     {
                         await CloseAsync();
-                        throw new Dacs7NotConnectedException();
+                        ExceptionThrowHelper.ThrowNotConnectedException();
                     }
                 }
                 catch (TimeoutException)
                 {
                     await CloseAsync();
-                    throw new Dacs7NotConnectedException();
+                    ExceptionThrowHelper.ThrowNotConnectedException();
                 }
             }
             catch(Dacs7NotConnectedException)
@@ -92,7 +93,7 @@ namespace Dacs7.Protocols
             }
             catch(Exception ex)
             {
-                throw new Dacs7NotConnectedException(ex);
+                ExceptionThrowHelper.ThrowNotConnectedException(ex);
             }
         }
 
@@ -125,6 +126,7 @@ namespace Dacs7.Protocols
         }
 
 
+        
 
         private async Task<bool> DetectAndReceive(Memory<byte> payload)
         {

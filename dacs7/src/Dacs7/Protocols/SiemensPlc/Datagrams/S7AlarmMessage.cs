@@ -90,14 +90,16 @@ namespace Dacs7.Protocols.SiemensPlc
                                         break;
                                     default:
                                         {
-                                            throw new Exception($"Unknown alarm subfunction {subfunction}");
+                                            ExceptionThrowHelper.ThrowUnknownAlarmSubfunction(subfunction);
+                                            break;
                                         }
                                 }
                                 break;
                             }
                         default:
                             {
-                                throw new Exception($"Unknown alarm syntaxID {subfunction}");
+                                ExceptionThrowHelper.ThrowUnknownAlarmSyntax(syntaxId);
+                                break;
                             }
                     }
                 }

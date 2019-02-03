@@ -75,7 +75,7 @@ namespace Dacs7.Domain
             if (!TryExtractData(ref result, data, ref indexStart, ref state, ref type, index) && throwException)
             {
                 result.ErrorState = state;
-                throw new Dacs7TagParserException(TagParserState.Area, data.ToString(), tag);
+                ExceptionThrowHelper.ThrowTagParseException(TagParserState.Area, data.ToString(), tag);
             }
         }
 

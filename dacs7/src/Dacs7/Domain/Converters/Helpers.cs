@@ -42,7 +42,7 @@ namespace Dacs7.Domain
                 return;
             }
 
-            throw new Dacs7TypeNotSupportedException(item.ResultType);
+            ExceptionThrowHelper.ThrowTypeNotSupportedException(item.ResultType);
         }
 
 

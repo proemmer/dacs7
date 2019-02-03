@@ -50,7 +50,7 @@ namespace Dacs7
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Value of {nameof(MaxAmQCalling)} can only be changed while connection is closed!");
+                    ExceptionThrowHelper.ThrowCouldNotChangeValueWhileConnectionIsOpen(nameof(MaxAmQCalling));
                 }
             }
         }
@@ -69,7 +69,7 @@ namespace Dacs7
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Value of {nameof(MaxAmQCalled)} can only be changed while connection is closed!");
+                    ExceptionThrowHelper.ThrowCouldNotChangeValueWhileConnectionIsOpen(nameof(MaxAmQCalled));
                 }
             }
         }
@@ -88,7 +88,7 @@ namespace Dacs7
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Value of {nameof(PduSize)} can only be changed while connection is closed!");
+                    ExceptionThrowHelper.ThrowCouldNotChangeValueWhileConnectionIsOpen(nameof(PduSize));
                 }
             }
         }

@@ -16,7 +16,7 @@ namespace Dacs7.Protocols
         public async Task<S7PlcBlockInfoAckDatagram> ReadBlockInfoAsync(PlcBlockType type, int blocknumber)
         {
             if (ConnectionState != ConnectionState.Opened)
-                throw new Dacs7NotConnectedException();
+                ExceptionThrowHelper.ThrowNotConnectedException();
 
             var id = GetNextReferenceId();
             var sendData = _transport.Build(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlockInfoRequest(_s7Context, id, type, blocknumber)));
@@ -24,10 +24,11 @@ namespace Dacs7.Protocols
 
             try
             {
+                CallbackHandler<S7PlcBlockInfoAckDatagram> cbh;
                 S7PlcBlockInfoAckDatagram blockinfoResult = null;
                 using (await SemaphoreGuard.Async(_concurrentJobs))
                 {
-                    var cbh = new CallbackHandler<S7PlcBlockInfoAckDatagram>(id);
+                    cbh = new CallbackHandler<S7PlcBlockInfoAckDatagram>(id);
                     _blockInfoHandler.TryAdd(cbh.Id, cbh);
                     try
                     {
@@ -41,26 +42,36 @@ namespace Dacs7.Protocols
                     }
                 }
 
-                if (blockinfoResult == null)
-                {
-                    if (_closeCalled)
-                    {
-                        throw new Dacs7NotConnectedException();
-                    }
-                    else
-                    {
-                        throw new Dacs7ReadTimeoutException(id);
-                    }
-                }
+                HandlerErrorResult(id, cbh, blockinfoResult);
 
                 return blockinfoResult;
             }
             catch (TaskCanceledException)
             {
-                throw new TimeoutException();
+                ExceptionThrowHelper.ThrowTimeoutException();
             }
+
+            return null;
         }
 
+        private void HandlerErrorResult(ushort id, CallbackHandler<S7PlcBlockInfoAckDatagram> cbh, S7PlcBlockInfoAckDatagram blockinfoResult)
+        {
+            if (blockinfoResult == null)
+            {
+                if (_closeCalled)
+                {
+                    ExceptionThrowHelper.ThrowNotConnectedException();
+                }
+                else
+                {
+                    if (cbh.Exception != null)
+                    {
+                        ExceptionThrowHelper.ThrowException(cbh.Exception);
+                    }
+                    ExceptionThrowHelper.ThrowWriteTimeoutException(id);
+                }
+            }
+        }
 
         private Task ReceivedS7PlcBlockInfoAckDatagram(Memory<byte> buffer)
         {

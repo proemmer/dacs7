@@ -24,7 +24,7 @@ namespace Dacs7
             var expected = typeof(T);
             if (expected != _meta.ResultType)
             {
-                throw new InvalidOperationException("Generic type is not Equal to Type");
+                ExceptionThrowHelper.ThrowTypesNotMatching(expected, _meta.ResultType);
             }
             return (T)Value;
         }

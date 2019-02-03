@@ -23,7 +23,7 @@ namespace Dacs7.Protocols
         public async Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync()
         {
             if (ConnectionState != ConnectionState.Opened)
-                throw new Dacs7NotConnectedException();
+                ExceptionThrowHelper.ThrowNotConnectedException();
 
             var id = GetNextReferenceId();
             var sequenceNumber = (byte)0x00;
@@ -61,11 +61,11 @@ namespace Dacs7.Protocols
                     {
                         if (_closeCalled)
                         {
-                            throw new Dacs7NotConnectedException();
+                            ExceptionThrowHelper.ThrowNotConnectedException();
                         }
                         else
                         {
-                            throw new Dacs7ReadTimeoutException(id);
+                            ExceptionThrowHelper.ThrowReadTimeoutException(id);
                         }
                     }
 
@@ -96,10 +96,10 @@ namespace Dacs7.Protocols
         public async Task<AlarmUpdateResult> ReceiveAlarmUpdatesAsync(CancellationToken ct)
         {
             if (ConnectionState != ConnectionState.Opened)
-                throw new Dacs7NotConnectedException();
+                ExceptionThrowHelper.ThrowNotConnectedException();
 
             if (!await EnableAlarmUpdatesAsync())
-                throw new Dacs7NotConnectedException();
+                ExceptionThrowHelper.ThrowNotConnectedException();
 
             var userId = GetNextReferenceId();
             try

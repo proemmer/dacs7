@@ -19,84 +19,105 @@ namespace Dacs7.Protocols
         public async Task<IEnumerable<S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItem> vars)
         {
             if (ConnectionState != ConnectionState.Opened)
-                throw new Dacs7NotConnectedException();
+                ExceptionThrowHelper.ThrowNotConnectedException();
 
             var result = vars.ToDictionary(x => x, x => null as S7DataItemSpecification);
             foreach (var normalized in CreateReadPackages(_s7Context, vars))
             {
-                var id = GetNextReferenceId();
-                var sendData = _transport.Build(S7ReadJobDatagram.TranslateToMemory(S7ReadJobDatagram.BuildRead(_s7Context, id, normalized.Items)));
-
-
-                try
-                {
-                    IEnumerable<S7DataItemSpecification> readResults = null;
-                    using (await SemaphoreGuard.Async(_concurrentJobs))
-                    {
-                        var cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
-                        _readHandler.TryAdd(cbh.Id, cbh);
-                        try
-                        {
-                            if (await _transport.Client.SendAsync(sendData) != SocketError.Success)
-                                return new List<S7DataItemSpecification>();
-                            readResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
-                        }
-                        finally
-                        {
-                            _readHandler.TryRemove(cbh.Id, out _);
-                        }
-                    }
-
-                    if (readResults == null)
-                    {
-                        if (_closeCalled)
-                        {
-                            throw new Dacs7NotConnectedException();
-                        }
-                        else
-                        {
-                            throw new Dacs7ReadTimeoutException(id);
-                        }
-                    }
-
-                    var items = normalized.Items.GetEnumerator();
-                    foreach (var item in readResults)
-                    {
-                        if (items.MoveNext())
-                        {
-                            if (items.Current.IsPart)
-                            {
-                                if (!result.TryGetValue(items.Current.Parent, out var parent) || parent == null)
-                                {
-                                    parent = new S7DataItemSpecification
-                                    {
-                                        TransportSize = item.TransportSize,
-                                        Length = items.Current.Parent.NumberOfItems,
-                                        Data = new byte[items.Current.Parent.NumberOfItems]
-                                    };
-                                    result[items.Current.Parent] = parent;
-                                }
-
-                                parent.ReturnCode = item.ReturnCode;
-                                item.Data.CopyTo(parent.Data.Slice(items.Current.Offset - items.Current.Parent.Offset, items.Current.NumberOfItems));
-                            }
-                            else
-                            {
-                                result[items.Current] = item;
-                            }
-
-                        }
-                    }
-                }
-                catch (TaskCanceledException)
-                {
-                    throw new TimeoutException();
-                }
+                if (!await ReadPackage(result, normalized)) return new List<S7DataItemSpecification>();
             }
             return result.Values;
 
         }
 
+
+        private async Task<bool> ReadPackage(Dictionary<ReadItem, S7DataItemSpecification> result, ReadPackage normalized)
+        {
+            var id = GetNextReferenceId();
+            var sendData = _transport.Build(S7ReadJobDatagram.TranslateToMemory(S7ReadJobDatagram.BuildRead(_s7Context, id, normalized.Items)));
+
+
+            try
+            {
+                IEnumerable<S7DataItemSpecification> readResults = null;
+                CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh;
+                using (await SemaphoreGuard.Async(_concurrentJobs))
+                {
+                    cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
+                    _readHandler.TryAdd(cbh.Id, cbh);
+                    try
+                    {
+                        if (await _transport.Client.SendAsync(sendData) != SocketError.Success)
+                            return false;
+                        readResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
+                    }
+                    finally
+                    {
+                        _readHandler.TryRemove(cbh.Id, out _);
+                    }
+                }
+
+                HandlerErrorResult(id, readResults, cbh);
+
+                BildResults(result, normalized, readResults);
+            }
+            catch (TaskCanceledException)
+            {
+                ExceptionThrowHelper.ThrowTimeoutException();
+            }
+            return true;
+        }
+
+        private void HandlerErrorResult(ushort id, IEnumerable<S7DataItemSpecification> readResults, CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh)
+        {
+            if (readResults == null)
+            {
+                if (_closeCalled)
+                {
+                    ExceptionThrowHelper.ThrowNotConnectedException(cbh.Exception);
+                }
+                else
+                {
+                    if (cbh.Exception != null)
+                    {
+                        ExceptionThrowHelper.ThrowException(cbh.Exception);
+                    }
+                    ExceptionThrowHelper.ThrowReadTimeoutException(id);
+                }
+            }
+        }
+
+        private static void BildResults(Dictionary<ReadItem, S7DataItemSpecification> result, ReadPackage normalized, IEnumerable<S7DataItemSpecification> readResults)
+        {
+            var items = normalized.Items.GetEnumerator();
+            foreach (var item in readResults)
+            {
+                if (items.MoveNext())
+                {
+                    if (items.Current.IsPart)
+                    {
+                        if (!result.TryGetValue(items.Current.Parent, out var parent) || parent == null)
+                        {
+                            parent = new S7DataItemSpecification
+                            {
+                                TransportSize = item.TransportSize,
+                                Length = items.Current.Parent.NumberOfItems,
+                                Data = new byte[items.Current.Parent.NumberOfItems]
+                            };
+                            result[items.Current.Parent] = parent;
+                        }
+
+                        parent.ReturnCode = item.ReturnCode;
+                        item.Data.CopyTo(parent.Data.Slice(items.Current.Offset - items.Current.Parent.Offset, items.Current.NumberOfItems));
+                    }
+                    else
+                    {
+                        result[items.Current] = item;
+                    }
+
+                }
+            }
+        }
 
         private Task ReceivedReadJobAck(Memory<byte> buffer)
         {
@@ -107,6 +128,7 @@ namespace Dacs7.Protocols
                 if (data.Header.Error.ErrorClass != 0)
                 {
                     _logger.LogError("Error while reading data for reference {0}. ErrorClass: {1}  ErrorCode:{2}", data.Header.Header.ProtocolDataUnitReference, data.Header.Error.ErrorClass, data.Header.Error.ErrorCode);
+                    cbh.Exception = new Dacs7Exception(data.Header.Error.ErrorClass, data.Header.Error.ErrorCode);
                 }
                 if (data.Data == null)
                 {
@@ -179,7 +201,7 @@ namespace Dacs7.Protocols
                                 }
                                 else
                                 {
-                                    throw new InvalidOperationException();
+                                    ExceptionThrowHelper.ThrowCouldNotAddPackageException(nameof(ReadPackage));
                                 }
                             }
                             processed += slice;
@@ -192,7 +214,7 @@ namespace Dacs7.Protocols
                         result.Add(currentPackage);
                         if (!currentPackage.TryAdd(item))
                         {
-                            throw new InvalidOperationException();
+                            ExceptionThrowHelper.ThrowCouldNotAddPackageException(nameof(ReadPackage));
                         }
                     }
                 }

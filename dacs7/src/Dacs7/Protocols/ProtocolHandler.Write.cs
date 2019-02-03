@@ -10,6 +10,14 @@ using System.Threading.Tasks;
 
 namespace Dacs7.Protocols
 {
+
+    internal class WriteResult
+    {
+        public Exception Exception { get; set; }
+
+    }
+
+
     internal partial class ProtocolHandler
     {
         private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>> _writeHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>>();
@@ -17,73 +25,94 @@ namespace Dacs7.Protocols
         public async Task<IEnumerable<ItemResponseRetValue>> WriteAsync(IEnumerable<WriteItem> vars)
         {
             if (ConnectionState != ConnectionState.Opened)
-                throw new Dacs7NotConnectedException();
+                ExceptionThrowHelper.ThrowNotConnectedException();
 
 
             var result = vars.ToDictionary(x => x, x => ItemResponseRetValue.Success);
             foreach (var normalized in CreateWritePackages(_s7Context, vars))
             {
-                var id = GetNextReferenceId();
-                CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh;
-                var sendData = _transport.Build(S7WriteJobDatagram.TranslateToMemory(S7WriteJobDatagram.BuildWrite(_s7Context, id, normalized.Items)));
-                try
-                {
-                    IEnumerable<S7DataItemWriteResult> writeResults = null;
-                    using (await SemaphoreGuard.Async(_concurrentJobs))
-                    {
-                        cbh = new CallbackHandler<IEnumerable<S7DataItemWriteResult>>(id);
-                        _writeHandler.TryAdd(cbh.Id, cbh);
-                        try
-                        {
-                            if (await _transport.Client.SendAsync(sendData) != SocketError.Success)
-                                return new List<ItemResponseRetValue>();
-                            writeResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
-                        }
-                        finally
-                        {
-                            _writeHandler.TryRemove(cbh.Id, out _);
-                        }
-                    }
-
-                    if (writeResults == null)
-                    {
-                        if (_closeCalled)
-                        {
-                            throw new Dacs7NotConnectedException();
-                        }
-                        else
-                        {
-                            throw new Dacs7WriteTimeoutException(id);
-                        }
-                    }
-
-                    var items = normalized.Items.GetEnumerator();
-                    foreach (var item in writeResults)
-                    {
-                        if (items.MoveNext())
-                        {
-                            if (items.Current.IsPart)
-                            {
-                                if (result.TryGetValue(items.Current.Parent, out var retCode) && retCode == ItemResponseRetValue.Success)
-                                {
-                                    result[items.Current.Parent] = (ItemResponseRetValue)item.ReturnCode;
-                                }
-                            }
-                            else
-                            {
-                                result[items.Current] = (ItemResponseRetValue)item.ReturnCode;
-                            }
-                        }
-                    }
-                }
-                catch (TaskCanceledException)
-                {
-                    throw new TimeoutException();
-                }
+                if(!await WritePackage(result, normalized)) return new List<ItemResponseRetValue>();
             }
             return result.Values;
         }
 
+
+        private async Task<bool> WritePackage(Dictionary<WriteItem, ItemResponseRetValue> result, WritePackage normalized)
+        {
+            var id = GetNextReferenceId();
+            CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh;
+            var sendData = _transport.Build(S7WriteJobDatagram.TranslateToMemory(S7WriteJobDatagram.BuildWrite(_s7Context, id, normalized.Items)));
+            try
+            {
+                IEnumerable<S7DataItemWriteResult> writeResults = null;
+                using (await SemaphoreGuard.Async(_concurrentJobs))
+                {
+                    cbh = new CallbackHandler<IEnumerable<S7DataItemWriteResult>>(id);
+                    _writeHandler.TryAdd(cbh.Id, cbh);
+                    try
+                    {
+                        if (await _transport.Client.SendAsync(sendData) != SocketError.Success)
+                            return false;
+                        writeResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
+                    }
+                    finally
+                    {
+                        _writeHandler.TryRemove(cbh.Id, out _);
+                    }
+                }
+
+                HandlerErrorResult(id, cbh, writeResults);
+
+                BildResults(result, normalized, writeResults);
+            }
+            catch (TaskCanceledException)
+            {
+                ExceptionThrowHelper.ThrowTimeoutException();
+            }
+            return true;
+        }
+
+        private void HandlerErrorResult(ushort id, CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh, IEnumerable<S7DataItemWriteResult> writeResults)
+        {
+            if (writeResults == null)
+            {
+                if (_closeCalled)
+                {
+                    ExceptionThrowHelper.ThrowNotConnectedException(cbh.Exception);
+                }
+                else
+                {
+                    if (cbh.Exception != null)
+                    {
+                        ExceptionThrowHelper.ThrowException(cbh.Exception);
+                    }
+                    ExceptionThrowHelper.ThrowWriteTimeoutException(id);
+
+                }
+            }
+        }
+
+        private static void BildResults(Dictionary<WriteItem, ItemResponseRetValue> result, WritePackage normalized, IEnumerable<S7DataItemWriteResult> writeResults)
+        {
+            var items = normalized.Items.GetEnumerator();
+            foreach (var item in writeResults)
+            {
+                if (items.MoveNext())
+                {
+                    if (items.Current.IsPart)
+                    {
+                        if (result.TryGetValue(items.Current.Parent, out var retCode) && retCode == ItemResponseRetValue.Success)
+                        {
+                            result[items.Current.Parent] = (ItemResponseRetValue)item.ReturnCode;
+                        }
+                    }
+                    else
+                    {
+                        result[items.Current] = (ItemResponseRetValue)item.ReturnCode;
+                    }
+                }
+            }
+        }
 
         private Task ReceivedWriteJobAck(Memory<byte> buffer)
         {
@@ -94,6 +123,7 @@ namespace Dacs7.Protocols
                 if(data.Header.Error.ErrorClass != 0)
                 {
                     _logger.LogError("Error while writing data for reference {0}. ErrorClass: {1}  ErrorCode:{2}", data.Header.Header.ProtocolDataUnitReference, data.Header.Error.ErrorClass, data.Header.Error.ErrorCode);
+                    cbh.Exception = new Dacs7Exception(data.Header.Error.ErrorClass, data.Header.Error.ErrorCode);
                 }
                 if (data.Data == null)
                 {
@@ -109,7 +139,6 @@ namespace Dacs7.Protocols
 
             return Task.CompletedTask;
         }
-
 
         private IEnumerable<WritePackage> CreateWritePackages(SiemensPlcProtocolContext s7Context, IEnumerable<WriteItem> vars)
         {
@@ -152,7 +181,7 @@ namespace Dacs7.Protocols
                                 }
                                 else
                                 {
-                                    throw new InvalidOperationException();
+                                    ExceptionThrowHelper.ThrowCouldNotAddPackageException(nameof(WritePackage));
                                 }
                             }
                             processed += slice;
@@ -165,7 +194,7 @@ namespace Dacs7.Protocols
                         result.Add(currentPackage);
                         if (!currentPackage.TryAdd(item))
                         {
-                            throw new InvalidOperationException();
+                            ExceptionThrowHelper.ThrowCouldNotAddPackageException(nameof(WritePackage));
                         }
                     }
                 }
