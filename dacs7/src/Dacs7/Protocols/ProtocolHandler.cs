@@ -128,55 +128,54 @@ namespace Dacs7.Protocols
 
         
 
-        private async Task<bool> DetectAndReceive(Memory<byte> payload)
+        private Task<bool> DetectAndReceive(Memory<byte> payload)
         {
             if (_s7Context.TryDetectDatagramType(payload, out var s7DatagramType))
             {
-                await S7DatagramReceived(s7DatagramType, payload);
-                return true;
+                S7DatagramReceived(s7DatagramType, payload);
+                return Task.FromResult(true);
             }
-            return false;
+            return Task.FromResult(false);
         }
 
-        private Task S7DatagramReceived(Type datagramType, Memory<byte> buffer)
+        private void S7DatagramReceived(Type datagramType, Memory<byte> buffer)
         {
-            if (datagramType == typeof(S7CommSetupAckDataDatagram))
+            if (datagramType == typeof(S7ReadJobAckDatagram))
             {
-                return ReceivedCommunicationSetupAck(buffer);
-            }
-            else if (datagramType == typeof(S7CommSetupDatagram))
-            {
-                return ReceivedCommunicationSetupJob(buffer);
-            }
-            else if (datagramType == typeof(S7ReadJobAckDatagram))
-            {
-                return ReceivedReadJobAck(buffer);
-            }
-            else if (datagramType == typeof(S7ReadJobDatagram))
-            {
-                return ReceivedReadJob(buffer);
+                ReceivedReadJobAck(buffer);
             }
             else if (datagramType == typeof(S7WriteJobAckDatagram))
             {
-                return ReceivedWriteJobAck(buffer);
+                ReceivedWriteJobAck(buffer);
             }
             else if (datagramType == typeof(S7PlcBlockInfoAckDatagram))
             {
-                return ReceivedS7PlcBlockInfoAckDatagram(buffer);
+                ReceivedS7PlcBlockInfoAckDatagram(buffer);
             }
             else if (datagramType == typeof(S7PendingAlarmAckDatagram))
             {
-                return ReceivedS7PendingAlarmsAckDatagram(buffer);
+                ReceivedS7PendingAlarmsAckDatagram(buffer);
             }
             else if (datagramType == typeof(S7AlarmUpdateAckDatagram))
             {
-                return ReceivedS7AlarmUpdateAckDatagram(buffer);
+                ReceivedS7AlarmUpdateAckDatagram(buffer);
+            }
+            else if (datagramType == typeof(S7CommSetupAckDataDatagram))
+            {
+                ReceivedCommunicationSetupAck(buffer);
+            }
+            else if (datagramType == typeof(S7CommSetupDatagram))
+            {
+                _ = ReceivedCommunicationSetupJob(buffer);
+            }
+            else if (datagramType == typeof(S7ReadJobDatagram))
+            {
+                ReceivedReadJob(buffer);
             }
             else if (datagramType == typeof(S7AlarmIndicationDatagram))
             {
-                return ReceivedS7AlarmIndicationDatagram(buffer);
+                ReceivedS7AlarmIndicationDatagram(buffer);
             }
-            return Task.CompletedTask;
         }
 
         private async Task StartS7CommunicationSetup()
@@ -211,7 +210,7 @@ namespace Dacs7.Protocols
             }
         }
 
-        private Task ReceivedCommunicationSetupAck(Memory<byte> buffer)
+        private void ReceivedCommunicationSetupAck(Memory<byte> buffer)
         {
             var data = S7CommSetupAckDataDatagram.TranslateFromMemory(buffer);
             _s7Context.MaxAmQCalling = data.Parameter.MaxAmQCalling;
@@ -220,8 +219,6 @@ namespace Dacs7.Protocols
             _concurrentJobs = new SemaphoreSlim(_s7Context.MaxAmQCalling);
             _ = UpdateConnectionState(ConnectionState.Opened);
             _connectEvent.Set(true);
-
-            return Task.CompletedTask;
         }
 
 

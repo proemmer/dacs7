@@ -99,22 +99,23 @@ namespace Dacs7.Protocols
             {
                 if (items.MoveNext())
                 {
-                    if (items.Current.IsPart)
+                    var current = items.Current;
+                    if (current.IsPart)
                     {
-                        if (result.TryGetValue(items.Current.Parent, out var retCode) && retCode == ItemResponseRetValue.Success)
+                        if (result.TryGetValue(current.Parent, out var retCode) && retCode == ItemResponseRetValue.Success)
                         {
-                            result[items.Current.Parent] = (ItemResponseRetValue)item.ReturnCode;
+                            result[current.Parent] = (ItemResponseRetValue)item.ReturnCode;
                         }
                     }
                     else
                     {
-                        result[items.Current] = (ItemResponseRetValue)item.ReturnCode;
+                        result[current] = (ItemResponseRetValue)item.ReturnCode;
                     }
                 }
             }
         }
 
-        private Task ReceivedWriteJobAck(Memory<byte> buffer)
+        private void ReceivedWriteJobAck(Memory<byte> buffer)
         {
             var data = S7WriteJobAckDatagram.TranslateFromMemory(buffer);
 
@@ -136,14 +137,12 @@ namespace Dacs7.Protocols
             {
                 _logger.LogWarning("No write handler found for received write ack reference {0}", data.Header.Header.ProtocolDataUnitReference);
             }
-
-            return Task.CompletedTask;
         }
 
-        private IEnumerable<WritePackage> CreateWritePackages(SiemensPlcProtocolContext s7Context, IEnumerable<WriteItem> vars)
+        private static IEnumerable<WritePackage> CreateWritePackages(SiemensPlcProtocolContext s7Context, IEnumerable<WriteItem> vars)
         {
             var result = new List<WritePackage>();
-            foreach (var item in vars.ToList().OrderByDescending(x => x.NumberOfItems))
+            foreach (var item in vars.OrderByDescending(x => x.NumberOfItems).ToList())
             {
                 var currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
                 if (currentPackage == null)
@@ -154,9 +153,9 @@ namespace Dacs7.Protocols
                         ushort processed = 0;
                         while (bytesToWrite > 0)
                         {
-                            var slice = Math.Min(_s7Context.WriteItemMaxLength, bytesToWrite);
+                            var slice = Math.Min(s7Context.WriteItemMaxLength, bytesToWrite);
                             var child = WriteItem.CreateChild(item, (ushort)(item.Offset + processed), slice);
-                            if (slice < _s7Context.WriteItemMaxLength)
+                            if (slice < s7Context.WriteItemMaxLength)
                             {
                                 currentPackage = result.FirstOrDefault(package => package.TryAdd(child));
                             }

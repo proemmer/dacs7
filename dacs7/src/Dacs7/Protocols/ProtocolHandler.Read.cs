@@ -94,32 +94,33 @@ namespace Dacs7.Protocols
             {
                 if (items.MoveNext())
                 {
-                    if (items.Current.IsPart)
+                    var current = items.Current;
+                    if (current.IsPart)
                     {
-                        if (!result.TryGetValue(items.Current.Parent, out var parent) || parent == null)
+                        if (!result.TryGetValue(current.Parent, out var parent) || parent == null)
                         {
                             parent = new S7DataItemSpecification
                             {
                                 TransportSize = item.TransportSize,
-                                Length = items.Current.Parent.NumberOfItems,
-                                Data = new byte[items.Current.Parent.NumberOfItems]
+                                Length = current.Parent.NumberOfItems,
+                                Data = new byte[current.Parent.NumberOfItems]
                             };
-                            result[items.Current.Parent] = parent;
+                            result[current.Parent] = parent;
                         }
 
                         parent.ReturnCode = item.ReturnCode;
-                        item.Data.CopyTo(parent.Data.Slice(items.Current.Offset - items.Current.Parent.Offset, items.Current.NumberOfItems));
+                        item.Data.CopyTo(parent.Data.Slice(current.Offset - current.Parent.Offset, current.NumberOfItems));
                     }
                     else
                     {
-                        result[items.Current] = item;
+                        result[current] = item;
                     }
 
                 }
             }
         }
 
-        private Task ReceivedReadJobAck(Memory<byte> buffer)
+        private void ReceivedReadJobAck(Memory<byte> buffer)
         {
             var data = S7ReadJobAckDatagram.TranslateFromMemory(buffer);
 
@@ -140,11 +141,9 @@ namespace Dacs7.Protocols
             {
                 _logger.LogWarning("No read handler found for received read ack reference {0}", data.Header.Header.ProtocolDataUnitReference);
             }
-
-            return Task.CompletedTask;
         }
 
-        private Task ReceivedReadJob(Memory<byte> buffer)
+        private void ReceivedReadJob(Memory<byte> buffer)
         {
             var data = S7ReadJobDatagram.TranslateFromMemory(buffer);
 
@@ -156,14 +155,12 @@ namespace Dacs7.Protocols
             {
                 _logger.LogWarning("No read handler found for received read job reference {0}", data.Header.ProtocolDataUnitReference);
             }
-
-            return Task.CompletedTask;
         }
 
-        private IEnumerable<ReadPackage> CreateReadPackages(SiemensPlcProtocolContext s7Context, IEnumerable<ReadItem> vars)
+        private static IEnumerable<ReadPackage> CreateReadPackages(SiemensPlcProtocolContext s7Context, IEnumerable<ReadItem> vars)
         {
             var result = new List<ReadPackage>();
-            foreach (var item in vars.ToList().OrderByDescending(x => x.NumberOfItems))
+            foreach (var item in vars.OrderByDescending(x => x.NumberOfItems).ToList())
             {
                 var currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
                 if (currentPackage == null)
@@ -174,9 +171,9 @@ namespace Dacs7.Protocols
                         ushort processed = 0;
                         while (bytesToRead > 0)
                         {
-                            var slice = Math.Min(_s7Context.ReadItemMaxLength, bytesToRead);
+                            var slice = Math.Min(s7Context.ReadItemMaxLength, bytesToRead);
                             var child = ReadItem.CreateChild(item, (item.Offset + processed), slice);
-                            if (slice < _s7Context.ReadItemMaxLength)
+                            if (slice < s7Context.ReadItemMaxLength)
                             {
                                 currentPackage = result.FirstOrDefault(package => package.TryAdd(child));
                             }

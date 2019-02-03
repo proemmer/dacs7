@@ -99,7 +99,8 @@ namespace Dacs7Cli
                         {
                             if (resultEnumerator.MoveNext())
                             {
-                                logger?.LogInformation($"Read: {item}={resultEnumerator.Current.Data}   -  {GetValue(resultEnumerator.Current.Value)}");
+                                var current = resultEnumerator.Current;
+                                logger?.LogInformation($"Read: {item}={current.Data}   -  {GetValue(current.Value)}");
                             }
                         }
                     }

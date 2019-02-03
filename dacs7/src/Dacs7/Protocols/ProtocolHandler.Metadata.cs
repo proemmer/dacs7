@@ -73,7 +73,7 @@ namespace Dacs7.Protocols
             }
         }
 
-        private Task ReceivedS7PlcBlockInfoAckDatagram(Memory<byte> buffer)
+        private void ReceivedS7PlcBlockInfoAckDatagram(Memory<byte> buffer)
         {
             var data = S7PlcBlockInfoAckDatagram.TranslateFromMemory(buffer);
 
@@ -89,8 +89,6 @@ namespace Dacs7.Protocols
             {
                 _logger.LogWarning("No block info handler found for received read ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
             }
-
-            return Task.CompletedTask;
         }
 
     }

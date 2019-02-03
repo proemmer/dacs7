@@ -186,7 +186,7 @@ namespace Dacs7.Protocols
 
 
 
-        private Task ReceivedS7PendingAlarmsAckDatagram(Memory<byte> buffer)
+        private void ReceivedS7PendingAlarmsAckDatagram(Memory<byte> buffer)
         {
             var data = S7PendingAlarmAckDatagram.TranslateFromMemory(buffer);
 
@@ -202,11 +202,9 @@ namespace Dacs7.Protocols
             {
                 _logger.LogWarning("No read handler found for received pending alarm ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
             }
-
-            return Task.CompletedTask;
         }
 
-        private Task ReceivedS7AlarmUpdateAckDatagram(Memory<byte> buffer)
+        private void ReceivedS7AlarmUpdateAckDatagram(Memory<byte> buffer)
         {
             var data = S7AlarmUpdateAckDatagram.TranslateFromMemory(buffer);
 
@@ -222,11 +220,9 @@ namespace Dacs7.Protocols
             {
                 _logger.LogWarning("No read handler found for received alarm update ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
             }
-
-            return Task.CompletedTask;
         }
 
-        private Task ReceivedS7AlarmIndicationDatagram(Memory<byte> buffer)
+        private void ReceivedS7AlarmIndicationDatagram(Memory<byte> buffer)
         {
             var data = S7AlarmIndicationDatagram.TranslateFromMemory(buffer);
             if (data.UserData.Data == null)
@@ -238,8 +234,6 @@ namespace Dacs7.Protocols
             {
                 handler.Event.Set(data);
             }
-
-            return Task.CompletedTask;
         }
 
     }
