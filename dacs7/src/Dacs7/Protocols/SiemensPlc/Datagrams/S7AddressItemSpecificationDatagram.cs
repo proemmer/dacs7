@@ -26,7 +26,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public byte Area { get; set; }
 
-        public Memory<byte> Address { get; set; } = new byte[3];
+        public Memory<byte> Address { get; set; } //= new byte[3];
 
 
         public static byte GetTransportSize(PlcArea area, Type t)
@@ -98,7 +98,8 @@ namespace Dacs7.Protocols.SiemensPlc
             BinaryPrimitives.WriteUInt16BigEndian(span.Slice(4, 2), datagram.ItemSpecLength);
             BinaryPrimitives.WriteUInt16BigEndian(span.Slice(6, 2), datagram.DbNumber);
             span[8] = datagram.Area;
-            datagram.Address.CopyTo(result.Slice(9));
+            if(!datagram.Address.IsEmpty)
+                datagram.Address.CopyTo(result.Slice(9));
 
             return result;
         }
@@ -116,6 +117,7 @@ namespace Dacs7.Protocols.SiemensPlc
                 DbNumber = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(6, 2)),
                 Area = span[8]
             };
+            result.Address = new byte[3];
             data.Slice(9, 3).CopyTo(result.Address);
 
             return result;

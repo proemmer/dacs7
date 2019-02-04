@@ -221,8 +221,6 @@ namespace Dacs7.Protocols
             _connectEvent.Set(true);
         }
 
-
-
         private async Task UpdateConnectionState(ConnectionState state)
         {
             if (ConnectionState != state)
@@ -245,8 +243,6 @@ namespace Dacs7.Protocols
                 _connectionStateChanged?.Invoke(state);
             }
         }
-
-
 
     }
 }

@@ -789,14 +789,16 @@ namespace Dacs7.Helper
             //LSB (Byte 7) 1=Sunday
             //bt = b[pos + 7];
             //week day = (bt1 & 0x0f); 
-            try
+            if (year > 0 && month > 0 && month <= 12 && day > 0 && hour >= 0 && hour <= 24 && minute >= 0 && minute < 60 && second >= 0 && second < 60)
             {
-                return new DateTime(year, month, day, hour, minute, second, milli);
+                try
+                {
+                    return new DateTime(year, month, day, hour, minute, second, milli);
+                }
+                catch (Exception) { }
             }
-            catch (Exception)
-            {
-                return new DateTime(1900, 01, 01, 00, 00, 00);
-            }
+
+            return new DateTime(1900, 01, 01, 00, 00, 00);
         }
 
 
