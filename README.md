@@ -70,8 +70,11 @@ var readResult = await _client.ReadAsync("DB1114.0,b,100", "DB1114.100,b,500");
 
 ### Read and Write bit data
 ```cs
+var readResults = await client.ReadAsync(ReadItem.Create<bool>(datablock, baseOffset),
+                                         ReadItem.Create<bool>(datablock, baseOffset + 5))
 
-// TODO
+await client.WriteAsync(WriteItem.Create(datablock, baseOffset, true),
+                        WriteItem.Create(datablock, baseOffset + 5, true))
 
 ```
 
