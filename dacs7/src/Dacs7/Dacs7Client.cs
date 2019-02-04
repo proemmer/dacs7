@@ -1,16 +1,12 @@
 ﻿using Dacs7.Communication;
-using Dacs7.Communication.S7Online;
 using Dacs7.Communication.Socket;
-using Dacs7.Domain;
 using Dacs7.Protocols;
-using Dacs7.Protocols.Fdl;
 using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -109,30 +105,30 @@ namespace Dacs7
         {
             _logger = loggerFactory?.CreateLogger<Dacs7Client>();
             Transport transport; ;
-            if (address.StartsWith("S7ONLINE", StringComparison.InvariantCultureIgnoreCase))
-            {
-                _logger?.LogDebug("Start configuring dacs7 with S7Online interface");
-                // This is currently a not working interface!!!!
-                var addressPort = address.Substring(9).Split(':');
-                var portRackSlot = addressPort.Length > 1 ?
-                            addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() :
-                            new int[] { 0, 2 };
-                if (!IPAddress.TryParse(addressPort[0], out var ipaddress))
-                {
-                    ipaddress = IPAddress.Loopback;
-                }
+            //if (address.StartsWith("S7ONLINE", StringComparison.InvariantCultureIgnoreCase))
+            //{
+            //    _logger?.LogDebug("Start configuring dacs7 with S7Online interface");
+            //    // This is currently a not working interface!!!!
+            //    var addressPort = address.Substring(9).Split(':');
+            //    var portRackSlot = addressPort.Length > 1 ?
+            //                addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() :
+            //                new int[] { 0, 2 };
+            //    if (!IPAddress.TryParse(addressPort[0], out var ipaddress))
+            //    {
+            //        ipaddress = IPAddress.Loopback;
+            //    }
 
-                transport = new S7OnlineTransport(new FdlProtocolContext
-                {
-                    Address = ipaddress,
-                    ConnectionType = connectionType,
-                    Rack = portRackSlot.Length > 0 ? portRackSlot[0] : 0,
-                    Slot = portRackSlot.Length > 1 ? portRackSlot[1] : 2
-                }, new S7OnlineConfiguration());
-                _logger?.LogDebug("S7Online interface configured.");
-            }
-            else
-            {
+            //    transport = new S7OnlineTransport(new FdlProtocolContext
+            //    {
+            //        Address = ipaddress,
+            //        ConnectionType = connectionType,
+            //        Rack = portRackSlot.Length > 0 ? portRackSlot[0] : 0,
+            //        Slot = portRackSlot.Length > 1 ? portRackSlot[1] : 2
+            //    }, new S7OnlineConfiguration());
+            //    _logger?.LogDebug("S7Online interface configured.");
+            //}
+            //else
+            //{
                 _logger?.LogDebug("Start configuring dacs7 with Socket interface");
                 var addressPort = address.Split(':');
                 var portRackSlot = addressPort.Length > 1 ?
@@ -154,7 +150,7 @@ namespace Dacs7
                 _logger?.LogDebug("Transport-Configuration: {0}.", transport.Configuration);
                 _logger?.LogDebug("Rfc1006 Configuration: connectionType={0}; Rack={1}; Slot={2}", Enum.GetName(typeof(PlcConnectionType), connectionType), rack, slot);
                 _logger?.LogDebug("Socket interface configured.");
-            }
+            //}
 
             _s7Context = new SiemensPlcProtocolContext
             {
@@ -177,9 +173,31 @@ namespace Dacs7
         /// </summary>
         /// <returns></returns>
         public Task DisconnectAsync() => ProtocolHandler?.CloseAsync();
-    
 
 
+
+        internal ReadItem RegisteredOrGiven(string tag)
+        {
+            if (_registeredTags.TryGetValue(tag, out var nodeId))
+            {
+                return nodeId;
+            }
+            return ReadItem.CreateFromTag(tag);
+        }
+
+        internal void UpdateRegistration(List<KeyValuePair<string, ReadItem>> toAdd, List<KeyValuePair<string, ReadItem>> toRemove)
+        {
+            Dictionary<string, ReadItem> origin;
+            Dictionary<string, ReadItem> newDict;
+            do
+            {
+                origin = _registeredTags;
+                var tmp = origin as IEnumerable<KeyValuePair<string, ReadItem>>;
+                if (toAdd != null) tmp = tmp.Union(toAdd);
+                if (toRemove != null) tmp = tmp.Except(toRemove);
+                newDict = tmp.ToDictionary(pair => pair.Key, pair => pair.Value);
+            } while (Interlocked.CompareExchange(ref _registeredTags, newDict, origin) != origin);
+        }
 
         private void UpdateConnectionState(ConnectionState state)
         {
@@ -199,27 +217,5 @@ namespace Dacs7
             }
         }
 
-        internal ReadItem RegisteredOrGiven(string tag)
-        {
-            if (_registeredTags.TryGetValue(tag, out var nodeId))
-            {
-                return nodeId;
-            }
-            return ReadItem.CreateFromTag(tag);
-        }
-
-        internal void UpdateRegistration(List<KeyValuePair<string, ReadItem>> toAdd, List<KeyValuePair<string, ReadItem>> toRemove)
-        {
-            Dictionary<string, ReadItem> origin;
-            Dictionary<string, ReadItem> newDict;
-            do
-            {
-                origin = _registeredTags;
-                var tmp = origin as IEnumerable<KeyValuePair<string, ReadItem>>;
-                if(toAdd != null) tmp = tmp.Union(toAdd);
-                if (toRemove != null) tmp = tmp.Except(toRemove);
-                newDict = tmp.ToDictionary(pair => pair.Key, pair => pair.Value);
-            } while (Interlocked.CompareExchange(ref _registeredTags, newDict, origin) != origin);
-        }
     }
 }

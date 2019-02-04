@@ -68,6 +68,7 @@ namespace Dacs7.Protocols
             return true;
         }
 
+
         private void HandlerErrorResult(ushort id, IEnumerable<S7DataItemSpecification> readResults, CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh)
         {
             if (readResults == null)

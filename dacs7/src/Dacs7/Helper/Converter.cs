@@ -531,7 +531,7 @@ namespace Dacs7.Helper
             try
             {
                 Int64 val = 0;
-                foreach (var b in hexString.ToLower().Replace("0x", ""))
+                foreach (var b in hexString.Replace("0x", ""))
                 {
                     val *= 16;
                     switch (b)
@@ -555,6 +555,14 @@ namespace Dacs7.Helper
                         case 'e':
                         case 'f':
                             val += (Int64)(b - 'a' + 10);
+                            break;
+                        case 'A':
+                        case 'B':
+                        case 'C':
+                        case 'D':
+                        case 'E':
+                        case 'F':
+                            val += (Int64)(b - 'A' + 10);
                             break;
                     }
                 }
