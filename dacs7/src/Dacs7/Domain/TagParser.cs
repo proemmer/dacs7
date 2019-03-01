@@ -322,7 +322,7 @@ namespace Dacs7.Domain
                 var ch = data[i];
                 if (ch >= '0' && ch <= '9')
                 {
-                    result = (ch - '0') * multip;
+                    result += (ch - '0') * multip;
                 }
                 else
                 {
