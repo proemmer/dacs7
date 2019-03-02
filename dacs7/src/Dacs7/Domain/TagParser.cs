@@ -27,7 +27,7 @@ namespace Dacs7.Domain
             public ushort Length { get; internal set; }
             public Type VarType { get; internal set; }
             public Type ResultType { get; internal set; }
-
+            public bool Unicode { get; internal set; }
 
             public TagParserState ErrorState { get; internal set; }
         }
@@ -214,12 +214,13 @@ namespace Dacs7.Domain
                         var offset = result.Offset;
                         var length = result.Length;
 
-                        if (!type.IsEmpty && TryDetectTypes(type, ref length, ref offset, out Type vtype, out Type rType))
+                        if (!type.IsEmpty && TryDetectTypes(type, ref length, ref offset, out Type vtype, out Type rType, out var unicode))
                         {
                             result.Length = length;
                             result.Offset = offset;
                             result.VarType = vtype;
                             result.ResultType = rType;
+                            result.Unicode = unicode;
                             indexStart = i + 1;
                             state = TagParserState.Success;
                             return true;
@@ -232,10 +233,11 @@ namespace Dacs7.Domain
             return false;
         }
 
-        private static bool TryDetectTypes(ReadOnlySpan<char> type, ref ushort length, ref int offset, out Type vtype, out Type rType)
+        private static bool TryDetectTypes(ReadOnlySpan<char> type, ref ushort length, ref int offset, out Type vtype, out Type rType, out bool unicode)
         {
             vtype = typeof(object);
             rType = typeof(object);
+            unicode = false;
 
             switch (type[0])
             {
@@ -247,10 +249,29 @@ namespace Dacs7.Domain
                     vtype = typeof(char);
                     rType = length > 1 ? typeof(char[]) : vtype;
                     return true;
+                case 'w' when type.Length > 1:
+                    {
+                        switch(type[1])
+                        {
+                            case 's': 
+                                vtype = rType = typeof(string);
+                                unicode = true;
+                                break;
+                            case 'c': 
+                                vtype = rType = typeof(string);
+                                unicode = true;
+                                break;
+                        }
+                        break;
+                    }
                 case 'w':
                     vtype = typeof(UInt16);
                     rType = length > 1 ? typeof(UInt16[]) : vtype;
                     return true;
+                case 'l' when type.Length > 1 && type[1] == 'i':
+                    vtype = typeof(sbyte);
+                    rType = length > 1 ? typeof(sbyte[]) : vtype;
+                    break;
                 case 'i':
                     vtype = typeof(Int16);
                     rType = length > 1 ? typeof(Int16[]) : vtype;
@@ -264,13 +285,15 @@ namespace Dacs7.Domain
                     rType = length > 1 ? typeof(Int32[]) : vtype;
                     return true;
                 case 'r':
-                    vtype = typeof(Single);
-                    rType = length > 1 ? typeof(Single[]) : vtype;
+                    vtype = typeof(float);
+                    rType = length > 1 ? typeof(float[]) : vtype;
                     return true;
+                case 's' when type.Length > 1 && type[1] == 'i':
+                    vtype = typeof(sbyte);
+                    rType = length > 1 ? typeof(sbyte[]) : vtype;
+                    break;
                 case 's':
                     vtype = rType = typeof(string);
-                    //length += 2;
-                    //rType = length > 1 ? typeof(string[]) : vtype;
                     return true;
                 case 'x' when type.Length > 1:
                     vtype = rType = typeof(bool);
