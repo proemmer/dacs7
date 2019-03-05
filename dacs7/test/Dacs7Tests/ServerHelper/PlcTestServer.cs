@@ -56,13 +56,14 @@ namespace Dacs7Tests.ServerHelper
             {2, new byte[20000] },
             {3, new byte[10] },
             {141, new byte[20000] },
+            {962, new byte[1000] },
         };
 
 
 #if REALPLC
         //public static readonly string Address = "192.168.0.148"; // SoftPLC
-        //public static readonly string Address = "192.168.0.220";   // HardPLC
-        public static readonly string Address = "192.168.1.60:102,0,1";   // TIA PLC
+        public static readonly string Address = "192.168.0.220";   // HardPLC
+        //public static readonly string Address = "192.168.1.60:102,0,1";   // TIA PLC
         public static readonly PlcConnectionType ConnectionType = PlcConnectionType.Pg;
         public static readonly int Timeout = 5000;
         private static readonly SemaphoreSlim _semaphore = null;

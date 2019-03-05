@@ -2,11 +2,15 @@
 
 namespace Dacs7.Protocols
 {
-    internal struct CallbackHandler<T>
+    internal class CallbackHandler<T>
     {
         public ushort Id { get; }
         public Exception Exception { get; set; }
         public AsyncAutoResetEvent<T> Event { get; }
+
+        public CallbackHandler()
+        {
+        }
 
         public CallbackHandler(ushort id)
         {

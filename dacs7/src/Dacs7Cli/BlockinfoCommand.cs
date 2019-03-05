@@ -95,7 +95,7 @@ namespace Dacs7Cli
 
         private static (PlcBlockType blockType, int number) TranslateFromInput(string input)
         {
-            var type = input.ToUpper().Substring(0, input.Count(x => x >= 'A' && x <= 'Z'));
+            var type = input.Substring(0, input.Count(x => x >= 'A' && x <= 'Z' || x >= 'a' && x <= 'z')).ToUpper();
             var number = input.Substring(type.Length).Trim();
             if (int.TryParse(number, out int blockNumber))
             {

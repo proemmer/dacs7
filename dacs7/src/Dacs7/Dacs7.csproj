@@ -10,12 +10,22 @@
     <AssemblyName>Dacs7</AssemblyName>
     <PackageId>Dacs7</PackageId>
     <PackageTags>siemens plc S7 PC-S7-Connection TCP/IP-S7 communication .netcore Automation HMI C# VB.Net RFC-1006 IsoOnTcp-S7 SIMATIC</PackageTags>
-    <PackageReleaseNotes>* BREAKING CHANGE * - Redesign</PackageReleaseNotes>
+    <PackageReleaseNotes>
+      ##Whats New##
+      * Added TIA Datatype support
+
+      ##Fixed##
+      * Changed receive buffer size from 1024 to 5 * 1024  because with PDUSize 960 the buffer reaches the limit. (ZeroWindow)
+      * Fixed TagParsing of numbers in targets lower than NETCOREAPP21
+      * fixed a bug where we get non real errors form protocol handle (all errors were timeouts)
+      * fixed a bug in Blockinfo ( Invalid error code results in a timeout)
+
+    </PackageReleaseNotes>
     <PackageProjectUrl>http://proemmer.github.io/dacs7</PackageProjectUrl>
     <PackageLicenseUrl>https://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>2.0.1-alpha3</Version>
+    <Version>2.1.0-beta1</Version>
     <RepositoryUrl>git://github.com/proemmer/dacs7</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <IncludeSymbols>true</IncludeSymbols>

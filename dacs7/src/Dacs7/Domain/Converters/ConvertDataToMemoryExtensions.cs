@@ -21,7 +21,7 @@ namespace Dacs7.Domain
                 }
                 else if (item.ResultType == typeof(byte[]))
                 {
-                    data = Encoding.ASCII.GetBytes(dataS);
+                    data = item.Unicode ? Encoding.BigEndianUnicode.GetBytes(dataS) : Encoding.ASCII.GetBytes(dataS);
                 }
                 else
                     data = Convert.ChangeType(data, item.ResultType, CultureInfo.InvariantCulture);
@@ -49,19 +49,35 @@ namespace Dacs7.Domain
                     return ca.Select(x => Convert.ToByte(x)).ToArray();
                 case string s:
                     {
-                        Memory<byte> result = new byte[s.Length + ReadItem.StringHeaderSize];
+                        if (item.VarType == typeof(string))
+                        {
+                            if (item.Unicode)
+                            {
+                                Memory<byte> result = new byte[(s.Length * 2) + ReadItem.UnicodeStringHeaderSize];
 
-                        if (ReadItem.StringHeaderSize == 2)
-                        {
-                            result.Span[0] = (byte)(item.NumberOfItems - ReadItem.StringHeaderSize);
-                            result.Span[1] = (byte)s.Length;
+                                BinaryPrimitives.WriteUInt16BigEndian(result.Span, (ushort)((item.NumberOfItems - ReadItem.StringHeaderSize) / 2));
+                                BinaryPrimitives.WriteUInt16BigEndian(result.Span.Slice(2), (ushort)s.Length);
+                                Encoding.BigEndianUnicode.GetBytes(s).AsSpan().CopyTo(result.Span.Slice(ReadItem.UnicodeStringHeaderSize));
+                                return result;
+                            }
+                            else
+                            {
+                                Memory<byte> result = new byte[s.Length + ReadItem.StringHeaderSize];
+
+                                result.Span[0] = (byte)(item.NumberOfItems - ReadItem.StringHeaderSize);
+                                result.Span[1] = (byte)s.Length;
+                                Encoding.ASCII.GetBytes(s).AsSpan().CopyTo(result.Span.Slice(ReadItem.StringHeaderSize));
+                                return result;
+                            }
                         }
-                        else if(ReadItem.StringHeaderSize == 1)
+                        else if(item.VarType == typeof(char))
                         {
-                            result.Span[0] = (byte)s.Length;
+                            Memory<byte> result = new byte[2];
+                            Encoding.BigEndianUnicode.GetBytes(s).AsSpan().CopyTo(result.Span);
+                            return result;
                         }
-                        Encoding.ASCII.GetBytes(s).AsSpan().CopyTo(result.Span.Slice(ReadItem.StringHeaderSize));
-                        return result;
+                        ExceptionThrowHelper.ThrowInvalidCastException();
+                        return null;
                     }
                 case Int16 i16:
                     {

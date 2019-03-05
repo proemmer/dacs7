@@ -257,8 +257,9 @@ namespace Dacs7.Domain
                                 vtype = rType = typeof(string);
                                 unicode = true;
                                 break;
-                            case 'c': 
-                                vtype = rType = typeof(string);
+                            case 'c':
+                                vtype = typeof(char);
+                                rType = typeof(string);
                                 unicode = true;
                                 break;
                         }

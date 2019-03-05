@@ -1,11 +1,7 @@
 ﻿
 
 using Dacs7;
-using Dacs7Tests.ServerHelper;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Dacs7Tests

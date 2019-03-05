@@ -11,7 +11,8 @@ namespace Dacs7
     public class ReadItem
     {
 
-        public const int StringHeaderSize = 2;
+        public const ushort StringHeaderSize = 2;
+        public const ushort UnicodeStringHeaderSize = 4;
 
 
         public PlcArea Area { get; private set; }
@@ -20,6 +21,7 @@ namespace Dacs7
         public ushort NumberOfItems { get; internal set; }
         public Type VarType { get; private set; }
         public Type ResultType { get; private set; }
+        public bool Unicode { get; private set; }
 
         internal int CallbackReference { get; set; }
         internal ReadItem Parent { get; set; }
@@ -42,7 +44,8 @@ namespace Dacs7
                 NumberOfItems = NumberOfItems,
                 VarType = VarType,
                 ResultType = ResultType,
-                ElementSize = ElementSize
+                ElementSize = ElementSize,
+                Unicode = Unicode
             };
         }
 
@@ -58,15 +61,19 @@ namespace Dacs7
             {
                 Area = result.Area,
                 DbNumber = result.DbNumber,
-                Offset = result.VarType == typeof(string) && ReadItem.StringHeaderSize == 1 ? result.Offset + 1 : result.Offset,
-                NumberOfItems = result.VarType == typeof(string) ? (ushort)(result.Length + ReadItem.StringHeaderSize) :  result.Length,
+                Offset = result.Offset,
+                NumberOfItems = result.Length,
                 VarType = result.VarType,
                 ResultType = result.ResultType,
-                ElementSize = GetElementSize(result.Area, result.VarType)
+                ElementSize = GetElementSize(result.Area, result.VarType, result.Unicode),
+                Unicode = result.Unicode
             };
-            ConvertHelpers.EnsureSupportedType(readItem);
+            EnsureSupportedType(readItem);
             return readItem;
         }
+
+        public static ReadItem Create<T>(string area, int offset, bool unicode = false)
+            => Create<T>(area, offset, 1, unicode);
 
         /// <summary>
         /// Create a read item
@@ -75,8 +82,9 @@ namespace Dacs7
         /// <param name="area">Where to read:  e.g.  DB1  or M or...</param>
         /// <param name="offset">offset in bytes, if you address booleans, you have to pass the address in bits (byteoffset * 8 + bitoffset)</param>
         /// <param name="length">The number of items to read</param>
+        /// <param name="unicode">IF the given type is a string or char you can also specifiy if its the unicode variant of them (this means 2byte per sign)</param>
         /// <returns></returns>
-        public static ReadItem Create<T>(string area, int offset, ushort length = 1)
+        public static ReadItem Create<T>(string area, int offset, ushort length, bool unicode = false)
         {
             if (!TagParser.TryDetectArea(area.AsSpan(), out var selector, out var db ))
             {
@@ -88,7 +96,8 @@ namespace Dacs7
                 Area = selector,
                 DbNumber = db,
                 Offset = offset,
-                NumberOfItems = length
+                NumberOfItems = length,
+                Unicode = unicode
             });
         }
 
@@ -111,7 +120,8 @@ namespace Dacs7
                 VarType = item.VarType,
                 ResultType = item.ResultType,
                 Parent = item,
-                ElementSize = item.ElementSize
+                ElementSize = item.ElementSize,
+                Unicode = item.Unicode
             };
         }
 
@@ -129,14 +139,10 @@ namespace Dacs7
                 result.VarType = t.GetGenericArguments().Single();
                 result.ResultType = t;
             }
-            else if(t == typeof(string) )
+            else if(t == typeof(string))
             {
                 result.VarType = result.ResultType  = t;
-                if (ReadItem.StringHeaderSize == 1)
-                {
-                    result.Offset++;
-                }
-                result.NumberOfItems += ReadItem.StringHeaderSize;
+                result.NumberOfItems += result.Unicode ? UnicodeStringHeaderSize : StringHeaderSize;
             }
             else if (t == typeof(Memory<byte>))
             {
@@ -149,64 +155,50 @@ namespace Dacs7
             }
 
 
-            ConvertHelpers.EnsureSupportedType(result);
-            result.ElementSize = GetElementSize(result.Area, result.VarType);
+            EnsureSupportedType(result);
+            result.ElementSize = GetElementSize(result.Area, result.VarType, result.Unicode);
             return result;
         }
 
 
 
-        public static ushort GetElementSize(PlcArea area, Type t)
+        public static ushort GetElementSize(PlcArea area, Type t, bool unicode)
         {
-            if (area == PlcArea.CT || area == PlcArea.TM)
-            {
-                return 2;
-            }
+            if (area == PlcArea.CT || area == PlcArea.TM) return 2;
 
-            if (t.IsArray)
-                t = t.GetElementType();
+            if (t.IsArray) t = t.GetElementType();
 
-            if (t == typeof(bool))
-            {
-                return 1;
-            }
-
-            if (t == typeof(byte) || t == typeof(string) || t == typeof(Memory<byte>))
-            {
-                return 1;
-            }
-
-            if (t == typeof(char))
-            {
-                return 1;
-            }
-
-            if (t == typeof(short))
-            {
-                return 2;
-            }
-
-            if (t == typeof(int))
-            {
-                return 4;
-            }
-
-            if (t == typeof(ushort))
-            {
-                return 2;
-            }
-
-            if (t == typeof(uint))
-            {
-                return 4;
-            }
-
-            if (t == typeof(Single))
-            {
-                return 4;
-            }
+            if (t == typeof(byte) || t == typeof(Memory<byte>)) return 1;
+            if (t == typeof(bool)) return 1;
+            if (t == typeof(char) || t == typeof(string)) return (ushort)(unicode ? 2 : 1);
+            if (t == typeof(short) || t == typeof(ushort)) return 2;
+            if (t == typeof(int) || t == typeof(uint)) return 4;
+            if (t == typeof(ulong) || t == typeof(long)) return 8;
+            if (t == typeof(float)) return 4;
+            if (t == typeof(sbyte)) return 1;
 
             return 1;
+        }
+
+        public static void EnsureSupportedType(ReadItem item)
+        {
+            if (item.ResultType == typeof(byte) || item.ResultType == typeof(byte[]) || item.ResultType == typeof(List<byte>) || item.ResultType == typeof(Memory<byte>) ||
+                item.ResultType == typeof(bool) ||
+                item.ResultType == typeof(string) ||
+                item.ResultType == typeof(char) || item.ResultType == typeof(char[]) || item.ResultType == typeof(List<char>) ||
+                item.ResultType == typeof(short) || item.ResultType == typeof(short[]) || item.ResultType == typeof(List<short>) ||
+                item.ResultType == typeof(ushort) || item.ResultType == typeof(ushort[]) || item.ResultType == typeof(List<ushort>) ||
+                item.ResultType == typeof(int) || item.ResultType == typeof(int[]) || item.ResultType == typeof(List<int>) ||
+                item.ResultType == typeof(uint) || item.ResultType == typeof(uint[]) || item.ResultType == typeof(List<uint>) ||
+                item.ResultType == typeof(ulong) || item.ResultType == typeof(ulong[]) || item.ResultType == typeof(List<ulong>) ||
+                item.ResultType == typeof(long) || item.ResultType == typeof(long[]) || item.ResultType == typeof(List<long>) ||
+                item.ResultType == typeof(float) || item.ResultType == typeof(float[]) || item.ResultType == typeof(List<float>) ||
+                item.ResultType == typeof(sbyte))
+            {
+                return;
+            }
+
+            ExceptionThrowHelper.ThrowTypeNotSupportedException(item.ResultType);
         }
 
     }

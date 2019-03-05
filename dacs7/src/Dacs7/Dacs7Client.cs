@@ -104,53 +104,28 @@ namespace Dacs7
         public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg, int timeout = 5000, ILoggerFactory loggerFactory = null)
         {
             _logger = loggerFactory?.CreateLogger<Dacs7Client>();
-            Transport transport; ;
-            //if (address.StartsWith("S7ONLINE", StringComparison.InvariantCultureIgnoreCase))
-            //{
-            //    _logger?.LogDebug("Start configuring dacs7 with S7Online interface");
-            //    // This is currently a not working interface!!!!
-            //    var addressPort = address.Substring(9).Split(':');
-            //    var portRackSlot = addressPort.Length > 1 ?
-            //                addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() :
-            //                new int[] { 0, 2 };
-            //    if (!IPAddress.TryParse(addressPort[0], out var ipaddress))
-            //    {
-            //        ipaddress = IPAddress.Loopback;
-            //    }
+            _logger?.LogDebug("Start configuring dacs7 with Socket interface");
+            var addressPort = address.Split(':');
+            var portRackSlot = addressPort.Length > 1 ?
+                                        addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() :
+                                        new int[] { 102, 0, 2 };
 
-            //    transport = new S7OnlineTransport(new FdlProtocolContext
-            //    {
-            //        Address = ipaddress,
-            //        ConnectionType = connectionType,
-            //        Rack = portRackSlot.Length > 0 ? portRackSlot[0] : 0,
-            //        Slot = portRackSlot.Length > 1 ? portRackSlot[1] : 2
-            //    }, new S7OnlineConfiguration());
-            //    _logger?.LogDebug("S7Online interface configured.");
-            //}
-            //else
-            //{
-                _logger?.LogDebug("Start configuring dacs7 with Socket interface");
-                var addressPort = address.Split(':');
-                var portRackSlot = addressPort.Length > 1 ?
-                                            addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() :
-                                            new int[] { 102, 0, 2 };
+            var rack = portRackSlot.Length > 1 ? portRackSlot[1] : 0;
+            var slot = portRackSlot.Length > 2 ? portRackSlot[2] : 2;
+            var transport = new TcpTransport(new Rfc1006ProtocolContext
+            {
+                DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType,
+                                                                    rack,
+                                                                    slot),
+            }, new ClientSocketConfiguration
+            {
+                Hostname = addressPort[0],
+                ServiceName = portRackSlot.Length > 0 ? portRackSlot[0] : 102
+            });
+            _logger?.LogDebug("Transport-Configuration: {0}.", transport.Configuration);
+            _logger?.LogDebug("Rfc1006 Configuration: connectionType={0}; Rack={1}; Slot={2}", Enum.GetName(typeof(PlcConnectionType), connectionType), rack, slot);
+            _logger?.LogDebug("Socket interface configured.");
 
-                var rack = portRackSlot.Length > 1 ? portRackSlot[1] : 0;
-                var slot = portRackSlot.Length > 2 ? portRackSlot[2] : 2;
-                transport = new TcpTransport(new Rfc1006ProtocolContext
-                {
-                    DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType,
-                                                                     rack,
-                                                                     slot),
-                }, new ClientSocketConfiguration
-                {
-                    Hostname = addressPort[0],
-                    ServiceName = portRackSlot.Length > 0 ? portRackSlot[0] : 102
-                });
-                _logger?.LogDebug("Transport-Configuration: {0}.", transport.Configuration);
-                _logger?.LogDebug("Rfc1006 Configuration: connectionType={0}; Rack={1}; Slot={2}", Enum.GetName(typeof(PlcConnectionType), connectionType), rack, slot);
-                _logger?.LogDebug("Socket interface configured.");
-            //}
 
             _s7Context = new SiemensPlcProtocolContext
             {

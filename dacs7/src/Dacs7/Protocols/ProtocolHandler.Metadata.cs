@@ -79,6 +79,12 @@ namespace Dacs7.Protocols
 
             if (_blockInfoHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out var cbh))
             {
+                if (data.UserData.Parameter.ParamErrorCode != 0)
+                {
+                    _logger.LogError("Error while readinf blockdata for reference {0}. ParamErrorCode: {1}", data.UserData.Header.ProtocolDataUnitReference, data.UserData.Parameter.ParamErrorCode);
+                    cbh.Exception = new Dacs7ParameterException(data.UserData.Parameter.ParamErrorCode);
+                    cbh.Event.Set(null);
+                }
                 if (data.UserData.Data == null)
                 {
                     _logger.LogWarning("No data from blockinfo ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
@@ -90,6 +96,7 @@ namespace Dacs7.Protocols
                 _logger.LogWarning("No block info handler found for received read ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
             }
         }
+
 
     }
 }
