@@ -54,6 +54,44 @@ namespace Dacs7Tests
         }
 
         [Fact]
+        public async Task CreateWriteReferenceTest()
+        {
+          
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
+            {
+                var item = WriteItem.Create("DB210", 192, false);
+                var writeResults = (await client.WriteAsync(item)).ToArray();
+
+                item = WriteItem.Create("DB210", 193, false);
+                writeResults = (await client.WriteAsync(item)).ToArray();
+
+
+                item = WriteItem.Create("DB210", 35440, false);
+                writeResults = (await client.WriteAsync(item)).ToArray();
+
+
+                item = WriteItem.Create("DB210", 35441, false);
+                writeResults = (await client.WriteAsync(item)).ToArray();
+
+
+                item = WriteItem.Create("DB210", 70688, false);
+                writeResults = (await client.WriteAsync(item)).ToArray();
+
+
+                item = WriteItem.Create("DB210", 70689, false);
+                writeResults = (await client.WriteAsync(item)).ToArray();
+
+                item = WriteItem.Create("DB210", 105936, false);
+                writeResults = (await client.WriteAsync(item)).ToArray();
+
+
+                item = WriteItem.Create("DB210", 105937, false);
+                writeResults = (await client.WriteAsync(item)).ToArray();
+            });
+
+        }
+
+        [Fact]
         public async Task ReadWriteSingleWords()
         {
             await PlcTestServer.ExecuteClientAsync(async (client) =>
