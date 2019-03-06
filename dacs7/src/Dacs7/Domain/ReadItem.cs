@@ -62,7 +62,7 @@ namespace Dacs7
                 Area = result.Area,
                 DbNumber = result.DbNumber,
                 Offset = result.Offset,
-                NumberOfItems = result.Length,
+                NumberOfItems = result.VarType == typeof(string) ?  (ushort)(result.Length + (result.Unicode ? UnicodeStringHeaderSize : StringHeaderSize)) : result.Length,
                 VarType = result.VarType,
                 ResultType = result.ResultType,
                 ElementSize = GetElementSize(result.Area, result.VarType, result.Unicode),
