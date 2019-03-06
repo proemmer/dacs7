@@ -7,6 +7,12 @@
 
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.11.4" />
+    <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.11.4" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="2.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Dacs7\Dacs7.csproj" />
   </ItemGroup>
 
 </Project>

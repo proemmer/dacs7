@@ -7,7 +7,8 @@ namespace Dacs7.Benchmarks
     {
         static void Main(string[] args)
         {
-            var summary = BenchmarkRunner.Run<TypeOfBenchmarks>();
+            //var summary = BenchmarkRunner.Run<TypeOfBenchmarks>();
+            var summary = BenchmarkRunner.Run<ReadBenchmark>();
         }
     }
 }

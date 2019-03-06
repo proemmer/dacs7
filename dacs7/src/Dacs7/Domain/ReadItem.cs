@@ -56,21 +56,27 @@ namespace Dacs7
         /// <returns></returns>
         public static ReadItem CreateFromTag(string tag)
         {
-            var result = TagParser.ParseTag(tag);
-            var readItem = new ReadItem
+            var readItem = BuildReadItemFromTagResult(TagParser.ParseTag(tag));
+            EnsureSupportedType(readItem);
+            return readItem;
+        }
+
+        private static ReadItem BuildReadItemFromTagResult(TagParser.TagParserResult result)
+        {
+            var numberOfItems = result.VarType == typeof(string) ? (ushort)(result.Length + (result.Unicode ? UnicodeStringHeaderSize : StringHeaderSize)) : result.Length;
+            return new ReadItem
             {
                 Area = result.Area,
                 DbNumber = result.DbNumber,
                 Offset = result.Offset,
-                NumberOfItems = result.VarType == typeof(string) ?  (ushort)(result.Length + (result.Unicode ? UnicodeStringHeaderSize : StringHeaderSize)) : result.Length,
+                NumberOfItems = numberOfItems,
                 VarType = result.VarType,
                 ResultType = result.ResultType,
                 ElementSize = GetElementSize(result.Area, result.VarType, result.Unicode),
                 Unicode = result.Unicode
             };
-            EnsureSupportedType(readItem);
-            return readItem;
         }
+
 
         public static ReadItem Create<T>(string area, int offset, bool unicode = false)
             => Create<T>(area, offset, 1, unicode);
