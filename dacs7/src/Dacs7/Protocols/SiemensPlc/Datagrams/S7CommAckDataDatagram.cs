@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
 using System;
+using System.Buffers;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
@@ -33,10 +34,11 @@ namespace Dacs7.Protocols.SiemensPlc
             return result;
         }
 
-        public static Memory<byte> TranslateToMemory(S7CommSetupAckDataDatagram datagram)
+        public static IMemoryOwner<byte> TranslateToMemory(S7CommSetupAckDataDatagram datagram, out int memoryLength)
         {
-            var result = S7AckDataDatagram.TranslateToMemory(datagram.Header);
-            S7CommSetupParameterDatagram.TranslateToMemory(datagram.Parameter, result.Slice(datagram.Header.GetParameterOffset()));
+            var result = S7AckDataDatagram.TranslateToMemory(datagram.Header, out memoryLength);
+            var take = memoryLength - datagram.Header.GetParameterOffset();
+            S7CommSetupParameterDatagram.TranslateToMemory(datagram.Parameter, result.Memory.Slice(datagram.Header.GetParameterOffset(), take));
             return result;
         }
 

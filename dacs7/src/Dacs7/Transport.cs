@@ -2,6 +2,7 @@
 using Dacs7.Protocols;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Buffers;
 
 namespace Dacs7
 {
@@ -24,7 +25,6 @@ namespace Dacs7
 
 
         public abstract void ConfigureClient(ILoggerFactory loggerFactory);
-
-        public abstract Memory<byte> Build(Memory<byte> buffer);
+        public abstract IMemoryOwner<byte> Build(Memory<byte> buffer, out int length);
     }
 }

@@ -30,40 +30,42 @@ namespace Dacs7.Protocols
 
         }
 
-
         private async Task<bool> ReadPackage(Dictionary<ReadItem, S7DataItemSpecification> result, ReadPackage normalized)
         {
             var id = GetNextReferenceId();
-            var sendData = _transport.Build(S7ReadJobDatagram.TranslateToMemory(S7ReadJobDatagram.BuildRead(_s7Context, id, normalized.Items)));
-
-
-            try
+            using (var dgmem = S7ReadJobDatagram.TranslateToMemory(S7ReadJobDatagram.BuildRead(_s7Context, id, normalized.Items), out var dgmemLength))
             {
-                IEnumerable<S7DataItemSpecification> readResults = null;
-                CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh;
-                using (await SemaphoreGuard.Async(_concurrentJobs))
+                using (var sendData = _transport.Build(dgmem.Memory.Slice(0, dgmemLength), out var sendLength))
                 {
-                    cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
-                    _readHandler.TryAdd(cbh.Id, cbh);
                     try
                     {
-                        if (await _transport.Client.SendAsync(sendData) != SocketError.Success)
-                            return false;
-                        readResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
+                        IEnumerable<S7DataItemSpecification> readResults = null;
+                        CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh;
+                        using (await SemaphoreGuard.Async(_concurrentJobs))
+                        {
+                            cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
+                            _readHandler.TryAdd(cbh.Id, cbh);
+                            try
+                            {
+                                if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)) != SocketError.Success)
+                                    return false;
+                                readResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
+                            }
+                            finally
+                            {
+                                _readHandler.TryRemove(cbh.Id, out _);
+                            }
+                        }
+
+                        HandlerErrorResult(id, readResults, cbh);
+
+                        BildResults(result, normalized, readResults);
                     }
-                    finally
+                    catch (TaskCanceledException)
                     {
-                        _readHandler.TryRemove(cbh.Id, out _);
+                        ExceptionThrowHelper.ThrowTimeoutException();
                     }
                 }
-
-                HandlerErrorResult(id, readResults, cbh);
-
-                BildResults(result, normalized, readResults);
-            }
-            catch (TaskCanceledException)
-            {
-                ExceptionThrowHelper.ThrowTimeoutException();
             }
             return true;
         }
@@ -110,6 +112,7 @@ namespace Dacs7.Protocols
                         }
 
                         parent.ReturnCode = item.ReturnCode;
+
                         item.Data.CopyTo(parent.Data.Slice(current.Offset - current.Parent.Offset, current.NumberOfItems));
                     }
                     else

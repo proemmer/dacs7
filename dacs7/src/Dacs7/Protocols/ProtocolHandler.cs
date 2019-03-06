@@ -180,33 +180,40 @@ namespace Dacs7.Protocols
 
         private async Task StartS7CommunicationSetup()
         {
-            var sendData = _transport.Build(S7CommSetupDatagram
-                                            .TranslateToMemory(
-                                                S7CommSetupDatagram
-                                                .Build(_s7Context, GetNextReferenceId())));
-            var result = await _transport.Client.SendAsync(sendData);
-            if (result == SocketError.Success)
+            using (var dgmem = S7CommSetupDatagram.TranslateToMemory(S7CommSetupDatagram.Build(_s7Context, GetNextReferenceId()), out var commemLength))
             {
-                await UpdateConnectionState(ConnectionState.PendingOpenPlc);
+                using (var sendData = _transport.Build(dgmem.Memory.Slice(0, commemLength), out var sendLength))
+                {
+                    var result = await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength));
+                    if (result == SocketError.Success)
+                    {
+                        await UpdateConnectionState(ConnectionState.PendingOpenPlc);
+                    }
+                }
             }
         }
 
         private async Task ReceivedCommunicationSetupJob(Memory<byte> buffer)
         {
             var data = S7CommSetupDatagram.TranslateFromMemory(buffer);
-            var sendData = _transport.Build(S7CommSetupAckDataDatagram
+            using (var dg = S7CommSetupAckDataDatagram
                                                     .TranslateToMemory(
                                                         S7CommSetupAckDataDatagram
-                                                        .BuildFrom(_s7Context, data)));
-            var result = await _transport.Client.SendAsync(sendData);
-            if (result == SocketError.Success)
+                                                        .BuildFrom(_s7Context, data), out int memoryLength))
             {
-                //UpdateConnectionState(ConnectionState.PendingOpenPlc);
-                _s7Context.MaxAmQCalling = data.Parameter.MaxAmQCalling;
-                _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalling;
-                _s7Context.PduSize = data.Parameter.PduLength;
-                _concurrentJobs = new SemaphoreSlim(_s7Context.MaxAmQCalling);
-                await UpdateConnectionState(ConnectionState.Opened);
+                using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
+                {
+                    var result = await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength));
+                    if (result == SocketError.Success)
+                    {
+                        //UpdateConnectionState(ConnectionState.PendingOpenPlc);
+                        _s7Context.MaxAmQCalling = data.Parameter.MaxAmQCalling;
+                        _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalling;
+                        _s7Context.PduSize = data.Parameter.PduLength;
+                        _concurrentJobs = new SemaphoreSlim(_s7Context.MaxAmQCalling);
+                        await UpdateConnectionState(ConnectionState.Opened);
+                    }
+                }
             }
         }
 

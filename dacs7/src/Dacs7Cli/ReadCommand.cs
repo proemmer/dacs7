@@ -70,7 +70,6 @@ namespace Dacs7Cli
 
             try
             {
-                long msTotal = 0;
                 await client.ConnectAsync();
 
                 if (readOptions.RegisterItems)
@@ -78,6 +77,7 @@ namespace Dacs7Cli
                     await client.RegisterAsync(readOptions.Tags);
                 }
 
+                var swTotal = new Stopwatch();
                 for (int i = 0; i < readOptions.Loops; i++)
                 {
                     if (i > 0 && readOptions.Wait > 0)
@@ -89,9 +89,11 @@ namespace Dacs7Cli
                     {
                         var sw = new Stopwatch();
                         sw.Start();
+                        swTotal.Start();
                         var results = await client.ReadAsync(readOptions.Tags);
+                        swTotal.Stop();
                         sw.Stop();
-                        msTotal += sw.ElapsedMilliseconds;
+                        
                         logger?.LogDebug($"ReadTime: {sw.Elapsed}");
 
                         var resultEnumerator = results.GetEnumerator();
@@ -112,7 +114,7 @@ namespace Dacs7Cli
 
                 if (readOptions.Loops > 0)
                 {
-                    logger?.LogInformation($"Average read time over loops is {msTotal / readOptions.Loops}ms");
+                    logger?.LogInformation($"Average read time over loops is {(ElapsedNanoSeconds(swTotal.ElapsedTicks) / readOptions.Loops)}ns");
                     await Task.Delay(readOptions.Wait);
                 }
             }
@@ -134,6 +136,10 @@ namespace Dacs7Cli
             return 0;
         }
 
+        public static long ElapsedNanoSeconds(long ticks)
+        {
+            return ticks * 1000000000 / Stopwatch.Frequency;
+        }
 
         private static string GetValue(object v)
         {

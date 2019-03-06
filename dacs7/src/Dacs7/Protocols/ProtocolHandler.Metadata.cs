@@ -19,36 +19,39 @@ namespace Dacs7.Protocols
                 ExceptionThrowHelper.ThrowNotConnectedException();
 
             var id = GetNextReferenceId();
-            var sendData = _transport.Build(S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlockInfoRequest(_s7Context, id, type, blocknumber)));
-
-
-            try
+            using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlockInfoRequest(_s7Context, id, type, blocknumber), out int memoryLength))
             {
-                CallbackHandler<S7PlcBlockInfoAckDatagram> cbh;
-                S7PlcBlockInfoAckDatagram blockinfoResult = null;
-                using (await SemaphoreGuard.Async(_concurrentJobs))
+                using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
                 {
-                    cbh = new CallbackHandler<S7PlcBlockInfoAckDatagram>(id);
-                    _blockInfoHandler.TryAdd(cbh.Id, cbh);
                     try
                     {
-                        if (await _transport.Client.SendAsync(sendData) != SocketError.Success)
-                            return null;
-                        blockinfoResult = await cbh.Event.WaitAsync(_s7Context.Timeout);
+                        CallbackHandler<S7PlcBlockInfoAckDatagram> cbh;
+                        S7PlcBlockInfoAckDatagram blockinfoResult = null;
+                        using (await SemaphoreGuard.Async(_concurrentJobs))
+                        {
+                            cbh = new CallbackHandler<S7PlcBlockInfoAckDatagram>(id);
+                            _blockInfoHandler.TryAdd(cbh.Id, cbh);
+                            try
+                            {
+                                if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)) != SocketError.Success)
+                                    return null;
+                                blockinfoResult = await cbh.Event.WaitAsync(_s7Context.Timeout);
+                            }
+                            finally
+                            {
+                                _blockInfoHandler.TryRemove(cbh.Id, out _);
+                            }
+                        }
+
+                        HandlerErrorResult(id, cbh, blockinfoResult);
+
+                        return blockinfoResult;
                     }
-                    finally
+                    catch (TaskCanceledException)
                     {
-                        _blockInfoHandler.TryRemove(cbh.Id, out _);
+                        ExceptionThrowHelper.ThrowTimeoutException();
                     }
                 }
-
-                HandlerErrorResult(id, cbh, blockinfoResult);
-
-                return blockinfoResult;
-            }
-            catch (TaskCanceledException)
-            {
-                ExceptionThrowHelper.ThrowTimeoutException();
             }
 
             return null;

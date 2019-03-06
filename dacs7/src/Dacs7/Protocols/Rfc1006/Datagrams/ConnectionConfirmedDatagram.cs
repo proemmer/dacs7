@@ -2,12 +2,18 @@
 // Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 
 namespace Dacs7.Protocols.Rfc1006
 {
-    internal class ConnectionConfirmedDatagram 
+    internal class ConnectionConfirmedDatagram : IDisposable
     {
+        private IMemoryOwner<byte> _sizeTpduReceiving;
+        private IMemoryOwner<byte> _destTsap;
+        private IMemoryOwner<byte> _sourceTsap;
+
+
         public TpktDatagram Tkpt { get; set; } = new TpktDatagram
         {
             Sync1 = 0x03,
@@ -43,6 +49,15 @@ namespace Dacs7.Protocols.Rfc1006
         public Memory<byte> DestTsap { get; set; }
 
 
+        public void Dispose()
+        {
+            _sizeTpduReceiving?.Dispose();
+            _sizeTpduReceiving = null;
+            _sourceTsap?.Dispose();
+            _sourceTsap = null;
+            _destTsap?.Dispose();
+            _destTsap = null;
+        }
 
         public ConnectionConfirmedDatagram BuildCc(Rfc1006ProtocolContext context, ConnectionRequestDatagram req)
         {
@@ -126,9 +141,9 @@ namespace Dacs7.Protocols.Rfc1006
                         {
                             result.ParmCodeTpduSize = span[offset++];
                             result.SizeTpduReceivingLength = span[offset++];
-                            var tmp = new byte[result.SizeTpduReceivingLength];
-                            data.Slice(offset, result.SizeTpduReceivingLength).CopyTo(tmp);
-                            result.SizeTpduReceiving = tmp;
+                            result._sizeTpduReceiving = MemoryPool<byte>.Shared.Rent(result.SizeTpduReceivingLength);
+                            data.Slice(offset, result.SizeTpduReceivingLength).CopyTo(result._sizeTpduReceiving.Memory);
+                            result.SizeTpduReceiving = result._sizeTpduReceiving.Memory.Slice(0, result.SizeTpduReceivingLength);
                             offset += result.SizeTpduReceivingLength;
                         }
                         break;
@@ -138,8 +153,9 @@ namespace Dacs7.Protocols.Rfc1006
                             result.ParmCodeSrcTsap = span[offset++];
                             result.SourceTsapLength = span[offset++];
                             var tmp = new byte[result.SourceTsapLength];
-                            data.Slice(offset, result.SourceTsapLength).CopyTo(tmp);
-                            result.SourceTsap = tmp;
+                            result._sourceTsap = MemoryPool<byte>.Shared.Rent(result.SourceTsapLength);
+                            data.Slice(offset, result.SourceTsapLength).CopyTo(result._sourceTsap.Memory);
+                            result.SourceTsap = result._sourceTsap.Memory.Slice(0, result.SourceTsapLength);
                             offset += result.SourceTsapLength;
                         }
                         break;
@@ -148,9 +164,9 @@ namespace Dacs7.Protocols.Rfc1006
                         {
                             result.ParmCodeDestTsap = span[offset++];
                             result.DestTsapLength = span[offset++];
-                            var tmp = new byte[result.DestTsapLength];
-                            data.Slice(offset, result.DestTsapLength).CopyTo(tmp);
-                            result.DestTsap = tmp;
+                            result._destTsap = MemoryPool<byte>.Shared.Rent(result.DestTsapLength);
+                            data.Slice(offset, result.DestTsapLength).CopyTo(result._destTsap.Memory);
+                            result.DestTsap = result._destTsap.Memory.Slice(0, result.DestTsapLength);
                             offset += result.DestTsapLength;
                         }
                         break;
@@ -165,5 +181,7 @@ namespace Dacs7.Protocols.Rfc1006
             processed = offset;
             return result;
         }
+
+        
     }
 }

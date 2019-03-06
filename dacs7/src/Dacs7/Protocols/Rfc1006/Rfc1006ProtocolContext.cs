@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Logging;
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 
@@ -52,7 +53,7 @@ namespace Dacs7.Protocols.Rfc1006
         public Memory<byte> SizeTpduReceiving { get; set; }
         public Memory<byte> SizeTpduSending { get; set; }
 
-        public IList<Tuple<Memory<byte>, int>> FrameBuffer { get; set; } = new List<Tuple<Memory<byte>, int>>();
+        public IList<(IMemoryOwner<byte> MemoryOwner, int Length)> FrameBuffer { get; set; } = new List<(IMemoryOwner<byte> MemoryOwner, int Length)>();
 
         /// <summary>
         /// The minimum data size we need to detect the datagram type

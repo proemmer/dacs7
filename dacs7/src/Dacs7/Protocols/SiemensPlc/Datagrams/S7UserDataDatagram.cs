@@ -2,6 +2,7 @@
 using Dacs7.Metadata;
 using Dacs7.Protocols.SiemensPlc.Datagrams;
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
@@ -118,16 +119,17 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
 
-        public static Memory<byte> TranslateToMemory(S7UserDataDatagram datagram)
+        public static IMemoryOwner<byte> TranslateToMemory(S7UserDataDatagram datagram, out int memoryLength)
         {
             var offset = datagram.Header.GetHeaderSize() + datagram.Parameter.GetParamSize();
             var dataSize = offset + datagram.Data.GetUserDataLength();
-            var result = S7HeaderDatagram.TranslateToMemory(datagram.Header, dataSize);
-            S7UserDataParameter.TranslateToMemory(datagram.Parameter, result.Slice(datagram.Header.GetHeaderSize()));
-            result.Span[offset++] = datagram.Data.ReturnCode;
-            result.Span[offset++] = datagram.Data.TransportSize;
-            BinaryPrimitives.WriteUInt16BigEndian(result.Slice(offset, 2).Span, datagram.Data.UserDataLength);
-            datagram.Data.Data.CopyTo(result.Slice(offset+2, datagram.Data.UserDataLength));
+            var result = S7HeaderDatagram.TranslateToMemory(datagram.Header, dataSize, out memoryLength);
+            var mem = result.Memory.Slice(0, memoryLength);
+            S7UserDataParameter.TranslateToMemory(datagram.Parameter, mem.Slice(datagram.Header.GetHeaderSize()));
+            mem.Span[offset++] = datagram.Data.ReturnCode;
+            mem.Span[offset++] = datagram.Data.TransportSize;
+            BinaryPrimitives.WriteUInt16BigEndian(mem.Slice(offset, 2).Span, datagram.Data.UserDataLength);
+            datagram.Data.Data.CopyTo(mem.Slice(offset+2, datagram.Data.UserDataLength));
             return result;
         }
 

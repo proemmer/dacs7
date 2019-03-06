@@ -41,33 +41,38 @@ namespace Dacs7.Protocols
         {
             var id = GetNextReferenceId();
             CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh;
-            var sendData = _transport.Build(S7WriteJobDatagram.TranslateToMemory(S7WriteJobDatagram.BuildWrite(_s7Context, id, normalized.Items)));
-            try
+            using (var dg = S7WriteJobDatagram.TranslateToMemory(S7WriteJobDatagram.BuildWrite(_s7Context, id, normalized.Items), out var memoryLegth))
             {
-                IEnumerable<S7DataItemWriteResult> writeResults = null;
-                using (await SemaphoreGuard.Async(_concurrentJobs))
+                using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLegth), out var sendLength))
                 {
-                    cbh = new CallbackHandler<IEnumerable<S7DataItemWriteResult>>(id);
-                    _writeHandler.TryAdd(cbh.Id, cbh);
                     try
                     {
-                        if (await _transport.Client.SendAsync(sendData) != SocketError.Success)
-                            return false;
-                        writeResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
+                        IEnumerable<S7DataItemWriteResult> writeResults = null;
+                        using (await SemaphoreGuard.Async(_concurrentJobs))
+                        {
+                            cbh = new CallbackHandler<IEnumerable<S7DataItemWriteResult>>(id);
+                            _writeHandler.TryAdd(cbh.Id, cbh);
+                            try
+                            {
+                                if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)) != SocketError.Success)
+                                    return false;
+                                writeResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
+                            }
+                            finally
+                            {
+                                _writeHandler.TryRemove(cbh.Id, out _);
+                            }
+                        }
+
+                        HandlerErrorResult(id, cbh, writeResults);
+
+                        BildResults(result, normalized, writeResults);
                     }
-                    finally
+                    catch (TaskCanceledException)
                     {
-                        _writeHandler.TryRemove(cbh.Id, out _);
+                        ExceptionThrowHelper.ThrowTimeoutException();
                     }
                 }
-
-                HandlerErrorResult(id, cbh, writeResults);
-
-                BildResults(result, normalized, writeResults);
-            }
-            catch (TaskCanceledException)
-            {
-                ExceptionThrowHelper.ThrowTimeoutException();
             }
             return true;
         }

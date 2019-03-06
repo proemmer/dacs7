@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 
 namespace Dacs7.Protocols.SiemensPlc
@@ -34,12 +35,14 @@ namespace Dacs7.Protocols.SiemensPlc
             return 10;
         }
 
+        public static IMemoryOwner<byte> TranslateToMemory(S7HeaderDatagram datagram, out int memoryLength)
+            => TranslateToMemory(datagram, -1, out memoryLength);
 
-        public static Memory<byte> TranslateToMemory(S7HeaderDatagram datagram, int length = -1)
+        public static IMemoryOwner<byte> TranslateToMemory(S7HeaderDatagram datagram, int length, out int memoryLength)
         {
-            length = length == -1 ?  datagram.GetMemorySize() : length;
-            var result = new Memory<byte>(new byte[length]);  // check if we could use ArrayBuffer
-            var span = result.Span;
+            memoryLength = length == -1 ?  datagram.GetMemorySize() : length;
+            var result = MemoryPool<byte>.Shared.Rent(memoryLength);
+            var span = result.Memory.Slice(0, memoryLength).Span;
 
             span[0] = datagram.ProtocolId;
             span[1] = datagram.PduType;

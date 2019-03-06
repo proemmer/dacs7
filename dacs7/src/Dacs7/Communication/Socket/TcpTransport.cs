@@ -2,6 +2,7 @@
 using Dacs7.Protocols.Rfc1006;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Buffers;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -42,7 +43,7 @@ namespace Dacs7.Communication.Socket
             {
                 return SendTcpConnectionRequest();
             }
-            else if (state == Protocols.ConnectionState.Opened && !connected)
+            else if (state == ConnectionState.Opened && !connected)
             {
                 return OnUpdateConnectionState?.Invoke(ConnectionState.Closed);
             }
@@ -56,16 +57,20 @@ namespace Dacs7.Communication.Socket
             var context = _context;
             if (datagramType == typeof(ConnectionConfirmedDatagram))
             {
-                var res = ConnectionConfirmedDatagram.TranslateFromMemory(buffer, out processed);
-                context.UpdateFrameSize(res);
-                await OnUpdateConnectionState?.Invoke(Protocols.ConnectionState.TransportOpened);
+                using (var res = ConnectionConfirmedDatagram.TranslateFromMemory(buffer, out processed))
+                {
+                    context.UpdateFrameSize(res);
+                    await OnUpdateConnectionState?.Invoke(ConnectionState.TransportOpened);
+                }
             }
             else if (datagramType == typeof(DataTransferDatagram))
             {
-                var datagram = DataTransferDatagram.TranslateFromMemory(buffer.Slice(processed), context, out var needMoreData, out processed);
-                if (!needMoreData)
+                using (var datagram = DataTransferDatagram.TranslateFromMemory(buffer.Slice(processed), context, out var needMoreData, out processed))
                 {
-                    await OnDetectAndReceive?.Invoke(datagram.Payload);
+                    if (!needMoreData)
+                    {
+                        await OnDetectAndReceive?.Invoke(datagram.Payload);
+                    }
                 }
             }
 
@@ -92,6 +97,24 @@ namespace Dacs7.Communication.Socket
             };
         }
 
-        public override Memory<byte> Build(Memory<byte> buffer) => DataTransferDatagram.TranslateToMemory(DataTransferDatagram.Build(_context, buffer).FirstOrDefault());
+
+        public override IMemoryOwner<byte> Build(Memory<byte> buffer, out int length)
+        {
+            using (var dg = DataTransferDatagram.Build(_context, buffer).FirstOrDefault())
+            {
+                length = DataTransferDatagram.GetRawDataLength(dg);
+                var resultBuffer = MemoryPool<byte>.Shared.Rent(length);
+                try
+                {
+                    DataTransferDatagram.TranslateToMemory(dg, resultBuffer.Memory);
+                }
+                catch (Exception)
+                {
+                    resultBuffer.Dispose();
+                    throw;
+                }
+                return resultBuffer;
+            }
+        }
     }
 }

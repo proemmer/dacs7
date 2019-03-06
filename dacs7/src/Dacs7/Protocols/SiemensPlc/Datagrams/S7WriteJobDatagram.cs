@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 
 namespace Dacs7.Protocols.SiemensPlc
@@ -67,23 +68,24 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
 
-        public static Memory<byte> TranslateToMemory(S7WriteJobDatagram datagram)
+        public static IMemoryOwner<byte> TranslateToMemory(S7WriteJobDatagram datagram, out int memoryLength)
         {
-            var result = S7HeaderDatagram.TranslateToMemory(datagram.Header);
-            var span = result.Span;
+            var result = S7HeaderDatagram.TranslateToMemory(datagram.Header, out memoryLength);
+            var mem = result.Memory.Slice(0, memoryLength);
+            var span = mem.Span;
             var offset = datagram.Header.GetHeaderSize();
             span[offset++] = datagram.Function;
             span[offset++] = datagram.ItemCount;
 
             foreach (var item in datagram.Items)
             {
-                S7AddressItemSpecificationDatagram.TranslateToMemory(item, result.Slice(offset));
+                S7AddressItemSpecificationDatagram.TranslateToMemory(item, mem.Slice(offset));
                 offset += item.GetSpecificationLength();
             }
 
             foreach (var item in datagram.Data)
             {
-                S7DataItemSpecification.TranslateToMemory(item, result.Slice(offset));
+                S7DataItemSpecification.TranslateToMemory(item, mem.Slice(offset));
                 offset += item.GetSpecificationLength();
                 if (offset % 2 != 0) offset++;
             }

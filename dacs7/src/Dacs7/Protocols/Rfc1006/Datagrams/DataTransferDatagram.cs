@@ -10,8 +10,9 @@ using System.Buffers;
 namespace Dacs7.Protocols.Rfc1006
 {
 
-    internal class DataTransferDatagram
+    internal class DataTransferDatagram : IDisposable
     {
+        private IMemoryOwner<byte> _payload = null;
         public static byte EndOfTransmition = 0x80;
         internal static DataTransferDatagram Default = new DataTransferDatagram();
 
@@ -32,10 +33,14 @@ namespace Dacs7.Protocols.Rfc1006
 
 
 
+        public void Dispose()
+        {
+            _payload?.Dispose();
+            _payload = null;
+        }
 
 
-
-        public static IEnumerable<DataTransferDatagram> Build(Rfc1006ProtocolContext context, Memory<byte> rawPayload)
+        public static IEnumerable<DataTransferDatagram> Build(Rfc1006ProtocolContext context, Memory<byte> rawPayload, bool usePoolForPayload = true)
         {
             var result = new List<DataTransferDatagram>();
             var payload = rawPayload;
@@ -43,10 +48,20 @@ namespace Dacs7.Protocols.Rfc1006
             {
                 var frame = payload.Slice(0, Math.Min(payload.Length, context.FrameSizeSending));
                 payload = payload.Slice(frame.Length);
-                var current = new DataTransferDatagram()
+
+
+                var current = new DataTransferDatagram();
+
+                if (usePoolForPayload)
                 {
-                    Payload = new byte[frame.Length]
-                };
+                    current._payload = MemoryPool<byte>.Shared.Rent(frame.Length);
+                    current.Payload = current._payload.Memory.Slice(0, frame.Length);
+                }
+                else
+                {
+                    current.Payload = new byte[frame.Length];
+                }
+
                 frame.CopyTo(current.Payload);
                 if (payload.Length > 0)
                     current.TpduNr = 0x00;
@@ -57,22 +72,21 @@ namespace Dacs7.Protocols.Rfc1006
             return result;
         }
 
-        public static Memory<byte> TranslateToMemory(DataTransferDatagram datagram)
-        {
-            var length = datagram.Tkpt.Length;
-            var result = new Memory<byte>(new byte[length]);  // check if we could use ArrayBuffer
-            var span = result.Span;
 
+        public static ushort GetRawDataLength(DataTransferDatagram datagram) => datagram.Tkpt.Length;
+
+        public static Memory<byte> TranslateToMemory(DataTransferDatagram datagram, Memory<byte> buffer)
+        {
+            var span = buffer.Span;
             span[0] = datagram.Tkpt.Sync1;
             span[1] = datagram.Tkpt.Sync2;
             BinaryPrimitives.WriteUInt16BigEndian(span.Slice(2, 2), datagram.Tkpt.Length);
             span[4] = datagram.Li;
             span[5] = datagram.PduType;
             span[6] = datagram.TpduNr;
+            datagram.Payload.CopyTo(buffer.Slice(7));
 
-            datagram.Payload.CopyTo(result.Slice(7));
-
-            return result;
+            return buffer;
         }
 
         public static DataTransferDatagram TranslateFromMemory(Memory<byte> data, out int processed)
@@ -105,23 +119,22 @@ namespace Dacs7.Protocols.Rfc1006
             var datagram = TranslateFromMemory(buffer, out processed);
             if (datagram.TpduNr == EndOfTransmition)
             {
-                Memory<byte> payload = Memory<byte>.Empty;
                 if (context.FrameBuffer.Any())
                 {
-                    context.FrameBuffer.Add(new Tuple<Memory<byte>, int>(datagram.Payload, datagram.Payload.Length));
-                    var length = context.FrameBuffer.Sum(x => x.Item1.Length);
-                    payload = new byte[length];
+                    context.FrameBuffer.Add(new ValueTuple<IMemoryOwner<byte>, int>(datagram._payload, datagram.Payload.Length));
+                    var length = context.FrameBuffer.Sum(x => x.Length);
+                    datagram._payload = MemoryPool<byte>.Shared.Rent(length);
                     var index = 0;
-                    foreach (var item in context.FrameBuffer)
+                    foreach (var (MemoryOwner, Length) in context.FrameBuffer)
                     {
-                        item.Item1.Slice(0, item.Item2).CopyTo(payload.Slice(index));
-                        if (!ReferenceEquals(datagram.Payload, item.Item1))
+                        MemoryOwner.Memory.Slice(0, Length).CopyTo(datagram._payload.Memory.Slice(index));
+                        if (!ReferenceEquals(datagram.Payload, MemoryOwner))
                         {
-                            ArrayPool<byte>.Shared.Return(item.Item1.ToArray());
+                            MemoryOwner.Dispose();
                         }
-                        index += item.Item2;
+                        index += Length;
                     }
-                    datagram.Payload = payload;
+                    datagram.Payload = datagram._payload.Memory.Slice(0, length);
                     context.FrameBuffer.Clear();
                 }
 
@@ -130,13 +143,14 @@ namespace Dacs7.Protocols.Rfc1006
             }
             else if(!datagram.Payload.IsEmpty)
             {
-                Memory<byte> copy = ArrayPool<byte>.Shared.Rent(datagram.Payload.Length);
-                datagram.Payload.CopyTo(copy);
-                context.FrameBuffer.Add(new Tuple<Memory<byte>, int>(copy, datagram.Payload.Length));
+                var copy = MemoryPool<byte>.Shared.Rent(datagram.Payload.Length);
+                datagram.Payload.CopyTo(copy.Memory);
+                context.FrameBuffer.Add(new ValueTuple<IMemoryOwner<byte>, int>(copy, datagram.Payload.Length));
             }
             needMoteData = true;
             return datagram;
         }
 
+        
     }
 }
