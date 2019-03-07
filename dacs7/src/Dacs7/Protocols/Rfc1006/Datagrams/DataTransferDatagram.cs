@@ -22,7 +22,6 @@ namespace Dacs7.Protocols.Rfc1006
             Sync2 = 0x00
         };
 
-
         public byte Li { get; set; } = 0x02; // Header Length -> sizeof DT -1
 
         public byte PduType { get; set; } = 0xf0;
@@ -40,7 +39,7 @@ namespace Dacs7.Protocols.Rfc1006
         }
 
 
-        public static IEnumerable<DataTransferDatagram> Build(Rfc1006ProtocolContext context, Memory<byte> rawPayload, bool usePoolForPayload = true)
+        public static IEnumerable<DataTransferDatagram> Build(Rfc1006ProtocolContext context, Memory<byte> rawPayload)
         {
             var result = new List<DataTransferDatagram>();
             var payload = rawPayload;
@@ -49,18 +48,11 @@ namespace Dacs7.Protocols.Rfc1006
                 var frame = payload.Slice(0, Math.Min(payload.Length, context.FrameSizeSending));
                 payload = payload.Slice(frame.Length);
 
-
-                var current = new DataTransferDatagram();
-
-                if (usePoolForPayload)
+                var current = new DataTransferDatagram
                 {
-                    current._payload = MemoryPool<byte>.Shared.Rent(frame.Length);
-                    current.Payload = current._payload.Memory.Slice(0, frame.Length);
-                }
-                else
-                {
-                    current.Payload = new byte[frame.Length];
-                }
+                    _payload = MemoryPool<byte>.Shared.Rent(frame.Length)
+                };
+                current.Payload = current._payload.Memory.Slice(0, frame.Length);
 
                 frame.CopyTo(current.Payload);
                 if (payload.Length > 0)
@@ -71,7 +63,6 @@ namespace Dacs7.Protocols.Rfc1006
             } while (payload.Length > 0);
             return result;
         }
-
 
         public static ushort GetRawDataLength(DataTransferDatagram datagram) => datagram.Tkpt.Length;
 
@@ -119,38 +110,43 @@ namespace Dacs7.Protocols.Rfc1006
             var datagram = TranslateFromMemory(buffer, out processed);
             if (datagram.TpduNr == EndOfTransmition)
             {
-                if (context.FrameBuffer.Any())
-                {
-                    context.FrameBuffer.Add(new ValueTuple<IMemoryOwner<byte>, int>(datagram._payload, datagram.Payload.Length));
-                    var length = context.FrameBuffer.Sum(x => x.Length);
-                    datagram._payload = MemoryPool<byte>.Shared.Rent(length);
-                    var index = 0;
-                    foreach (var (MemoryOwner, Length) in context.FrameBuffer)
-                    {
-                        MemoryOwner.Memory.Slice(0, Length).CopyTo(datagram._payload.Memory.Slice(index));
-                        if (!ReferenceEquals(datagram.Payload, MemoryOwner))
-                        {
-                            MemoryOwner.Dispose();
-                        }
-                        index += Length;
-                    }
-                    datagram.Payload = datagram._payload.Memory.Slice(0, length);
-                    context.FrameBuffer.Clear();
-                }
-
+                if (context.FrameBuffer.Any()) ApplyPayloadFromFrameBuffer(context.FrameBuffer, datagram);
                 needMoteData = false;
                 return datagram;
             }
             else if(!datagram.Payload.IsEmpty)
             {
-                var copy = MemoryPool<byte>.Shared.Rent(datagram.Payload.Length);
-                datagram.Payload.CopyTo(copy.Memory);
-                context.FrameBuffer.Add(new ValueTuple<IMemoryOwner<byte>, int>(copy, datagram.Payload.Length));
+                AddPayloadToFrameBuffer(context.FrameBuffer, datagram);
             }
             needMoteData = true;
             return datagram;
         }
 
-        
+        private static void AddPayloadToFrameBuffer(IList<(IMemoryOwner<byte> MemoryOwner, int Length)> framebuffer, DataTransferDatagram datagram)
+        {
+            var copy = MemoryPool<byte>.Shared.Rent(datagram.Payload.Length);
+            datagram.Payload.CopyTo(copy.Memory);
+            framebuffer.Add(new ValueTuple<IMemoryOwner<byte>, int>(copy, datagram.Payload.Length));
+        }
+
+        private static void ApplyPayloadFromFrameBuffer(IList<(IMemoryOwner<byte> MemoryOwner, int Length)> framebuffer, DataTransferDatagram datagram)
+        {
+            framebuffer.Add(new ValueTuple<IMemoryOwner<byte>, int>(datagram._payload, datagram.Payload.Length));
+            var length = framebuffer.Sum(x => x.Length);
+            datagram._payload = MemoryPool<byte>.Shared.Rent(length);
+            var index = 0;
+            foreach (var (MemoryOwner, Length) in framebuffer)
+            {
+                MemoryOwner.Memory.Slice(0, Length).CopyTo(datagram._payload.Memory.Slice(index));
+                if (!ReferenceEquals(datagram.Payload, MemoryOwner))
+                {
+                    MemoryOwner.Dispose();
+                }
+                index += Length;
+            }
+            datagram.Payload = datagram._payload.Memory.Slice(0, length);
+            framebuffer.Clear();
+        }
+
     }
 }

@@ -20,7 +20,7 @@ namespace Dacs7
         /// </summary>
         /// <param name="values"></param>
         /// <returns></returns>
-        public static async Task<IEnumerable<string>> RegisterAsync(this Dacs7Client client, IEnumerable<string> values)
+        public static Task<IEnumerable<string>> RegisterAsync(this Dacs7Client client, IEnumerable<string> values)
         {
             var added = new List<KeyValuePair<string, ReadItem>>();
             var enumerator = values.GetEnumerator();
@@ -32,8 +32,7 @@ namespace Dacs7
             }).ToList();
 
             client.UpdateRegistration(added, null);
-
-            return await Task.FromResult(resList);
+            return Task.FromResult<IEnumerable<string>>(resList);
         }
 
 

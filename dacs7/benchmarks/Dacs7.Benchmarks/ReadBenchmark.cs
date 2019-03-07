@@ -2,9 +2,6 @@
 using BenchmarkDotNet.Diagnostics.Windows.Configs;
 using BenchmarkDotNet.Engines;
 using Dacs7.ReadWrite;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Dacs7.Benchmarks
@@ -31,8 +28,8 @@ namespace Dacs7.Benchmarks
         {
             _client = new Dacs7Client(Address, PlcConnectionType.Pg, 5000)
             {
-                MaxAmQCalled = (ushort)5,
-                MaxAmQCalling = (ushort)5
+                MaxAmQCalled = 5,
+                MaxAmQCalling = 5
             };
             await _client.ConnectAsync();
             _item = ReadItem.CreateFromTag(Tag);

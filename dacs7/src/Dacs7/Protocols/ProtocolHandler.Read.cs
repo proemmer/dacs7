@@ -1,4 +1,7 @@
-﻿using Dacs7.Helper;
+﻿// Copyright (c) insite-gmbh. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using Dacs7.Helper;
 using Dacs7.Protocols.SiemensPlc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -6,7 +9,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Dacs7.Protocols

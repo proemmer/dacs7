@@ -11,8 +11,6 @@ namespace Dacs7.ReadWrite
         ///// </summary>
         public static ushort GetReadItemMaxLength(this Dacs7Client client) => client.S7Context != null ? client.S7Context.ReadItemMaxLength : (ushort)0;
 
-
-
         /// <summary>
         /// Reads data from the plc.
         /// </summary>
@@ -53,9 +51,7 @@ namespace Dacs7.ReadWrite
 
 
         internal static  IEnumerable<ReadItem> CreateNodeIdCollection(this Dacs7Client client, IEnumerable<string> values)
-        {
-            return new List<ReadItem>(values.Select(item => client.RegisteredOrGiven(item)));
-        }
+            => new List<ReadItem>(values.Select(item => client.RegisteredOrGiven(item)));
 
     }
 }

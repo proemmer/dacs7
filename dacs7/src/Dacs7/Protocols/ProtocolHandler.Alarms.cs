@@ -28,7 +28,7 @@ namespace Dacs7.Protocols
             var id = GetNextReferenceId();
             var sequenceNumber = (byte)0x00;
             var alarms = new List<IPlcAlarm>();
-            var memory = Memory<byte>.Empty;
+            IMemoryOwner<byte> memoryOwner = null;
             var currentPosition = 0;
             var totalLength = 0;
             try
@@ -72,13 +72,13 @@ namespace Dacs7.Protocols
                                 }
                             }
 
-                            if (memory.IsEmpty)
+                            if (memoryOwner == null)
                             {
                                 totalLength = BinaryPrimitives.ReadUInt16BigEndian(alarmResults.UserData.Data.Data.Span.Slice(4, 2)) + 6; // 6 is the header
-                                memory = ArrayPool<byte>.Shared.Rent(totalLength);
+                                memoryOwner = MemoryPool<byte>.Shared.Rent(totalLength);
                             }
 
-                            alarmResults.UserData.Data.Data.CopyTo(memory.Slice(currentPosition, alarmResults.UserData.Data.Data.Length));
+                            alarmResults.UserData.Data.Data.CopyTo(memoryOwner.Memory.Slice(currentPosition, alarmResults.UserData.Data.Data.Length));
                             currentPosition += alarmResults.UserData.Data.Data.Length;
                             sequenceNumber = alarmResults.UserData.Parameter.SequenceNumber;
                         }
@@ -86,12 +86,12 @@ namespace Dacs7.Protocols
                 } while (alarmResults.UserData.Parameter.LastDataUnit == 0x01);
 
 
-                alarms = S7PendingAlarmAckDatagram.TranslateFromSslData(memory, totalLength);
+                alarms = S7PendingAlarmAckDatagram.TranslateFromSslData(memoryOwner.Memory, totalLength);
 
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(memory.ToArray());
+                memoryOwner.Dispose();
             }
 
 

@@ -109,29 +109,24 @@ namespace Dacs7
             var portRackSlot = addressPort.Length > 1 ?
                                         addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() :
                                         new int[] { 102, 0, 2 };
-
+            var host = addressPort[0];
+            var port = portRackSlot.Length > 0 ? portRackSlot[0] : 102;
             var rack = portRackSlot.Length > 1 ? portRackSlot[1] : 0;
             var slot = portRackSlot.Length > 2 ? portRackSlot[2] : 2;
             var transport = new TcpTransport(new Rfc1006ProtocolContext
-            {
-                DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType,
-                                                                    rack,
-                                                                    slot),
-            }, new ClientSocketConfiguration
-            {
-                Hostname = addressPort[0],
-                ServiceName = portRackSlot.Length > 0 ? portRackSlot[0] : 102
-            });
+                                                {
+                                                    DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType, rack, slot),
+                                                }, 
+                                             new ClientSocketConfiguration
+                                                {
+                                                    Hostname = host,
+                                                    ServiceName = port
+                                                }
+                                            );
             _logger?.LogDebug("Transport-Configuration: {0}.", transport.Configuration);
             _logger?.LogDebug("Rfc1006 Configuration: connectionType={0}; Rack={1}; Slot={2}", Enum.GetName(typeof(PlcConnectionType), connectionType), rack, slot);
-            _logger?.LogDebug("Socket interface configured.");
 
-
-            _s7Context = new SiemensPlcProtocolContext
-            {
-                Timeout = timeout
-            };
-
+            _s7Context = new SiemensPlcProtocolContext { Timeout = timeout };
             ProtocolHandler = new ProtocolHandler(transport, _s7Context, UpdateConnectionState, loggerFactory);
 
         }
@@ -150,16 +145,19 @@ namespace Dacs7
         public Task DisconnectAsync() => ProtocolHandler?.CloseAsync();
 
 
-
+        /// <summary>
+        /// Create a readitem for the given tag ore reuse an existing one for this tag.
+        /// </summary>
+        /// <param name="tag">the absolute adress</param>
+        /// <returns></returns>
         internal ReadItem RegisteredOrGiven(string tag)
-        {
-            if (_registeredTags.TryGetValue(tag, out var nodeId))
-            {
-                return nodeId;
-            }
-            return ReadItem.CreateFromTag(tag);
-        }
+            => _registeredTags.TryGetValue(tag, out var nodeId) ? nodeId : ReadItem.CreateFromTag(tag);
 
+        /// <summary>
+        /// Updates the ReadItem registration (add and/or remove items)
+        /// </summary>
+        /// <param name="toAdd">add this registrations</param>
+        /// <param name="toRemove">remove this registrations</param>
         internal void UpdateRegistration(List<KeyValuePair<string, ReadItem>> toAdd, List<KeyValuePair<string, ReadItem>> toRemove)
         {
             Dictionary<string, ReadItem> origin;
@@ -174,6 +172,10 @@ namespace Dacs7
             } while (Interlocked.CompareExchange(ref _registeredTags, newDict, origin) != origin);
         }
 
+        /// <summary>
+        /// Updates the internal connection state, and publish a change to <see cref="ConnectionStateChanged"/>
+        /// </summary>
+        /// <param name="state">The new connection state</param>
         private void UpdateConnectionState(ConnectionState state)
         {
             var dacs7State = Dacs7ConnectionState.Closed;

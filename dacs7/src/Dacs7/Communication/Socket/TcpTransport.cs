@@ -33,20 +33,13 @@ namespace Dacs7.Communication.Socket
                 return Task.FromResult(0); // no data processed, buffer is to short
             }
             return Task.FromResult(1); // move forward
-
         }
 
         private Task OnTcpSocketConnectionStateChanged(string socketHandle, bool connected)
         {
             var state = OnGetConnectionState?.Invoke();
-            if (state == ConnectionState.Closed && connected)
-            {
-                return SendTcpConnectionRequest();
-            }
-            else if (state == ConnectionState.Opened && !connected)
-            {
-                return OnUpdateConnectionState?.Invoke(ConnectionState.Closed);
-            }
+            if (state == ConnectionState.Closed && connected) return SendTcpConnectionRequest();
+            if (state == ConnectionState.Opened && !connected) return OnUpdateConnectionState?.Invoke(ConnectionState.Closed);
             return Task.CompletedTask;
         }
 
@@ -110,6 +103,7 @@ namespace Dacs7.Communication.Socket
                 }
                 catch (Exception)
                 {
+                    // we have to dispose the buffer when we got an exception, because we are the owner.
                     resultBuffer.Dispose();
                     throw;
                 }
