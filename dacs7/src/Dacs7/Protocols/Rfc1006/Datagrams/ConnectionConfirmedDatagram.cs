@@ -78,11 +78,12 @@ namespace Dacs7.Protocols.Rfc1006
         }
 
 
-        public static Memory<byte> TranslateToMemory(ConnectionConfirmedDatagram datagram)
+        public static IMemoryOwner<byte> TranslateToMemory(ConnectionConfirmedDatagram datagram, out int memoryLength)
         {
-            var length = datagram.Tkpt.Length;
-            var result = new Memory<byte>(new byte[length]);  // check if we could use ArrayBuffer
-            var span = result.Span;
+            var length = memoryLength = datagram.Tkpt.Length;
+            var result = MemoryPool<byte>.Shared.Rent(length);  // TODO: use MemorBUffer and return check if we could use ArrayBuffer
+            var mem = result.Memory;
+            var span = mem.Span;
 
             span[0] = datagram.Tkpt.Sync1;
             span[1] = datagram.Tkpt.Sync2;
@@ -97,17 +98,17 @@ namespace Dacs7.Protocols.Rfc1006
             var offset = 11;
             span[offset++] = datagram.ParmCodeTpduSize;
             span[offset++] = datagram.SizeTpduReceivingLength;
-            datagram.SizeTpduReceiving.CopyTo(result.Slice(offset));
+            datagram.SizeTpduReceiving.CopyTo(mem.Slice(offset));
             offset += datagram.SizeTpduReceivingLength;
 
             span[offset++] = datagram.ParmCodeSrcTsap;
             span[offset++] = datagram.SourceTsapLength;
-            datagram.SourceTsap.CopyTo(result.Slice(offset));
+            datagram.SourceTsap.CopyTo(mem.Slice(offset));
             offset += datagram.SourceTsapLength;
 
             span[offset++] = datagram.ParmCodeDestTsap;
             span[offset++] = datagram.DestTsapLength;
-            datagram.DestTsap.CopyTo(result.Slice(offset));
+            datagram.DestTsap.CopyTo(mem.Slice(offset));
             offset += datagram.DestTsapLength;
 
             return result;
@@ -152,7 +153,6 @@ namespace Dacs7.Protocols.Rfc1006
                         {
                             result.ParmCodeSrcTsap = span[offset++];
                             result.SourceTsapLength = span[offset++];
-                            var tmp = new byte[result.SourceTsapLength];
                             result._sourceTsap = MemoryPool<byte>.Shared.Rent(result.SourceTsapLength);
                             data.Slice(offset, result.SourceTsapLength).CopyTo(result._sourceTsap.Memory);
                             result.SourceTsap = result._sourceTsap.Memory.Slice(0, result.SourceTsapLength);

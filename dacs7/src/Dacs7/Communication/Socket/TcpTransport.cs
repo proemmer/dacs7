@@ -74,10 +74,13 @@ namespace Dacs7.Communication.Socket
 
         private async Task SendTcpConnectionRequest()
         {
-            var result = await Client.SendAsync(ConnectionRequestDatagram.TranslateToMemory(ConnectionRequestDatagram.BuildCr(_context)));
-            if (result == SocketError.Success)
+            using (var datagram = ConnectionRequestDatagram.TranslateToMemory(ConnectionRequestDatagram.BuildCr(_context), out var memoryLegth))
             {
-                OnUpdateConnectionState?.Invoke(ConnectionState.PendingOpenTransport);
+                var result = await Client.SendAsync(datagram.Memory.Slice(0, memoryLegth));
+                if (result == SocketError.Success)
+                {
+                    OnUpdateConnectionState?.Invoke(ConnectionState.PendingOpenTransport);
+                }
             }
         }
 
