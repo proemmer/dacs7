@@ -182,7 +182,7 @@ namespace Dacs7.Domain
             for (int i = 0; i < item.NumberOfItems; i++)
             {
                 var offset = i * 4;
-                // we nedd the offset twice because SwapBuffer returns the whole buffer it only swaps the bytes beginning of the given context
+                // we need the offset twice because SwapBuffer returns the whole buffer it only swaps the bytes beginning of the given context
                 result[i] = BitConverter.ToSingle(Swap4BytesInBuffer(buffer, i * 4), offset);
             }
             return result;
