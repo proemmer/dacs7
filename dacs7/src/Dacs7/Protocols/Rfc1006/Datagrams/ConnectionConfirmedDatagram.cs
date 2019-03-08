@@ -1,4 +1,4 @@
-﻿// Copyright (c) insite-gmbh. All rights reserved.
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
 using System;
@@ -24,15 +24,15 @@ namespace Dacs7.Protocols.Rfc1006
 
         public byte PduType { get; set; } // = 0xd0;
 
-        public Int16 DstRef { get; set; } //  = 0x0001;                     // TPDU Destination Reference
+        public short DstRef { get; set; } //  = 0x0001;                     // TPDU Destination Reference
 
-        public Int16 SrcRef { get; set; } // = 0x0001;                     // TPDU Source-Reference (my own reference, should not be zero)
+        public short SrcRef { get; set; } // = 0x0001;                     // TPDU Source-Reference (my own reference, should not be zero)
 
         public byte ClassOption { get; set; } // = 0x00;                 // PDU Class 0 and no Option
 
         public byte ParmCodeTpduSize { get; set; } = 0xc0;
 
-        public byte SizeTpduReceivingLength { get; set; } 
+        public byte SizeTpduReceivingLength { get; set; }
 
         public Memory<byte> SizeTpduReceiving { get; set; }              // Allowed sizes: 128(7), 256(8), 512(9), 1024(10), 2048(11) octets
 
@@ -61,7 +61,7 @@ namespace Dacs7.Protocols.Rfc1006
 
         public ConnectionConfirmedDatagram BuildCc(Rfc1006ProtocolContext context, ConnectionRequestDatagram req)
         {
-            context.CalcLength(context, out byte li, out ushort length);
+            context.CalcLength(context, out var li, out var length);
             req.SizeTpduReceiving.Span.CopyTo(context.SizeTpduSending.Span);
             var result = new ConnectionConfirmedDatagram
             {
@@ -123,7 +123,7 @@ namespace Dacs7.Protocols.Rfc1006
                 {
                     Sync1 = span[0],
                     Sync2 = span[1],
-                    Length = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(2,2))
+                    Length = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(2, 2))
                 },
                 Li = span[4],
                 PduType = span[5],
@@ -182,6 +182,6 @@ namespace Dacs7.Protocols.Rfc1006
             return result;
         }
 
-        
+
     }
 }

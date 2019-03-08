@@ -1,4 +1,4 @@
-﻿// Copyright (c) insite-gmbh. All rights reserved.
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
 using Dacs7.Helper;
@@ -15,10 +15,10 @@ namespace Dacs7.Protocols
 {
     internal partial class ProtocolHandler
     {
-        private static List<S7DataItemSpecification> _defaultReadJobResult = new List<S7DataItemSpecification>();
-        private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
+        private static readonly List<S7DataItemSpecification> _defaultReadJobResult = new List<S7DataItemSpecification>();
+        private readonly ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
 
-        public async Task<IEnumerable<S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItem> vars)
+        public async Task<Dictionary<ReadItem, S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItem> vars)
         {
             if (ConnectionState != ConnectionState.Opened)
                 ExceptionThrowHelper.ThrowNotConnectedException();
@@ -26,10 +26,9 @@ namespace Dacs7.Protocols
             var result = vars.ToDictionary(x => x, x => null as S7DataItemSpecification);
             foreach (var normalized in CreateReadPackages(_s7Context, vars))
             {
-                if (!await ReadPackage(result, normalized)) return new List<S7DataItemSpecification>();
+                if (!await ReadPackage(result, normalized)) return new Dictionary<ReadItem, S7DataItemSpecification>();
             }
-            return result.Values;
-
+            return result;
         }
 
         private async Task<bool> ReadPackage(Dictionary<ReadItem, S7DataItemSpecification> result, ReadPackage normalized)
@@ -173,7 +172,7 @@ namespace Dacs7.Protocols
                 {
                     if (item.NumberOfItems > s7Context.ReadItemMaxLength)
                     {
-                        ushort bytesToRead = item.NumberOfItems;
+                        var bytesToRead = item.NumberOfItems;
                         ushort processed = 0;
                         while (bytesToRead > 0)
                         {

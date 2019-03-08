@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Globalization;
@@ -15,7 +18,7 @@ namespace Dacs7.Domain
         {
             if (data is string dataS && item.ResultType != typeof(string))
             {
-                if(item.ResultType == typeof(char[]))
+                if (item.ResultType == typeof(char[]))
                 {
                     data = dataS.ToCharArray();
                 }
@@ -70,7 +73,7 @@ namespace Dacs7.Domain
                                 return result;
                             }
                         }
-                        else if(item.VarType == typeof(char))
+                        else if (item.VarType == typeof(char))
                         {
                             Memory<byte> result = new byte[2];
                             Encoding.BigEndianUnicode.GetBytes(s).AsSpan().CopyTo(result.Span);
@@ -79,101 +82,101 @@ namespace Dacs7.Domain
                         ExceptionThrowHelper.ThrowInvalidCastException();
                         return null;
                     }
-                case Int16 i16:
+                case short i16:
                     {
                         Memory<byte> result = new byte[2];
                         BinaryPrimitives.WriteInt16BigEndian(result.Span, i16);
                         return result;
                     }
-                case UInt16 ui16:
+                case ushort ui16:
                     {
                         Memory<byte> result = new byte[2];
                         BinaryPrimitives.WriteUInt16BigEndian(result.Span, ui16);
                         return result;
                     }
-                case Int32 i32:
+                case int i32:
                     {
                         Memory<byte> result = new byte[4];
                         BinaryPrimitives.WriteInt32BigEndian(result.Span, i32);
                         return result;
                     }
-                case UInt32 ui32:
+                case uint ui32:
                     {
                         Memory<byte> result = new byte[4];
                         BinaryPrimitives.WriteUInt32BigEndian(result.Span, ui32);
                         return result;
                     }
-                case Single s:
+                case float s:
                     {
                         // TODO: Find a Span method to do this
                         return WriteSingleBigEndian(s);
                     }
-                case Int64 i64:
+                case long i64:
                     {
                         Memory<byte> result = new byte[8];
                         BinaryPrimitives.WriteInt64BigEndian(result.Span, i64);
                         return result;
                     }
-                case UInt64 ui64:
+                case ulong ui64:
                     {
                         Memory<byte> result = new byte[8];
                         BinaryPrimitives.WriteUInt64BigEndian(result.Span, ui64);
                         return result;
                     }
 
-                case List<Int16> i16:
+                case List<short> i16:
                     {
                         return ConvertInt16ToMemory(i16);
                     }
-                case Int16[] i16:
+                case short[] i16:
                     {
                         return ConvertInt16ToMemory(i16);
                     }
-                case List<UInt16> ui16:
+                case List<ushort> ui16:
                     {
                         return ConvertUInt16ToMemory(ui16);
                     }
-                case UInt16[] ui16:
+                case ushort[] ui16:
                     {
                         return ConvertUInt16ToMemory(ui16);
                     }
-                case List<Int32> i32:
+                case List<int> i32:
                     {
                         return ConvertIn32ToMemory(i32);
                     }
-                case Int32[] i32:
+                case int[] i32:
                     {
                         return ConvertIn32ToMemory(i32);
                     }
-                case List<UInt32> ui32:
+                case List<uint> ui32:
                     {
                         return ConvertUInt32ToMemory(ui32);
                     }
-                case UInt32[] ui32:
+                case uint[] ui32:
                     {
                         return ConvertUInt32ToMemory(ui32);
                     }
-                case List<Int64> i64:
+                case List<long> i64:
                     {
                         return ConvertInt64ToMemory(i64);
                     }
-                case Int64[] i64:
+                case long[] i64:
                     {
                         return ConvertInt64ToMemory(i64);
                     }
-                case List<UInt64> ui64:
+                case List<ulong> ui64:
                     {
                         return ConvertUInt64ToMemory(ui64);
                     }
-                case UInt64[] ui64:
+                case ulong[] ui64:
                     {
                         return ConvertUInt64ToMemory(ui64);
                     }
-                case List<Single> single:
+                case List<float> single:
                     {
                         return ConvertSingleToMemory(single);
                     }
-                case Single[] single:
+                case float[] single:
                     {
                         return ConvertSingleToMemory(single);
                     }
@@ -187,7 +190,7 @@ namespace Dacs7.Domain
         {
             // TODO: Find a Span method to do this
             var buffer = new byte[4 * single.Count];
-            for (int i = 0; i < single.Count; i++)
+            for (var i = 0; i < single.Count; i++)
             {
                 WriteSingleBigEndian(single[i], buffer, i * 4);
             }
@@ -197,7 +200,7 @@ namespace Dacs7.Domain
         private static Memory<byte> ConvertUInt64ToMemory(IList<ulong> ui64)
         {
             Memory<byte> result = new byte[8 * ui64.Count];
-            for (int i = 0; i < ui64.Count; i++)
+            for (var i = 0; i < ui64.Count; i++)
             {
                 BinaryPrimitives.WriteUInt64BigEndian(result.Span.Slice(i * 8), ui64[i]);
             }
@@ -208,7 +211,7 @@ namespace Dacs7.Domain
         private static Memory<byte> ConvertInt64ToMemory(IList<long> i64)
         {
             Memory<byte> result = new byte[8 * i64.Count];
-            for (int i = 0; i < i64.Count; i++)
+            for (var i = 0; i < i64.Count; i++)
             {
                 BinaryPrimitives.WriteInt64BigEndian(result.Span.Slice(i * 8), i64[i]);
             }
@@ -218,7 +221,7 @@ namespace Dacs7.Domain
         private static Memory<byte> ConvertUInt32ToMemory(IList<uint> ui32)
         {
             Memory<byte> result = new byte[4 * ui32.Count];
-            for (int i = 0; i < ui32.Count; i++)
+            for (var i = 0; i < ui32.Count; i++)
             {
                 BinaryPrimitives.WriteUInt32BigEndian(result.Span.Slice(i * 4), ui32[i]);
             }
@@ -228,7 +231,7 @@ namespace Dacs7.Domain
         private static Memory<byte> ConvertIn32ToMemory(IList<int> i32)
         {
             Memory<byte> result = new byte[4 * i32.Count];
-            for (int i = 0; i < i32.Count; i++)
+            for (var i = 0; i < i32.Count; i++)
             {
                 BinaryPrimitives.WriteInt32BigEndian(result.Span.Slice(i * 4), i32[i]);
             }
@@ -238,7 +241,7 @@ namespace Dacs7.Domain
         private static Memory<byte> ConvertUInt16ToMemory(IList<ushort> ui16)
         {
             Memory<byte> result = new byte[2 * ui16.Count];
-            for (int i = 0; i < ui16.Count; i++)
+            for (var i = 0; i < ui16.Count; i++)
             {
                 BinaryPrimitives.WriteUInt16BigEndian(result.Span.Slice(i * 2), ui16[i]);
             }
@@ -248,7 +251,7 @@ namespace Dacs7.Domain
         private static Memory<byte> ConvertInt16ToMemory(IList<short> i16)
         {
             Memory<byte> result = new byte[2 * i16.Count];
-            for (int i = 0; i < i16.Count; i++)
+            for (var i = 0; i < i16.Count; i++)
             {
                 BinaryPrimitives.WriteInt16BigEndian(result.Span.Slice(i * 2), i16[i]);
             }

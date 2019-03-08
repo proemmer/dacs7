@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -41,16 +44,11 @@ namespace Dacs7.ReadWrite
         {
             var readItems = values as IList<ReadItem> ?? values.ToList();
             var result = await client.ProtocolHandler.ReadAsync(readItems);
-            var enumerator = readItems.GetEnumerator();
-            return result.Select(value =>
-            {
-                enumerator.MoveNext();
-                return new DataValue(enumerator.Current, value);
-            }).ToList();
+            return result.Select((entry) => new DataValue(entry.Key, entry.Value)).ToList();
         }
 
 
-        internal static  IEnumerable<ReadItem> CreateNodeIdCollection(this Dacs7Client client, IEnumerable<string> values)
+        internal static IEnumerable<ReadItem> CreateNodeIdCollection(this Dacs7Client client, IEnumerable<string> values)
             => new List<ReadItem>(values.Select(item => client.RegisteredOrGiven(item)));
 
     }

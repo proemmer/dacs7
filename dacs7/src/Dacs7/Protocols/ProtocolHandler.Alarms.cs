@@ -1,4 +1,7 @@
-﻿using Dacs7.Alarms;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using Dacs7.Alarms;
 using Dacs7.Helper;
 using Dacs7.Protocols.SiemensPlc;
 using Microsoft.Extensions.Logging;
@@ -16,9 +19,9 @@ namespace Dacs7.Protocols
 {
     internal partial class ProtocolHandler
     {
-        private ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>> _alarmHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>>();
+        private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>> _alarmHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>>();
         private CallbackHandler<S7AlarmUpdateAckDatagram> _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
-        private ConcurrentDictionary<ushort, CallbackHandler<S7AlarmIndicationDatagram>> _alarmIndicationHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7AlarmIndicationDatagram>>();
+        private readonly ConcurrentDictionary<ushort, CallbackHandler<S7AlarmIndicationDatagram>> _alarmIndicationHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7AlarmIndicationDatagram>>();
 
         public async Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync()
         {
@@ -37,7 +40,7 @@ namespace Dacs7.Protocols
                 S7PendingAlarmAckDatagram alarmResults = null;
                 do
                 {
-                    using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildPendingAlarmRequest(_s7Context, id, sequenceNumber), out int memoryLength))
+                    using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildPendingAlarmRequest(_s7Context, id, sequenceNumber), out var memoryLength))
                     {
                         using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
                         {
@@ -196,10 +199,6 @@ namespace Dacs7.Protocols
             }
             return true;
         }
-
-
-
-
 
         private void ReceivedS7PendingAlarmsAckDatagram(Memory<byte> buffer)
         {

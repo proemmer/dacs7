@@ -1,22 +1,12 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using System;
 using System.Buffers;
 
 namespace Dacs7.Domain
 {
-
-    public enum TagParserState
-    {
-        Nothing,
-        Area,
-        Offset,
-        Type,
-        NumberOfItems,
-        TypeValidation,
-        Success
-    }
-
-
-    public class TagParser
+    internal class TagParser
     {
 
         public struct TagParserResult
@@ -40,50 +30,6 @@ namespace Dacs7.Domain
         {
             result = ParseTag(tag, false);
             return result.ErrorState == TagParserState.Success;
-        }
-
-        private static TagParserResult ParseTag(string tag, bool throwException)
-        {
-            var result = new TagParserResult();
-            var buffer = ArrayPool<char>.Shared.Rent(tag.Length);
-            try
-            {
-                var input = new Span<char>(buffer).Slice(0, tag.Length);
-                tag.AsSpan().ToLowerInvariant(input);
-                var indexStart = 0;
-                var state = TagParserState.Area;
-                ReadOnlySpan<char> type = null;
-                
-                for (int i = 0; i < input.Length; i++)
-                {
-                    if (input[i] != '.' && input[i] != ',') continue;
-                    Parse(tag, ref result, ref indexStart, ref state, ref type, input.Slice(indexStart, i - indexStart), i, true);
-                }
-                Parse(tag, ref result, ref indexStart, ref state, ref type, input.Slice(indexStart), input.Length - 1, true);
-
-
-                state = TagParserState.TypeValidation;
-                Parse(tag, ref result, ref indexStart, ref state, ref type, input, input.Length - 1, true);
-
-                if (state == TagParserState.Success)
-                {
-                    result.ErrorState = TagParserState.Success;
-                }
-            }
-            finally
-            {
-                ArrayPool<char>.Shared.Return(buffer);
-            }
-            return result;
-        }
-
-        private static void Parse(string tag, ref TagParserResult result, ref int indexStart, ref TagParserState state, ref ReadOnlySpan<char> type, ReadOnlySpan<char> data, int index, bool throwException = false)
-        {
-            if (!TryExtractData(ref result, data, ref indexStart, ref state, ref type, index) && throwException)
-            {
-                result.ErrorState = state;
-                ExceptionThrowHelper.ThrowTagParseException(TagParserState.Area, data.ToString(), tag);
-            }
         }
 
         public static bool TryDetectArea(ReadOnlySpan<char> area, out PlcArea selector, out ushort db)
@@ -126,10 +72,10 @@ namespace Dacs7.Domain
                         // TODO: ReadOnlySpan<char>   !!!! 
                         // Datablocks
                         //if (Regex.IsMatch(area.ToString(), "^db\\d+$", RegexOptions.IgnoreCase))
-                        if((area[0] == 'D' || area[0] == 'd') && (area[1] == 'B' || area[1] == 'b'))
+                        if ((area[0] == 'D' || area[0] == 'd') && (area[1] == 'B' || area[1] == 'b'))
                         {
                             selector = PlcArea.DB;
-#if NETCOREAPP21
+#if SPANSUPPORT
                             db = ushort.Parse(area.Slice(2));
 #else
                             db = SpanToUShort(area.Slice(2));
@@ -151,6 +97,46 @@ namespace Dacs7.Domain
 
 
 
+        private static TagParserResult ParseTag(string tag, bool throwException)
+        {
+            var result = new TagParserResult();
+            using (var buffer = MemoryPool<char>.Shared.Rent(tag.Length))
+            {
+                var input = buffer.Memory.Slice(0, tag.Length).Span;
+                tag.AsSpan().ToLowerInvariant(input);
+                var indexStart = 0;
+                var state = TagParserState.Area;
+                ReadOnlySpan<char> type = null;
+
+                for (var i = 0; i < input.Length; i++)
+                {
+                    if (input[i] != '.' && input[i] != ',') continue;
+                    Parse(tag, ref result, ref indexStart, ref state, ref type, input.Slice(indexStart, i - indexStart), i, throwException);
+                }
+                Parse(tag, ref result, ref indexStart, ref state, ref type, input.Slice(indexStart), input.Length - 1, throwException);
+
+
+                state = TagParserState.TypeValidation;
+                Parse(tag, ref result, ref indexStart, ref state, ref type, input, input.Length - 1, throwException);
+
+                if (state == TagParserState.Success)
+                {
+                    result.ErrorState = TagParserState.Success;
+                }
+            }
+
+            return result;
+        }
+
+        private static void Parse(string tag, ref TagParserResult result, ref int indexStart, ref TagParserState state, ref ReadOnlySpan<char> type, ReadOnlySpan<char> data, int index, bool throwException = false)
+        {
+            if (!TryExtractData(ref result, data, ref indexStart, ref state, ref type, index) && throwException)
+            {
+                result.ErrorState = state;
+                ExceptionThrowHelper.ThrowTagParseException(TagParserState.Area, data.ToString(), tag);
+            }
+        }
+
         private static bool TryExtractData(ref TagParserResult result, ReadOnlySpan<char> input, ref int indexStart, ref TagParserState state, ref ReadOnlySpan<char> type, int i)
         {
             switch (state)
@@ -170,7 +156,7 @@ namespace Dacs7.Domain
                 case TagParserState.Offset:
                     {
                         // TODO:  !!!!!!!
-#if NETCOREAPP21
+#if SPANSUPPORT
                         if (Int32.TryParse(input, out var offset))
 #else
                         if (TryConvertSpanToInt32(input, out var offset))
@@ -195,7 +181,7 @@ namespace Dacs7.Domain
                     {
                         if (input.IsEmpty) return true;
                         // TODO:  !!!!!!!
-#if NETCOREAPP21
+#if SPANSUPPORT
                         if (UInt16.TryParse(input, out var length))
 #else
                         if (TryConvertSpanToUShort(input, out var length))
@@ -214,7 +200,7 @@ namespace Dacs7.Domain
                         var offset = result.Offset;
                         var length = result.Length;
 
-                        if (!type.IsEmpty && TryDetectTypes(type, ref length, ref offset, out Type vtype, out Type rType, out var unicode))
+                        if (!type.IsEmpty && TryDetectTypes(type, ref length, ref offset, out var vtype, out var rType, out var unicode))
                         {
                             result.Length = length;
                             result.Offset = offset;
@@ -251,9 +237,9 @@ namespace Dacs7.Domain
                     return true;
                 case 'w' when type.Length > 1:
                     {
-                        switch(type[1])
+                        switch (type[1])
                         {
-                            case 's': 
+                            case 's':
                                 vtype = rType = typeof(string);
                                 unicode = true;
                                 break;
@@ -266,24 +252,24 @@ namespace Dacs7.Domain
                         break;
                     }
                 case 'w':
-                    vtype = typeof(UInt16);
-                    rType = length > 1 ? typeof(UInt16[]) : vtype;
+                    vtype = typeof(ushort);
+                    rType = length > 1 ? typeof(ushort[]) : vtype;
                     return true;
                 case 'l' when type.Length > 1 && type[1] == 'i':
                     vtype = typeof(sbyte);
                     rType = length > 1 ? typeof(sbyte[]) : vtype;
                     break;
                 case 'i':
-                    vtype = typeof(Int16);
-                    rType = length > 1 ? typeof(Int16[]) : vtype;
+                    vtype = typeof(short);
+                    rType = length > 1 ? typeof(short[]) : vtype;
                     return true;
                 case 'd' when type.Length > 1 && type[1] == 'w':
-                    vtype = typeof(UInt32);
-                    rType = length > 1 ? typeof(UInt32[]) : vtype;
+                    vtype = typeof(uint);
+                    rType = length > 1 ? typeof(uint[]) : vtype;
                     return true;
                 case 'd' when type.Length > 1 && type[1] == 'i':
-                    vtype = typeof(Int32);
-                    rType = length > 1 ? typeof(Int32[]) : vtype;
+                    vtype = typeof(int);
+                    rType = length > 1 ? typeof(int[]) : vtype;
                     return true;
                 case 'r':
                     vtype = typeof(float);
@@ -299,7 +285,7 @@ namespace Dacs7.Domain
                 case 'x' when type.Length > 1:
                     vtype = rType = typeof(bool);
                     rType = length > 1 ? typeof(bool[]) : vtype;
-#if NETCOREAPP21
+#if SPANSUPPORT
                     offset = ((offset * 8) + Int32.Parse(type.Slice(1)));
 #else
                     offset = ((offset * 8) + SpanToInt(type.Slice(1)));
@@ -312,7 +298,7 @@ namespace Dacs7.Domain
             return false;
         }
 
-
+#if !SPANSUPPORT
         #region SpanHelpers
         /// <summary>
         /// Parse a <see cref="ReadOnlySpan{char}"/> which contains only numbers to a ushort
@@ -326,7 +312,7 @@ namespace Dacs7.Domain
 
         private static bool TryConvertSpanToUShort(ReadOnlySpan<char> data, out ushort result)
         {
-            if(TryParseSpanToNumber(data, out var iresult))
+            if (TryParseSpanToNumber(data, out var iresult))
             {
                 result = Convert.ToUInt16(iresult);
                 return true;
@@ -341,7 +327,7 @@ namespace Dacs7.Domain
         {
             var multip = 1;
             result = 0;
-            for (int i = data.Length-1; i >= 0; i--)
+            for (var i = data.Length - 1; i >= 0; i--)
             {
                 var ch = data[i];
                 if (ch >= '0' && ch <= '9')
@@ -352,12 +338,13 @@ namespace Dacs7.Domain
                 {
                     return false;
                 }
-                
+
                 multip *= 10;
             }
             return true;
         }
 
         #endregion
+#endif
     }
 }

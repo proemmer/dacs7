@@ -1,4 +1,7 @@
-﻿using Dacs7.Helper;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using Dacs7.Helper;
 using Dacs7.Protocols.SiemensPlc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -20,7 +23,7 @@ namespace Dacs7.Protocols
 
     internal partial class ProtocolHandler
     {
-        private ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>> _writeHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>>();
+        private readonly ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>> _writeHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>>();
 
         public async Task<IEnumerable<ItemResponseRetValue>> WriteAsync(IEnumerable<WriteItem> vars)
         {
@@ -31,7 +34,7 @@ namespace Dacs7.Protocols
             var result = vars.ToDictionary(x => x, x => ItemResponseRetValue.Success);
             foreach (var normalized in CreateWritePackages(_s7Context, vars))
             {
-                if(!await WritePackage(result, normalized)) return new List<ItemResponseRetValue>();
+                if (!await WritePackage(result, normalized)) return new List<ItemResponseRetValue>();
             }
             return result.Values;
         }
@@ -126,7 +129,7 @@ namespace Dacs7.Protocols
 
             if (_writeHandler.TryGetValue(data.Header.Header.ProtocolDataUnitReference, out var cbh))
             {
-                if(data.Header.Error.ErrorClass != 0)
+                if (data.Header.Error.ErrorClass != 0)
                 {
                     _logger.LogError("Error while writing data for reference {0}. ErrorClass: {1}  ErrorCode:{2}", data.Header.Header.ProtocolDataUnitReference, data.Header.Error.ErrorClass, data.Header.Error.ErrorCode);
                     cbh.Exception = new Dacs7Exception(data.Header.Error.ErrorClass, data.Header.Error.ErrorCode);
@@ -154,7 +157,7 @@ namespace Dacs7.Protocols
                 {
                     if (item.NumberOfItems > s7Context.WriteItemMaxLength)
                     {
-                        ushort bytesToWrite = item.NumberOfItems;
+                        var bytesToWrite = item.NumberOfItems;
                         ushort processed = 0;
                         while (bytesToWrite > 0)
                         {

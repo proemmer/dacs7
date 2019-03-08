@@ -1,4 +1,7 @@
-﻿using Dacs7.Communication;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using Dacs7.Communication;
 using Dacs7.Communication.Socket;
 using Dacs7.Protocols;
 using Dacs7.Protocols.Rfc1006;
@@ -19,9 +22,9 @@ namespace Dacs7
     public partial class Dacs7Client
     {
         private Dictionary<string, ReadItem> _registeredTags = new Dictionary<string, ReadItem>();
-        private SiemensPlcProtocolContext _s7Context;
+        private readonly SiemensPlcProtocolContext _s7Context;
         private Dacs7ConnectionState _state = Dacs7ConnectionState.Closed;
-        private ILogger _logger;
+        private readonly ILogger _logger;
 
         internal ProtocolHandler ProtocolHandler { get; private set; }
         internal Dictionary<string, ReadItem> RegisteredTags => _registeredTags;
@@ -37,10 +40,10 @@ namespace Dacs7
         /// </summary>
         public ushort MaxAmQCalling
         {
-            get => _s7Context != null ? _s7Context.MaxAmQCalling : (ushort)0;
+            get => _s7Context.MaxAmQCalling;
             set
             {
-                if(_s7Context != null && _state == Dacs7ConnectionState.Closed)
+                if (_state == Dacs7ConnectionState.Closed)
                 {
                     _s7Context.MaxAmQCalling = value;
                 }
@@ -56,10 +59,10 @@ namespace Dacs7
         /// </summary>
         public ushort MaxAmQCalled
         {
-            get => _s7Context != null ? _s7Context.MaxAmQCalled : (ushort)0;
+            get => _s7Context.MaxAmQCalled;
             set
             {
-                if (_s7Context != null && _state == Dacs7ConnectionState.Closed)
+                if (_state == Dacs7ConnectionState.Closed)
                 {
                     _s7Context.MaxAmQCalled = value;
                 }
@@ -75,10 +78,10 @@ namespace Dacs7
         /// </summary>
         public ushort PduSize
         {
-            get => _s7Context != null ? _s7Context.PduSize : (ushort)0;
+            get => _s7Context.PduSize;
             set
             {
-                if (_s7Context != null && _state == Dacs7ConnectionState.Closed)
+                if (_state == Dacs7ConnectionState.Closed)
                 {
                     _s7Context.PduSize = value;
                 }
@@ -104,31 +107,8 @@ namespace Dacs7
         public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg, int timeout = 5000, ILoggerFactory loggerFactory = null)
         {
             _logger = loggerFactory?.CreateLogger<Dacs7Client>();
-            _logger?.LogDebug("Start configuring dacs7 with Socket interface");
-            var addressPort = address.Split(':');
-            var portRackSlot = addressPort.Length > 1 ?
-                                        addressPort[1].Split(',').Select(x => Int32.Parse(x)).ToArray() :
-                                        new int[] { 102, 0, 2 };
-            var host = addressPort[0];
-            var port = portRackSlot.Length > 0 ? portRackSlot[0] : 102;
-            var rack = portRackSlot.Length > 1 ? portRackSlot[1] : 0;
-            var slot = portRackSlot.Length > 2 ? portRackSlot[2] : 2;
-            var transport = new TcpTransport(new Rfc1006ProtocolContext
-                                                {
-                                                    DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType, rack, slot),
-                                                }, 
-                                             new ClientSocketConfiguration
-                                                {
-                                                    Hostname = host,
-                                                    ServiceName = port
-                                                }
-                                            );
-            _logger?.LogDebug("Transport-Configuration: {0}.", transport.Configuration);
-            _logger?.LogDebug("Rfc1006 Configuration: connectionType={0}; Rack={1}; Slot={2}", Enum.GetName(typeof(PlcConnectionType), connectionType), rack, slot);
-
             _s7Context = new SiemensPlcProtocolContext { Timeout = timeout };
-            ProtocolHandler = new ProtocolHandler(transport, _s7Context, UpdateConnectionState, loggerFactory);
-
+            ProtocolHandler = new ProtocolHandler(InitializeTransport(address, connectionType), _s7Context, UpdateConnectionState, loggerFactory);
         }
 
 
@@ -192,6 +172,38 @@ namespace Dacs7
                 _state = dacs7State;
                 ConnectionStateChanged?.Invoke(this, dacs7State);
             }
+        }
+
+        private TcpTransport InitializeTransport(string address, PlcConnectionType connectionType)
+        {
+            _logger?.LogDebug("Start configuring dacs7 with Socket interface");
+            ParseParametersFromAddress(address, out var host, out var port, out var rack, out var slot);
+            var transport = new TcpTransport(
+                new Rfc1006ProtocolContext
+                {
+                    DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType, rack, slot),
+                },
+                new ClientSocketConfiguration
+                {
+                    Hostname = host,
+                    ServiceName = port
+                }
+            );
+            _logger?.LogDebug("Transport-Configuration: {0}.", transport.Configuration);
+            _logger?.LogDebug("Rfc1006 Configuration: connectionType={0}; Rack={1}; Slot={2}", Enum.GetName(typeof(PlcConnectionType), connectionType), rack, slot);
+            return transport;
+        }
+
+        private static void ParseParametersFromAddress(string address, out string host, out int port, out int rack, out int slot)
+        {
+            var addressPort = address.Split(':');
+            var portRackSlot = addressPort.Length > 1 ?
+                                        addressPort[1].Split(',').Select(x => int.Parse(x)).ToArray() :
+                                        new int[] { 102, 0, 2 };
+            host = addressPort[0];
+            port = portRackSlot.Length > 0 ? portRackSlot[0] : 102;
+            rack = portRackSlot.Length > 1 ? portRackSlot[1] : 0;
+            slot = portRackSlot.Length > 2 ? portRackSlot[2] : 2;
         }
 
     }

@@ -1,4 +1,7 @@
-﻿using Dacs7.Exceptions;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using Dacs7.Communication;
 using Dacs7.Protocols.SiemensPlc;
 using Microsoft.Extensions.Logging;
 using System;
@@ -14,15 +17,16 @@ namespace Dacs7.Protocols
 
     internal partial class ProtocolHandler
     {
-        private bool _closeCalled;
         private readonly Transport _transport;
-        private SiemensPlcProtocolContext _s7Context;
-        private AsyncAutoResetEvent<bool> _connectEvent = new AsyncAutoResetEvent<bool>();
-        private SemaphoreSlim _concurrentJobs;
-        private ILogger _logger;
-        private int _referenceId;
+        private readonly SiemensPlcProtocolContext _s7Context;
+        private readonly AsyncAutoResetEvent<bool> _connectEvent = new AsyncAutoResetEvent<bool>();
+        private readonly ILogger _logger;
         private readonly object _idLock = new object();
-        private Action<ConnectionState> _connectionStateChanged;
+        private readonly Action<ConnectionState> _connectionStateChanged;
+
+        private bool _closeCalled;
+        private SemaphoreSlim _concurrentJobs;
+        private int _referenceId;
 
         public ConnectionState ConnectionState { get; private set; } = ConnectionState.Closed;
 
@@ -30,12 +34,12 @@ namespace Dacs7.Protocols
         {
             var id = Interlocked.Increment(ref _referenceId);
 
-            if (id < UInt16.MinValue || id > UInt16.MaxValue)
+            if (id < ushort.MinValue || id > ushort.MaxValue)
             {
                 lock (_idLock)
                 {
                     id = Interlocked.Increment(ref _referenceId);
-                    if (id < UInt16.MinValue || id > UInt16.MaxValue)
+                    if (id < ushort.MinValue || id > ushort.MaxValue)
                     {
                         Interlocked.Exchange(ref _referenceId, 0);
                         id = Interlocked.Increment(ref _referenceId);
@@ -46,8 +50,8 @@ namespace Dacs7.Protocols
 
         }
 
-        public ProtocolHandler( Transport transport,
-                                SiemensPlcProtocolContext s7Context, 
+        public ProtocolHandler(Transport transport,
+                                SiemensPlcProtocolContext s7Context,
                                 Action<ConnectionState> connectionStateChanged,
                                 ILoggerFactory loggerFactory)
         {
@@ -57,15 +61,15 @@ namespace Dacs7.Protocols
             _connectionStateChanged = connectionStateChanged;
             _logger?.LogDebug("S7Protocol-Timeout is {0} ms", _s7Context.Timeout);
 
-
-            transport.OnUpdateConnectionState = UpdateConnectionState;
-            transport.OnDetectAndReceive = DetectAndReceive;
-            transport.OnGetConnectionState = () => ConnectionState;
-            transport.ConfigureClient(loggerFactory);
+            SetupTransport(transport, loggerFactory);
 
         }
 
 
+        /// <summary>
+        /// Opens the transport cannel and does negotiation.
+        /// </summary>
+        /// <returns></returns>
         public async Task OpenAsync()
         {
             try
@@ -86,17 +90,21 @@ namespace Dacs7.Protocols
                     ExceptionThrowHelper.ThrowNotConnectedException();
                 }
             }
-            catch(Dacs7NotConnectedException)
+            catch (Dacs7NotConnectedException)
             {
                 await CloseAsync();
                 throw;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 ExceptionThrowHelper.ThrowNotConnectedException(ex);
             }
         }
 
+        /// <summary>
+        /// Close al open wait handlers and the transport channel
+        /// </summary>
+        /// <returns></returns>
         public async Task CloseAsync()
         {
             _closeCalled = true;
@@ -116,17 +124,16 @@ namespace Dacs7.Protocols
             {
                 item.Value.Event?.Set(null);
             }
-            if(_alarmUpdateHandler.Id != 0)
+            if (_alarmUpdateHandler.Id != 0)
             {
                 _alarmUpdateHandler.Event?.Set(null);
                 await DisableAlarmUpdatesAsync();
             }
             await _transport.Client.CloseAsync();
-            await Task.Delay(1); // This ensures that the user can call connect after reconnect. (Otherwise he has so sleep for a while)
+            await Task.Delay(1); // This ensures that the user can call connect after reconnect. (Otherwise he has to sleep for a while)
         }
 
 
-        
 
         private Task<bool> DetectAndReceive(Memory<byte> payload)
         {
@@ -199,7 +206,7 @@ namespace Dacs7.Protocols
             using (var dg = S7CommSetupAckDataDatagram
                                                     .TranslateToMemory(
                                                         S7CommSetupAckDataDatagram
-                                                        .BuildFrom(_s7Context, data), out int memoryLength))
+                                                        .BuildFrom(_s7Context, data), out var memoryLength))
             {
                 using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
                 {
@@ -210,7 +217,10 @@ namespace Dacs7.Protocols
                         _s7Context.MaxAmQCalling = data.Parameter.MaxAmQCalling;
                         _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalling;
                         _s7Context.PduSize = data.Parameter.PduLength;
+
+                        if (_concurrentJobs != null) _concurrentJobs.Dispose();
                         _concurrentJobs = new SemaphoreSlim(_s7Context.MaxAmQCalling);
+
                         await UpdateConnectionState(ConnectionState.Opened);
                     }
                 }
@@ -223,7 +233,10 @@ namespace Dacs7.Protocols
             _s7Context.MaxAmQCalling = data.Parameter.MaxAmQCalling;
             _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalled;
             _s7Context.PduSize = data.Parameter.PduLength;
+
+            if (_concurrentJobs != null) _concurrentJobs.Dispose();
             _concurrentJobs = new SemaphoreSlim(_s7Context.MaxAmQCalling);
+
             _ = UpdateConnectionState(ConnectionState.Opened);
             _connectEvent.Set(true);
         }
@@ -237,7 +250,7 @@ namespace Dacs7.Protocols
                 {
                     await StartS7CommunicationSetup();
                 }
-                else if(state == ConnectionState.Closed)
+                else if (state == ConnectionState.Closed)
                 {
                     if (_concurrentJobs != null)
                     {
@@ -249,6 +262,14 @@ namespace Dacs7.Protocols
                 ConnectionState = state;
                 _connectionStateChanged?.Invoke(state);
             }
+        }
+
+        private void SetupTransport(Transport transport, ILoggerFactory loggerFactory)
+        {
+            transport.OnUpdateConnectionState = UpdateConnectionState;
+            transport.OnDetectAndReceive = DetectAndReceive;
+            transport.OnGetConnectionState = () => ConnectionState;
+            transport.ConfigureClient(loggerFactory);
         }
 
     }

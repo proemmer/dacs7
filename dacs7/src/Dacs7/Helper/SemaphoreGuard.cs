@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -7,7 +10,7 @@ namespace Dacs7.Helper
     internal class SemaphoreGuard : IDisposable
     {
         private SemaphoreSlim _semaphore;
-        private bool IsDisposed { get { return _semaphore == null; } }
+        private bool IsDisposed => _semaphore == null;
         public SemaphoreGuard(SemaphoreSlim semaphore, bool wait = true)
         {
             _semaphore = semaphore;

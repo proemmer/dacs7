@@ -1,4 +1,7 @@
-﻿using Dacs7.Protocols.Rfc1006;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
 using System.Collections.Generic;
 
@@ -6,9 +9,9 @@ namespace Dacs7.Protocols
 {
     internal class WritePackage
     {
-        private readonly int _minimumSize =SiemensPlcProtocolContext.WriteParameterItem + SiemensPlcProtocolContext.WriteDataItem + 1;
+        private readonly int _minimumSize = SiemensPlcProtocolContext.WriteParameterItem + SiemensPlcProtocolContext.WriteDataItem + 1;
         private readonly int _maxSize;
-        private List<WriteItem> _items = new List<WriteItem>();
+        private readonly List<WriteItem> _items = new List<WriteItem>();
 
 
         public bool Handled { get; private set; }
@@ -22,11 +25,7 @@ namespace Dacs7.Protocols
         public IEnumerable<WriteItem> Items => _items;
 
 
-        public WritePackage(int pduSize)
-        {
-            // minimum header = 12 read   14 readack
-            _maxSize = pduSize;
-        }
+        public WritePackage(int pduSize) => _maxSize = pduSize; // minimum header = 12 read   14 readack
 
         public WritePackage Return()
         {

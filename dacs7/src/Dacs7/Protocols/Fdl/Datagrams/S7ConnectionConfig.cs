@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using System;
 
 namespace Dacs7.Protocols.Fdl
 {
@@ -43,7 +46,7 @@ namespace Dacs7.Protocols.Fdl
                 ConnectionType = (byte)context.ConnectionType
             };
 
-            if(context.IsEthernet)
+            if (context.IsEthernet)
             {
                 result.Destination = context.Address.GetAddressBytes();
             }
@@ -52,7 +55,7 @@ namespace Dacs7.Protocols.Fdl
                 result.Destination = new byte[] { (byte)context.MpiAddress, 0x00, 0x00, 0x00 };
             }
 
-            if(context.EnableRouting)
+            if (context.EnableRouting)
             {
                 result.RoutingEnabled = 0x01;
                 // TODO!

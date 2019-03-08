@@ -1,7 +1,8 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using System;
 using System.Buffers.Binary;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Dacs7.Protocols.Fdl
 {
@@ -18,7 +19,7 @@ namespace Dacs7.Protocols.Fdl
 
 
 
-        
+
 
         /// <summary>
         /// First message if non ethernet connection
@@ -41,10 +42,7 @@ namespace Dacs7.Protocols.Fdl
         /// </summary>
         /// <param name="context"></param>
         /// <returns></returns>
-        public static RequestBlockDatagram BuildStationRequest(FdlProtocolContext context)
-        {
-            return Build(context, new byte[0x80]);
-        }
+        public static RequestBlockDatagram BuildStationRequest(FdlProtocolContext context) => Build(context, new byte[0x80]);
 
 
 

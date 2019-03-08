@@ -1,11 +1,14 @@
-﻿namespace Dacs7.Domain
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+namespace Dacs7.Domain
 {
     internal enum ItemSyntaxId : byte
     {
-        S7Any = 0x10,       /* Address data S7-Any pointer-like DB1.DBX10.2 */
-        DriveEsAny = 0xa2,  /* seen on Drive ES Starter with routing over S7 */
-        Sym1200 = 0xb2,     /* Symbolic address mode of S7-1200 */
-        DbRead = 0xb0,      /* Kind of DB block read, seen only at an S7-400 */
-        Nck = 0x82,         /* Sinumerik NCK HMI access */
+        S7Any = 0x10,       // Address data S7-Any pointer-like DB1.DBX10.2 
+        DriveEsAny = 0xa2,  // seen on Drive ES Starter with routing over S7 
+        Sym1200 = 0xb2,     // Symbolic address mode of S7-1200 
+        DbRead = 0xb0,      // Kind of DB block read, seen only at an S7-400 
+        Nck = 0x82,         // Sinumerik NCK HMI access 
     }
 }

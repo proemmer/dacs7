@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
 namespace Dacs7.Protocols.Fdl
 {
@@ -17,8 +16,8 @@ namespace Dacs7.Protocols.Fdl
         public RemoteAddress RemoteAddress { get; set; }       // address of the remote-station
         public ServiceClass ServiceClass { get; set; }             // priority of service
         public LinkServiceDataUnit Receive1Sdu { get; set; }
-        public byte Reserved1{ get; set; }                   // (reserved for FDL !!!!!!!!!!)
-        public byte Reserved{ get; set; }                     // (reserved for FDL !!!!!!!!!!)
+        public byte Reserved1 { get; set; }                   // (reserved for FDL !!!!!!!!!!)
+        public byte Reserved { get; set; }                     // (reserved for FDL !!!!!!!!!!)
 
         public LinkServiceDataUnit Send1Sdu { get; set; }
         public LinkStatus LinkSatus { get; set; }                   // link-status of service or update_state for srd-indication

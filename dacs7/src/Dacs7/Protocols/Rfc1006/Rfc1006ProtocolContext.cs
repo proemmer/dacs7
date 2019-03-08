@@ -1,4 +1,4 @@
-﻿// Copyright (c) insite-gmbh. All rights reserved.
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
 using System;
@@ -23,7 +23,7 @@ namespace Dacs7.Protocols.Rfc1006
         private const int DefaultFrameSize = 1024;
         private const int DatagramTypeOffset = 5;
         private const int TpktHeaderSize = 4;
-        
+
 
 
         public bool DoNotBuildConnectionConfirm { get; set; }
@@ -35,10 +35,7 @@ namespace Dacs7.Protocols.Rfc1006
         public int FrameSizeSending { get; set; }
         public int FrameSize
         {
-            get
-            {
-                return _frameSize;
-            }
+            get => _frameSize;
             set
             {
                 FrameSizeSending = value;
@@ -48,7 +45,7 @@ namespace Dacs7.Protocols.Rfc1006
         }
 
         public Memory<byte> SourceTsap { get; set; } = new byte[] { 0x01, 0x00 };
-        public Memory<byte> DestTsap { get; set; } 
+        public Memory<byte> DestTsap { get; set; }
         public Memory<byte> SizeTpduReceiving { get; set; }
         public Memory<byte> SizeTpduSending { get; set; }
 
@@ -64,10 +61,7 @@ namespace Dacs7.Protocols.Rfc1006
         /// </summary>
         public static int DataHeaderSize => TpktHeaderSize + 3;
 
-        public Rfc1006ProtocolContext()
-        {
-            FrameSize = DefaultFrameSize;
-        }
+        public Rfc1006ProtocolContext() => FrameSize = DefaultFrameSize;
 
         public void CalculateTpduSize(int frameSize = DefaultFrameSize)
         {
@@ -91,7 +85,7 @@ namespace Dacs7.Protocols.Rfc1006
         public static Memory<byte> CalcRemoteTsap(ushort connectionType, int rack, int slot)
         {
             var mem = new Memory<byte>(new byte[2]);
-            var value = (ushort)(((ushort)connectionType << 8) + (rack * 0x20) + slot);
+            var value = (ushort)((connectionType << 8) + (rack * 0x20) + slot);
             BinaryPrimitives.TryWriteUInt16BigEndian(mem.Span, value);
             return mem;
         }

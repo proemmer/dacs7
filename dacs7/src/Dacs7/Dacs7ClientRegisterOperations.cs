@@ -1,4 +1,7 @@
-﻿using Dacs7.ReadWrite;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using Dacs7.ReadWrite;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -49,7 +52,7 @@ namespace Dacs7
         /// </summary>
         /// <param name="values"></param>
         /// <returns></returns>
-        public static async Task<IEnumerable<string>> UnregisterAsync(this Dacs7Client client, IEnumerable<string> values)
+        public static Task<IEnumerable<string>> UnregisterAsync(this Dacs7Client client, IEnumerable<string> values)
         {
             var removed = new List<KeyValuePair<string, ReadItem>>();
             foreach (var item in values)
@@ -57,10 +60,9 @@ namespace Dacs7
                 if (client.RegisteredTags.TryGetValue(item, out var obj))
                     removed.Add(new KeyValuePair<string, ReadItem>(item, obj));
             }
+
             client.UpdateRegistration(null, removed);
-
-            return await Task.FromResult(removed.Select(x => x.Key).ToList());
-
+            return Task.FromResult<IEnumerable<string>>(removed.Select(x => x.Key).ToList());
         }
 
         /// <summary>

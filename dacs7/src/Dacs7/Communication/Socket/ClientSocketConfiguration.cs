@@ -1,5 +1,5 @@
-﻿using System.Net.Sockets;
-using System.Net;
+﻿using System.Net;
+using System.Net.Sockets;
 
 namespace Dacs7.Communication
 {
@@ -30,9 +30,6 @@ namespace Dacs7.Communication
             };
         }
 
-        public override string ToString()
-        {
-            return $"Socket: Hostname={Hostname}; ServiceName={ServiceName}; ReceiveBufferSize={ReceiveBufferSize}; KeepAlive={KeepAlive}";
-        }
+        public override string ToString() => $"Socket: Hostname={Hostname}; ServiceName={ServiceName}; ReceiveBufferSize={ReceiveBufferSize}; KeepAlive={KeepAlive}";
     }
 }

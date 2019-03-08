@@ -14,18 +14,19 @@ namespace Dacs7.Communication
         public delegate Task OnSocketShutdownHandler(string socketHandle);
 
         #region Fields
+        protected readonly IConfiguration _configuration;
+        protected readonly ILogger _logger;
+
         protected bool _disableReconnect;
-        protected IConfiguration _configuration;
         protected bool _shutdown;
         protected string _identity;
-        protected ILogger _logger;
         #endregion
 
         #region Properties
 
         public bool IsConnected { get; protected set; }
         public bool Shutdown => _shutdown;
-        public int ReceiveBufferSize { get { return _configuration.ReceiveBufferSize; } }
+        public int ReceiveBufferSize => _configuration.ReceiveBufferSize;
 
 
         public OnConnectionStateChangedHandler OnConnectionStateChanged;
@@ -58,10 +59,7 @@ namespace Dacs7.Communication
 
         public abstract Task<SocketError> SendAsync(Memory<byte> data);
 
-        protected virtual Task HandleSocketDown()
-        {
-            return PublishConnectionStateChanged(false);
-        }
+        protected virtual Task HandleSocketDown() => PublishConnectionStateChanged(false);
 
         protected Task PublishConnectionStateChanged(bool state, string identity = null)
         {
@@ -80,9 +78,7 @@ namespace Dacs7.Communication
         /// <param name="identity"></param>
         /// <returns>the processed number of bytes</returns>
         protected Task<int> ProcessData(Memory<byte> receivedData, string identity = null)
-        {
-            return OnRawDataReceived?.Invoke(identity ?? Identity, receivedData);
-        }
+            => OnRawDataReceived?.Invoke(identity ?? Identity, receivedData);
 
         protected virtual async Task HandleReconnectAsync()
         {

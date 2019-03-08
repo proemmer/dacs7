@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -8,10 +11,7 @@ namespace Dacs7.Alarms
     {
         private readonly Func<Task> _closeAction;
 
-        public AlarmUpdateResult(bool channelCompleted, Func<Task> closeAction) : this(channelCompleted, null, closeAction)
-        {
-            ChannelClosed = channelCompleted;
-        }
+        public AlarmUpdateResult(bool channelCompleted, Func<Task> closeAction) : this(channelCompleted, null, closeAction) => ChannelClosed = channelCompleted;
 
         public AlarmUpdateResult(bool channelCompleted, IEnumerable<IPlcAlarm> alarms, Func<Task> closeAction)
         {
@@ -24,7 +24,7 @@ namespace Dacs7.Alarms
         public IEnumerable<IPlcAlarm> Alarms { get; }
         public bool ChannelClosed { get; }
 
-        public Task CloseUpdateChannel () => _closeAction?.Invoke();
+        public Task CloseUpdateChannel() => _closeAction?.Invoke();
 
         public void Dispose()
         {

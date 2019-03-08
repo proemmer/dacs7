@@ -6,7 +6,7 @@
     <Copyright>Copyright © Benjamin Proemmer 2016-2019</Copyright>
     <AssemblyTitle>dacs7</AssemblyTitle>
     <Authors>Benjamin Proemmer</Authors>
-    <TargetFrameworks>netstandard2.0;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp2.1;netcoreapp2.2</TargetFrameworks>
     <AssemblyName>Dacs7</AssemblyName>
     <PackageId>Dacs7</PackageId>
     <PackageTags>siemens plc S7 PC-S7-Connection TCP/IP-S7 communication .netcore Automation HMI C# VB.Net RFC-1006 IsoOnTcp-S7 SIMATIC</PackageTags>
@@ -33,7 +33,7 @@
 
 
     <Version>2.1.0-beta2</Version>
-    <SignAssembly>false</SignAssembly>
+    <SignAssembly>true</SignAssembly>
     
     
     <AssemblyOriginatorKeyFile>C:\Projects\Tools\signatures\dacs7\dacs7.snk</AssemblyOriginatorKeyFile>
@@ -53,12 +53,13 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.1'">
-    <DefineConstants>NETCOREAPP21;$(AdditionalConstants)</DefineConstants>
+    <DefineConstants>SPANSUPPORT;$(AdditionalConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.2'">
+    <DefineConstants>SPANSUPPORT;$(AdditionalConstants)</DefineConstants>
   </PropertyGroup>
   
-  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
-    <DefineConstants>NETSTANDARD20;$(AdditionalConstants)</DefineConstants>
-  </PropertyGroup>
 
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">

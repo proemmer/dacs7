@@ -1,4 +1,7 @@
-﻿using Dacs7.Helper;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using Dacs7.Helper;
 using Dacs7.Metadata;
 using Dacs7.Protocols.SiemensPlc;
 using Microsoft.Extensions.Logging;
@@ -11,7 +14,7 @@ namespace Dacs7.Protocols
 {
     internal partial class ProtocolHandler
     {
-        private ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>> _blockInfoHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>>();
+        private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>> _blockInfoHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>>();
 
         public async Task<S7PlcBlockInfoAckDatagram> ReadBlockInfoAsync(PlcBlockType type, int blocknumber)
         {
@@ -19,7 +22,7 @@ namespace Dacs7.Protocols
                 ExceptionThrowHelper.ThrowNotConnectedException();
 
             var id = GetNextReferenceId();
-            using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlockInfoRequest(_s7Context, id, type, blocknumber), out int memoryLength))
+            using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlockInfoRequest(_s7Context, id, type, blocknumber), out var memoryLength))
             {
                 using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
                 {

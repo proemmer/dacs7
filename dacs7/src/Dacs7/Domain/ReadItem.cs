@@ -1,4 +1,4 @@
-﻿// Copyright (c) insite-gmbh. All rights reserved.
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
 using Dacs7.Domain;
@@ -92,7 +92,7 @@ namespace Dacs7
         /// <returns></returns>
         public static ReadItem Create<T>(string area, int offset, ushort length, bool unicode = false)
         {
-            if (!TagParser.TryDetectArea(area.AsSpan(), out var selector, out var db ))
+            if (!TagParser.TryDetectArea(area.AsSpan(), out var selector, out var db))
             {
                 ExceptionThrowHelper.ThrowInvalidAreaException(area);
             }
@@ -145,9 +145,9 @@ namespace Dacs7
                 result.VarType = t.GetGenericArguments().Single();
                 result.ResultType = t;
             }
-            else if(t == typeof(string))
+            else if (t == typeof(string))
             {
-                result.VarType = result.ResultType  = t;
+                result.VarType = result.ResultType = t;
                 result.NumberOfItems += result.Unicode ? UnicodeStringHeaderSize : StringHeaderSize;
             }
             else if (t == typeof(Memory<byte>))

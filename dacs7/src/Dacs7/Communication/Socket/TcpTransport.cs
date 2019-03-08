@@ -13,10 +13,39 @@ namespace Dacs7.Communication.Socket
     {
         private readonly Rfc1006ProtocolContext _context;
 
-        public TcpTransport(Rfc1006ProtocolContext context, ClientSocketConfiguration config) : base(context, config)
+        public TcpTransport(Rfc1006ProtocolContext context, ClientSocketConfiguration config) : base(context, config) => _context = context;
+
+
+        public override void ConfigureClient(ILoggerFactory loggerFactory)
         {
-            _context = context;
+            Client = new ClientSocket(Configuration as ClientSocketConfiguration, loggerFactory)
+            {
+                OnRawDataReceived = OnTcpSocketRawDataReceived,
+                OnConnectionStateChanged = OnTcpSocketConnectionStateChanged
+            };
         }
+
+
+        public override IMemoryOwner<byte> Build(Memory<byte> buffer, out int length)
+        {
+            using (var dg = DataTransferDatagram.Build(_context, buffer).FirstOrDefault())
+            {
+                length = DataTransferDatagram.GetRawDataLength(dg);
+                var resultBuffer = MemoryPool<byte>.Shared.Rent(length);
+                try
+                {
+                    DataTransferDatagram.TranslateToMemory(dg, resultBuffer.Memory.Slice(0, length));
+                }
+                catch (Exception)
+                {
+                    // we have to dispose the buffer when we got an exception, because we are the owner.
+                    resultBuffer.Dispose();
+                    throw;
+                }
+                return resultBuffer;
+            }
+        }
+
 
         private Task<int> OnTcpSocketRawDataReceived(string socketHandle, Memory<byte> buffer)
         {
@@ -70,8 +99,6 @@ namespace Dacs7.Communication.Socket
             return processed;
         }
 
-
-
         private async Task SendTcpConnectionRequest()
         {
             using (var datagram = ConnectionRequestDatagram.TranslateToMemory(ConnectionRequestDatagram.BuildCr(_context), out var memoryLegth))
@@ -81,36 +108,6 @@ namespace Dacs7.Communication.Socket
                 {
                     OnUpdateConnectionState?.Invoke(ConnectionState.PendingOpenTransport);
                 }
-            }
-        }
-
-        public override void ConfigureClient(ILoggerFactory loggerFactory)
-        {
-            Client = new ClientSocket(Configuration as ClientSocketConfiguration, loggerFactory)
-            {
-                OnRawDataReceived = OnTcpSocketRawDataReceived,
-                OnConnectionStateChanged = OnTcpSocketConnectionStateChanged
-            };
-        }
-
-
-        public override IMemoryOwner<byte> Build(Memory<byte> buffer, out int length)
-        {
-            using (var dg = DataTransferDatagram.Build(_context, buffer).FirstOrDefault())
-            {
-                length = DataTransferDatagram.GetRawDataLength(dg);
-                var resultBuffer = MemoryPool<byte>.Shared.Rent(length);
-                try
-                {
-                    DataTransferDatagram.TranslateToMemory(dg, resultBuffer.Memory);
-                }
-                catch (Exception)
-                {
-                    // we have to dispose the buffer when we got an exception, because we are the owner.
-                    resultBuffer.Dispose();
-                    throw;
-                }
-                return resultBuffer;
             }
         }
     }

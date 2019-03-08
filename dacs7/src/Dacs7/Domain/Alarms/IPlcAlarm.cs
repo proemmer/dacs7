@@ -1,4 +1,8 @@
-﻿namespace Dacs7.Alarms
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+
+namespace Dacs7.Alarms
 {
 
     /// <summary>
@@ -8,8 +12,8 @@
     {
         byte Length { get; }
         ushort TransportSize { get; }
-        AlarmMessageType AlarmType { get;}
-        uint MsgNumber { get;}
+        AlarmMessageType AlarmType { get; }
+        uint MsgNumber { get; }
         ushort Id { get; }
         ushort Unknown2 { get; }
 
@@ -18,12 +22,12 @@
 
         byte State { get; set; }
 
-        byte AckStateGoing { get;  }
+        byte AckStateGoing { get; }
 
         byte AckStateComing { get; }
 
 
-        IPlcAlarmDetails Coming { get;  }
+        IPlcAlarmDetails Coming { get; }
         IPlcAlarmDetails Going { get; }
 
 

@@ -1,9 +1,9 @@
-﻿using System;
-using System.Threading.Tasks;
-using System.Net.Sockets;
-using System.Net;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Buffers;
-using Microsoft.Extensions.Logging;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading.Tasks;
 
 namespace Dacs7.Communication
 {
@@ -22,10 +22,9 @@ namespace Dacs7.Communication
                     if (_socket != null)
                     {
                         var epLocal = _socket.LocalEndPoint as IPEndPoint;
-                        IPEndPoint epRemote = null;
                         try
                         {
-                            epRemote = _socket.RemoteEndPoint as IPEndPoint;
+                            var epRemote = _socket.RemoteEndPoint as IPEndPoint;
                             _identity = $"{epLocal.Address}:{epLocal.Port}-{(epRemote != null ? epRemote.Address.ToString() : _config.Hostname)}:{(epRemote != null ? epRemote.Port : _config.ServiceName)}";
                         }
                         catch (Exception)
@@ -34,16 +33,15 @@ namespace Dacs7.Communication
                         };
                     }
                     else
+                    {
                         return string.Empty;
+                    }
                 }
                 return _identity;
             }
         }
 
-        public ClientSocket(ClientSocketConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration, loggerFactory?.CreateLogger<ClientSocket>())
-        {
-            _config = configuration;
-        }
+        public ClientSocket(ClientSocketConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration, loggerFactory?.CreateLogger<ClientSocket>()) => _config = configuration;
 
 
         /// <summary>
@@ -107,7 +105,7 @@ namespace Dacs7.Communication
             return SocketError.Success;
         }
 
-        public async override Task CloseAsync()
+        public override async Task CloseAsync()
         {
             await base.CloseAsync();
             DisposeSocket();
@@ -142,11 +140,9 @@ namespace Dacs7.Communication
                     try
                     {
                         var buffer = new ArraySegment<byte>(receiveBuffer, receiveOffset, _socket.ReceiveBufferSize);
-                        
                         var received = await _socket.ReceiveAsync(buffer, SocketFlags.Partial);
-                        
-                        if (received == 0)
-                            return;
+
+                        if (received == 0) return;
 
                         var toProcess = received + (receiveOffset - bufferOffset);
                         var processed = 0;
@@ -156,11 +152,10 @@ namespace Dacs7.Communication
                             var length = toProcess - processed;
                             var slice = span.Slice(off, length);
                             var proc = await ProcessData(slice);
-                            if(proc == 0)
+                            if (proc == 0)
                             {
                                 if (length > 0)
                                 {
-                                    
                                     receiveOffset += received;
                                     bufferOffset = receiveOffset - (toProcess - processed);
                                 }
@@ -174,7 +169,7 @@ namespace Dacs7.Communication
                             processed += proc;
                         } while (processed < toProcess);
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         if (_socket != null && !_shutdown)
                         {
@@ -191,6 +186,7 @@ namespace Dacs7.Communication
             }
 
         }
+
         protected override Task HandleSocketDown()
         {
             _ = HandleReconnectAsync();

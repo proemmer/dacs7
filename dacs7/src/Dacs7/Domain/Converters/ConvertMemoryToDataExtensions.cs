@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+
+using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
@@ -62,7 +65,7 @@ namespace Dacs7.Domain
                     var current = (short)(dataLength / 2);
 
                     length = (ushort)Math.Min(Math.Min(max, length), current);
-#if NETCOREAPP21
+#if SPANSUPPORT
                     return length > 0 ? Encoding.BigEndianUnicode.GetString(data.Slice(ReadItem.UnicodeStringHeaderSize, dataLength).Span) : string.Empty;
 #else
                     return length > 0 ? Encoding.BigEndianUnicode.GetString(data.Span.Slice(ReadItem.UnicodeStringHeaderSize, dataLength).ToArray()) : string.Empty;
@@ -77,7 +80,7 @@ namespace Dacs7.Domain
                     var current = data.Span.Length - ReadItem.StringHeaderSize;
 
                     length = (byte)Math.Min(Math.Min(max, (int)length), current);
-#if NETCOREAPP21
+#if SPANSUPPORT
                     return length > 0 ? Encoding.ASCII.GetString(data.Slice(ReadItem.StringHeaderSize, length).Span) : string.Empty;
 #else
                     return length > 0 ? Encoding.ASCII.GetString(data.Span.Slice(ReadItem.StringHeaderSize, length).ToArray()) : string.Empty;

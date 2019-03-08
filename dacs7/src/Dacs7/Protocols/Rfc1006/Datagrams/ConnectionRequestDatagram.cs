@@ -1,4 +1,4 @@
-﻿// Copyright (c) insite-gmbh. All rights reserved.
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
 using System;
@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Dacs7.Protocols.Rfc1006
 {
-    internal class ConnectionRequestDatagram  : IDisposable
+    internal class ConnectionRequestDatagram : IDisposable
     {
         private IMemoryOwner<byte> _sizeTpduReceiving;
         private IMemoryOwner<byte> _destTsap;
@@ -25,9 +25,9 @@ namespace Dacs7.Protocols.Rfc1006
 
         public byte PduType { get; set; } = 0xe0;
 
-        public Int16 DstRef { get; set; } = 0x0000;                     // TPDU Destination Reference
+        public short DstRef { get; set; } = 0x0000;                     // TPDU Destination Reference
 
-        public Int16 SrcRef { get; set; } = 0x0001;                     // TPDU Source-Reference (my own reference, should not be zero)
+        public short SrcRef { get; set; } = 0x0001;                     // TPDU Source-Reference (my own reference, should not be zero)
 
 
         public byte ClassOption { get; set; } = 0x00;                   // PDU Class 0 and no Option
@@ -69,8 +69,8 @@ namespace Dacs7.Protocols.Rfc1006
 
         public static ConnectionRequestDatagram BuildCr(Rfc1006ProtocolContext context)
         {
-            context.CalcLength(context, out byte li, out ushort length);
-            var result =  new ConnectionRequestDatagram
+            context.CalcLength(context, out var li, out var length);
+            var result = new ConnectionRequestDatagram
             {
                 Li = li,
                 SizeTpduReceiving = context.SizeTpduReceiving,

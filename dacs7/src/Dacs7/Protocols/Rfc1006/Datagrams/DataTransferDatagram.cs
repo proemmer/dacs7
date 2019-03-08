@@ -1,11 +1,11 @@
-﻿// Copyright (c) insite-gmbh. All rights reserved.
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License in the project root for license information.
 
 using System;
-using System.Linq;
-using System.Collections.Generic;
-using System.Buffers.Binary;
 using System.Buffers;
+using System.Buffers.Binary;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Dacs7.Protocols.Rfc1006
 {
@@ -102,8 +102,8 @@ namespace Dacs7.Protocols.Rfc1006
             return result;
         }
 
-        public static DataTransferDatagram TranslateFromMemory(Memory<byte> buffer, 
-                                                                Rfc1006ProtocolContext context, 
+        public static DataTransferDatagram TranslateFromMemory(Memory<byte> buffer,
+                                                                Rfc1006ProtocolContext context,
                                                                 out bool needMoteData,
                                                                 out int processed)
         {
@@ -114,7 +114,7 @@ namespace Dacs7.Protocols.Rfc1006
                 needMoteData = false;
                 return datagram;
             }
-            else if(!datagram.Payload.IsEmpty)
+            else if (!datagram.Payload.IsEmpty)
             {
                 AddPayloadToFrameBuffer(context.FrameBuffer, datagram);
             }

@@ -19,7 +19,7 @@ namespace Dacs7Tests
             Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.CreateFromTag("DB3.10000,x0", new[] { false, false }));
             Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.CreateFromTag("DB3.10000,x0", new[] { false, false }));
             Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.CreateFromTag("DB3.10000,x0,2", false));
-            Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.Create("DB1",0,2, false));
+            Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.Create<bool>("DB1",0,2, false));
             Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.Create("DB1", 0, new[] { false, false }));
             Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.Create("DB1", 0, 2, new[] { false, false }));
         }
