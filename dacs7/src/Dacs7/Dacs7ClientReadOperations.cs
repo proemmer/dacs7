@@ -42,9 +42,9 @@ namespace Dacs7.ReadWrite
         /// <returns>returns a enumerable with the read values</returns>
         public static async Task<IEnumerable<DataValue>> ReadAsync(this Dacs7Client client, IEnumerable<ReadItem> values)
         {
-            var readItems = values as IList<ReadItem> ?? values.ToList();
+            var readItems = values as IList<ReadItem> ?? new List<ReadItem>(values);
             var result = await client.ProtocolHandler.ReadAsync(readItems);
-            return result.Select((entry) => new DataValue(entry.Key, entry.Value)).ToList();
+            return new List<DataValue>(result.Select((entry) => new DataValue(entry.Key, entry.Value)));
         }
 
 

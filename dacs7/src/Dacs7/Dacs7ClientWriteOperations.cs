@@ -46,7 +46,7 @@ namespace Dacs7.ReadWrite
         /// <returns>returns an enumerable of <see cref="ItemResponseRetValue"/>, which containing the write results.</returns>
         public static Task<IEnumerable<ItemResponseRetValue>> WriteAsync(this Dacs7Client client, IEnumerable<WriteItem> values)
         {
-            var writeItems = values as IList<WriteItem> ?? values.ToList();
+            var writeItems = values as IList<WriteItem> ?? new List<WriteItem>(values);
             return client.ProtocolHandler.WriteAsync(writeItems);
         }
 
