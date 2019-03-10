@@ -7,7 +7,7 @@ namespace Dacs7.Protocols.SiemensPlc
     /// Context class for the protocol instance
     /// Contains all properties for the protocol
     /// </summary>
-    internal class SiemensPlcProtocolContext
+    internal sealed class SiemensPlcProtocolContext
     {
         private const int MinimumDataSize = 10;
         private const int MinimumAckDetectionSize = MinimumDataSize + 2;

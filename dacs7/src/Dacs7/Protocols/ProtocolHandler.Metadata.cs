@@ -12,14 +12,14 @@ using System.Threading.Tasks;
 
 namespace Dacs7.Protocols
 {
-    internal partial class ProtocolHandler
+    internal sealed partial class ProtocolHandler
     {
         private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>> _blockInfoHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>>();
 
         public async Task<S7PlcBlockInfoAckDatagram> ReadBlockInfoAsync(PlcBlockType type, int blocknumber)
         {
             if (ConnectionState != ConnectionState.Opened)
-                ExceptionThrowHelper.ThrowNotConnectedException();
+                ThrowHelper.ThrowNotConnectedException();
 
             var id = GetNextReferenceId();
             using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlockInfoRequest(_s7Context, id, type, blocknumber), out var memoryLength))
@@ -52,7 +52,7 @@ namespace Dacs7.Protocols
                     }
                     catch (TaskCanceledException)
                     {
-                        ExceptionThrowHelper.ThrowTimeoutException();
+                        ThrowHelper.ThrowTimeoutException();
                     }
                 }
             }
@@ -66,15 +66,15 @@ namespace Dacs7.Protocols
             {
                 if (_closeCalled)
                 {
-                    ExceptionThrowHelper.ThrowNotConnectedException();
+                    ThrowHelper.ThrowNotConnectedException();
                 }
                 else
                 {
                     if (cbh.Exception != null)
                     {
-                        ExceptionThrowHelper.ThrowException(cbh.Exception);
+                        ThrowHelper.ThrowException(cbh.Exception);
                     }
-                    ExceptionThrowHelper.ThrowWriteTimeoutException(id);
+                    ThrowHelper.ThrowWriteTimeoutException(id);
                 }
             }
         }

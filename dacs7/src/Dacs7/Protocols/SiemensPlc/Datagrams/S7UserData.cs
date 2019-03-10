@@ -2,7 +2,7 @@
 
 namespace Dacs7.Protocols.SiemensPlc.Datagrams
 {
-    internal class S7UserData
+    internal sealed class S7UserData
     {
         public byte ReturnCode { get; set; }
         public byte TransportSize { get; set; }

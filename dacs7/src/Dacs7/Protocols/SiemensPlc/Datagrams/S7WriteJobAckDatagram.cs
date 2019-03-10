@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace Dacs7.Protocols.SiemensPlc
 {
 
-    internal class S7WriteJobAckDatagram
+    internal sealed class S7WriteJobAckDatagram
     {
 
         public S7AckDataDatagram Header { get; set; } = new S7AckDataDatagram();

@@ -3,7 +3,7 @@
 
 namespace Dacs7.Metadata
 {
-    internal class PlcBlocks : IPlcBlocks
+    internal sealed class PlcBlocks : IPlcBlocks
     {
         public int Number { get; set; }
         public byte Flags { get; set; }

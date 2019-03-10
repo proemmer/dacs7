@@ -7,7 +7,7 @@ using System.Buffers.Binary;
 
 namespace Dacs7.Protocols.Rfc1006
 {
-    internal class ConnectionConfirmedDatagram : IDisposable
+    internal sealed class ConnectionConfirmedDatagram : IDisposable
     {
         private IMemoryOwner<byte> _sizeTpduReceiving;
         private IMemoryOwner<byte> _destTsap;

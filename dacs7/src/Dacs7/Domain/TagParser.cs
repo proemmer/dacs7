@@ -6,7 +6,7 @@ using System.Buffers;
 
 namespace Dacs7.Domain
 {
-    internal class TagParser
+    internal sealed class TagParser
     {
 
         public struct TagParserResult
@@ -17,7 +17,7 @@ namespace Dacs7.Domain
             public ushort Length { get; internal set; }
             public Type VarType { get; internal set; }
             public Type ResultType { get; internal set; }
-            public bool Unicode { get; internal set; }
+            public PlcEncoding Encoding { get; internal set; }
 
             public TagParserState ErrorState { get; internal set; }
         }
@@ -133,7 +133,7 @@ namespace Dacs7.Domain
             if (!TryExtractData(ref result, data, ref indexStart, ref state, ref type, index) && throwException)
             {
                 result.ErrorState = state;
-                ExceptionThrowHelper.ThrowTagParseException(TagParserState.Area, data.ToString(), tag);
+                ThrowHelper.ThrowTagParseException(TagParserState.Area, data.ToString(), tag);
             }
         }
 
@@ -206,7 +206,7 @@ namespace Dacs7.Domain
                             result.Offset = offset;
                             result.VarType = vtype;
                             result.ResultType = rType;
-                            result.Unicode = unicode;
+                            result.Encoding = unicode;
                             indexStart = i + 1;
                             state = TagParserState.Success;
                             return true;
@@ -219,11 +219,11 @@ namespace Dacs7.Domain
             return false;
         }
 
-        private static bool TryDetectTypes(ReadOnlySpan<char> type, ref ushort length, ref int offset, out Type vtype, out Type rType, out bool unicode)
+        private static bool TryDetectTypes(ReadOnlySpan<char> type, ref ushort length, ref int offset, out Type vtype, out Type rType, out PlcEncoding encoding)
         {
             vtype = typeof(object);
             rType = typeof(object);
-            unicode = false;
+            encoding = PlcEncoding.Ascii;
 
             switch (type[0])
             {
@@ -241,12 +241,12 @@ namespace Dacs7.Domain
                         {
                             case 's':
                                 vtype = rType = typeof(string);
-                                unicode = true;
+                                encoding = PlcEncoding.Unicode;
                                 break;
                             case 'c':
                                 vtype = typeof(char);
                                 rType = typeof(string);
-                                unicode = true;
+                                encoding = PlcEncoding.Unicode;
                                 break;
                         }
                         break;

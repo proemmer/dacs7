@@ -3,7 +3,7 @@ using System;
 
 namespace Dacs7.Protocols.SiemensPlc
 { 
-    internal class S7AlarmIndicationDatagram
+    internal sealed class S7AlarmIndicationDatagram
     {
         public S7UserDataDatagram UserData { get; set; }
 

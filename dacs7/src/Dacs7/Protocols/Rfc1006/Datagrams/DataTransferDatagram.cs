@@ -10,7 +10,7 @@ using System.Linq;
 namespace Dacs7.Protocols.Rfc1006
 {
 
-    internal class DataTransferDatagram : IDisposable
+    internal sealed class DataTransferDatagram : IDisposable
     {
         private IMemoryOwner<byte> _payload = null;
         public static byte EndOfTransmition = 0x80;

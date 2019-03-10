@@ -30,6 +30,6 @@ namespace Dacs7.Communication
             };
         }
 
-        public override string ToString() => $"Socket: Hostname={Hostname}; ServiceName={ServiceName}; ReceiveBufferSize={ReceiveBufferSize}; KeepAlive={KeepAlive}";
+        public sealed override string ToString() => $"Socket: Hostname={Hostname}; ServiceName={ServiceName}; ReceiveBufferSize={ReceiveBufferSize}; KeepAlive={KeepAlive}";
     }
 }

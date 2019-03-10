@@ -5,7 +5,7 @@ using System;
 
 namespace Dacs7.Protocols
 {
-    internal class CallbackHandler<T>
+    internal sealed class CallbackHandler<T>
     {
         public ushort Id { get; }
         public Exception Exception { get; set; }

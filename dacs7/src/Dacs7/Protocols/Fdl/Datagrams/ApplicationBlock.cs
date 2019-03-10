@@ -3,7 +3,7 @@
 
 namespace Dacs7.Protocols.Fdl
 {
-    internal class ApplicationBlock
+    internal sealed class ApplicationBlock
     {
         //Application Block
         public ComClass Opcode { get; set; } = ComClass.Request;                      // class of communication   (00 = request, 01=confirm, 02=indication)

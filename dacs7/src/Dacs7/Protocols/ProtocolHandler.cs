@@ -15,7 +15,7 @@ namespace Dacs7.Protocols
     internal delegate Task<bool> OnDetectAndReceive(Memory<byte> payload);
     internal delegate ConnectionState OnGetConnectionState();
 
-    internal partial class ProtocolHandler
+    internal sealed partial class ProtocolHandler
     {
         private readonly Transport _transport;
         private readonly SiemensPlcProtocolContext _s7Context;
@@ -81,13 +81,13 @@ namespace Dacs7.Protocols
                     if (!await _connectEvent.WaitAsync(_s7Context.Timeout * 10))
                     {
                         await CloseAsync();
-                        ExceptionThrowHelper.ThrowNotConnectedException();
+                        ThrowHelper.ThrowNotConnectedException();
                     }
                 }
                 catch (TimeoutException)
                 {
                     await CloseAsync();
-                    ExceptionThrowHelper.ThrowNotConnectedException();
+                    ThrowHelper.ThrowNotConnectedException();
                 }
             }
             catch (Dacs7NotConnectedException)
@@ -97,7 +97,7 @@ namespace Dacs7.Protocols
             }
             catch (Exception ex)
             {
-                ExceptionThrowHelper.ThrowNotConnectedException(ex);
+                ThrowHelper.ThrowNotConnectedException(ex);
             }
         }
 

@@ -8,6 +8,12 @@ using System.Linq;
 
 namespace Dacs7
 {
+    public enum PlcEncoding
+    {
+        Ascii,
+        Unicode
+    }
+
     public class WriteItem : ReadItem
     {
         internal Memory<byte> Data { get; set; }
@@ -18,7 +24,7 @@ namespace Dacs7
         {
         }
 
-        internal override WriteItem Clone()
+        internal sealed override WriteItem Clone()
         {
             var clone = base.Clone();
             clone.Data = Data;
@@ -55,11 +61,11 @@ namespace Dacs7
         /// <param name="offset">offset in byte</param>
         /// <param name="length">number of items</param>
         /// <param name="data">data to write</param>
-        /// <param name="unicode">write unicode data (only TIA  WString and WChar</param>
+        /// <param name="encoding">write unicode data (only TIA  WString and WChar</param>
         /// <returns><see cref="WriteItem"/></returns>
-        public static WriteItem Create<T>(string area, int offset, ushort length, T data, bool unicode = false)
+        public static WriteItem Create<T>(string area, int offset, ushort length, T data, PlcEncoding encoding = PlcEncoding.Ascii)
         {
-            var result = Create<T>(area, offset, length, unicode).Clone();
+            var result = Create<T>(area, offset, length, encoding).Clone();
             result.Data = result.ConvertDataToMemory(data);
             return NormalizeAndValidate(result);
         }
@@ -71,10 +77,10 @@ namespace Dacs7
         /// <param name="area">Area in the plc (e.g.  db1, i or e, m, q or a, t, c or z </param>
         /// <param name="offset">offset in byte</param>
         /// <param name="data">data to write</param>
-        /// <param name="unicode">write unicode data (only TIA  WString and WChar</param>
+        /// <param name="encoding">write unicode data (only TIA  WString and WChar</param>
         /// <returns><see cref="WriteItem"/></returns>
-        public static WriteItem Create<T>(string area, int offset, T data, bool unicode = false)
-            => Create(area, offset, GetDataItemCount(data), data, unicode);
+        public static WriteItem Create<T>(string area, int offset, T data, PlcEncoding encoding = PlcEncoding.Ascii)
+            => Create(area, offset, GetDataItemCount(data), data, encoding);
 
 
         /// <summary>
@@ -120,7 +126,7 @@ namespace Dacs7
             if (result.VarType == typeof(string))
             {
                 var length = (ushort)result.Data.Length;
-                if (length > result.NumberOfItems) ExceptionThrowHelper.ThrowStringToLongException(nameof(result.Data));
+                if (length > result.NumberOfItems) ThrowHelper.ThrowStringToLongException(nameof(result.Data));
                 // special handling of string because we want to write only the given string, not the whole on.
                 result.NumberOfItems = (ushort)result.Data.Length;
             }
@@ -131,7 +137,7 @@ namespace Dacs7
                     // If the number of items is greater then 1, the result is a array
                     // but bit arrays are not supported!
                     // this code area is called, if you create a write item from tag without length specification, but an array as value
-                    ExceptionThrowHelper.ThrowTypeNotSupportedException(typeof(bool[]));
+                    ThrowHelper.ThrowTypeNotSupportedException(typeof(bool[]));
                 }
             }
             else
@@ -139,7 +145,7 @@ namespace Dacs7
                 var expectedSize = result.NumberOfItems * result.ElementSize;
                 if (result.Data.Length != expectedSize)
                 {
-                    ExceptionThrowHelper.ThrowInvalidWriteResult(result);
+                    ThrowHelper.ThrowInvalidWriteResult(result);
                 }
             }
             return result;

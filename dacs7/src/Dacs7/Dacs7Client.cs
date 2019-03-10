@@ -19,7 +19,7 @@ namespace Dacs7
     public delegate void ConnectionStateChangedEventHandler(Dacs7Client session, Dacs7ConnectionState e);
 
 
-    public partial class Dacs7Client
+    public sealed partial class Dacs7Client
     {
         private Dictionary<string, ReadItem> _registeredTags = new Dictionary<string, ReadItem>();
         private readonly SiemensPlcProtocolContext _s7Context;
@@ -49,7 +49,7 @@ namespace Dacs7
                 }
                 else
                 {
-                    ExceptionThrowHelper.ThrowCouldNotChangeValueWhileConnectionIsOpen(nameof(MaxAmQCalling));
+                    ThrowHelper.ThrowCouldNotChangeValueWhileConnectionIsOpen(nameof(MaxAmQCalling));
                 }
             }
         }
@@ -68,7 +68,7 @@ namespace Dacs7
                 }
                 else
                 {
-                    ExceptionThrowHelper.ThrowCouldNotChangeValueWhileConnectionIsOpen(nameof(MaxAmQCalled));
+                    ThrowHelper.ThrowCouldNotChangeValueWhileConnectionIsOpen(nameof(MaxAmQCalled));
                 }
             }
         }
@@ -87,7 +87,7 @@ namespace Dacs7
                 }
                 else
                 {
-                    ExceptionThrowHelper.ThrowCouldNotChangeValueWhileConnectionIsOpen(nameof(PduSize));
+                    ThrowHelper.ThrowCouldNotChangeValueWhileConnectionIsOpen(nameof(PduSize));
                 }
             }
         }

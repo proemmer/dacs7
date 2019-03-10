@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Dacs7.Protocols.Rfc1006
 {
-    internal class ConnectionRequestDatagram : IDisposable
+    internal sealed class ConnectionRequestDatagram : IDisposable
     {
         private IMemoryOwner<byte> _sizeTpduReceiving;
         private IMemoryOwner<byte> _destTsap;

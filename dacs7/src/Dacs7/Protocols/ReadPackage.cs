@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace Dacs7.Protocols
 {
-    internal class ReadPackage
+    internal sealed class ReadPackage
     {
         private readonly int _maxSize;
         private int _sizeRequest = Rfc1006ProtocolContext.DataHeaderSize + SiemensPlcProtocolContext.ReadHeader + SiemensPlcProtocolContext.ReadParameter;

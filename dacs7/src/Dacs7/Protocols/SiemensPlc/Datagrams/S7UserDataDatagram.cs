@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
-    internal class S7UserDataDatagram
+    internal sealed class S7UserDataDatagram
     {
 
         public S7HeaderDatagram Header { get; set; } = new S7HeaderDatagram

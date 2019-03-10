@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Dacs7.Protocols
 {
-    internal partial class ProtocolHandler
+    internal sealed partial class ProtocolHandler
     {
         private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>> _alarmHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>>();
         private CallbackHandler<S7AlarmUpdateAckDatagram> _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
@@ -26,7 +26,7 @@ namespace Dacs7.Protocols
         public async Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync()
         {
             if (ConnectionState != ConnectionState.Opened)
-                ExceptionThrowHelper.ThrowNotConnectedException();
+                ThrowHelper.ThrowNotConnectedException();
 
             var id = GetNextReferenceId();
             var sequenceNumber = (byte)0x00;
@@ -67,11 +67,11 @@ namespace Dacs7.Protocols
                             {
                                 if (_closeCalled)
                                 {
-                                    ExceptionThrowHelper.ThrowNotConnectedException();
+                                    ThrowHelper.ThrowNotConnectedException();
                                 }
                                 else
                                 {
-                                    ExceptionThrowHelper.ThrowReadTimeoutException(id);
+                                    ThrowHelper.ThrowReadTimeoutException(id);
                                 }
                             }
 
@@ -104,10 +104,10 @@ namespace Dacs7.Protocols
         public async Task<AlarmUpdateResult> ReceiveAlarmUpdatesAsync(CancellationToken ct)
         {
             if (ConnectionState != ConnectionState.Opened)
-                ExceptionThrowHelper.ThrowNotConnectedException();
+                ThrowHelper.ThrowNotConnectedException();
 
             if (!await EnableAlarmUpdatesAsync())
-                ExceptionThrowHelper.ThrowNotConnectedException();
+                ThrowHelper.ThrowNotConnectedException();
 
             var userId = GetNextReferenceId();
             try

@@ -57,7 +57,7 @@ namespace Dacs7.Domain
             }
             else if (item.ResultType == typeof(string))
             {
-                if (item.Unicode)
+                if (item.Encoding == PlcEncoding.Unicode)
                 {
                     var max = BinaryPrimitives.ReadUInt16BigEndian(data.Span);
                     var length = BinaryPrimitives.ReadUInt16BigEndian(data.Span.Slice(2));
@@ -173,7 +173,7 @@ namespace Dacs7.Domain
             {
                 return ConvertMemoryToSingle(item, data).ToList();
             }
-            ExceptionThrowHelper.ThrowInvalidCastException();
+            ThrowHelper.ThrowInvalidCastException();
             return null;
         }
 

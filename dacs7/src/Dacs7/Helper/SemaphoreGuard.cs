@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Dacs7.Helper
 {
-    internal class SemaphoreGuard : IDisposable
+    internal sealed class SemaphoreGuard : IDisposable
     {
         private SemaphoreSlim _semaphore;
         private bool IsDisposed => _semaphore == null;
@@ -30,10 +30,13 @@ namespace Dacs7.Helper
         public void Dispose()
         {
             if (IsDisposed)
-                throw new ObjectDisposedException(ToString());
+                ThrowObjectDisposedException(this);
+            
             _semaphore.Release();
             _semaphore = null;
         }
+
+        private static void ThrowObjectDisposedException(SemaphoreGuard guard) => throw new ObjectDisposedException(guard.ToString());
     }
 
 

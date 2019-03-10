@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
-    internal class S7AlarmMessage
+    internal sealed class S7AlarmMessage
     {
         private enum SyntaxIds
         {
@@ -90,7 +90,7 @@ namespace Dacs7.Protocols.SiemensPlc
                                         break;
                                     default:
                                         {
-                                            ExceptionThrowHelper.ThrowUnknownAlarmSubfunction(subfunction);
+                                            ThrowHelper.ThrowUnknownAlarmSubfunction(subfunction);
                                             break;
                                         }
                                 }
@@ -98,7 +98,7 @@ namespace Dacs7.Protocols.SiemensPlc
                             }
                         default:
                             {
-                                ExceptionThrowHelper.ThrowUnknownAlarmSyntax(syntaxId);
+                                ThrowHelper.ThrowUnknownAlarmSyntax(syntaxId);
                                 break;
                             }
                     }

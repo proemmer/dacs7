@@ -6,7 +6,7 @@ using System.Buffers.Binary;
 
 namespace Dacs7.Protocols.Fdl
 {
-    internal class RequestBlockDatagram
+    internal sealed class RequestBlockDatagram
     {
         public RequestBlockHeader Header { get; set; }
 

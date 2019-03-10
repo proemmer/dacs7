@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 
 namespace Dacs7.Communication.Socket
 {
-    internal class TcpTransport : Transport
+    internal sealed class TcpTransport : Transport
     {
         private readonly Rfc1006ProtocolContext _context;
 
         public TcpTransport(Rfc1006ProtocolContext context, ClientSocketConfiguration config) : base(context, config) => _context = context;
 
 
-        public override void ConfigureClient(ILoggerFactory loggerFactory)
+        public sealed override void ConfigureClient(ILoggerFactory loggerFactory)
         {
             Client = new ClientSocket(Configuration as ClientSocketConfiguration, loggerFactory)
             {
@@ -26,7 +26,7 @@ namespace Dacs7.Communication.Socket
         }
 
 
-        public override IMemoryOwner<byte> Build(Memory<byte> buffer, out int length)
+        public sealed override IMemoryOwner<byte> Build(Memory<byte> buffer, out int length)
         {
             using (var dg = DataTransferDatagram.Build(_context, buffer).FirstOrDefault())
             {

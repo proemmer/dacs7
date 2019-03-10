@@ -6,7 +6,7 @@ using System;
 namespace Dacs7.Protocols.SiemensPlc
 {
 
-    internal class S7HeaderErrorCodesDatagram
+    internal sealed class S7HeaderErrorCodesDatagram
     {
         public byte ErrorClass { get; set; }
 

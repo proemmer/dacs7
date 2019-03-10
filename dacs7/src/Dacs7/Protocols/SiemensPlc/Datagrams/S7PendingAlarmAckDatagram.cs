@@ -8,7 +8,7 @@ using System.Globalization;
 namespace Dacs7.Protocols.SiemensPlc
 {
 
-    internal class S7PendingAlarmAckDatagram
+    internal sealed class S7PendingAlarmAckDatagram
     {
         public S7UserDataDatagram UserData { get; set; }
 

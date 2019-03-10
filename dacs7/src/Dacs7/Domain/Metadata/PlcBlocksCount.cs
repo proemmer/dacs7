@@ -4,7 +4,7 @@
 
 namespace Dacs7.Metadata
 {
-    internal class PlcBlocksCount : IPlcBlocksCount
+    internal sealed class PlcBlocksCount : IPlcBlocksCount
     {
         public int Ob { get; set; }
         public int Fb { get; set; }

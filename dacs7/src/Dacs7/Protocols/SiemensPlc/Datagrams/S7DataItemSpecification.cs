@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
-    internal class S7DataItemSpecification
+    internal sealed class S7DataItemSpecification
     {
 
         public byte ReturnCode{ get; set; }

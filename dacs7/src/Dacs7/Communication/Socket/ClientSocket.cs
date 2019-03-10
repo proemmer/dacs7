@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 namespace Dacs7.Communication
 {
 
-    internal class ClientSocket : SocketBase
+    internal sealed class ClientSocket : SocketBase
     {
         private System.Net.Sockets.Socket _socket;
         private readonly ClientSocketConfiguration _config;
-        public override string Identity
+        public sealed  override string Identity
         {
             get
             {
@@ -48,13 +48,13 @@ namespace Dacs7.Communication
         /// Starts the server such that it is listening for 
         /// incoming connection requests.    
         /// </summary>
-        public override async Task OpenAsync()
+        public sealed override async Task OpenAsync()
         {
             await base.OpenAsync();
             await InternalOpenAsync();
         }
 
-        protected override async Task InternalOpenAsync(bool internalCall = false)
+        protected sealed override async Task InternalOpenAsync(bool internalCall = false)
         {
             try
             {
@@ -85,7 +85,7 @@ namespace Dacs7.Communication
             }
         }
 
-        public override async Task<SocketError> SendAsync(Memory<byte> data)
+        public sealed override async Task<SocketError> SendAsync(Memory<byte> data)
         {
             // Write the locally buffered data to the network.
             try
@@ -105,7 +105,7 @@ namespace Dacs7.Communication
             return SocketError.Success;
         }
 
-        public override async Task CloseAsync()
+        public sealed override async Task CloseAsync()
         {
             await base.CloseAsync();
             DisposeSocket();
@@ -187,7 +187,7 @@ namespace Dacs7.Communication
 
         }
 
-        protected override Task HandleSocketDown()
+        protected sealed override Task HandleSocketDown()
         {
             _ = HandleReconnectAsync();
             return PublishConnectionStateChanged(false);

@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Dacs7.Protocols
 {
-    internal partial class ProtocolHandler
+    internal sealed partial class ProtocolHandler
     {
         private static readonly List<S7DataItemSpecification> _defaultReadJobResult = new List<S7DataItemSpecification>();
         private readonly ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
@@ -21,7 +21,7 @@ namespace Dacs7.Protocols
         public async Task<Dictionary<ReadItem, S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItem> vars)
         {
             if (ConnectionState != ConnectionState.Opened)
-                ExceptionThrowHelper.ThrowNotConnectedException();
+                ThrowHelper.ThrowNotConnectedException();
 
             var result = vars.ToDictionary(x => x, x => null as S7DataItemSpecification);
             foreach (var normalized in CreateReadPackages(_s7Context, vars))
@@ -64,7 +64,7 @@ namespace Dacs7.Protocols
                     }
                     catch (TaskCanceledException)
                     {
-                        ExceptionThrowHelper.ThrowTimeoutException();
+                        ThrowHelper.ThrowTimeoutException();
                     }
                 }
             }
@@ -78,15 +78,15 @@ namespace Dacs7.Protocols
             {
                 if (_closeCalled)
                 {
-                    ExceptionThrowHelper.ThrowNotConnectedException(cbh.Exception);
+                    ThrowHelper.ThrowNotConnectedException(cbh.Exception);
                 }
                 else
                 {
                     if (cbh.Exception != null)
                     {
-                        ExceptionThrowHelper.ThrowException(cbh.Exception);
+                        ThrowHelper.ThrowException(cbh.Exception);
                     }
-                    ExceptionThrowHelper.ThrowReadTimeoutException(id);
+                    ThrowHelper.ThrowReadTimeoutException(id);
                 }
             }
         }
@@ -203,7 +203,7 @@ namespace Dacs7.Protocols
                                 }
                                 else
                                 {
-                                    ExceptionThrowHelper.ThrowCouldNotAddPackageException(nameof(ReadPackage));
+                                    ThrowHelper.ThrowCouldNotAddPackageException(nameof(ReadPackage));
                                 }
                             }
                             processed += slice;
@@ -216,7 +216,7 @@ namespace Dacs7.Protocols
                         result.Add(currentPackage);
                         if (!currentPackage.TryAdd(item))
                         {
-                            ExceptionThrowHelper.ThrowCouldNotAddPackageException(nameof(ReadPackage));
+                            ThrowHelper.ThrowCouldNotAddPackageException(nameof(ReadPackage));
                         }
                     }
                 }

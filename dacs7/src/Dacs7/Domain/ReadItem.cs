@@ -21,7 +21,7 @@ namespace Dacs7
         public ushort NumberOfItems { get; internal set; }
         public Type VarType { get; private set; }
         public Type ResultType { get; private set; }
-        public bool Unicode { get; private set; }
+        public PlcEncoding Encoding { get; private set; }
 
         internal int CallbackReference { get; set; }
         internal ReadItem Parent { get; set; }
@@ -45,7 +45,7 @@ namespace Dacs7
                 VarType = VarType,
                 ResultType = ResultType,
                 ElementSize = ElementSize,
-                Unicode = Unicode
+                Encoding = Encoding
             };
         }
 
@@ -56,14 +56,15 @@ namespace Dacs7
         /// <returns></returns>
         public static ReadItem CreateFromTag(string tag)
         {
-            var readItem = BuildReadItemFromTagResult(TagParser.ParseTag(tag));
+            var tr = TagParser.ParseTag(tag);
+            var readItem = BuildReadItemFromTagResult(ref tr);
             EnsureSupportedType(readItem);
             return readItem;
         }
 
-        private static ReadItem BuildReadItemFromTagResult(TagParser.TagParserResult result)
+        private static ReadItem BuildReadItemFromTagResult(ref TagParser.TagParserResult result)
         {
-            var numberOfItems = result.VarType == typeof(string) ? (ushort)(result.Length + (result.Unicode ? UnicodeStringHeaderSize : StringHeaderSize)) : result.Length;
+            var numberOfItems = result.VarType == typeof(string) ? (ushort)(result.Length + (result.Encoding == PlcEncoding.Unicode ? UnicodeStringHeaderSize : StringHeaderSize)) : result.Length;
             return new ReadItem
             {
                 Area = result.Area,
@@ -72,14 +73,14 @@ namespace Dacs7
                 NumberOfItems = numberOfItems,
                 VarType = result.VarType,
                 ResultType = result.ResultType,
-                ElementSize = GetElementSize(result.Area, result.VarType, result.Unicode),
-                Unicode = result.Unicode
+                ElementSize = GetElementSize(result.Area, result.VarType, result.Encoding),
+                Encoding = result.Encoding
             };
         }
 
 
-        public static ReadItem Create<T>(string area, int offset, bool unicode = false)
-            => Create<T>(area, offset, 1, unicode);
+        public static ReadItem Create<T>(string area, int offset, PlcEncoding encoding = PlcEncoding.Ascii)
+            => Create<T>(area, offset, 1, encoding);
 
         /// <summary>
         /// Create a read item
@@ -90,11 +91,11 @@ namespace Dacs7
         /// <param name="length">The number of items to read</param>
         /// <param name="unicode">IF the given type is a string or char you can also specifiy if its the unicode variant of them (this means 2byte per sign)</param>
         /// <returns></returns>
-        public static ReadItem Create<T>(string area, int offset, ushort length, bool unicode = false)
+        public static ReadItem Create<T>(string area, int offset, ushort length, PlcEncoding encoding = PlcEncoding.Ascii)
         {
             if (!TagParser.TryDetectArea(area.AsSpan(), out var selector, out var db))
             {
-                ExceptionThrowHelper.ThrowInvalidAreaException(area);
+                ThrowHelper.ThrowInvalidAreaException(area);
             }
 
             return SetupTypes<T>(new ReadItem
@@ -103,7 +104,7 @@ namespace Dacs7
                 DbNumber = db,
                 Offset = offset,
                 NumberOfItems = length,
-                Unicode = unicode
+                Encoding = encoding
             });
         }
 
@@ -127,7 +128,7 @@ namespace Dacs7
                 ResultType = item.ResultType,
                 Parent = item,
                 ElementSize = item.ElementSize,
-                Unicode = item.Unicode
+                Encoding = item.Encoding
             };
         }
 
@@ -148,7 +149,7 @@ namespace Dacs7
             else if (t == typeof(string))
             {
                 result.VarType = result.ResultType = t;
-                result.NumberOfItems += result.Unicode ? UnicodeStringHeaderSize : StringHeaderSize;
+                result.NumberOfItems += result.Encoding == PlcEncoding.Unicode ? UnicodeStringHeaderSize : StringHeaderSize;
             }
             else if (t == typeof(Memory<byte>))
             {
@@ -162,13 +163,13 @@ namespace Dacs7
 
 
             EnsureSupportedType(result);
-            result.ElementSize = GetElementSize(result.Area, result.VarType, result.Unicode);
+            result.ElementSize = GetElementSize(result.Area, result.VarType, result.Encoding);
             return result;
         }
 
 
 
-        public static ushort GetElementSize(PlcArea area, Type t, bool unicode)
+        public static ushort GetElementSize(PlcArea area, Type t, PlcEncoding encoding)
         {
             if (area == PlcArea.CT || area == PlcArea.TM) return 2;
 
@@ -176,7 +177,7 @@ namespace Dacs7
 
             if (t == typeof(byte) || t == typeof(Memory<byte>)) return 1;
             if (t == typeof(bool)) return 1;
-            if (t == typeof(char) || t == typeof(string)) return (ushort)(unicode ? 2 : 1);
+            if (t == typeof(char) || t == typeof(string)) return (ushort)(encoding == PlcEncoding.Unicode ? 2 : 1);
             if (t == typeof(short) || t == typeof(ushort)) return 2;
             if (t == typeof(int) || t == typeof(uint)) return 4;
             if (t == typeof(ulong) || t == typeof(long)) return 8;
@@ -204,7 +205,7 @@ namespace Dacs7
                 return;
             }
 
-            ExceptionThrowHelper.ThrowTypeNotSupportedException(item.ResultType);
+            ThrowHelper.ThrowTypeNotSupportedException(item.ResultType);
         }
 
     }

@@ -27,7 +27,7 @@ namespace Dacs7
             var expected = typeof(T);
             if (expected != _meta.ResultType)
             {
-                ExceptionThrowHelper.ThrowTypesNotMatching(expected, _meta.ResultType);
+                ThrowHelper.ThrowTypesNotMatching(expected, _meta.ResultType);
             }
             return (T)Value;
         }

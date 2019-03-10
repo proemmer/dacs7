@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 
 namespace Dacs7.Protocols.SiemensPlc.Datagrams
 {
-    internal class S7UserDataParameter
+    internal sealed class S7UserDataParameter
     {
         public byte[] ParamHeader { get; set; } = new byte[] { 0x00, 0x01, 0x12 }; // Always 0x00 0x01 0x12
         public byte ParamDataLength { get; set; } // par len 0x04 or 0x08

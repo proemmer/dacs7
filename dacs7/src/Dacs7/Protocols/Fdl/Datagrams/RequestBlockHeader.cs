@@ -3,7 +3,7 @@
 
 namespace Dacs7.Protocols.Fdl
 {
-    internal class RequestBlockHeader
+    internal sealed class RequestBlockHeader
     {
         public ushort[] Reserved { get; set; } = new ushort[2];
 

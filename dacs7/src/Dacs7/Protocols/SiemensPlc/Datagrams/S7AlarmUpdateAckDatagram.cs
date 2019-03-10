@@ -2,7 +2,7 @@
 
 namespace Dacs7.Protocols.SiemensPlc
 {
-    internal class S7AlarmUpdateAckDatagram
+    internal sealed class S7AlarmUpdateAckDatagram
     {
         public S7UserDataDatagram UserData { get; set; }
 

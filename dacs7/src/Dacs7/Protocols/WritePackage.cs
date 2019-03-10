@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace Dacs7.Protocols
 {
-    internal class WritePackage
+    internal sealed class WritePackage
     {
         private readonly int _minimumSize = SiemensPlcProtocolContext.WriteParameterItem + SiemensPlcProtocolContext.WriteDataItem + 1;
         private readonly int _maxSize;

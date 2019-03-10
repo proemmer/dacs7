@@ -5,7 +5,7 @@ using System;
 
 namespace Dacs7.Protocols.Fdl
 {
-    internal class S7ConnectionConfig
+    internal sealed class S7ConnectionConfig
     {
         public byte RoutingEnabled { get; set; }
         public byte B01 { get; set; } = 0x02;

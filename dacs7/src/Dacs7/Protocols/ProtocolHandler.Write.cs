@@ -14,21 +14,21 @@ using System.Threading.Tasks;
 namespace Dacs7.Protocols
 {
 
-    internal class WriteResult
+    internal sealed class WriteResult
     {
         public Exception Exception { get; set; }
 
     }
 
 
-    internal partial class ProtocolHandler
+    internal sealed partial class ProtocolHandler
     {
         private readonly ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>> _writeHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>>();
 
         public async Task<IEnumerable<ItemResponseRetValue>> WriteAsync(IEnumerable<WriteItem> vars)
         {
             if (ConnectionState != ConnectionState.Opened)
-                ExceptionThrowHelper.ThrowNotConnectedException();
+                ThrowHelper.ThrowNotConnectedException();
 
 
             var result = vars.ToDictionary(x => x, x => ItemResponseRetValue.Success);
@@ -73,7 +73,7 @@ namespace Dacs7.Protocols
                     }
                     catch (TaskCanceledException)
                     {
-                        ExceptionThrowHelper.ThrowTimeoutException();
+                        ThrowHelper.ThrowTimeoutException();
                     }
                 }
             }
@@ -86,15 +86,15 @@ namespace Dacs7.Protocols
             {
                 if (_closeCalled)
                 {
-                    ExceptionThrowHelper.ThrowNotConnectedException(cbh.Exception);
+                    ThrowHelper.ThrowNotConnectedException(cbh.Exception);
                 }
                 else
                 {
                     if (cbh.Exception != null)
                     {
-                        ExceptionThrowHelper.ThrowException(cbh.Exception);
+                        ThrowHelper.ThrowException(cbh.Exception);
                     }
-                    ExceptionThrowHelper.ThrowWriteTimeoutException(id);
+                    ThrowHelper.ThrowWriteTimeoutException(id);
 
                 }
             }
@@ -188,7 +188,7 @@ namespace Dacs7.Protocols
                                 }
                                 else
                                 {
-                                    ExceptionThrowHelper.ThrowCouldNotAddPackageException(nameof(WritePackage));
+                                    ThrowHelper.ThrowCouldNotAddPackageException(nameof(WritePackage));
                                 }
                             }
                             processed += slice;
@@ -201,7 +201,7 @@ namespace Dacs7.Protocols
                         result.Add(currentPackage);
                         if (!currentPackage.TryAdd(item))
                         {
-                            ExceptionThrowHelper.ThrowCouldNotAddPackageException(nameof(WritePackage));
+                            ThrowHelper.ThrowCouldNotAddPackageException(nameof(WritePackage));
                         }
                     }
                 }

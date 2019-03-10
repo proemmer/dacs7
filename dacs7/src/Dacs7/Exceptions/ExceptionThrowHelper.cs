@@ -7,7 +7,7 @@ using System;
 
 namespace Dacs7
 {
-    internal static class ExceptionThrowHelper
+    internal static class ThrowHelper
     {
         public static void ThrowNotConnectedException(Exception ex = null) => throw new Dacs7NotConnectedException(ex);
 
@@ -38,6 +38,9 @@ namespace Dacs7
         public static void ThrowUnknownAlarmSubfunction(AlarmMessageType subfunction) => throw new Exception($"Unknown alarm subfunction {subfunction}");
 
         public static void ThrowUnknownAlarmSyntax(byte syntaxId) => throw new Exception($"Unknown alarm syntaxID {syntaxId}");
-        internal static void ThrowTagParseException(TagParserState area, string v, string tag) => throw new Dacs7TagParserException(area, v, tag);
+
+        public static void ThrowTagParseException(TagParserState area, string v, string tag) => throw new Dacs7TagParserException(area, v, tag);
+
+        public static void ThrowArgumenNullException(string source) => throw new ArgumentNullException(source);
     }
 }

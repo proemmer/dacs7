@@ -1,14 +1,14 @@
 ﻿namespace Dacs7.Protocols.Fdl
 {
 
-    internal class Ident
+    internal sealed class Ident
     {
         public byte[] ReservedHeader { get; set; } = new byte[8];                    //reserved for FDL !!!!!                                               
         public byte[] IdentInfo { get; set; } = new byte[202];
         public byte ResponseTelegramLength { get; set; }               //reserved for FDL !!!!!                                               
     }
 
-    internal class BusParameterBlock
+    internal sealed class BusParameterBlock
     {
         public byte HighestStationAddress { get; set; }                  //highest station-address                                              
                                                                          //range of values:  2 ... 126                                          

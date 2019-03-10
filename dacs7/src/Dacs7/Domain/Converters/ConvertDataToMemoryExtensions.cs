@@ -24,7 +24,7 @@ namespace Dacs7.Domain
                 }
                 else if (item.ResultType == typeof(byte[]))
                 {
-                    data = item.Unicode ? Encoding.BigEndianUnicode.GetBytes(dataS) : Encoding.ASCII.GetBytes(dataS);
+                    data = item.Encoding == PlcEncoding.Unicode ? Encoding.BigEndianUnicode.GetBytes(dataS) : Encoding.ASCII.GetBytes(dataS);
                 }
                 else
                     data = Convert.ChangeType(data, item.ResultType, CultureInfo.InvariantCulture);
@@ -54,7 +54,7 @@ namespace Dacs7.Domain
                     {
                         if (item.VarType == typeof(string))
                         {
-                            if (item.Unicode)
+                            if (item.Encoding == PlcEncoding.Unicode)
                             {
                                 Memory<byte> result = new byte[(s.Length * 2) + ReadItem.UnicodeStringHeaderSize];
 
@@ -79,7 +79,7 @@ namespace Dacs7.Domain
                             Encoding.BigEndianUnicode.GetBytes(s).AsSpan().CopyTo(result.Span);
                             return result;
                         }
-                        ExceptionThrowHelper.ThrowInvalidCastException();
+                        ThrowHelper.ThrowInvalidCastException();
                         return null;
                     }
                 case short i16:
@@ -182,7 +182,7 @@ namespace Dacs7.Domain
                     }
 
             }
-            ExceptionThrowHelper.ThrowInvalidCastException();
+            ThrowHelper.ThrowInvalidCastException();
             return null;
         }
 

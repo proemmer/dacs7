@@ -7,7 +7,7 @@ using Dacs7.Metadata;
 namespace Dacs7.Protocols.SiemensPlc
 {
 
-    internal class S7PlcBlockInfoAckDatagram
+    internal sealed class S7PlcBlockInfoAckDatagram
     {
 
         public S7UserDataDatagram UserData { get; set; }

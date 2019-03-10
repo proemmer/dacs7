@@ -8,7 +8,7 @@ using System.Buffers.Binary;
 namespace Dacs7.Protocols.SiemensPlc
 {
 
-    internal class S7AddressItemSpecificationDatagram
+    internal sealed class S7AddressItemSpecificationDatagram
     {
 
         public byte VariableSpecification { get; set; } = 0x12;
