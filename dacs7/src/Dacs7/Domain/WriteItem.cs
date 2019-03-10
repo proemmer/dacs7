@@ -28,14 +28,14 @@ namespace Dacs7
         {
             var clone = base.Clone();
             clone.Data = Data;
-            return clone;
+            return NormalizeAndValidate(clone);
         }
 
         internal WriteItem Clone(Memory<byte> data)
         {
             var clone = base.Clone();
             clone.Data = data;
-            return clone;
+            return NormalizeAndValidate(clone);
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace Dacs7
         }
 
 
-        private static WriteItem NormalizeAndValidate(WriteItem result)
+        internal static WriteItem NormalizeAndValidate(WriteItem result)
         {
             if (result.VarType == typeof(string))
             {

@@ -60,7 +60,7 @@ namespace Dacs7.ReadWrite
             {
                 var result = client.RegisteredOrGiven(item.Key).Clone();
                 result.Data = result.ConvertDataToMemory(item.Value);
-                return result;
+                return WriteItem.NormalizeAndValidate(result);
             }));
         }
 

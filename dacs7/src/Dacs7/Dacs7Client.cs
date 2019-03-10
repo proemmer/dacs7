@@ -126,7 +126,7 @@ namespace Dacs7
 
 
         /// <summary>
-        /// Create a readitem for the given tag ore reuse an existing one for this tag.
+        /// Create a readitem for the given tag or reuse an existing one for this tag.
         /// </summary>
         /// <param name="tag">the absolute adress</param>
         /// <returns></returns>
