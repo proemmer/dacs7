@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text;
 using Xunit;
 
-namespace Dacs7Tests
+namespace Dacs7.Tests
 {
     public class TypeConversionTests
     {

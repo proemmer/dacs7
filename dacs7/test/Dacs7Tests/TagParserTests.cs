@@ -3,7 +3,7 @@ using Dacs7.Domain;
 using System;
 using Xunit;
 
-namespace Dacs7Tests
+namespace Dacs7.Tests
 {
 
     public class TagParserTests

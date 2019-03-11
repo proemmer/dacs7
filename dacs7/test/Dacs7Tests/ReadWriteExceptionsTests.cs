@@ -4,7 +4,7 @@ using Dacs7;
 using System;
 using Xunit;
 
-namespace Dacs7Tests
+namespace Dacs7.Tests
 {
     [Collection("PlcServer collection")]
     public class ReadWriteExceptionsTests

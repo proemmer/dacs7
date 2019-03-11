@@ -9,7 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Dacs7Tests
+namespace Dacs7.Tests
 {
     [Collection("PlcServer collection")]
     public class ReadWriteIEnumerableValuesTests

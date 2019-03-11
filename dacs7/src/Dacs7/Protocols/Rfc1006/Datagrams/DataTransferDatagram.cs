@@ -14,7 +14,7 @@ namespace Dacs7.Protocols.Rfc1006
     {
         private IMemoryOwner<byte> _payload = null;
         public static byte EndOfTransmition = 0x80;
-        internal static DataTransferDatagram Default = new DataTransferDatagram();
+        internal static DataTransferDatagram _default = new DataTransferDatagram();
 
         public TpktDatagram Tkpt { get; set; } = new TpktDatagram
         {

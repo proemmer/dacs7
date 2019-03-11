@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
-namespace Dacs7Tests
+namespace Dacs7.Tests
 {
     public class DataValueTests
     {
