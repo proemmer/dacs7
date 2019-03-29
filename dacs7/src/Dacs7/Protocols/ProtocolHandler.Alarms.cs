@@ -45,16 +45,16 @@ namespace Dacs7.Protocols
                         using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
                         {
 
-                            using (await SemaphoreGuard.Async(_concurrentJobs))
+                            using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                             {
                                 var cbh = new CallbackHandler<S7PendingAlarmAckDatagram>(id);
                                 _alarmHandler.TryAdd(cbh.Id, cbh);
                                 try
                                 {
-                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)) != SocketError.Success)
+                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
                                         return null;
 
-                                    alarmResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
+                                    alarmResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
 
                                 }
                                 finally

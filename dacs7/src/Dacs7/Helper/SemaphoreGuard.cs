@@ -23,7 +23,7 @@ namespace Dacs7.Helper
         public static async Task<SemaphoreGuard> Async(SemaphoreSlim semaphore)
         {
             var guard = new SemaphoreGuard(semaphore, false);
-            await semaphore.WaitAsync();
+            await semaphore.WaitAsync().ConfigureAwait(false);
             return guard;
         }
 
