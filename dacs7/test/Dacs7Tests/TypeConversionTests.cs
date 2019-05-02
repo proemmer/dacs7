@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Text;
 using Xunit;
 
-namespace Dacs7Tests
+namespace Dacs7.Tests
 {
     public class TypeConversionTests
     {
@@ -15,9 +13,9 @@ namespace Dacs7Tests
             Assert.Equal(-45, GetValue<short>("-00045"));
             Assert.Equal(100, GetValue<short>("000100"));
 
-            Assert.Equal(-99.2, GetValue<Single>("-099.2"), 2);
-            Assert.Equal(3.123, GetValue<Single>("+003.123"), 2);
-            
+            Assert.Equal(-99.2, GetValue<float>("-099.2"), 2);
+            Assert.Equal(3.123, GetValue<float>("+003.123"), 2);
+
         }
 
 
@@ -25,9 +23,6 @@ namespace Dacs7Tests
 
 
 
-        private T GetValue<T>(string s)
-        {
-            return (T)Convert.ChangeType(s, typeof(T), CultureInfo.InvariantCulture);
-        }
+        private T GetValue<T>(string s) => (T)Convert.ChangeType(s, typeof(T), CultureInfo.InvariantCulture);
     }
 }

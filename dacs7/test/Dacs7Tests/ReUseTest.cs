@@ -1,14 +1,10 @@
-﻿using Dacs7;
-using Dacs7.ReadWrite;
+﻿using Dacs7.ReadWrite;
 using Dacs7Tests.ServerHelper;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Dacs7Tests
+namespace Dacs7.Tests
 {
     [Collection("PlcServer collection")]
     public class ReUseTest
@@ -18,7 +14,7 @@ namespace Dacs7Tests
         {
             var client = new Dacs7Client(PlcTestServer.Address, PlcTestServer.ConnectionType, PlcTestServer.Timeout);
 
-            for (int i = 0; i < 5; i++)
+            for (var i = 0; i < 5; i++)
             {
                 try
                 {

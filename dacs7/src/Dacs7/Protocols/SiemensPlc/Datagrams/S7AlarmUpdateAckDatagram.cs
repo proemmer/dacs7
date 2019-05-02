@@ -1,8 +1,11 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using System;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
-    internal class S7AlarmUpdateAckDatagram
+    internal sealed class S7AlarmUpdateAckDatagram
     {
         public S7UserDataDatagram UserData { get; set; }
 

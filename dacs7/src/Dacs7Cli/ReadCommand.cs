@@ -38,10 +38,10 @@ namespace Dacs7Cli
                             Trace = traceOption.HasValue(),
                             Address = addressOption.HasValue() ? addressOption.Value() : "localhost",
                             RegisterItems = registerOption.HasValue(),
-                            Loops = loopsOption.HasValue() ? Int32.Parse(loopsOption.Value()) : 1,
-                            Wait = waitOption.HasValue() ? Int32.Parse(waitOption.Value()) : 0,
+                            Loops = loopsOption.HasValue() ? int.Parse(loopsOption.Value()) : 1,
+                            Wait = waitOption.HasValue() ? int.Parse(waitOption.Value()) : 0,
                             Tags = tagsArguments.Values,
-                            MaxJobs = maxJobsOption.HasValue() ? Int32.Parse(maxJobsOption.Value()) : 10,
+                            MaxJobs = maxJobsOption.HasValue() ? int.Parse(maxJobsOption.Value()) : 10,
                         }.Configure();
                         var result = await Read(readOptions, readOptions.LoggerFactory);
 
@@ -70,7 +70,6 @@ namespace Dacs7Cli
 
             try
             {
-                long msTotal = 0;
                 await client.ConnectAsync();
 
                 if (readOptions.RegisterItems)
@@ -78,7 +77,8 @@ namespace Dacs7Cli
                     await client.RegisterAsync(readOptions.Tags);
                 }
 
-                for (int i = 0; i < readOptions.Loops; i++)
+                var swTotal = new Stopwatch();
+                for (var i = 0; i < readOptions.Loops; i++)
                 {
                     if (i > 0 && readOptions.Wait > 0)
                     {
@@ -89,9 +89,11 @@ namespace Dacs7Cli
                     {
                         var sw = new Stopwatch();
                         sw.Start();
+                        swTotal.Start();
                         var results = await client.ReadAsync(readOptions.Tags);
+                        swTotal.Stop();
                         sw.Stop();
-                        msTotal += sw.ElapsedMilliseconds;
+
                         logger?.LogDebug($"ReadTime: {sw.Elapsed}");
 
                         var resultEnumerator = results.GetEnumerator();
@@ -112,7 +114,7 @@ namespace Dacs7Cli
 
                 if (readOptions.Loops > 0)
                 {
-                    logger?.LogInformation($"Average read time over loops is {msTotal / readOptions.Loops}ms");
+                    logger?.LogInformation($"Average read time over loops is {(ElapsedNanoSeconds(swTotal.ElapsedTicks) / readOptions.Loops)}ns");
                     await Task.Delay(readOptions.Wait);
                 }
             }
@@ -134,18 +136,19 @@ namespace Dacs7Cli
             return 0;
         }
 
+        public static long ElapsedNanoSeconds(long ticks) => ticks * 1000000000 / Stopwatch.Frequency;
 
         private static string GetValue(object v)
         {
-            if(v is string s)
+            if (v is string s)
             {
                 return s;
             }
-            if(v is char[] c)
+            if (v is char[] c)
             {
                 return new string(c);
             }
-            if(v != null)
+            if (v != null)
                 return v.ToString();
             return "[null]";
         }

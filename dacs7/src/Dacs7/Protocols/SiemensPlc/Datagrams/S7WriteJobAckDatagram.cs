@@ -1,13 +1,14 @@
-﻿// Copyright (c) insite-gmbh. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
 
-    internal class S7WriteJobAckDatagram
+    internal sealed class S7WriteJobAckDatagram
     {
 
         public S7AckDataDatagram Header { get; set; } = new S7AckDataDatagram();
@@ -22,10 +23,11 @@ namespace Dacs7.Protocols.SiemensPlc
         public List<S7DataItemWriteResult> Data { get; set; } = new List<S7DataItemWriteResult>();
 
 
-        public static Memory<byte> TranslateToMemory(S7WriteJobAckDatagram datagram)
+        public static IMemoryOwner<byte> TranslateToMemory(S7WriteJobAckDatagram datagram, out int memoryLength)
         {
-            var result = S7AckDataDatagram.TranslateToMemory(datagram.Header);
-            var span = result.Span;
+            var result = S7AckDataDatagram.TranslateToMemory(datagram.Header, out memoryLength);
+            var mem = result.Memory.Slice(0, memoryLength);
+            var span = mem.Span;
             var offset = datagram.Header.Header.GetHeaderSize();
             span[offset++] = datagram.Function;
             span[offset++] = datagram.ItemCount;
@@ -33,7 +35,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
             foreach (var item in datagram.Data)
             {
-                S7DataItemWriteResult.TranslateToMemory(item, result.Slice(offset));
+                S7DataItemWriteResult.TranslateToMemory(item, mem.Slice(offset));
                 offset += item.GetSpecificationLength();
             }
 
@@ -51,7 +53,7 @@ namespace Dacs7.Protocols.SiemensPlc
             result.Function = span[offset++];
             result.ItemCount = span[offset++];
 
-            for (int i = 0; i < result.ItemCount; i++)
+            for (var i = 0; i < result.ItemCount; i++)
             {
                 var res = S7DataItemWriteResult.TranslateFromMemory(data.Slice(offset));
                 result.Data.Add(res);

@@ -1,5 +1,8 @@
-﻿using System.Net.Sockets;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
 using System.Net;
+using System.Net.Sockets;
 
 namespace Dacs7.Communication
 {
@@ -30,9 +33,6 @@ namespace Dacs7.Communication
             };
         }
 
-        public override string ToString()
-        {
-            return $"Hostname={Hostname}; ServiceName={ServiceName}; ReceiveBufferSize={ReceiveBufferSize}; KeepAlive={KeepAlive}";
-        }
+        public sealed override string ToString() => $"Socket: Hostname={Hostname}; ServiceName={ServiceName}; ReceiveBufferSize={ReceiveBufferSize}; KeepAlive={KeepAlive}";
     }
 }

@@ -1,11 +1,12 @@
-﻿// Copyright (c) insite-gmbh. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
 
 using System;
+using System.Buffers;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
-    internal class S7CommSetupAckDataDatagram
+    internal sealed class S7CommSetupAckDataDatagram
     {
         public S7AckDataDatagram Header { get; set; } = new S7AckDataDatagram();
 
@@ -24,7 +25,7 @@ namespace Dacs7.Protocols.SiemensPlc
             {
                 Parameter = new S7CommSetupParameterDatagram
                 {
-                    MaxAmQCalling =  context.MaxAmQCalling,
+                    MaxAmQCalling = context.MaxAmQCalling,
                     MaxAmQCalled = context.MaxAmQCalled,
                     PduLength = context.PduSize
                 }
@@ -33,16 +34,16 @@ namespace Dacs7.Protocols.SiemensPlc
             return result;
         }
 
-        public static Memory<byte> TranslateToMemory(S7CommSetupAckDataDatagram datagram)
+        public static IMemoryOwner<byte> TranslateToMemory(S7CommSetupAckDataDatagram datagram, out int memoryLength)
         {
-            var result = S7AckDataDatagram.TranslateToMemory(datagram.Header);
-            S7CommSetupParameterDatagram.TranslateToMemory(datagram.Parameter, result.Slice(datagram.Header.GetParameterOffset()));
+            var result = S7AckDataDatagram.TranslateToMemory(datagram.Header, out memoryLength);
+            var take = memoryLength - datagram.Header.GetParameterOffset();
+            S7CommSetupParameterDatagram.TranslateToMemory(datagram.Parameter, result.Memory.Slice(datagram.Header.GetParameterOffset(), take));
             return result;
         }
 
         public static S7CommSetupAckDataDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var span = data.Span;
             var result = new S7CommSetupAckDataDatagram
             {
                 Header = S7AckDataDatagram.TranslateFromMemory(data),

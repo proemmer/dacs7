@@ -1,13 +1,14 @@
-﻿// Copyright (c) insite-gmbh. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
 
-    internal class S7WriteJobDatagram
+    internal sealed class S7WriteJobDatagram
     {
 
         public S7HeaderDatagram Header { get; set; } = new S7HeaderDatagram
@@ -54,7 +55,7 @@ namespace Dacs7.Protocols.SiemensPlc
                         TransportSize = S7DataItemSpecification.GetTransportSize(item.Area, item.VarType),
                         Length = item.NumberOfItems,
                         Data = item.Data,
-                        FillByte = numberOfItems == 0 || item.NumberOfItems % 2 == 0 ? new byte[0] : new byte[1],
+                        FillByte = numberOfItems == 0 || item.NumberOfItems % 2 == 0 ? Array.Empty<byte>() : new byte[1],
                         ElementSize = item.ElementSize
                     });
                 }
@@ -67,23 +68,24 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
 
-        public static Memory<byte> TranslateToMemory(S7WriteJobDatagram datagram)
+        public static IMemoryOwner<byte> TranslateToMemory(S7WriteJobDatagram datagram, out int memoryLength)
         {
-            var result = S7HeaderDatagram.TranslateToMemory(datagram.Header);
-            var span = result.Span;
+            var result = S7HeaderDatagram.TranslateToMemory(datagram.Header, out memoryLength);
+            var mem = result.Memory.Slice(0, memoryLength);
+            var span = mem.Span;
             var offset = datagram.Header.GetHeaderSize();
             span[offset++] = datagram.Function;
             span[offset++] = datagram.ItemCount;
 
             foreach (var item in datagram.Items)
             {
-                S7AddressItemSpecificationDatagram.TranslateToMemory(item, result.Slice(offset));
+                S7AddressItemSpecificationDatagram.TranslateToMemory(item, mem.Slice(offset));
                 offset += item.GetSpecificationLength();
             }
 
             foreach (var item in datagram.Data)
             {
-                S7DataItemSpecification.TranslateToMemory(item, result.Slice(offset));
+                S7DataItemSpecification.TranslateToMemory(item, mem.Slice(offset));
                 offset += item.GetSpecificationLength();
                 if (offset % 2 != 0) offset++;
             }
@@ -102,14 +104,14 @@ namespace Dacs7.Protocols.SiemensPlc
             result.Function = span[offset++];
             result.ItemCount = span[offset++];
 
-            for (int i = 0; i < result.ItemCount; i++)
+            for (var i = 0; i < result.ItemCount; i++)
             {
                 var res = S7AddressItemSpecificationDatagram.TranslateFromMemory(data.Slice(offset));
                 result.Items.Add(res);
                 offset += res.GetSpecificationLength();
             }
 
-            for (int i = 0; i < result.ItemCount; i++)
+            for (var i = 0; i < result.ItemCount; i++)
             {
                 var res = S7DataItemSpecification.TranslateFromMemory(data.Slice(offset));
                 result.Data.Add(res);

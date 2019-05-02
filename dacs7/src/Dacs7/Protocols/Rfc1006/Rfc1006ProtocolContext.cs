@@ -1,8 +1,8 @@
-﻿// Copyright (c) insite-gmbh. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
 
-using Microsoft.Extensions.Logging;
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 
@@ -12,18 +12,18 @@ namespace Dacs7.Protocols.Rfc1006
     /// Context class for the protocol instance
     /// Contains all properties for the protocol
     /// </summary>
-    internal class Rfc1006ProtocolContext : IProtocolContext
+    internal sealed class Rfc1006ProtocolContext : IProtocolContext
     {
         private int _frameSize;
 
-        private const byte Prefix0 = 0x03;
-        private const byte Prefix1 = 0x00;
-        private const byte TpduSizeMin = 0x04;
-        private const byte TpduSizeMax = 0x0e;
-        private const int DefaultFrameSize = 1024;
-        private const int DatagramTypeOffset = 5;
-        private const int TpktHeaderSize = 4;
-        
+        private const byte _prefix0 = 0x03;
+        private const byte _prefix1 = 0x00;
+        private const byte _tpduSizeMin = 0x04;
+        private const byte _tpduSizeMax = 0x0e;
+        private const int _defaultFrameSize = 1024;
+        private const int _datagramTypeOffset = 5;
+        private const int _tpktHeaderSize = 4;
+
 
 
         public bool DoNotBuildConnectionConfirm { get; set; }
@@ -35,10 +35,7 @@ namespace Dacs7.Protocols.Rfc1006
         public int FrameSizeSending { get; set; }
         public int FrameSize
         {
-            get
-            {
-                return _frameSize;
-            }
+            get => _frameSize;
             set
             {
                 FrameSizeSending = value;
@@ -48,32 +45,29 @@ namespace Dacs7.Protocols.Rfc1006
         }
 
         public Memory<byte> SourceTsap { get; set; } = new byte[] { 0x01, 0x00 };
-        public Memory<byte> DestTsap { get; set; } 
+        public Memory<byte> DestTsap { get; set; }
         public Memory<byte> SizeTpduReceiving { get; set; }
         public Memory<byte> SizeTpduSending { get; set; }
 
-        public IList<Tuple<Memory<byte>, int>> FrameBuffer { get; set; } = new List<Tuple<Memory<byte>, int>>();
+        public IList<(IMemoryOwner<byte> MemoryOwner, int Length)> FrameBuffer { get; set; } = new List<(IMemoryOwner<byte> MemoryOwner, int Length)>();
 
         /// <summary>
         /// The minimum data size we need to detect the datagram type
         /// </summary>
-        public static int MinimumBufferSize => TpktHeaderSize + 2;
+        public static int MinimumBufferSize => _tpktHeaderSize + 2;
 
         /// <summary>
         /// The size of the data header
         /// </summary>
-        public static int DataHeaderSize => TpktHeaderSize + 3;
+        public static int DataHeaderSize => _tpktHeaderSize + 3;
 
-        public Rfc1006ProtocolContext()
-        {
-            FrameSize = DefaultFrameSize;
-        }
+        public Rfc1006ProtocolContext() => FrameSize = _defaultFrameSize;
 
-        public void CalculateTpduSize(int frameSize = DefaultFrameSize)
+        public void CalculateTpduSize(int frameSize = _defaultFrameSize)
         {
             var b = -1;
-            for (var i = frameSize; i > 0; i = i >> 1, ++b) ;
-            b = Math.Max(TpduSizeMin, Math.Min(TpduSizeMax, b));
+            for (var i = frameSize; i > 0; i >>= 1, ++b) ;
+            b = Math.Max(_tpduSizeMin, Math.Min(_tpduSizeMax, b));
             SizeTpduReceiving = new byte[] { (byte)b };
             SizeTpduSending = new byte[] { (byte)b };
             _frameSize = frameSize;
@@ -84,14 +78,14 @@ namespace Dacs7.Protocols.Rfc1006
             const int optionsMinLength = 7;
             const int TpduCrWithoutProperties = 6;
             var tmp = Convert.ToUInt16(optionsMinLength + context.SourceTsap.Length + context.DestTsap.Length + TpduCrWithoutProperties);
-            length = (ushort)(tmp + TpktHeaderSize + 1); // add 1 because li is without li
+            length = (ushort)(tmp + _tpktHeaderSize + 1); // add 1 because li is without li
             li = Convert.ToByte(tmp);
         }
 
         public static Memory<byte> CalcRemoteTsap(ushort connectionType, int rack, int slot)
         {
             var mem = new Memory<byte>(new byte[2]);
-            var value = (ushort)(((ushort)connectionType << 8) + (rack * 0x20) + slot);
+            var value = (ushort)((connectionType << 8) + (rack * 0x20) + slot);
             BinaryPrimitives.TryWriteUInt16BigEndian(mem.Span, value);
             return mem;
         }
@@ -100,9 +94,9 @@ namespace Dacs7.Protocols.Rfc1006
         {
 
             var span = memory.Span;
-            if (span[0] == Prefix0 && span[1] == Prefix1)
+            if (span[0] == _prefix0 && span[1] == _prefix1)
             {
-                switch (span[DatagramTypeOffset])
+                switch (span[_datagramTypeOffset])
                 {
                     case 0xd0:
                         datagramType = typeof(ConnectionConfirmedDatagram);// CC
@@ -120,11 +114,6 @@ namespace Dacs7.Protocols.Rfc1006
             return false;
         }
 
-        public void UpdateFrameSize(ConnectionConfirmedDatagram res)
-        {
-            FrameSizeSending = 1 << res.SizeTpduReceiving.Span[0];
-        }
-
-
+        public void UpdateFrameSize(ConnectionConfirmedDatagram res) => FrameSizeSending = 1 << res.SizeTpduReceiving.Span[0];
     }
 }

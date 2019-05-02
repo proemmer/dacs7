@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +21,7 @@ namespace Dacs7.Domain
             }
             else if (item.ResultType == typeof(byte[]))
             {
-                return data.ToArray();
+                return data.ToArray();  // creates a new array :(
             }
             else if (item.ResultType == typeof(Memory<byte>))
             {
@@ -54,182 +57,194 @@ namespace Dacs7.Domain
             }
             else if (item.ResultType == typeof(string))
             {
-                if (ReadItem.StringHeaderSize == 2)
+                if (item.Encoding == PlcEncoding.Unicode)
                 {
+                    var max = BinaryPrimitives.ReadUInt16BigEndian(data.Span);
+                    var length = BinaryPrimitives.ReadUInt16BigEndian(data.Span.Slice(2));
+                    var dataLength = (data.Span.Length - ReadItem.UnicodeStringHeaderSize);
+                    var current = (short)(dataLength / 2);
+
+                    length = (ushort)Math.Min(Math.Min(max, length), current);
+#if SPANSUPPORT
+                    return length > 0 ? Encoding.BigEndianUnicode.GetString(data.Slice(ReadItem.UnicodeStringHeaderSize, dataLength).Span) : string.Empty;
+#else
+                    return length > 0 ? Encoding.BigEndianUnicode.GetString(data.Span.Slice(ReadItem.UnicodeStringHeaderSize, dataLength).ToArray()) : string.Empty;
+#endif
+
+                }
+                else
+                {
+
                     var max = data.Span[0];
                     var length = data.Span[1];
-                    var current = data.Span.Length - 2;
+                    var current = data.Span.Length - ReadItem.StringHeaderSize;
 
-                    length = (byte)Math.Min(Math.Min((int)max, (int)length), (int)current);
-                    return length > 0 ? Encoding.ASCII.GetString(data.Span.Slice(2, length).ToArray()) : string.Empty;
-                }
-                else if(ReadItem.StringHeaderSize == 1)
-                {
-                    var max = data.Span.Length - 1;
-                    var length = data.Span[0];
-                    var current = data.Span.Length - 1;
+                    length = (byte)Math.Min(Math.Min(max, (int)length), current);
+#if SPANSUPPORT
+                    return length > 0 ? Encoding.ASCII.GetString(data.Slice(ReadItem.StringHeaderSize, length).Span) : string.Empty;
+#else
+                    return length > 0 ? Encoding.ASCII.GetString(data.Span.Slice(ReadItem.StringHeaderSize, length).ToArray()) : string.Empty;
+#endif
 
-                    length = (byte)Math.Min(Math.Min((int)max, (int)length), (int)current);
-                    return length > 0 ? Encoding.ASCII.GetString(data.Span.Slice(1, length).ToArray()) : string.Empty;
                 }
             }
-            else if (item.ResultType == typeof(Int16))
+            else if (item.ResultType == typeof(short))
             {
                 return BinaryPrimitives.ReadInt16BigEndian(data.Span);
             }
-            else if (item.ResultType == typeof(UInt16))
+            else if (item.ResultType == typeof(ushort))
             {
                 return BinaryPrimitives.ReadUInt16BigEndian(data.Span);
             }
-            else if (item.ResultType == typeof(Int32))
+            else if (item.ResultType == typeof(int))
             {
                 return BinaryPrimitives.ReadInt32BigEndian(data.Span);
             }
-            else if (item.ResultType == typeof(UInt32))
+            else if (item.ResultType == typeof(uint))
             {
                 return BinaryPrimitives.ReadUInt32BigEndian(data.Span);
             }
-            else if (item.ResultType == typeof(Int64))
+            else if (item.ResultType == typeof(long))
             {
                 return BinaryPrimitives.ReadInt64BigEndian(data.Span);
             }
-            else if (item.ResultType == typeof(UInt64))
+            else if (item.ResultType == typeof(ulong))
             {
                 return BinaryPrimitives.ReadUInt64BigEndian(data.Span);
             }
-            else if (item.ResultType == typeof(Single))
+            else if (item.ResultType == typeof(float))
             {
                 // TODO: Find a Span method to do this
                 return BitConverter.ToSingle(Swap4BytesInBuffer(data.Span.ToArray()), 0);
             }
-            else if (item.ResultType == typeof(Int16[]))
+            else if (item.ResultType == typeof(short[]))
             {
                 return ConvertMemoryToInt16(item, data);
             }
-            else if (item.ResultType == typeof(List<Int16>))
+            else if (item.ResultType == typeof(List<short>))
             {
                 return ConvertMemoryToInt16(item, data).ToList();
             }
-            else if (item.ResultType == typeof(UInt16[]))
+            else if (item.ResultType == typeof(ushort[]))
             {
                 return ConvertMemoryToUInt16(item, data);
             }
-            else if (item.ResultType == typeof(List<UInt16>))
+            else if (item.ResultType == typeof(List<ushort>))
             {
                 return ConvertMemoryToUInt16(item, data).ToList();
             }
-            else if (item.ResultType == typeof(Int32[]))
+            else if (item.ResultType == typeof(int[]))
             {
                 return ConvertMemoryToInt32(item, data);
             }
-            else if (item.ResultType == typeof(List<Int32>))
+            else if (item.ResultType == typeof(List<int>))
             {
                 return ConvertMemoryToInt32(item, data).ToList();
             }
-            else if (item.ResultType == typeof(UInt32[]))
+            else if (item.ResultType == typeof(uint[]))
             {
                 return ConvertMemoryToUInt32(item, data);
             }
-            else if (item.ResultType == typeof(List<UInt32>))
+            else if (item.ResultType == typeof(List<uint>))
             {
                 return ConvertMemoryToUInt32(item, data).ToList();
             }
-            else if (item.ResultType == typeof(Int64[]))
+            else if (item.ResultType == typeof(long[]))
             {
                 return ConvertMemoryToInt64(item, data);
             }
-            else if (item.ResultType == typeof(List<Int64>))
+            else if (item.ResultType == typeof(List<long>))
             {
                 return ConvertMemoryToInt64(item, data).ToList();
             }
-            else if (item.ResultType == typeof(UInt64[]))
+            else if (item.ResultType == typeof(ulong[]))
             {
                 return ConvertMemoryToUInt64(item, data);
             }
-            else if (item.ResultType == typeof(List<UInt64>))
+            else if (item.ResultType == typeof(List<ulong>))
             {
                 return ConvertMemoryToUInt64(item, data).ToList();
             }
-            else if (item.ResultType == typeof(Single[]))
+            else if (item.ResultType == typeof(float[]))
             {
                 return ConvertMemoryToSingle(item, data);
             }
-            else if (item.ResultType == typeof(List<Single>))
+            else if (item.ResultType == typeof(List<float>))
             {
                 return ConvertMemoryToSingle(item, data).ToList();
             }
-            ExceptionThrowHelper.ThrowInvalidCastException();
+            ThrowHelper.ThrowInvalidCastException();
             return null;
         }
 
-        private static Single[] ConvertMemoryToSingle(ReadItem item, Memory<byte> data)
+        private static float[] ConvertMemoryToSingle(ReadItem item, Memory<byte> data)
         {
             // TODO: Find a Span method to do this
-            var result = new Single[item.NumberOfItems];
+            var result = new float[item.NumberOfItems];
             var buffer = data.Span.ToArray();
-            for (int i = 0; i < item.NumberOfItems; i++)
+            for (var i = 0; i < item.NumberOfItems; i++)
             {
                 var offset = i * 4;
-                // we nedd the offset twice because SwapBuffer returns the whole buffer it only swaps the bytes beginning of the given context
+                // we need the offset twice because SwapBuffer returns the whole buffer it only swaps the bytes beginning of the given context
                 result[i] = BitConverter.ToSingle(Swap4BytesInBuffer(buffer, i * 4), offset);
             }
             return result;
         }
 
-        private static UInt64[] ConvertMemoryToUInt64(ReadItem item, Memory<byte> data)
+        private static ulong[] ConvertMemoryToUInt64(ReadItem item, Memory<byte> data)
         {
-            var result = new UInt64[item.NumberOfItems];
-            for (int i = 0; i < item.NumberOfItems; i++)
+            var result = new ulong[item.NumberOfItems];
+            for (var i = 0; i < item.NumberOfItems; i++)
             {
                 result[i] = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(i * 8).Span);
             }
             return result;
         }
 
-        private static Int64[] ConvertMemoryToInt64(ReadItem item, Memory<byte> data)
+        private static long[] ConvertMemoryToInt64(ReadItem item, Memory<byte> data)
         {
-            var result = new Int64[item.NumberOfItems];
-            for (int i = 0; i < item.NumberOfItems; i++)
+            var result = new long[item.NumberOfItems];
+            for (var i = 0; i < item.NumberOfItems; i++)
             {
                 result[i] = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(i * 8).Span);
             }
             return result;
         }
 
-        private static UInt32[] ConvertMemoryToUInt32(ReadItem item, Memory<byte> data)
+        private static uint[] ConvertMemoryToUInt32(ReadItem item, Memory<byte> data)
         {
-            var result = new UInt32[item.NumberOfItems];
-            for (int i = 0; i < item.NumberOfItems; i++)
+            var result = new uint[item.NumberOfItems];
+            for (var i = 0; i < item.NumberOfItems; i++)
             {
                 result[i] = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(i * 4).Span);
             }
             return result;
         }
 
-        private static Int32[] ConvertMemoryToInt32(ReadItem item, Memory<byte> data)
+        private static int[] ConvertMemoryToInt32(ReadItem item, Memory<byte> data)
         {
-            var result = new Int32[item.NumberOfItems];
-            for (int i = 0; i < item.NumberOfItems; i++)
+            var result = new int[item.NumberOfItems];
+            for (var i = 0; i < item.NumberOfItems; i++)
             {
                 result[i] = BinaryPrimitives.ReadInt32BigEndian(data.Slice(i * 4).Span);
             }
             return result;
         }
 
-        private static UInt16[] ConvertMemoryToUInt16(ReadItem item, Memory<byte> data)
+        private static ushort[] ConvertMemoryToUInt16(ReadItem item, Memory<byte> data)
         {
-            var result = new UInt16[item.NumberOfItems];
-            for (int i = 0; i < item.NumberOfItems; i++)
+            var result = new ushort[item.NumberOfItems];
+            for (var i = 0; i < item.NumberOfItems; i++)
             {
                 result[i] = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(i * 2).Span);
             }
             return result;
         }
 
-        private static Int16[] ConvertMemoryToInt16(ReadItem item, Memory<byte> data)
+        private static short[] ConvertMemoryToInt16(ReadItem item, Memory<byte> data)
         {
-            var result = new Int16[item.NumberOfItems];
-            for (int i = 0; i < item.NumberOfItems; i++)
+            var result = new short[item.NumberOfItems];
+            for (var i = 0; i < item.NumberOfItems; i++)
             {
                 result[i] = BinaryPrimitives.ReadInt16BigEndian(data.Slice(i * 2).Span);
             }

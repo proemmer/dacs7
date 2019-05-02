@@ -1,16 +1,19 @@
-﻿using Dacs7.Protocols.Rfc1006;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
 using System;
 using System.Collections.Generic;
 
 namespace Dacs7.Protocols
 {
-    internal class ReadPackage
+    internal sealed class ReadPackage
     {
         private readonly int _maxSize;
-        private int _sizeRequest = Rfc1006ProtocolContext.DataHeaderSize +  SiemensPlcProtocolContext.ReadHeader + SiemensPlcProtocolContext.ReadParameter;
+        private int _sizeRequest = Rfc1006ProtocolContext.DataHeaderSize + SiemensPlcProtocolContext.ReadHeader + SiemensPlcProtocolContext.ReadParameter;
         private int _sizeResponse = Rfc1006ProtocolContext.DataHeaderSize + SiemensPlcProtocolContext.ReadAckHeader + SiemensPlcProtocolContext.ReadAckParameter;
-        private List<ReadItem> _items = new List<ReadItem>();
+        private readonly List<ReadItem> _items = new List<ReadItem>();
 
 
         public bool Handled { get; private set; }
@@ -23,12 +26,8 @@ namespace Dacs7.Protocols
 
         public IEnumerable<ReadItem> Items => _items;
 
+        public ReadPackage(int pduSize) => _maxSize = pduSize; // minimum header = 12 read   14 readack
 
-        public ReadPackage(int pduSize)
-        {
-            // minimum header = 12 read   14 readack
-            _maxSize = pduSize;
-        }
 
         public ReadPackage Return()
         {

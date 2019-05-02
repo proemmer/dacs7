@@ -1,9 +1,12 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using System;
 using System.Buffers.Binary;
 
 namespace Dacs7.Protocols.SiemensPlc.Datagrams
 {
-    internal class S7UserDataParameter
+    internal sealed class S7UserDataParameter
     {
         public byte[] ParamHeader { get; set; } = new byte[] { 0x00, 0x01, 0x12 }; // Always 0x00 0x01 0x12
         public byte ParamDataLength { get; set; } // par len 0x04 or 0x08
@@ -19,10 +22,7 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
         public byte LastDataUnit { get; set; }
         public ushort ParamErrorCode { get; set; }  // present if plen=0x08 (S7 manager online functions)  -> we do not need this at the moment
 
-        internal int GetParamSize()
-        {
-            return 4 + ParamDataLength;
-        }
+        internal int GetParamSize() => 4 + ParamDataLength;
 
         public static Memory<byte> TranslateToMemory(S7UserDataParameter datagram, Memory<byte> memory)
         {

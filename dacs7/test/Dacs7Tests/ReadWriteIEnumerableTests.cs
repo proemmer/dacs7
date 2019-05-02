@@ -1,7 +1,4 @@
-﻿
-
-using Dacs7;
-using Dacs7.ReadWrite;
+﻿using Dacs7.ReadWrite;
 using Dacs7Tests.ServerHelper;
 using System;
 using System.Collections.Generic;
@@ -9,12 +6,12 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace Dacs7Tests
+namespace Dacs7.Tests
 {
     [Collection("PlcServer collection")]
     public class ReadWriteIEnumerableTests
     {
-        
+
 
         [Fact]
         public async Task ReadWriteSingleBits()
@@ -110,7 +107,7 @@ namespace Dacs7Tests
                 var originWriteTags = new Dictionary<string, object>
                 {
                     { $"DB2.10006,dw" , (uint)0 },
-                    { $"DB2.10010,di" , (int)0 }
+                    { $"DB2.10010,di" , 0 }
                 };
                 var writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
                 var results = (await client.ReadAsync(originWriteTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
@@ -121,13 +118,13 @@ namespace Dacs7Tests
                 Assert.Equal(typeof(uint), results[0].Type);
                 Assert.Equal((uint)0, (uint)results[0].Value);
                 Assert.Equal(typeof(int), results[1].Type);
-                Assert.Equal((int)0, (int)results[1].Value);
+                Assert.Equal(0, (int)results[1].Value);
 
 
                 var writeTags = new Dictionary<string, object>
                 {
                     { $"DB2.10006,dw" , (uint)15 },
-                    { $"DB2.10010,di" , (int)25 }
+                    { $"DB2.10010,di" , 25 }
                 };
 
                 writeResults = (await client.WriteAsync(writeTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
@@ -139,7 +136,7 @@ namespace Dacs7Tests
                 Assert.Equal(typeof(uint), results[0].Type);
                 Assert.Equal((ushort)15, (uint)results[0].Value);
                 Assert.Equal(typeof(int), results[1].Type);
-                Assert.Equal((int)25, (int)results[1].Value);
+                Assert.Equal(25, (int)results[1].Value);
 
                 writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
 
@@ -153,7 +150,7 @@ namespace Dacs7Tests
             {
                 var originWriteTags = new Dictionary<string, object>
                 {
-                    { $"DB2.10014,r" , (Single)0.0 }
+                    { $"DB2.10014,r" , (float)0.0 }
                 };
                 var writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
                 var results = (await client.ReadAsync(originWriteTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
@@ -161,12 +158,12 @@ namespace Dacs7Tests
 
 
                 Assert.Single(results);
-                Assert.Equal(typeof(Single), results[0].Type);
-                Assert.Equal((Single)0.0, (Single)results[0].Value);
+                Assert.Equal(typeof(float), results[0].Type);
+                Assert.Equal((float)0.0, (float)results[0].Value);
 
                 var writeTags = new Dictionary<string, object>
                 {
-                    { $"DB2.10014,r" , (Single)0.5 }
+                    { $"DB2.10014,r" , (float)0.5 }
                 };
 
                 writeResults = (await client.WriteAsync(writeTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
@@ -174,8 +171,8 @@ namespace Dacs7Tests
                 results = (await client.ReadAsync(writeTags.Select(w => ReadItem.CreateFromTag(w.Key)))).ToArray();
 
                 Assert.Single(results);
-                Assert.Equal(typeof(Single), results[0].Type);
-                Assert.Equal((Single)0.5, (Single)results[0].Value);
+                Assert.Equal(typeof(float), results[0].Type);
+                Assert.Equal((float)0.5, (float)results[0].Value);
 
                 writeResults = (await client.WriteAsync(originWriteTags.Select(w => WriteItem.CreateFromTag(w.Key, w.Value)))).ToArray();
 

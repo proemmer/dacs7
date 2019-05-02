@@ -1,9 +1,12 @@
-﻿namespace Dacs7.Domain
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+namespace Dacs7.Domain
 {
 
     internal enum FunctionCode : byte
     {
-        Cpu  =    0x00,   //CPU service
+        Cpu = 0x00,   //CPU service
         SetupComm = 0xF0, //Setup communication
         ReadVar = 0x04,   //Read Var
         WriteVar = 0x05,  //Write var

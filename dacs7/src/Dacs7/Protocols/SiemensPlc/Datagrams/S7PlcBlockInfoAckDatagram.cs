@@ -1,13 +1,17 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using Dacs7.Metadata;
+using System;
 using System.Buffers.Binary;
 using System.Text;
-using Dacs7.Helper;
-using Dacs7.Metadata;
+
+
 
 namespace Dacs7.Protocols.SiemensPlc
 {
 
-    internal class S7PlcBlockInfoAckDatagram
+    internal sealed class S7PlcBlockInfoAckDatagram
     {
 
         public S7UserDataDatagram UserData { get; set; }
@@ -56,16 +60,13 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
 
-    
-        public static string GetCheckSum(int offset, byte[] b)
-        {
-            return string.Format("0x{0:X2}{1:X2}", b[offset + 1], b[offset]);
-        }
+
+        public static string GetCheckSum(int offset, byte[] b) => $"0x{b[offset + 1]:X2}{b[offset]:X2}";
 
         public static string GetCheckSum(int checksum)
         {
             var b = BitConverter.GetBytes(checksum);
-            return string.Format("0x{0:X2}{1:X2}", b[1], b[0]);
+            return $"0x{b[1]:X2}{b[0]:X2}";
         }
 
 
@@ -91,36 +92,42 @@ namespace Dacs7.Protocols.SiemensPlc
                 UserData = S7UserDataDatagram.TranslateFromMemory(data)
             };
 
-            var offset = 0;
-            var span = result.UserData.Data.Data.Span;
-            result.BlockType = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2));   offset += 2;
-            result.LengthOfInfo = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
-            result.Unknown1 = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
-            result.Const1 = span[offset++];
-            result.Const2 = span[offset++];
-            result.Unknown2 = span[offset++];
-            result.BlockFlags = (PlcBlockAttributes)span[offset++];
-            result.BlockLanguage = (PlcBlockLanguage)span[offset++];
-            result.SubBlockType = (PlcSubBlockType)span[offset++];
-            result.BlockNumber = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
-            result.LengthLoadMemory = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(offset, 4)); offset += 4;
-            result.BlockSecurity = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(offset, 4)); offset += 4;   // ????
-            result.LastCodeChange = GetDt(span.Slice(offset, 6)); offset += 6;
-            result.LastInterfaceChange = GetDt(span.Slice(offset, 6)); offset += 6;
-            result.SSBLength = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
-            result.ADDLength = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
-            result.LocalDataSize = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
-            result.CodeSize = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
-            result.Author = Encoding.ASCII.GetString(span.Slice(offset, 8).ToArray()); offset += 8;
-            result.Family = Encoding.ASCII.GetString(span.Slice(offset, 8).ToArray()); offset += 8;
-            result.Name = Encoding.ASCII.GetString(span.Slice(offset, 8).ToArray()); offset += 8;
-            var version = span[offset++];
-            result.VersionHeaderMajor = (version & 0xF0) >> 4;
-            result.VersionHeaderMinor = (version & 0x0F);
-            result.Unknown2 = span[offset++];
-            result.Checksum = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
-            result.Reserved1 = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(offset, 4)); offset += 4;
-            result.Reserved2 = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(offset, 4)); offset += 4;
+            if (result.UserData.Parameter.ParamErrorCode == 0)
+            {
+                if (result.UserData.Data.ReturnCode == 0xff)
+                {
+                    var offset = 0;
+                    var span = result.UserData.Data.Data.Span;
+                    result.BlockType = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
+                    result.LengthOfInfo = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
+                    result.Unknown1 = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
+                    result.Const1 = span[offset++];
+                    result.Const2 = span[offset++];
+                    result.Unknown2 = span[offset++];
+                    result.BlockFlags = (PlcBlockAttributes)span[offset++];
+                    result.BlockLanguage = (PlcBlockLanguage)span[offset++];
+                    result.SubBlockType = (PlcSubBlockType)span[offset++];
+                    result.BlockNumber = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
+                    result.LengthLoadMemory = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(offset, 4)); offset += 4;
+                    result.BlockSecurity = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(offset, 4)); offset += 4;   // ????
+                    result.LastCodeChange = GetDt(span.Slice(offset, 6)); offset += 6;
+                    result.LastInterfaceChange = GetDt(span.Slice(offset, 6)); offset += 6;
+                    result.SSBLength = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
+                    result.ADDLength = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
+                    result.LocalDataSize = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
+                    result.CodeSize = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
+                    result.Author = Encoding.ASCII.GetString(span.Slice(offset, 8).ToArray()); offset += 8;
+                    result.Family = Encoding.ASCII.GetString(span.Slice(offset, 8).ToArray()); offset += 8;
+                    result.Name = Encoding.ASCII.GetString(span.Slice(offset, 8).ToArray()); offset += 8;
+                    var version = span[offset++];
+                    result.VersionHeaderMajor = (version & 0xF0) >> 4;
+                    result.VersionHeaderMinor = (version & 0x0F);
+                    result.Unknown2 = span[offset++];
+                    result.Checksum = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
+                    result.Reserved1 = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(offset, 4)); offset += 4;
+                    result.Reserved2 = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(offset, 4));
+                }
+            }
             return result;
         }
 

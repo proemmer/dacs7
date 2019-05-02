@@ -1,5 +1,5 @@
-﻿// Copyright (c) insite-gmbh. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
 
 using Dacs7.Domain;
 using System;
@@ -8,7 +8,7 @@ using System.Buffers.Binary;
 namespace Dacs7.Protocols.SiemensPlc
 {
 
-    internal class S7AddressItemSpecificationDatagram
+    internal sealed class S7AddressItemSpecificationDatagram
     {
 
         public byte VariableSpecification { get; set; } = 0x12;
@@ -31,7 +31,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static byte GetTransportSize(PlcArea area, Type t)
         {
-            if(area == PlcArea.CT || area == PlcArea.TM)
+            if (area == PlcArea.CT || area == PlcArea.TM)
                 return 0x01;
 
             if (t.IsArray)
@@ -59,7 +59,7 @@ namespace Dacs7.Protocols.SiemensPlc
             if (t == typeof(int))
                 return (byte)ItemDataTransportSize.Dint;
 
-            if (t == typeof(Single))
+            if (t == typeof(float))
                 return (byte)ItemDataTransportSize.Real;
 
             return 0;
@@ -70,19 +70,16 @@ namespace Dacs7.Protocols.SiemensPlc
             offset = t == typeof(bool) ? offset : (offset * 8);
             var address = new byte[3];
             address[2] = (byte)(offset & 0x000000FF);
-            offset = offset >> 8;
+            offset >>= 8;
             address[1] = (byte)(offset & 0x000000FF);
-            offset = offset >> 8;
+            offset >>= 8;
             address[0] = (byte)(offset & 0x000000FF);
             return address;
         }
 
 
 
-        public int GetSpecificationLength()
-        {
-            return 12;
-        }
+        public int GetSpecificationLength() => 12;
 
 
 
@@ -98,7 +95,7 @@ namespace Dacs7.Protocols.SiemensPlc
             BinaryPrimitives.WriteUInt16BigEndian(span.Slice(4, 2), datagram.ItemSpecLength);
             BinaryPrimitives.WriteUInt16BigEndian(span.Slice(6, 2), datagram.DbNumber);
             span[8] = datagram.Area;
-            if(!datagram.Address.IsEmpty)
+            if (!datagram.Address.IsEmpty)
                 datagram.Address.CopyTo(result.Slice(9));
 
             return result;

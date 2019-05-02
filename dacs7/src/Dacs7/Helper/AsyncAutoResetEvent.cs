@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,7 +10,7 @@ namespace Dacs7
 {
     public class AsyncAutoResetEvent<T>
     {
-        private readonly static Task<T> _completed = Task.FromResult<T>(default);
+        private static readonly Task<T> _completed = Task.FromResult<T>(default);
         private readonly Queue<TaskCompletionSource<T>> _waits = new Queue<TaskCompletionSource<T>>();
         private bool _signaled;
         private T _lastValue = default;
@@ -31,7 +34,7 @@ namespace Dacs7
                 {
                     if (cts != null) cts.Dispose();
                     return t.Result;
-                });
+                }, TaskScheduler.Default);
             }
             return WaitAsync(CancellationToken.None);
         }
@@ -77,7 +80,7 @@ namespace Dacs7
                             registration.Dispose();
                         }
                         return t.Result;
-                    });
+                    }, TaskScheduler.Default);
                 }
             }
         }

@@ -1,8 +1,11 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using System;
 
 namespace Dacs7.Protocols.SiemensPlc.Datagrams
 {
-    internal class S7UserData
+    internal sealed class S7UserData
     {
         public byte ReturnCode { get; set; }
         public byte TransportSize { get; set; }
@@ -12,9 +15,6 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
 
 
 
-        public int GetUserDataLength()
-        {
-            return 4 + UserDataLength;
-        }
+        public int GetUserDataLength() => 4 + UserDataLength;
     }
 }

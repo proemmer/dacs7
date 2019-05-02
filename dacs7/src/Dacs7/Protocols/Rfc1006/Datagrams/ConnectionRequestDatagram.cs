@@ -1,14 +1,20 @@
-﻿// Copyright (c) insite-gmbh. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
 
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Linq;
 
 namespace Dacs7.Protocols.Rfc1006
 {
-    internal class ConnectionRequestDatagram 
+    internal sealed class ConnectionRequestDatagram : IDisposable
     {
+        private IMemoryOwner<byte> _sizeTpduReceiving;
+        private IMemoryOwner<byte> _destTsap;
+        private IMemoryOwner<byte> _sourceTsap;
+
+
         public TpktDatagram Tkpt { get; set; } = new TpktDatagram
         {
             Sync1 = 0x03,
@@ -19,9 +25,9 @@ namespace Dacs7.Protocols.Rfc1006
 
         public byte PduType { get; set; } = 0xe0;
 
-        public Int16 DstRef { get; set; } = 0x0000;                     // TPDU Destination Reference
+        public short DstRef { get; set; } = 0x0000;                     // TPDU Destination Reference
 
-        public Int16 SrcRef { get; set; } = 0x0001;                     // TPDU Source-Reference (my own reference, should not be zero)
+        public short SrcRef { get; set; } = 0x0001;                     // TPDU Source-Reference (my own reference, should not be zero)
 
 
         public byte ClassOption { get; set; } = 0x00;                   // PDU Class 0 and no Option
@@ -51,11 +57,20 @@ namespace Dacs7.Protocols.Rfc1006
         public Memory<byte> DestTsap { get; set; }
 
 
+        public void Dispose()
+        {
+            _sizeTpduReceiving?.Dispose();
+            _sizeTpduReceiving = null;
+            _sourceTsap?.Dispose();
+            _sourceTsap = null;
+            _destTsap?.Dispose();
+            _destTsap = null;
+        }
 
         public static ConnectionRequestDatagram BuildCr(Rfc1006ProtocolContext context)
         {
-            context.CalcLength(context, out byte li, out ushort length);
-            var result =  new ConnectionRequestDatagram
+            context.CalcLength(context, out var li, out var length);
+            var result = new ConnectionRequestDatagram
             {
                 Li = li,
                 SizeTpduReceiving = context.SizeTpduReceiving,
@@ -77,11 +92,12 @@ namespace Dacs7.Protocols.Rfc1006
             return false;
         }
 
-        public static Memory<byte> TranslateToMemory(ConnectionRequestDatagram datagram)
+        public static IMemoryOwner<byte> TranslateToMemory(ConnectionRequestDatagram datagram, out int memoryLength)
         {
-            var length = datagram.Tkpt.Length;
-            var result = new Memory<byte>(new byte[length]);  // check if we could use ArrayBuffer
-            var span = result.Span;
+            var length = memoryLength = datagram.Tkpt.Length;
+            var result = MemoryPool<byte>.Shared.Rent(length);  // check if we could use ArrayBuffer
+            var mem = result.Memory;
+            var span = mem.Span;
 
             span[0] = datagram.Tkpt.Sync1;
             span[1] = datagram.Tkpt.Sync2;
@@ -96,21 +112,22 @@ namespace Dacs7.Protocols.Rfc1006
             var offset = 11;
             span[offset++] = datagram.ParmCodeTpduSize;
             span[offset++] = datagram.SizeTpduReceivingLength;
-            datagram.SizeTpduReceiving.CopyTo(result.Slice(offset));
+            datagram.SizeTpduReceiving.CopyTo(mem.Slice(offset));
             offset += datagram.SizeTpduReceivingLength;
 
             span[offset++] = datagram.ParmCodeSrcTsap;
             span[offset++] = datagram.SourceTsapLength;
-            datagram.SourceTsap.CopyTo(result.Slice(offset));
+            datagram.SourceTsap.CopyTo(mem.Slice(offset));
             offset += datagram.SourceTsapLength;
 
             span[offset++] = datagram.ParmCodeDestTsap;
             span[offset++] = datagram.DestTsapLength;
-            datagram.DestTsap.CopyTo(result.Slice(offset));
-            offset += datagram.DestTsapLength;
+            datagram.DestTsap.CopyTo(mem.Slice(offset));
+            //offset += datagram.DestTsapLength;
 
             return result;
         }
+
 
         public static ConnectionRequestDatagram TranslateFromMemory(Memory<byte> data)
         {
@@ -135,13 +152,14 @@ namespace Dacs7.Protocols.Rfc1006
             {
                 switch (span[offset])
                 {
+
                     case 0xc0:
                         {
                             result.ParmCodeTpduSize = span[offset++];
                             result.SizeTpduReceivingLength = span[offset++];
-                            var tmp = new byte[result.SizeTpduReceivingLength];
-                            data.Slice(offset, result.SizeTpduReceivingLength).CopyTo(tmp);
-                            result.SizeTpduReceiving = tmp;
+                            result._sizeTpduReceiving = MemoryPool<byte>.Shared.Rent(result.SizeTpduReceivingLength);
+                            data.Slice(offset, result.SizeTpduReceivingLength).CopyTo(result._sizeTpduReceiving.Memory);
+                            result.SizeTpduReceiving = result._sizeTpduReceiving.Memory.Slice(0, result.SizeTpduReceivingLength);
                             offset += result.SizeTpduReceivingLength;
                         }
                         break;
@@ -150,9 +168,9 @@ namespace Dacs7.Protocols.Rfc1006
                         {
                             result.ParmCodeSrcTsap = span[offset++];
                             result.SourceTsapLength = span[offset++];
-                            var tmp = new byte[result.SourceTsapLength];
-                            data.Slice(offset, result.SourceTsapLength).CopyTo(tmp);
-                            result.SourceTsap = tmp;
+                            result._sourceTsap = MemoryPool<byte>.Shared.Rent(result.SourceTsapLength);
+                            data.Slice(offset, result.SourceTsapLength).CopyTo(result._sourceTsap.Memory);
+                            result.SourceTsap = result._sourceTsap.Memory.Slice(0, result.SourceTsapLength);
                             offset += result.SourceTsapLength;
                         }
                         break;
@@ -161,9 +179,9 @@ namespace Dacs7.Protocols.Rfc1006
                         {
                             result.ParmCodeDestTsap = span[offset++];
                             result.DestTsapLength = span[offset++];
-                            var tmp = new byte[result.DestTsapLength];
-                            data.Slice(offset, result.DestTsapLength).CopyTo(tmp);
-                            result.DestTsap = tmp;
+                            result._destTsap = MemoryPool<byte>.Shared.Rent(result.DestTsapLength);
+                            data.Slice(offset, result.DestTsapLength).CopyTo(result._destTsap.Memory);
+                            result.DestTsap = result._destTsap.Memory.Slice(0, result.DestTsapLength);
                             offset += result.DestTsapLength;
                         }
                         break;

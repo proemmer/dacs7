@@ -1,19 +1,12 @@
-﻿
-
-using Dacs7;
-using Dacs7Tests.ServerHelper;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System;
 using Xunit;
 
-namespace Dacs7Tests
+namespace Dacs7.Tests
 {
     [Collection("PlcServer collection")]
     public class ReadWriteExceptionsTests
     {
-        
+
 
         [Fact]
         public void TestWriteItemInvalidNumberOfBitsThrowsException()
@@ -23,7 +16,7 @@ namespace Dacs7Tests
             Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.CreateFromTag("DB3.10000,x0", new[] { false, false }));
             Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.CreateFromTag("DB3.10000,x0", new[] { false, false }));
             Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.CreateFromTag("DB3.10000,x0,2", false));
-            Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.Create("DB1",0,2, false));
+            Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.Create("DB1", 0, 2, false));
             Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.Create("DB1", 0, new[] { false, false }));
             Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.Create("DB1", 0, 2, new[] { false, false }));
         }
@@ -47,7 +40,7 @@ namespace Dacs7Tests
         {
 
             Assert.Throws<InvalidCastException>(() => WriteItem.CreateFromTag("DB2.10046,s,20", new[] { "", "" }));
-            Assert.Throws<ArgumentOutOfRangeException>(() => WriteItem.CreateFromTag("DB2.10046,s,5", "      " ));
+            Assert.Throws<ArgumentOutOfRangeException>(() => WriteItem.CreateFromTag("DB2.10046,s,5", "      "));
             Assert.Throws<ArgumentOutOfRangeException>(() => WriteItem.CreateFromTag("DB2.10046,s", "123456"));
             Assert.Throws<Dacs7TypeNotSupportedException>(() => WriteItem.Create<string[]>("DB1", 0, 2, new[] { "", "" }));
 
@@ -78,8 +71,8 @@ namespace Dacs7Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => WriteItem.Create("DB1", 0, 2, new uint[] { 0 }));
             Assert.Throws<ArgumentOutOfRangeException>(() => WriteItem.Create("DB1", 0, 1, new uint[] { 0, 0 }));
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => WriteItem.Create("DB1", 0, 2, new Single[] { 0.0f }));
-            Assert.Throws<ArgumentOutOfRangeException>(() => WriteItem.Create("DB1", 0, 1, new Single[] { 0.0f, 0.0f }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => WriteItem.Create("DB1", 0, 2, new float[] { 0.0f }));
+            Assert.Throws<ArgumentOutOfRangeException>(() => WriteItem.Create("DB1", 0, 1, new float[] { 0.0f, 0.0f }));
 
         }
 

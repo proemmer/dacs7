@@ -1,5 +1,8 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
 using Dacs7.Helper;
+using System;
 using System.Globalization;
 
 namespace Dacs7
@@ -10,7 +13,7 @@ namespace Dacs7
         public byte ErrorCode { get; private set; }
 
 
-        public Dacs7Exception(byte eClass, byte code) : 
+        public Dacs7Exception(byte eClass, byte code) :
             base($"No success error class and code: class: <{ResolveErrorCode<ErrorClass>(eClass)}>, code: <{code}>")
         {
             ErrorClass = (ErrorClass)eClass;
@@ -18,15 +21,9 @@ namespace Dacs7
         }
 
         #region Helpers
-        internal static string ResolveErrorCode<T>(byte b) where T : struct
-        {
-            return Enum.IsDefined(typeof(T), b) ? ResolveErrorCode<T>(Enum.GetName(typeof(T), b)) : b.ToString(CultureInfo.InvariantCulture);
-        }
+        internal static string ResolveErrorCode<T>(byte b) where T : struct => Enum.IsDefined(typeof(T), b) ? ResolveErrorCode<T>(Enum.GetName(typeof(T), b)) : b.ToString(CultureInfo.InvariantCulture);
 
-        internal static string ResolveErrorCode<T>(ushort sh) where T : struct
-        {
-            return Enum.IsDefined(typeof(T), sh) ? ResolveErrorCode<T>(Enum.GetName(typeof(T), sh)) : sh.ToString(CultureInfo.InvariantCulture);
-        }
+        internal static string ResolveErrorCode<T>(ushort sh) where T : struct => Enum.IsDefined(typeof(T), sh) ? ResolveErrorCode<T>(Enum.GetName(typeof(T), sh)) : sh.ToString(CultureInfo.InvariantCulture);
 
         internal static string ResolveErrorCode<T>(string s) where T : struct
         {

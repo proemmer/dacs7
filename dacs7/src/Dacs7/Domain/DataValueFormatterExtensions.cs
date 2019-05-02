@@ -1,4 +1,7 @@
-﻿using System.Collections;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using System.Collections;
 using System.Text;
 
 namespace Dacs7
@@ -10,10 +13,7 @@ namespace Dacs7
     public static class DataValueFormatterExtensions
     {
 
-        public static string GetValueAsString(this DataValue dataValue, string seperator = " ")
-        {
-            return GetValueAsString(dataValue, null, seperator);
-        }
+        public static string GetValueAsString(this DataValue dataValue, string seperator = " ") => GetValueAsString(dataValue, null, seperator);
 
         public static string GetValueAsString(this DataValue dataValue, DataValueFormatter formatter, string seperator = " ")
         {

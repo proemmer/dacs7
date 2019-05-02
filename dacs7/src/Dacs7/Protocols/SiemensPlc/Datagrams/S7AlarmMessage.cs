@@ -1,4 +1,8 @@
-﻿using Dacs7.Alarms;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+
+using Dacs7.Alarms;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -6,7 +10,7 @@ using System.Globalization;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
-    internal class S7AlarmMessage
+    internal sealed class S7AlarmMessage
     {
         private enum SyntaxIds
         {
@@ -32,13 +36,15 @@ namespace Dacs7.Protocols.SiemensPlc
 
             var alarms = new List<S7PlcAlarmItemDatagram>();
 
-            for (int i = 0; i < current.NumberOfMessages; i++)
+            for (var i = 0; i < current.NumberOfMessages; i++)
             {
                 var alarm = new S7PlcAlarmItemDatagram
                 {
                     AlarmType = subfunction
                 };
-                var varspec = span[offset++];
+
+                //var varspec = span[offset];
+                offset++;
                 alarm.Length = span[offset++];
 
                 if (alarm.Length > 0)
@@ -52,7 +58,8 @@ namespace Dacs7.Protocols.SiemensPlc
                         case (byte)SyntaxIds.AlarmAck:
                             {
 
-                                var numberOfAssociatedValues = span[offset++];
+                                //var numberOfAssociatedValues = span[offset];
+                                offset++;
                                 alarm.MsgNumber = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(offset, 4));
                                 offset += 2; // 2 is correct, we use the offset twice
                                 alarm.Id = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2));
@@ -61,8 +68,8 @@ namespace Dacs7.Protocols.SiemensPlc
 
                                 switch (subfunction)
                                 {
-                                    case AlarmMessageType.Alarm_SQ: // ALARM_SQ
-                                    case AlarmMessageType.Alarm_S: // ALARM_S
+                                    case AlarmMessageType.AlarmSQ: // ALARM_SQ
+                                    case AlarmMessageType.AlarmS: // ALARM_S
                                         {
                                             alarm.EventState = span[offset++];// 0x00 == going   0x01  == coming
                                             alarm.State = span[offset++];// isAck
@@ -76,13 +83,13 @@ namespace Dacs7.Protocols.SiemensPlc
                                             {
                                                 alarm.Going = details;
                                             }
-                                            else if(alarm.EventState == 0x01)
+                                            else if (alarm.EventState == 0x01)
                                             {
                                                 alarm.Coming = details;
                                             }
                                         }
                                         break;
-                                    case AlarmMessageType.Alarm_Ack: // ALARM ack
+                                    case AlarmMessageType.AlarmAck: // ALARM ack
                                         {
                                             alarm.AckStateGoing = span[offset++];
                                             alarm.AckStateComing = span[offset++]; // 0x00 == no ack  0x01  == ack
@@ -90,7 +97,7 @@ namespace Dacs7.Protocols.SiemensPlc
                                         break;
                                     default:
                                         {
-                                            ExceptionThrowHelper.ThrowUnknownAlarmSubfunction(subfunction);
+                                            ThrowHelper.ThrowUnknownAlarmSubfunction(subfunction);
                                             break;
                                         }
                                 }
@@ -98,14 +105,14 @@ namespace Dacs7.Protocols.SiemensPlc
                             }
                         default:
                             {
-                                ExceptionThrowHelper.ThrowUnknownAlarmSyntax(syntaxId);
+                                ThrowHelper.ThrowUnknownAlarmSyntax(syntaxId);
                                 break;
                             }
                     }
                 }
 
                 alarms.Add(alarm);
-                
+
             }
             current.Alarms = alarms;
             return current;
@@ -114,8 +121,8 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static DateTime GetDt(Span<byte> b)
         {
-            var str = string.Format("{2:X2}/{1:X2}/{0:X2} {3:X2}:{4:X2}:{5:X2}.{6:X2}{7:X2}", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
-            if (DateTime.TryParseExact(str, "dd/MM/yy HH:mm:ss.ffff", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+            var str = string.Format(CultureInfo.InvariantCulture, "{2:X2}/{1:X2}/{0:X2} {3:X2}:{4:X2}:{5:X2}.{6:X2}{7:X2}", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
+            if (DateTime.TryParseExact(str, "dd/MM/yy HH:mm:ss.ffff", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                 return parsedDate;
             return DateTime.MinValue;
         }

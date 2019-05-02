@@ -1,21 +1,21 @@
-﻿// Copyright (c) insite-gmbh. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
 
 using System;
 using System.Buffers.Binary;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
-    internal class S7CommSetupParameterDatagram
+    internal sealed class S7CommSetupParameterDatagram
     {
         public byte Function { get; set; } = 0xF0; //Setup communication
         public byte Reserved { get; set; } = 0x00;
 
-        public UInt16 MaxAmQCalling { get; set; }
+        public ushort MaxAmQCalling { get; set; }
 
-        public UInt16 MaxAmQCalled { get; set; }
+        public ushort MaxAmQCalled { get; set; }
 
-        public UInt16 PduLength { get; set; }
+        public ushort PduLength { get; set; }
 
 
 

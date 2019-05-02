@@ -32,7 +32,7 @@ namespace Dacs7Cli
                             Debug = debugOption.HasValue(),
                             Trace = traceOption.HasValue(),
                             Address = addressOption.HasValue() ? addressOption.Value() : "localhost",
-                            MaxJobs = maxJobsOption.HasValue() ? Int32.Parse(maxJobsOption.Value()) : 10,
+                            MaxJobs = maxJobsOption.HasValue() ? int.Parse(maxJobsOption.Value()) : 10,
                         }.Configure();
                         var result = await ReadAlarms(readOptions, readOptions.LoggerFactory);
 

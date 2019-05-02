@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using System.Threading.Tasks;
 
 namespace Dacs7.Metadata
 {
@@ -13,25 +16,25 @@ namespace Dacs7.Metadata
         /// <returns><see cref="IPlcBlockInfo"/> where you have access tho the detailed meta data of the block.</returns>
         public static async Task<IPlcBlockInfo> ReadBlockInfoAsync(this Dacs7Client client, PlcBlockType type, int blocknumber)
         {
-            var result =  await client.ProtocolHandler.ReadBlockInfoAsync(type, blocknumber);
-            if(result != null)
+            var result = await client.ProtocolHandler.ReadBlockInfoAsync(type, blocknumber).ConfigureAwait(false);
+            if (result != null)
             {
                 return new PlcBlockInfo
                 {
                     ADDLength = result.ADDLength,
-                    Author = result.Author,
+                    Author = result.Author?.Trim('\0'),
                     BlockFlags = result.BlockFlags,
                     BlockLanguage = result.BlockLanguage,
                     BlockNumber = result.BlockNumber,
                     BlockSecurity = result.BlockSecurity,
                     Checksum = result.Checksum,
                     CodeSize = result.CodeSize,
-                    Family = result.Family,
+                    Family = result.Family?.Trim('\0'),
                     LastCodeChange = result.LastCodeChange,
                     LastInterfaceChange = result.LastInterfaceChange,
                     LengthLoadMemory = result.LengthLoadMemory,
                     LocalDataSize = result.LocalDataSize,
-                    Name = result.Name,
+                    Name = result.Name?.Trim('\0'),
                     SSBLength = result.SSBLength,
                     SubBlockType = result.SubBlockType,
                     VersionHeaderMajor = result.VersionHeaderMajor,

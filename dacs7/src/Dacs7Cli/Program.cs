@@ -1,14 +1,9 @@
-﻿using Dacs7Cli.Options;
-using Microsoft.Extensions.CommandLineUtils;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.CommandLineUtils;
 using System;
 
 namespace Dacs7Cli
 {
-
-
-
-    class Program
+    internal class Program
     {
 
 

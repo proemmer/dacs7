@@ -1,13 +1,16 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dacs7.Helper
 {
-    internal class SemaphoreGuard : IDisposable
+    internal sealed class SemaphoreGuard : IDisposable
     {
         private SemaphoreSlim _semaphore;
-        private bool IsDisposed { get { return _semaphore == null; } }
+        private bool IsDisposed => _semaphore == null;
         public SemaphoreGuard(SemaphoreSlim semaphore, bool wait = true)
         {
             _semaphore = semaphore;
@@ -20,17 +23,20 @@ namespace Dacs7.Helper
         public static async Task<SemaphoreGuard> Async(SemaphoreSlim semaphore)
         {
             var guard = new SemaphoreGuard(semaphore, false);
-            await semaphore.WaitAsync();
+            await semaphore.WaitAsync().ConfigureAwait(false);
             return guard;
         }
 
         public void Dispose()
         {
             if (IsDisposed)
-                throw new ObjectDisposedException(ToString());
+                ThrowObjectDisposedException(this);
+
             _semaphore.Release();
             _semaphore = null;
         }
+
+        private static void ThrowObjectDisposedException(SemaphoreGuard guard) => throw new ObjectDisposedException(guard.ToString());
     }
 
 

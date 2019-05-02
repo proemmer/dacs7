@@ -1,4 +1,7 @@
-﻿using Dacs7.Domain;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using Dacs7.Domain;
 using Dacs7.Protocols.SiemensPlc;
 using System;
 
@@ -6,7 +9,7 @@ namespace Dacs7
 {
     public class DataValue
     {
-        private ReadItem _meta;
+        private readonly ReadItem _meta;
         private object _value;
 
 
@@ -24,7 +27,7 @@ namespace Dacs7
             var expected = typeof(T);
             if (expected != _meta.ResultType)
             {
-                ExceptionThrowHelper.ThrowTypesNotMatching(expected, _meta.ResultType);
+                ThrowHelper.ThrowTypesNotMatching(expected, _meta.ResultType);
             }
             return (T)Value;
         }

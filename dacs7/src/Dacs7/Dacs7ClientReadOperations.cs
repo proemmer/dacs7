@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -10,8 +13,6 @@ namespace Dacs7.ReadWrite
         ///// The maximum read item length of a single telegram.
         ///// </summary>
         public static ushort GetReadItemMaxLength(this Dacs7Client client) => client.S7Context != null ? client.S7Context.ReadItemMaxLength : (ushort)0;
-
-
 
         /// <summary>
         /// Reads data from the plc.
@@ -41,21 +42,14 @@ namespace Dacs7.ReadWrite
         /// <returns>returns a enumerable with the read values</returns>
         public static async Task<IEnumerable<DataValue>> ReadAsync(this Dacs7Client client, IEnumerable<ReadItem> values)
         {
-            var readItems = values as IList<ReadItem> ?? values.ToList();
-            var result = await client.ProtocolHandler.ReadAsync(readItems);
-            var enumerator = readItems.GetEnumerator();
-            return result.Select(value =>
-            {
-                enumerator.MoveNext();
-                return new DataValue(enumerator.Current, value);
-            }).ToList();
+            var readItems = values as IList<ReadItem> ?? new List<ReadItem>(values);
+            var result = await client.ProtocolHandler.ReadAsync(readItems).ConfigureAwait(false);
+            return new List<DataValue>(result.Select((entry) => new DataValue(entry.Key, entry.Value)));
         }
 
 
-        internal static  IEnumerable<ReadItem> CreateNodeIdCollection(this Dacs7Client client, IEnumerable<string> values)
-        {
-            return new List<ReadItem>(values.Select(item => client.RegisteredOrGiven(item)));
-        }
+        internal static IEnumerable<ReadItem> CreateNodeIdCollection(this Dacs7Client client, IEnumerable<string> values)
+            => new List<ReadItem>(values.Select(item => client.RegisteredOrGiven(item)));
 
     }
 }

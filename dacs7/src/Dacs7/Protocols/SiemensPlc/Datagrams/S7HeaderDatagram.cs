@@ -1,45 +1,42 @@
-﻿// Copyright (c) insite-gmbh. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
 
 using System;
+using System.Buffers;
 using System.Buffers.Binary;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
 
-    internal class S7HeaderDatagram
+    internal sealed class S7HeaderDatagram
     {
 
         public byte ProtocolId { get; set; } = 0x32;
 
         public byte PduType { get; set; }
 
-        public UInt16 RedundancyIdentification { get; set; } = UInt16.MinValue;
+        public ushort RedundancyIdentification { get; set; } = ushort.MinValue;
 
-        public UInt16 ProtocolDataUnitReference { get; set; } = UInt16.MinValue;
+        public ushort ProtocolDataUnitReference { get; set; } = ushort.MinValue;
 
-        public UInt16 ParamLength { get; set; }
+        public ushort ParamLength { get; set; }
 
-        public UInt16 DataLength { get; set; }
+        public ushort DataLength { get; set; }
 
 
 
-        public int GetMemorySize()
+        public int GetMemorySize() => GetHeaderSize() + ParamLength + DataLength;
+
+        public int GetHeaderSize() => 10;
+
+        public static IMemoryOwner<byte> TranslateToMemory(S7HeaderDatagram datagram, out int memoryLength)
+            => TranslateToMemory(datagram, -1, out memoryLength);
+
+        public static IMemoryOwner<byte> TranslateToMemory(S7HeaderDatagram datagram, int length, out int memoryLength)
         {
-            return GetHeaderSize() + ParamLength + DataLength;
-        }
-
-        public int GetHeaderSize()
-        {
-            return 10;
-        }
-
-
-        public static Memory<byte> TranslateToMemory(S7HeaderDatagram datagram, int length = -1)
-        {
-            length = length == -1 ?  datagram.GetMemorySize() : length;
-            var result = new Memory<byte>(new byte[length]);  // check if we could use ArrayBuffer
-            var span = result.Span;
+            memoryLength = length == -1 ? datagram.GetMemorySize() : length;
+            var result = MemoryPool<byte>.Shared.Rent(memoryLength);
+            var span = result.Memory.Slice(0, memoryLength).Span;
 
             span[0] = datagram.ProtocolId;
             span[1] = datagram.PduType;

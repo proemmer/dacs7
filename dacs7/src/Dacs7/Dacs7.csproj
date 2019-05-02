@@ -6,25 +6,45 @@
     <Copyright>Copyright © Benjamin Proemmer 2016-2019</Copyright>
     <AssemblyTitle>dacs7</AssemblyTitle>
     <Authors>Benjamin Proemmer</Authors>
-    <TargetFrameworks>netstandard2.0;netcoreapp2.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netcoreapp2.1;netcoreapp2.2</TargetFrameworks>
     <AssemblyName>Dacs7</AssemblyName>
     <PackageId>Dacs7</PackageId>
     <PackageTags>siemens plc S7 PC-S7-Connection TCP/IP-S7 communication .netcore Automation HMI C# VB.Net RFC-1006 IsoOnTcp-S7 SIMATIC</PackageTags>
-    <PackageReleaseNotes>* BREAKING CHANGE * - Redesign</PackageReleaseNotes>
+    <PackageReleaseNotes>
+      ##Whats New##
+      * Added TIA Datatype support
+
+      ##Fixed##
+      * Changed receive buffer size from 1024 to 5 * 1024  because with PDUSize 960 the buffer reaches the limit. (ZeroWindow)
+      * Fixed TagParsing of numbers in targets lower than NETCOREAPP21
+      * fixed a bug where we get non real errors form protocol handle (all errors were timeouts)
+      * fixed a bug in Blockinfo ( Invalid error code results in a timeout)
+
+    </PackageReleaseNotes>
     <PackageProjectUrl>http://proemmer.github.io/dacs7</PackageProjectUrl>
     <PackageLicenseUrl>https://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Version>2.0.1-alpha3</Version>
     <RepositoryUrl>git://github.com/proemmer/dacs7</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <IncludeSymbols>true</IncludeSymbols>
+
+
+
+
+    <Version>2.1.0-beta3</Version>
     <SignAssembly>true</SignAssembly>
+    
+    
     <AssemblyOriginatorKeyFile>C:\Projects\Tools\signatures\dacs7\dacs7.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.6.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Logging" Version="2.2.0" />
     <PackageReference Include="System.Buffers" Version="4.5.0" />
     <PackageReference Include="System.Linq.Parallel" Version="4.3.0" />
@@ -37,12 +57,13 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.1'">
-    <DefineConstants>NETCOREAPP21;$(AdditionalConstants)</DefineConstants>
+    <DefineConstants>SPANSUPPORT;$(AdditionalConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.2'">
+    <DefineConstants>SPANSUPPORT;$(AdditionalConstants)</DefineConstants>
   </PropertyGroup>
   
-  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
-    <DefineConstants>NETSTANDARD20;$(AdditionalConstants)</DefineConstants>
-  </PropertyGroup>
 
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">

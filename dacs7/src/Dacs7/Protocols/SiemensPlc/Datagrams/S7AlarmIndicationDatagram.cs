@@ -1,9 +1,12 @@
-﻿using Dacs7.Alarms;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using Dacs7.Alarms;
 using System;
 
 namespace Dacs7.Protocols.SiemensPlc
-{ 
-    internal class S7AlarmIndicationDatagram
+{
+    internal sealed class S7AlarmIndicationDatagram
     {
         public S7UserDataDatagram UserData { get; set; }
 
@@ -11,7 +14,6 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7AlarmIndicationDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var span = data.Span;
             var current = new S7AlarmIndicationDatagram
             {
                 UserData = S7UserDataDatagram.TranslateFromMemory(data),

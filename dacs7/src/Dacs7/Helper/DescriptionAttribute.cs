@@ -1,7 +1,7 @@
 ﻿//------------------------------------------------------------------------------
 // <copyright file="DescriptionAttribute.cs" company="Microsoft">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
-//     Modified by Benjamin Prömmer for usage in .net core
+//     Modified by Benjamin Proemmer for usage in .net core
 // </copyright>                                                                
 //------------------------------------------------------------------------------
 
@@ -24,7 +24,7 @@ namespace Dacs7.Helper
         ///    empty string (""). This <see langword='static'/> field is read-only.</para>
         /// </devdoc>
         public static readonly DescriptionAttribute Default = new DescriptionAttribute();
-        private string description;
+        private string _description;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
@@ -36,21 +36,12 @@ namespace Dacs7.Helper
         /// <devdoc>
         ///    <para>Initializes a new instance of the <see cref='System.ComponentModel.DescriptionAttribute'/> class.</para>
         /// </devdoc>
-        public DescriptionAttribute(string description)
-        {
-            this.description = description;
-        }
+        public DescriptionAttribute(string description) => _description = description;
 
         /// <devdoc>
         ///    <para>Gets the description stored in this attribute.</para>
         /// </devdoc>
-        public virtual string Description
-        {
-            get
-            {
-                return DescriptionValue;
-            }
-        }
+        public virtual string Description => DescriptionValue;
 
         /// <devdoc>
         ///     Read/Write property that directly modifies the string stored
@@ -59,27 +50,13 @@ namespace Dacs7.Helper
         /// </devdoc>
         protected string DescriptionValue
         {
-            get
-            {
-                return description;
-            }
-            set
-            {
-                description = value;
-            }
+            get => _description;
+            set => _description = value;
         }
 
         public override bool Equals(object obj)
-        {
-            if (obj == this)
-                return true;
-            var other = obj as DescriptionAttribute;
-            return (other != null) && other.Description == Description;
-        }
+            => obj == this || (obj is DescriptionAttribute other) && other.Description == Description;
 
-        public override int GetHashCode()
-        {
-            return Description.GetHashCode();
-        }
+        public override int GetHashCode() => Description.GetHashCode();
     }
 }
