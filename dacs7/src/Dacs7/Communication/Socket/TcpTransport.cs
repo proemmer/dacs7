@@ -1,4 +1,7 @@
-﻿using Dacs7.Protocols;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using Dacs7.Protocols;
 using Dacs7.Protocols.Rfc1006;
 using Microsoft.Extensions.Logging;
 using System;
@@ -82,7 +85,7 @@ namespace Dacs7.Communication.Socket
                 using (var res = ConnectionConfirmedDatagram.TranslateFromMemory(buffer, out processed))
                 {
                     context.UpdateFrameSize(res);
-                    await OnUpdateConnectionState?.Invoke(ConnectionState.TransportOpened);
+                    await (OnUpdateConnectionState?.Invoke(ConnectionState.TransportOpened)).ConfigureAwait(false);
                 }
             }
             else if (datagramType == typeof(DataTransferDatagram))
@@ -91,7 +94,7 @@ namespace Dacs7.Communication.Socket
                 {
                     if (!needMoreData)
                     {
-                        await OnDetectAndReceive?.Invoke(datagram.Payload);
+                        await (OnDetectAndReceive?.Invoke(datagram.Payload)).ConfigureAwait(false);
                     }
                 }
             }
@@ -103,7 +106,7 @@ namespace Dacs7.Communication.Socket
         {
             using (var datagram = ConnectionRequestDatagram.TranslateToMemory(ConnectionRequestDatagram.BuildCr(_context), out var memoryLegth))
             {
-                var result = await Client.SendAsync(datagram.Memory.Slice(0, memoryLegth));
+                var result = await Client.SendAsync(datagram.Memory.Slice(0, memoryLegth)).ConfigureAwait(false);
                 if (result == SocketError.Success)
                 {
                     OnUpdateConnectionState?.Invoke(ConnectionState.PendingOpenTransport);

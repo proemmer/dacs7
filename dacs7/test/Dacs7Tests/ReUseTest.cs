@@ -1,5 +1,4 @@
-﻿using Dacs7;
-using Dacs7.ReadWrite;
+﻿using Dacs7.ReadWrite;
 using Dacs7Tests.ServerHelper;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,7 +14,7 @@ namespace Dacs7.Tests
         {
             var client = new Dacs7Client(PlcTestServer.Address, PlcTestServer.ConnectionType, PlcTestServer.Timeout);
 
-            for (int i = 0; i < 5; i++)
+            for (var i = 0; i < 5; i++)
             {
                 try
                 {

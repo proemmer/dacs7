@@ -1,5 +1,4 @@
-﻿using Dacs7;
-using Dacs7.Domain;
+﻿using Dacs7.Domain;
 using System;
 using Xunit;
 
@@ -170,8 +169,8 @@ namespace Dacs7.Tests
             Assert.Equal(PlcArea.DB, result.Area);
             Assert.Equal(10000, result.Offset);
             Assert.Equal(1, result.Length);
-            Assert.Equal(typeof(UInt32), result.ResultType);
-            Assert.Equal(typeof(UInt32), result.VarType);
+            Assert.Equal(typeof(uint), result.ResultType);
+            Assert.Equal(typeof(uint), result.VarType);
         }
 
         [Fact]
@@ -181,8 +180,8 @@ namespace Dacs7.Tests
             Assert.Equal(PlcArea.DB, result.Area);
             Assert.Equal(10000, result.Offset);
             Assert.Equal(1, result.Length);
-            Assert.Equal(typeof(UInt32), result.ResultType);
-            Assert.Equal(typeof(UInt32), result.VarType);
+            Assert.Equal(typeof(uint), result.ResultType);
+            Assert.Equal(typeof(uint), result.VarType);
         }
 
         [Fact]
@@ -192,8 +191,8 @@ namespace Dacs7.Tests
             Assert.Equal(PlcArea.DB, result.Area);
             Assert.Equal(10000, result.Offset);
             Assert.Equal(10, result.Length);
-            Assert.Equal(typeof(UInt32[]), result.ResultType);
-            Assert.Equal(typeof(UInt32), result.VarType);
+            Assert.Equal(typeof(uint[]), result.ResultType);
+            Assert.Equal(typeof(uint), result.VarType);
         }
 
 
@@ -204,8 +203,8 @@ namespace Dacs7.Tests
             Assert.Equal(PlcArea.DB, result.Area);
             Assert.Equal(10000, result.Offset);
             Assert.Equal(1, result.Length);
-            Assert.Equal(typeof(Int32), result.ResultType);
-            Assert.Equal(typeof(Int32), result.VarType);
+            Assert.Equal(typeof(int), result.ResultType);
+            Assert.Equal(typeof(int), result.VarType);
         }
 
         [Fact]
@@ -215,8 +214,8 @@ namespace Dacs7.Tests
             Assert.Equal(PlcArea.DB, result.Area);
             Assert.Equal(10000, result.Offset);
             Assert.Equal(1, result.Length);
-            Assert.Equal(typeof(Int32), result.ResultType);
-            Assert.Equal(typeof(Int32), result.VarType);
+            Assert.Equal(typeof(int), result.ResultType);
+            Assert.Equal(typeof(int), result.VarType);
         }
 
         [Fact]
@@ -226,8 +225,8 @@ namespace Dacs7.Tests
             Assert.Equal(PlcArea.DB, result.Area);
             Assert.Equal(10000, result.Offset);
             Assert.Equal(10, result.Length);
-            Assert.Equal(typeof(Int32[]), result.ResultType);
-            Assert.Equal(typeof(Int32), result.VarType);
+            Assert.Equal(typeof(int[]), result.ResultType);
+            Assert.Equal(typeof(int), result.VarType);
         }
 
 
@@ -398,8 +397,8 @@ namespace Dacs7.Tests
             Assert.Equal(PlcArea.DB, result.Area);
             Assert.Equal(10000, result.Offset);
             Assert.Equal(1, result.Length);
-            Assert.Equal(typeof(UInt32), result.ResultType);
-            Assert.Equal(typeof(UInt32), result.VarType);
+            Assert.Equal(typeof(uint), result.ResultType);
+            Assert.Equal(typeof(uint), result.VarType);
         }
 
         [Fact]
@@ -409,8 +408,8 @@ namespace Dacs7.Tests
             Assert.Equal(PlcArea.DB, result.Area);
             Assert.Equal(10000, result.Offset);
             Assert.Equal(1, result.Length);
-            Assert.Equal(typeof(UInt32), result.ResultType);
-            Assert.Equal(typeof(UInt32), result.VarType);
+            Assert.Equal(typeof(uint), result.ResultType);
+            Assert.Equal(typeof(uint), result.VarType);
         }
 
         [Fact]
@@ -420,8 +419,8 @@ namespace Dacs7.Tests
             Assert.Equal(PlcArea.DB, result.Area);
             Assert.Equal(10000, result.Offset);
             Assert.Equal(10, result.Length);
-            Assert.Equal(typeof(UInt32[]), result.ResultType);
-            Assert.Equal(typeof(UInt32), result.VarType);
+            Assert.Equal(typeof(uint[]), result.ResultType);
+            Assert.Equal(typeof(uint), result.VarType);
         }
 
 
@@ -432,8 +431,8 @@ namespace Dacs7.Tests
             Assert.Equal(PlcArea.DB, result.Area);
             Assert.Equal(10000, result.Offset);
             Assert.Equal(1, result.Length);
-            Assert.Equal(typeof(Int32), result.ResultType);
-            Assert.Equal(typeof(Int32), result.VarType);
+            Assert.Equal(typeof(int), result.ResultType);
+            Assert.Equal(typeof(int), result.VarType);
         }
 
         [Fact]
@@ -443,8 +442,8 @@ namespace Dacs7.Tests
             Assert.Equal(PlcArea.DB, result.Area);
             Assert.Equal(10000, result.Offset);
             Assert.Equal(1, result.Length);
-            Assert.Equal(typeof(Int32), result.ResultType);
-            Assert.Equal(typeof(Int32), result.VarType);
+            Assert.Equal(typeof(int), result.ResultType);
+            Assert.Equal(typeof(int), result.VarType);
         }
 
         [Fact]
@@ -454,8 +453,8 @@ namespace Dacs7.Tests
             Assert.Equal(PlcArea.DB, result.Area);
             Assert.Equal(10000, result.Offset);
             Assert.Equal(10, result.Length);
-            Assert.Equal(typeof(Int32[]), result.ResultType);
-            Assert.Equal(typeof(Int32), result.VarType);
+            Assert.Equal(typeof(int[]), result.ResultType);
+            Assert.Equal(typeof(int), result.VarType);
         }
 
 

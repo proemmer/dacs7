@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using System;
 using System.Buffers;
@@ -19,10 +19,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
 
-        public int GetParameterOffset()
-        {
-            return Header.GetHeaderSize() + Error.GetSize();
-        }
+        public int GetParameterOffset() => Header.GetHeaderSize() + Error.GetSize();
 
 
         public static IMemoryOwner<byte> TranslateToMemory(S7AckDataDatagram datagram, out int memoryLength)
@@ -35,7 +32,6 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7AckDataDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var span = data.Span;
             var result = new S7AckDataDatagram
             {
                 Header = S7HeaderDatagram.TranslateFromMemory(data)

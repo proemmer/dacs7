@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using System;
 using System.Buffers;
@@ -58,7 +58,6 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7CommSetupDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var span = data.Span;
             var result = new S7CommSetupDatagram
             {
                 Header = S7HeaderDatagram.TranslateFromMemory(data)

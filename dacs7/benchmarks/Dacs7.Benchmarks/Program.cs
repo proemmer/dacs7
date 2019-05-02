@@ -1,11 +1,10 @@
 ﻿using BenchmarkDotNet.Running;
-using System;
 
 namespace Dacs7.Benchmarks
 {
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             //var summary = BenchmarkRunner.Run<TypeOfBenchmarks>();
             var summary = BenchmarkRunner.Run<ReadBenchmark>();

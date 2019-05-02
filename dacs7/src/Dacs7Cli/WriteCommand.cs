@@ -42,7 +42,7 @@ namespace Dacs7Cli
                             //Loops = loopsOption.HasValue() ? Int32.Parse(loopsOption.Value()) : 1,
                             //Wait = waitOption.HasValue() ? Int32.Parse(waitOption.Value()) : 0,
                             Tags = tagsArguments.Values,
-                            MaxJobs = maxJobsOption.HasValue() ? Int32.Parse(maxJobsOption.Value()) : 10,
+                            MaxJobs = maxJobsOption.HasValue() ? int.Parse(maxJobsOption.Value()) : 10,
                         }.Configure();
 
                         var result = await Write(writeOptions, writeOptions.LoggerFactory);

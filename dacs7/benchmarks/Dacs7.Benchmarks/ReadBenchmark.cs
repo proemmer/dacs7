@@ -36,10 +36,7 @@ namespace Dacs7.Benchmarks
         }
 
         [GlobalCleanup]
-        public void GlobalCleanup()
-        {
-            _client?.DisconnectAsync();
-        }
+        public void GlobalCleanup() => _client?.DisconnectAsync();
 
 
 

@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using System.Threading.Tasks;
 
@@ -16,7 +16,7 @@ namespace Dacs7.Metadata
         /// <returns><see cref="IPlcBlockInfo"/> where you have access tho the detailed meta data of the block.</returns>
         public static async Task<IPlcBlockInfo> ReadBlockInfoAsync(this Dacs7Client client, PlcBlockType type, int blocknumber)
         {
-            var result = await client.ProtocolHandler.ReadBlockInfoAsync(type, blocknumber);
+            var result = await client.ProtocolHandler.ReadBlockInfoAsync(type, blocknumber).ConfigureAwait(false);
             if (result != null)
             {
                 return new PlcBlockInfo

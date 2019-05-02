@@ -1,18 +1,25 @@
-﻿using Microsoft.Extensions.Logging;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using Microsoft.Extensions.Logging;
 using System;
 using System.Buffers;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dacs7.Communication
 {
 
-    internal sealed class ClientSocket : SocketBase
+    internal sealed class ClientSocket : SocketBase, IDisposable
     {
         private System.Net.Sockets.Socket _socket;
         private readonly ClientSocketConfiguration _config;
-        public sealed  override string Identity
+        private CancellationTokenSource _tokenSource;
+
+
+        public sealed override string Identity
         {
             get
             {
@@ -50,8 +57,8 @@ namespace Dacs7.Communication
         /// </summary>
         public sealed override async Task OpenAsync()
         {
-            await base.OpenAsync();
-            await InternalOpenAsync();
+            await base.OpenAsync().ConfigureAwait(false);
+            await InternalOpenAsync().ConfigureAwait(false);
         }
 
         protected sealed override async Task InternalOpenAsync(bool internalCall = false)
@@ -66,7 +73,7 @@ namespace Dacs7.Communication
                     NoDelay = true
                 };
                 _logger?.LogDebug("Socket connecting. ({0}:{1})", _config.Hostname, _config.ServiceName);
-                await _socket.ConnectAsync(_config.Hostname, _config.ServiceName);
+                await _socket.ConnectAsync(_config.Hostname, _config.ServiceName).ConfigureAwait(false);
                 EnsureConnected();
                 _logger?.LogDebug("Socket connected. ({0}:{1})", _config.Hostname, _config.ServiceName);
                 if (_config.KeepAlive)
@@ -74,13 +81,14 @@ namespace Dacs7.Communication
                 _disableReconnect = false; // we have a connection, so enable reconnect
 
 
-                _ = Task.Factory.StartNew(() => StartReceive(), TaskCreationOptions.LongRunning);
-                await PublishConnectionStateChanged(true);
+                _tokenSource = new CancellationTokenSource();
+                _ = await Task.Factory.StartNew(() => StartReceive(), _tokenSource.Token,TaskCreationOptions.LongRunning, TaskScheduler.Default).ConfigureAwait(false);
+                await PublishConnectionStateChanged(true).ConfigureAwait(false);
             }
             catch (Exception)
             {
                 DisposeSocket();
-                await HandleSocketDown();
+                await HandleSocketDown().ConfigureAwait(false);
                 if (!internalCall) throw;
             }
         }
@@ -90,7 +98,7 @@ namespace Dacs7.Communication
             // Write the locally buffered data to the network.
             try
             {
-                var result = await _socket.SendAsync(new ArraySegment<byte>(data.ToArray()), SocketFlags.None);
+                var result = await _socket.SendAsync(new ArraySegment<byte>(data.ToArray()), SocketFlags.None).ConfigureAwait(false);
             }
             catch (Exception)
             {
@@ -107,9 +115,8 @@ namespace Dacs7.Communication
 
         public sealed override async Task CloseAsync()
         {
-            await base.CloseAsync();
+            await base.CloseAsync().ConfigureAwait(false);
             DisposeSocket();
-
         }
 
         private void DisposeSocket()
@@ -118,7 +125,7 @@ namespace Dacs7.Communication
             {
                 try
                 {
-                    _socket.Dispose();
+                    _socket?.Dispose();
                 }
                 catch (ObjectDisposedException) { }
                 _socket = null;
@@ -135,12 +142,12 @@ namespace Dacs7.Communication
             var span = new Memory<byte>(receiveBuffer);
             try
             {
-                while (_socket != null)
+                while (_socket != null && _tokenSource != null && !_tokenSource.IsCancellationRequested)
                 {
                     try
                     {
                         var buffer = new ArraySegment<byte>(receiveBuffer, receiveOffset, _socket.ReceiveBufferSize);
-                        var received = await _socket.ReceiveAsync(buffer, SocketFlags.Partial);
+                        var received = await _socket.ReceiveAsync(buffer, SocketFlags.Partial).ConfigureAwait(false);
 
                         if (received == 0) return;
 
@@ -151,7 +158,7 @@ namespace Dacs7.Communication
                             var off = bufferOffset + processed;
                             var length = toProcess - processed;
                             var slice = span.Slice(off, length);
-                            var proc = await ProcessData(slice);
+                            var proc = await ProcessData(slice).ConfigureAwait(false);
                             if (proc == 0)
                             {
                                 if (length > 0)
@@ -201,7 +208,7 @@ namespace Dacs7.Communication
             {
                 blocking = _socket.Blocking;
                 _socket.Blocking = false;
-                _socket.Send(new byte[0], 0, 0);
+                _socket.Send(Array.Empty<byte>(), 0, 0);
             }
             catch (SocketException se)
             {
@@ -216,5 +223,6 @@ namespace Dacs7.Communication
             _socket.Blocking = blocking;
         }
 
+        public void Dispose() => DisposeSocket();
     }
 }

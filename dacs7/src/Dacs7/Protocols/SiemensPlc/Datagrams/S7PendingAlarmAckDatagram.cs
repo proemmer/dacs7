@@ -1,9 +1,10 @@
-﻿using Dacs7.Alarms;
-using Dacs7.Domain;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using Dacs7.Alarms;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace Dacs7.Protocols.SiemensPlc
 {
@@ -40,7 +41,7 @@ namespace Dacs7.Protocols.SiemensPlc
                     TransportSize = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2))
                 };
                 offset += 2;
-                item.AlarmType = span[offset++] == 4 ? AlarmMessageType.Alarm_S : AlarmMessageType.Unknown;
+                item.AlarmType = span[offset++] == 4 ? AlarmMessageType.AlarmS : AlarmMessageType.Unknown;
                 item.MsgNumber = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(offset, 4));
                 offset += 2; // 2 is correct, we use the offset twice
                 item.Id = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2));
@@ -54,7 +55,7 @@ namespace Dacs7.Protocols.SiemensPlc
                 if (size >= offset + 12)
                 {
                     item.Coming = S7PlcAlarmDetails.ExtractDetails(ref span, ref offset);
-                    
+
                 }
                 if (size >= offset + 12)
                 {
@@ -69,6 +70,6 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
 
-        
+
     }
 }

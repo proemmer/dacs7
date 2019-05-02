@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using Dacs7.Communication;
 using Dacs7.Protocols.SiemensPlc;
@@ -15,8 +15,9 @@ namespace Dacs7.Protocols
     internal delegate Task<bool> OnDetectAndReceive(Memory<byte> payload);
     internal delegate ConnectionState OnGetConnectionState();
 
-    internal sealed partial class ProtocolHandler
+    internal sealed partial class ProtocolHandler : IDisposable
     {
+        private bool _disposed;
         private readonly Transport _transport;
         private readonly SiemensPlcProtocolContext _s7Context;
         private readonly AsyncAutoResetEvent<bool> _connectEvent = new AsyncAutoResetEvent<bool>();
@@ -75,24 +76,24 @@ namespace Dacs7.Protocols
             try
             {
                 _closeCalled = false;
-                await _transport.Client.OpenAsync();
+                await _transport.Client.OpenAsync().ConfigureAwait(false);
                 try
                 {
-                    if (!await _connectEvent.WaitAsync(_s7Context.Timeout * 10))
+                    if (!await _connectEvent.WaitAsync(_s7Context.Timeout * 10).ConfigureAwait(false))
                     {
-                        await CloseAsync();
+                        await CloseAsync().ConfigureAwait(false);
                         ThrowHelper.ThrowNotConnectedException();
                     }
                 }
                 catch (TimeoutException)
                 {
-                    await CloseAsync();
+                    await CloseAsync().ConfigureAwait(false);
                     ThrowHelper.ThrowNotConnectedException();
                 }
             }
             catch (Dacs7NotConnectedException)
             {
-                await CloseAsync();
+                await CloseAsync().ConfigureAwait(false);
                 throw;
             }
             catch (Exception ex)
@@ -127,13 +128,37 @@ namespace Dacs7.Protocols
             if (_alarmUpdateHandler.Id != 0)
             {
                 _alarmUpdateHandler.Event?.Set(null);
-                await DisableAlarmUpdatesAsync();
+                await DisableAlarmUpdatesAsync().ConfigureAwait(false);
             }
-            await _transport.Client.CloseAsync();
-            await Task.Delay(1); // This ensures that the user can call connect after reconnect. (Otherwise he has to sleep for a while)
+            await _transport.Client.CloseAsync().ConfigureAwait(false);
+            await Task.Delay(1).ConfigureAwait(false); // This ensures that the user can call connect after reconnect. (Otherwise he has to sleep for a while)
         }
 
+        public void Dispose()
+        {
+            // Dispose of unmanaged resources.
+            Dispose(true);
+            // Suppress finalization.
+            GC.SuppressFinalize(this);
+        }
 
+        // Protected implementation of Dispose pattern.
+        private void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                if (_concurrentJobs != null)
+                {
+                    _concurrentJobs?.Dispose();
+                    _concurrentJobs = null;
+                }
+            }
+
+            _disposed = true;
+        }
 
         private Task<bool> DetectAndReceive(Memory<byte> payload)
         {
@@ -191,10 +216,10 @@ namespace Dacs7.Protocols
             {
                 using (var sendData = _transport.Build(dgmem.Memory.Slice(0, commemLength), out var sendLength))
                 {
-                    var result = await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength));
+                    var result = await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false);
                     if (result == SocketError.Success)
                     {
-                        await UpdateConnectionState(ConnectionState.PendingOpenPlc);
+                        await UpdateConnectionState(ConnectionState.PendingOpenPlc).ConfigureAwait(false);
                     }
                 }
             }
@@ -210,7 +235,7 @@ namespace Dacs7.Protocols
             {
                 using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
                 {
-                    var result = await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength));
+                    var result = await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false);
                     if (result == SocketError.Success)
                     {
                         //UpdateConnectionState(ConnectionState.PendingOpenPlc);
@@ -221,7 +246,7 @@ namespace Dacs7.Protocols
                         if (_concurrentJobs != null) _concurrentJobs.Dispose();
                         _concurrentJobs = new SemaphoreSlim(_s7Context.MaxAmQCalling);
 
-                        await UpdateConnectionState(ConnectionState.Opened);
+                        await UpdateConnectionState(ConnectionState.Opened).ConfigureAwait(false);
                     }
                 }
             }
@@ -248,13 +273,13 @@ namespace Dacs7.Protocols
 
                 if (state == ConnectionState.TransportOpened)
                 {
-                    await StartS7CommunicationSetup();
+                    await StartS7CommunicationSetup().ConfigureAwait(false);
                 }
                 else if (state == ConnectionState.Closed)
                 {
                     if (_concurrentJobs != null)
                     {
-                        _concurrentJobs.Dispose();
+                        _concurrentJobs?.Dispose();
                         _concurrentJobs = null;
                     }
                 }

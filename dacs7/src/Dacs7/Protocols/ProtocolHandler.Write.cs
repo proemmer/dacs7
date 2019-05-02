@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using Dacs7.Helper;
 using Dacs7.Protocols.SiemensPlc;
@@ -34,7 +34,7 @@ namespace Dacs7.Protocols
             var result = vars.ToDictionary(x => x, x => ItemResponseRetValue.Success);
             foreach (var normalized in CreateWritePackages(_s7Context, vars))
             {
-                if (!await WritePackage(result, normalized)) return new List<ItemResponseRetValue>();
+                if (!await WritePackage(result, normalized).ConfigureAwait(false)) return new List<ItemResponseRetValue>();
             }
             return result.Values;
         }
@@ -51,15 +51,15 @@ namespace Dacs7.Protocols
                     try
                     {
                         IEnumerable<S7DataItemWriteResult> writeResults = null;
-                        using (await SemaphoreGuard.Async(_concurrentJobs))
+                        using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                         {
                             cbh = new CallbackHandler<IEnumerable<S7DataItemWriteResult>>(id);
                             _writeHandler.TryAdd(cbh.Id, cbh);
                             try
                             {
-                                if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)) != SocketError.Success)
+                                if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
                                     return false;
-                                writeResults = await cbh.Event.WaitAsync(_s7Context.Timeout);
+                                writeResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
                             }
                             finally
                             {

@@ -1,12 +1,9 @@
 ﻿using Dacs7.ReadWrite;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Xunit;
 
 namespace Dacs7.Tests
 {
-    
+
     public class ExtensionsTests
     {
         [Fact]

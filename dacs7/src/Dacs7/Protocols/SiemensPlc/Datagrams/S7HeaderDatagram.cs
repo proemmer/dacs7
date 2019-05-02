@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using System;
 using System.Buffers;
@@ -15,32 +15,26 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public byte PduType { get; set; }
 
-        public UInt16 RedundancyIdentification { get; set; } = UInt16.MinValue;
+        public ushort RedundancyIdentification { get; set; } = ushort.MinValue;
 
-        public UInt16 ProtocolDataUnitReference { get; set; } = UInt16.MinValue;
+        public ushort ProtocolDataUnitReference { get; set; } = ushort.MinValue;
 
-        public UInt16 ParamLength { get; set; }
+        public ushort ParamLength { get; set; }
 
-        public UInt16 DataLength { get; set; }
+        public ushort DataLength { get; set; }
 
 
 
-        public int GetMemorySize()
-        {
-            return GetHeaderSize() + ParamLength + DataLength;
-        }
+        public int GetMemorySize() => GetHeaderSize() + ParamLength + DataLength;
 
-        public int GetHeaderSize()
-        {
-            return 10;
-        }
+        public int GetHeaderSize() => 10;
 
         public static IMemoryOwner<byte> TranslateToMemory(S7HeaderDatagram datagram, out int memoryLength)
             => TranslateToMemory(datagram, -1, out memoryLength);
 
         public static IMemoryOwner<byte> TranslateToMemory(S7HeaderDatagram datagram, int length, out int memoryLength)
         {
-            memoryLength = length == -1 ?  datagram.GetMemorySize() : length;
+            memoryLength = length == -1 ? datagram.GetMemorySize() : length;
             var result = MemoryPool<byte>.Shared.Rent(memoryLength);
             var span = result.Memory.Slice(0, memoryLength).Span;
 

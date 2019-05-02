@@ -1,4 +1,7 @@
-﻿using Dacs7.Domain;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using Dacs7.Domain;
 using System;
 
 namespace Dacs7.Protocols.SiemensPlc
@@ -9,15 +12,15 @@ namespace Dacs7.Protocols.SiemensPlc
     /// </summary>
     internal sealed class SiemensPlcProtocolContext
     {
-        private const int MinimumDataSize = 10;
-        private const int MinimumAckDetectionSize = MinimumDataSize + 2;
-        private const int PduTypeOffset = 1;
-        private const int JobFunctionCodeOffset = MinimumDataSize;
-        private const int AckDataFunctionCodeOffset = MinimumAckDetectionSize;
+        private const int _minimumDataSize = 10;
+        private const int _minimumAckDetectionSize = _minimumDataSize + 2;
+        private const int _pduTypeOffset = 1;
+        private const int _jobFunctionCodeOffset = _minimumDataSize;
+        private const int _ackDataFunctionCodeOffset = _minimumAckDetectionSize;
 
         // 0x32 = S7comm
         // 0x72 = S7commPlus (1200/1500)
-        private const byte Prefix = 0x32;
+        private const byte _prefix = 0x32;
 
         public const int ReadHeader = 10;        // header for each telegram
         public const int ReadParameter = 2;     // header for each telegram
@@ -43,19 +46,19 @@ namespace Dacs7.Protocols.SiemensPlc
         public int Timeout { get; set; }
 
 
-        public UInt16 ReadItemMaxLength { get { return (UInt16)(PduSize - 18); } }  //18 Header and some other data    // in the result message
-        public UInt16 WriteItemMaxLength { get { return (UInt16)(PduSize - 28); } } //28 Header and some other data
+        public ushort ReadItemMaxLength => (ushort)(PduSize - 18);   //18 Header and some other data    // in the result message
+        public ushort WriteItemMaxLength => (ushort)(PduSize - 28);  //28 Header and some other data
 
 
         #region datagram detection
 
         public bool TryDetectDatagramType(Memory<byte> memory, out Type datagramType)
         {
-            if (memory.Length >= MinimumDataSize &&
-               memory.Span[0] == Prefix)
+            if (memory.Length >= _minimumDataSize &&
+               memory.Span[0] == _prefix)
             {
 
-                switch ((PduType)memory.Span[PduTypeOffset])  // PDU Type
+                switch ((PduType)memory.Span[_pduTypeOffset])  // PDU Type
                 {
                     case PduType.Job:  // JOB
                         return TryDetectJobType(memory, out datagramType);
@@ -72,14 +75,14 @@ namespace Dacs7.Protocols.SiemensPlc
 
         private bool TryDetectJobType(Memory<byte> memory, out Type datagramType)
         {
-            if (memory.Length > MinimumDataSize)
+            if (memory.Length > _minimumDataSize)
             {
-                switch ((FunctionCode)memory.Span[JobFunctionCodeOffset])  // Function Type
+                switch ((FunctionCode)memory.Span[_jobFunctionCodeOffset])  // Function Type
                 {
                     case FunctionCode.SetupComm:
                         datagramType = typeof(S7CommSetupDatagram);
                         return true;
-                    case FunctionCode.ReadVar:   
+                    case FunctionCode.ReadVar:
                         datagramType = typeof(S7ReadJobDatagram);
                         return true;
                     case FunctionCode.WriteVar:
@@ -94,9 +97,9 @@ namespace Dacs7.Protocols.SiemensPlc
 
         private bool TryDetectAckDataType(Memory<byte> memory, out Type datagramType)
         {
-            if (memory.Length > MinimumAckDetectionSize)
+            if (memory.Length > _minimumAckDetectionSize)
             {
-                switch ((FunctionCode)memory.Span[AckDataFunctionCodeOffset])  // Function Type
+                switch ((FunctionCode)memory.Span[_ackDataFunctionCodeOffset])  // Function Type
                 {
                     case FunctionCode.SetupComm:  // Setup communication
                         datagramType = typeof(S7CommSetupAckDataDatagram);

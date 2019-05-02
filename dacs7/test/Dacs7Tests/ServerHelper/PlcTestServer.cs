@@ -22,15 +22,9 @@ namespace Dacs7Tests.ServerHelper
 
     public class PlcServerFixture : IDisposable
     {
-        public PlcServerFixture()
-        {
-            PlcTestServer.Start();
-        }
+        public PlcServerFixture() => PlcTestServer.Start();
 
-        public void Dispose()
-        {
-            PlcTestServer.Stop();
-        }
+        public void Dispose() => PlcTestServer.Stop();
 
     }
 
@@ -46,7 +40,7 @@ namespace Dacs7Tests.ServerHelper
     internal static class PlcTestServer
     {
 
-        
+
         private static readonly object _lock = new object();
         private static readonly S7Server _server = new S7Server();
         private static readonly Dictionary<int, byte[]> _dbAreas = new Dictionary<int, byte[]>
@@ -100,10 +94,7 @@ namespace Dacs7Tests.ServerHelper
             }
         }
 
-        public static int Stop()
-        {
-            return _server.Stop();
-        }
+        public static int Stop() => _server.Stop();
 
 
 
@@ -117,7 +108,7 @@ namespace Dacs7Tests.ServerHelper
 
             do
             {
-                if(_semaphore != null) await _semaphore.WaitAsync();
+                if (_semaphore != null) await _semaphore.WaitAsync();
                 try
                 {
                     await client.ConnectAsync();

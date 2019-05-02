@@ -1,11 +1,9 @@
-﻿using Dacs7;
-using Dacs7.Domain;
+﻿using Dacs7.Domain;
 using Dacs7.Protocols.SiemensPlc;
 using System;
 using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Xunit;
 
 namespace Dacs7.Tests
@@ -79,7 +77,7 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestIntDataValue()
         {
-            var value = (int)5;
+            var value = 5;
             var testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<int>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
@@ -88,9 +86,9 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestSingleDataValue()
         {
-            var value = (Single)1.5;
+            var value = (float)1.5;
             var testValue = CreateTestValue(value);
-            Assert.Equal(value, testValue.GetValue<Single>());
+            Assert.Equal(value, testValue.GetValue<float>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
 
@@ -169,9 +167,9 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestSinglesDataValue()
         {
-            var value = new List<Single> { (Single)5.5, (Single)10.1 };
+            var value = new List<float> { (float)5.5, (float)10.1 };
             var testValue = CreateTestValue(value);
-            Assert.Equal(value, testValue.GetValue<List<Single>>());
+            Assert.Equal(value, testValue.GetValue<List<float>>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
 
@@ -180,18 +178,18 @@ namespace Dacs7.Tests
         private DataValue CreateTestValue<T>(T value)
         {
             ushort countItems = 1;
-            if(value is IList l)
+            if (value is IList l)
             {
                 countItems = (ushort)l.Count;
             }
-            else if(value is string s)
+            else if (value is string s)
             {
                 countItems = (ushort)s.Length;
             }
 
 
             var ri = ReadItem.Create<T>("DB1", 0, countItems);
-            Memory<byte> itemData = ri.ConvertDataToMemory(value);
+            var itemData = ri.ConvertDataToMemory(value);
 
             Memory<byte> buffer = new byte[4 + itemData.Length];
             buffer.Span[0] = 255;

@@ -1,9 +1,8 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using System;
 using System.Buffers;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 
 namespace Dacs7.Protocols.SiemensPlc
@@ -84,7 +83,7 @@ namespace Dacs7.Protocols.SiemensPlc
             result.Function = span[offset++];
             result.ItemCount = span[offset++];
 
-            for (int i = 0; i < result.ItemCount; i++)
+            for (var i = 0; i < result.ItemCount; i++)
             {
                 var res = S7AddressItemSpecificationDatagram.TranslateFromMemory(data.Slice(offset));
                 result.Items.Add(res);

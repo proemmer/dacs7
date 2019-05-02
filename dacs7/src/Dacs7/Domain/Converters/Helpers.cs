@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using System;
 using System.Runtime.InteropServices;
@@ -8,7 +8,7 @@ namespace Dacs7.Domain
 {
     internal static class ConvertHelpers
     {
-        public static Memory<byte> WriteSingleBigEndian(Single value, byte[] buffer = null, int offset = 0)
+        public static Memory<byte> WriteSingleBigEndian(float value, byte[] buffer = null, int offset = 0)
         {
             var rawdata = buffer ?? new byte[Marshal.SizeOf(value)];
             var handle = GCHandle.Alloc(rawdata, GCHandleType.Pinned);

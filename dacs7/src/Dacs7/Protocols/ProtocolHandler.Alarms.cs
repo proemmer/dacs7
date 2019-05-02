@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using Dacs7.Alarms;
 using Dacs7.Helper;
@@ -94,7 +94,7 @@ namespace Dacs7.Protocols
             }
             finally
             {
-                memoryOwner.Dispose();
+                memoryOwner?.Dispose();
             }
 
 
@@ -106,7 +106,7 @@ namespace Dacs7.Protocols
             if (ConnectionState != ConnectionState.Opened)
                 ThrowHelper.ThrowNotConnectedException();
 
-            if (!await EnableAlarmUpdatesAsync())
+            if (!await EnableAlarmUpdatesAsync().ConfigureAwait(false))
                 ThrowHelper.ThrowNotConnectedException();
 
             var userId = GetNextReferenceId();
@@ -115,7 +115,7 @@ namespace Dacs7.Protocols
                 var waitHandler = new CallbackHandler<S7AlarmIndicationDatagram>(userId);
                 if (_alarmIndicationHandler.TryAdd(waitHandler.Id, waitHandler))
                 {
-                    var result = await waitHandler.Event.WaitAsync(ct);
+                    var result = await waitHandler.Event.WaitAsync(ct).ConfigureAwait(false);
                     if (result != null)
                     {
                         return new AlarmUpdateResult(_alarmUpdateHandler.Id == 0, result.AlarmMessage.Alarms.ToList(), () => DisableAlarmUpdatesAsync());
@@ -141,7 +141,7 @@ namespace Dacs7.Protocols
                 {
                     using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
                     {
-                        using (await SemaphoreGuard.Async(_concurrentJobs))
+                        using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                         {
                             if (_alarmUpdateHandler.Id == 0)
                             {
@@ -149,10 +149,10 @@ namespace Dacs7.Protocols
                                 _alarmUpdateHandler = cbh;
                                 try
                                 {
-                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)) != SocketError.Success)
+                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
                                         return false;
 
-                                    await cbh.Event.WaitAsync(_s7Context.Timeout);
+                                    await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
                                 }
                                 catch (Exception)
                                 {
@@ -175,17 +175,17 @@ namespace Dacs7.Protocols
                 {
                     using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
                     {
-                        using (await SemaphoreGuard.Async(_concurrentJobs))
+                        using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                         {
                             if (_alarmUpdateHandler.Id != 0)
                             {
 
                                 try
                                 {
-                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)) != SocketError.Success)
+                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
                                         return false;
 
-                                    await _alarmUpdateHandler.Event.WaitAsync(_s7Context.Timeout);
+                                    await _alarmUpdateHandler.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
                                     _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
                                 }
                                 catch (Exception)

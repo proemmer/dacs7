@@ -1,10 +1,13 @@
-﻿using Dacs7.Domain;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using Dacs7.Domain;
 using Dacs7.Metadata;
 using Dacs7.Protocols.SiemensPlc.Datagrams;
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
-using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 namespace Dacs7.Protocols.SiemensPlc
@@ -38,7 +41,7 @@ namespace Dacs7.Protocols.SiemensPlc
                     TypeAndGroup = ((byte)UserDataFunctionType.Request << 4) | (byte)UserDataFunctionGroup.Block,
                     SubFunction = (byte)UserDataSubFunctionBlock.BlockInfo,
                     SequenceNumber = 0,
-                    ParameterType = (byte)UserDataParamTypeType.Request 
+                    ParameterType = (byte)UserDataParamTypeType.Request
                 },
                 Data = new S7UserData
                 {
@@ -52,7 +55,7 @@ namespace Dacs7.Protocols.SiemensPlc
             result.Header.ParamLength = 8;
 
             result.Data.Data = new byte[] { 0x30, (byte)blockType, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41 };
-            Encoding.Default.GetBytes(string.Format("{0:00000}", blockNumber)).AsSpan().CopyTo(result.Data.Data.Span.Slice(2, 5));
+            Encoding.Default.GetBytes(string.Format(CultureInfo.InvariantCulture,"{0:00000}", blockNumber)).AsSpan().CopyTo(result.Data.Data.Span.Slice(2, 5));
             result.Data.UserDataLength = (ushort)result.Data.Data.Length;
 
             return result;
@@ -60,7 +63,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7UserDataDatagram BuildPendingAlarmRequest(SiemensPlcProtocolContext context, ushort id, byte sequenceNumber)
         {
-            var data = sequenceNumber == 0 ? new byte[] { 0x00, 0x01, 0x12, 0x08, 0x1a, 0x00, 0x01, 0x34, 0x00, 0x00, 0x00, 0x04 } : new byte[0]; ;
+            var data = sequenceNumber == 0 ? new byte[] { 0x00, 0x01, 0x12, 0x08, 0x1a, 0x00, 0x01, 0x34, 0x00, 0x00, 0x00, 0x04 } : Array.Empty<byte>(); ;
             var result = new S7UserDataDatagram
             {
                 Parameter = new S7UserDataParameter
@@ -88,7 +91,7 @@ namespace Dacs7.Protocols.SiemensPlc
         }
 
 
-        public static S7UserDataDatagram BuildAlarmUpdateRequest(SiemensPlcProtocolContext s7Context, ushort id, bool activate = true)
+        public static S7UserDataDatagram BuildAlarmUpdateRequest(SiemensPlcProtocolContext context, ushort id, bool activate = true)
         {
             var data = new byte[] { 0x86, 0x00, 0x61, 0x73, 0x6d, 0x65, 0x73, 0x73, 0x00, 0x00, activate ? (byte)0x09 : (byte)0x08, 0x00 };
             var result = new S7UserDataDatagram
@@ -129,7 +132,7 @@ namespace Dacs7.Protocols.SiemensPlc
             mem.Span[offset++] = datagram.Data.ReturnCode;
             mem.Span[offset++] = datagram.Data.TransportSize;
             BinaryPrimitives.WriteUInt16BigEndian(mem.Slice(offset, 2).Span, datagram.Data.UserDataLength);
-            datagram.Data.Data.CopyTo(mem.Slice(offset+2, datagram.Data.UserDataLength));
+            datagram.Data.Data.CopyTo(mem.Slice(offset + 2, datagram.Data.UserDataLength));
             return result;
         }
 

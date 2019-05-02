@@ -38,10 +38,10 @@ namespace Dacs7Cli
                             Trace = traceOption.HasValue(),
                             Address = addressOption.HasValue() ? addressOption.Value() : "localhost",
                             RegisterItems = registerOption.HasValue(),
-                            Loops = loopsOption.HasValue() ? Int32.Parse(loopsOption.Value()) : 1,
-                            Wait = waitOption.HasValue() ? Int32.Parse(waitOption.Value()) : 0,
+                            Loops = loopsOption.HasValue() ? int.Parse(loopsOption.Value()) : 1,
+                            Wait = waitOption.HasValue() ? int.Parse(waitOption.Value()) : 0,
                             Tags = tagsArguments.Values,
-                            MaxJobs = maxJobsOption.HasValue() ? Int32.Parse(maxJobsOption.Value()) : 10,
+                            MaxJobs = maxJobsOption.HasValue() ? int.Parse(maxJobsOption.Value()) : 10,
                         }.Configure();
                         var result = await Read(readOptions, readOptions.LoggerFactory);
 
@@ -78,7 +78,7 @@ namespace Dacs7Cli
                 }
 
                 var swTotal = new Stopwatch();
-                for (int i = 0; i < readOptions.Loops; i++)
+                for (var i = 0; i < readOptions.Loops; i++)
                 {
                     if (i > 0 && readOptions.Wait > 0)
                     {
@@ -93,7 +93,7 @@ namespace Dacs7Cli
                         var results = await client.ReadAsync(readOptions.Tags);
                         swTotal.Stop();
                         sw.Stop();
-                        
+
                         logger?.LogDebug($"ReadTime: {sw.Elapsed}");
 
                         var resultEnumerator = results.GetEnumerator();
@@ -136,22 +136,19 @@ namespace Dacs7Cli
             return 0;
         }
 
-        public static long ElapsedNanoSeconds(long ticks)
-        {
-            return ticks * 1000000000 / Stopwatch.Frequency;
-        }
+        public static long ElapsedNanoSeconds(long ticks) => ticks * 1000000000 / Stopwatch.Frequency;
 
         private static string GetValue(object v)
         {
-            if(v is string s)
+            if (v is string s)
             {
                 return s;
             }
-            if(v is char[] c)
+            if (v is char[] c)
             {
                 return new string(c);
             }
-            if(v != null)
+            if (v != null)
                 return v.ToString();
             return "[null]";
         }

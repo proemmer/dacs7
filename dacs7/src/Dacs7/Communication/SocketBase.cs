@@ -1,4 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+
+using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -84,10 +88,10 @@ namespace Dacs7.Communication
         {
             if (!_disableReconnect && _configuration.AutoconnectTime > 0)
             {
-                await Task.Delay(_configuration.AutoconnectTime);
+                await Task.Delay(_configuration.AutoconnectTime).ConfigureAwait(false);
                 if (!_disableReconnect)
                 {
-                    await InternalOpenAsync(true);
+                    await InternalOpenAsync(true).ConfigureAwait(false);
                 }
             }
         }

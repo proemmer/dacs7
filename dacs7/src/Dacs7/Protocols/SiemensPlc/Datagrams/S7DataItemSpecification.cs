@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using Dacs7.Domain;
 using System;
@@ -11,14 +11,14 @@ namespace Dacs7.Protocols.SiemensPlc
     internal sealed class S7DataItemSpecification
     {
 
-        public byte ReturnCode{ get; set; }
+        public byte ReturnCode { get; set; }
 
 
-        public byte TransportSize{ get; set; }
-        public ushort Length{ get; set; }
+        public byte TransportSize { get; set; }
+        public ushort Length { get; set; }
 
 
-        public Memory<byte> Data{ get; set; }
+        public Memory<byte> Data { get; set; }
 
 
         public Memory<byte> FillByte { get; set; }
@@ -32,8 +32,8 @@ namespace Dacs7.Protocols.SiemensPlc
         {
             var ts = (DataTransportSize)TransportSize;
             if (ts != DataTransportSize.OctetString && ts != DataTransportSize.Real && ts != DataTransportSize.Bit)
-                return (ushort)((ushort)Length * 8);
-            return (ushort)Length;
+                return (ushort)(Length * 8);
+            return Length;
         }
 
 
@@ -41,8 +41,8 @@ namespace Dacs7.Protocols.SiemensPlc
         {
             var ts = (DataTransportSize)TransportSize;
             if (ts != DataTransportSize.OctetString && ts != DataTransportSize.Real && ts != DataTransportSize.Bit)
-                return (ushort)((ushort)Length >> 3);  // value / 3
-            return (ushort)Length;
+                return (ushort)(Length >> 3);  // value / 3
+            return Length;
         }
         #endregion
 
@@ -66,10 +66,7 @@ namespace Dacs7.Protocols.SiemensPlc
             return fullLength;
         }
 
-        public ushort GetSpecificationLength()
-        {
-            return (ushort)(4 + (ElementSize * Length));
-        }
+        public ushort GetSpecificationLength() => (ushort)(4 + (ElementSize * Length));
 
         public static byte GetTransportSize(Type t)
         {
@@ -122,17 +119,17 @@ namespace Dacs7.Protocols.SiemensPlc
                 return (byte)DataTransportSize.Int;
             }
 
-            if (t == typeof(ushort) )
+            if (t == typeof(ushort))
             {
                 return (byte)DataTransportSize.Byte;
             }
 
-            if (t == typeof(uint) )
+            if (t == typeof(uint))
             {
                 return (byte)DataTransportSize.Byte;
             }
 
-            if (t == typeof(Single))
+            if (t == typeof(float))
             {
                 return (byte)DataTransportSize.Real;
             }
@@ -143,7 +140,7 @@ namespace Dacs7.Protocols.SiemensPlc
         public static ushort GetDataLength(int datalength, byte transportSize)
         {
             if (transportSize != (byte)DataTransportSize.OctetString && transportSize != (byte)DataTransportSize.Real && transportSize != (byte)DataTransportSize.Bit)
-                datalength = datalength * 8;
+                datalength *= 8;
             return (ushort)datalength;
         }
 

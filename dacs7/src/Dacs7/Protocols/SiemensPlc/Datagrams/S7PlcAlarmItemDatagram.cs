@@ -1,5 +1,8 @@
-﻿using Dacs7.Domain;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
 using Dacs7.Alarms;
+using Dacs7.Domain;
 using System;
 using System.Buffers.Binary;
 using System.Globalization;
@@ -18,20 +21,20 @@ namespace Dacs7.Protocols.SiemensPlc
         /// <summary>
         /// 0x00 == going   0x01  == coming
         /// </summary>
-        public byte EventState{ get; set; }
+        public byte EventState { get; set; }
 
-        public byte State{ get; set; }
+        public byte State { get; set; }
 
-        public byte AckStateGoing{ get; set; }
+        public byte AckStateGoing { get; set; }
 
-        public byte AckStateComing{ get; set; }
+        public byte AckStateComing { get; set; }
 
 
         public IPlcAlarmDetails Coming { get; set; }
         public IPlcAlarmDetails Going { get; set; }
 
 
-        public bool IsAck => AlarmType == AlarmMessageType.Alarm_Ack;
+        public bool IsAck => AlarmType == AlarmMessageType.AlarmAck;
         public bool IsGoing => EventState == 0x00;
         public bool IsComing => EventState == 0x01;
     }
@@ -71,8 +74,8 @@ namespace Dacs7.Protocols.SiemensPlc
 
         internal static DateTime GetDt(Span<byte> b)
         {
-            var str = string.Format("{2:X2}/{1:X2}/{0:X2} {3:X2}:{4:X2}:{5:X2}.{6:X2}{7:X2}", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
-            if (DateTime.TryParseExact(str, "dd/MM/yy HH:mm:ss.ffff", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+            var str = string.Format(CultureInfo.InvariantCulture, "{2:X2}/{1:X2}/{0:X2} {3:X2}:{4:X2}:{5:X2}.{6:X2}{7:X2}", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
+            if (DateTime.TryParseExact(str, "dd/MM/yy HH:mm:ss.ffff", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
                 return parsedDate;
             return DateTime.MinValue;
         }

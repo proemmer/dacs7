@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using System;
 using System.Buffers;
@@ -25,7 +25,7 @@ namespace Dacs7.Protocols.SiemensPlc
             {
                 Parameter = new S7CommSetupParameterDatagram
                 {
-                    MaxAmQCalling =  context.MaxAmQCalling,
+                    MaxAmQCalling = context.MaxAmQCalling,
                     MaxAmQCalled = context.MaxAmQCalled,
                     PduLength = context.PduSize
                 }
@@ -44,7 +44,6 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7CommSetupAckDataDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var span = data.Span;
             var result = new S7CommSetupAckDataDatagram
             {
                 Header = S7AckDataDatagram.TranslateFromMemory(data),

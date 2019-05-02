@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -43,7 +43,7 @@ namespace Dacs7.ReadWrite
         public static async Task<IEnumerable<DataValue>> ReadAsync(this Dacs7Client client, IEnumerable<ReadItem> values)
         {
             var readItems = values as IList<ReadItem> ?? new List<ReadItem>(values);
-            var result = await client.ProtocolHandler.ReadAsync(readItems);
+            var result = await client.ProtocolHandler.ReadAsync(readItems).ConfigureAwait(false);
             return new List<DataValue>(result.Select((entry) => new DataValue(entry.Key, entry.Value)));
         }
 

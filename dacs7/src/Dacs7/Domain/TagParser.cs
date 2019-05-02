@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using System;
 using System.Buffers;
@@ -157,7 +157,7 @@ namespace Dacs7.Domain
                     {
                         // TODO:  !!!!!!!
 #if SPANSUPPORT
-                        if (Int32.TryParse(input, out var offset))
+                        if (int.TryParse(input, out var offset))
 #else
                         if (TryConvertSpanToInt32(input, out var offset))
 #endif
@@ -182,7 +182,7 @@ namespace Dacs7.Domain
                         if (input.IsEmpty) return true;
                         // TODO:  !!!!!!!
 #if SPANSUPPORT
-                        if (UInt16.TryParse(input, out var length))
+                        if (ushort.TryParse(input, out var length))
 #else
                         if (TryConvertSpanToUShort(input, out var length))
 #endif
@@ -286,7 +286,7 @@ namespace Dacs7.Domain
                     vtype = rType = typeof(bool);
                     rType = length > 1 ? typeof(bool[]) : vtype;
 #if SPANSUPPORT
-                    offset = ((offset * 8) + Int32.Parse(type.Slice(1)));
+                    offset = ((offset * 8) + int.Parse(type.Slice(1)));
 #else
                     offset = ((offset * 8) + SpanToInt(type.Slice(1)));
 #endif

@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using System;
 using System.Collections.Generic;
@@ -12,7 +12,7 @@ namespace Dacs7.Helper
 {
     public static class Converter
     {
-        private const string HexDigits = "0123456789ABCDEF";
+        private const string _hexDigits = "0123456789ABCDEF";
 
         /// <summary>
         /// Converts a number to a byte array  from byte ... Single
@@ -20,18 +20,22 @@ namespace Dacs7.Helper
         /// </summary>
         /// <typeparam name="T">byte ... Single</typeparam>
         /// <param name="value">Value to convert</param>
-        /// <returns>The value as <see cref="T:byte[]"/></returns>
-        public static byte[] SetSwap<T>(this T value)
+        /// <returns>The value as <see cref="byte[]"/></returns>
+        public static byte[] SetSwap<T>(this T value, IFormatProvider formatProvider = null)
         {
+            if(formatProvider == null)
+            {
+                formatProvider = CultureInfo.InvariantCulture;
+            }
             byte[] buffer = null;
             object temp = value;
             if (value is uint)
             {
-                buffer = BitConverter.GetBytes(SwapDWord(Convert.ToUInt32(temp)));
+                buffer = BitConverter.GetBytes(SwapDWord(Convert.ToUInt32(temp, formatProvider)));
             }
             else if (value is int)
             {
-                buffer = BitConverter.GetBytes(SwapDInt(Convert.ToInt32(temp)));
+                buffer = BitConverter.GetBytes(SwapDInt(Convert.ToInt32(temp, formatProvider)));
             }
             else if (value is byte)
             {
@@ -40,15 +44,15 @@ namespace Dacs7.Helper
             }
             else if (value is ushort)
             {
-                buffer = BitConverter.GetBytes(SwapWord(Convert.ToUInt16(temp)));
+                buffer = BitConverter.GetBytes(SwapWord(Convert.ToUInt16(temp, formatProvider)));
             }
             else if (value is short)
             {
-                buffer = BitConverter.GetBytes(SwapInt(Convert.ToInt16(temp)));
+                buffer = BitConverter.GetBytes(SwapInt(Convert.ToInt16(temp, formatProvider)));
             }
             else if (value is float)
             {
-                buffer = BitConverter.GetBytes(SwapSingle(Convert.ToSingle(temp)));
+                buffer = BitConverter.GetBytes(SwapSingle(Convert.ToSingle(temp, formatProvider)));
             }
             return buffer;
         }
@@ -59,7 +63,7 @@ namespace Dacs7.Helper
         /// </summary>
         /// <typeparam name="T">byte ... Single</typeparam>
         /// <param name="value">Value to convert</param>
-        /// <returns>The value as <see cref="T:byte[]"/></returns>
+        /// <returns>The value as <see cref="byte[]"/></returns>
         public static byte[] SetNoSwap<T>(this T value)
         {
             byte[] buffer = null;
@@ -94,7 +98,7 @@ namespace Dacs7.Helper
         }
 
         /// <summary>
-        /// Converts a give <see cref="T:IEnumerable{byte}"/> to T - with swapped bytes
+        /// Converts a give <see cref="IEnumerable{byte}"/> to T - with swapped bytes
         /// </summary>
         /// <typeparam name="T">byte ... Single</typeparam>
         /// <param name="buffer">buffer to extract the value</param>
@@ -103,7 +107,7 @@ namespace Dacs7.Helper
         public static T GetSwap<T>(this IEnumerable<byte> buffer, int offset = 0) => buffer.Skip(offset).Take(sizeof(float)).ToArray().GetSwap<T>();
 
         /// <summary>
-        /// Converts a give <see cref="T:byte[]"/> to T- with swapped bytes
+        /// Converts a give <see cref="byte[]"/> to T- with swapped bytes
         /// </summary>
         /// <typeparam name="T">byte ... Single</typeparam>
         /// <param name="buffer">buffer to extract the value</param>
@@ -142,7 +146,7 @@ namespace Dacs7.Helper
         }
 
         /// <summary>
-        /// Converts a give <see cref="T:IEnumerable{byte}"/> to T- with not swapped bytes
+        /// Converts a give <see cref="IEnumerable{byte}"/> to T- with not swapped bytes
         /// </summary>
         /// <typeparam name="T">byte ... Single</typeparam>
         /// <param name="buffer">buffer to extract the value</param>
@@ -152,7 +156,7 @@ namespace Dacs7.Helper
 
 
         /// <summary>
-        /// Converts a give <see cref="T:byte[]"/>  to T- with not swapped bytes
+        /// Converts a give <see cref="byte[]"/>  to T- with not swapped bytes
         /// </summary>
         /// <typeparam name="T">byte ... Single</typeparam>
         /// <param name="buffer">buffer to extract the value</param>
@@ -398,7 +402,7 @@ namespace Dacs7.Helper
             int bt2 = b[offset + 1];
             var neg = (bt1 & 0xf0) == 0xf0;
 
-            bt1 = bt1 & 0x0f;
+            bt1 &= 0x0f;
             bt2 = (bt2 / 0x10) * 10 + (bt2 & 0x0f % 0x10);
 
             return (neg ? (bt1 * 100 + bt2) * -1 : bt1 * 100 + bt2);
@@ -437,7 +441,7 @@ namespace Dacs7.Helper
             int bt4 = b[offset + 3];
             var neg = (bt1 & 0xf0) == 0xf0;
 
-            bt1 = bt1 & 0x0f;
+            bt1 &= 0x0f;
             bt2 = (bt2 / 0x10) * 10 + (bt2 % 0x10);
             bt3 = (bt3 / 0x10) * 10 + (bt3 % 0x10);
             bt4 = (bt4 / 0x10) * 10 + (bt4 % 0x10);
@@ -506,7 +510,7 @@ namespace Dacs7.Helper
                 return string.Empty;
             var sb = new StringBuilder(arr.Count() * (2 + separator.Length));
             foreach (var b in reverse ? arr.Reverse() : arr)
-                sb.AppendFormat("{0:X2}{1}", b, separator);
+                sb.AppendFormat(CultureInfo.InvariantCulture,"{0:X2}{1}", b, separator);
             return sb.ToString(0, sb.Length - separator.Length);
         }
 
@@ -515,7 +519,7 @@ namespace Dacs7.Helper
         /// </summary>
         /// <param name="hexString"></param>
         /// <returns></returns>
-        public static byte[] HexGetBytes(this string hexString) => (HexGetBytes(hexString, out var discarded));
+        public static byte[] HexGetBytes(this string hexString) => (HexGetBytes(hexString, out _));
 
         /// <summary>
         /// Extract a value from the hex string
@@ -566,7 +570,7 @@ namespace Dacs7.Helper
                     }
                 }
 
-                value = Convert.ChangeType(val, typeof(T));
+                value = Convert.ChangeType(val, typeof(T), CultureInfo.InvariantCulture);
             }
             catch
             { }
@@ -578,7 +582,7 @@ namespace Dacs7.Helper
         /// </summary>
         /// <param name="binString"></param>
         /// <returns></returns>
-        public static byte[] BinGetBytes(this string binString) => (BinGetBytes(binString, out var discarded));
+        public static byte[] BinGetBytes(this string binString) => (BinGetBytes(binString, out _));
 
         /// <summary>
         /// Converts a binary string to a value of T
@@ -607,7 +611,7 @@ namespace Dacs7.Helper
                     }
                 }
 
-                value = Convert.ChangeType(val, typeof(T));
+                value = Convert.ChangeType(val, typeof(T), CultureInfo.InvariantCulture);
             }
             catch { }
             return (T)value;
@@ -621,7 +625,7 @@ namespace Dacs7.Helper
         /// <returns>DateTime</returns>
         public static DateTime ToDateTime(this byte[] data, int offset = 0)
         {
-            var str = string.Format("{2}/{1}/{0} {3}:{4}:{5}.{6}{7}",
+            var str = string.Format(CultureInfo.InvariantCulture, "{2}/{1}/{0} {3}:{4}:{5}.{6}{7}",
                 data.ToHexString("", offset, 1),
                 data.ToHexString("", offset + 1, 1),
                 data.ToHexString("", offset + 2, 1),
@@ -643,7 +647,7 @@ namespace Dacs7.Helper
         /// <returns></returns>
         public static bool IsInHexFormat(this string hexString) => hexString.All(IsHexDigit);
 
-        private static bool IsHexDigit(char c) => HexDigits.IndexOf(c) >= 0;
+        private static bool IsHexDigit(char c) => _hexDigits.IndexOf(c) >= 0;
 
         /// <summary>
         /// Creates a byte array from the hexadecimal string. Each two characters are combined
@@ -684,7 +688,7 @@ namespace Dacs7.Helper
                 if (b2 > 9)
                     b2 -= 7;
                 bytes[i] = (byte)(b1 * 16 + b2);
-                j = j + 2;
+                j += 2;
             }
             return bytes;
         }

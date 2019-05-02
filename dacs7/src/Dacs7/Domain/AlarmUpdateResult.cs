@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using System;
 using System.Collections.Generic;
@@ -10,6 +10,7 @@ namespace Dacs7.Alarms
     public class AlarmUpdateResult : IDisposable
     {
         private readonly Func<Task> _closeAction;
+        private bool _disposed;
 
         public AlarmUpdateResult(bool channelCompleted, Func<Task> closeAction) : this(channelCompleted, null, closeAction) => ChannelClosed = channelCompleted;
 
@@ -28,9 +29,23 @@ namespace Dacs7.Alarms
 
         public void Dispose()
         {
-            CloseUpdateChannel().ConfigureAwait(false)
-                                .GetAwaiter()
-                                .GetResult();
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                CloseUpdateChannel().ConfigureAwait(false)
+                                    .GetAwaiter()
+                                    .GetResult();
+            }
+
+            _disposed = true;
         }
     }
 }

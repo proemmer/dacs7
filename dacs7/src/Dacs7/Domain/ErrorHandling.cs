@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using Dacs7.Helper;
 using System;
@@ -10,15 +10,9 @@ namespace Dacs7
     public static class ErrorHandling
     {
 
-        public static string ResolveErrorCode<T>(byte b) where T : struct
-        {
-            return Enum.IsDefined(typeof(T), b) ? ResolveErrorCode<T>(Enum.GetName(typeof(T), b)) : b.ToString(CultureInfo.InvariantCulture);
-        }
+        public static string ResolveErrorCode<T>(byte b) where T : struct => Enum.IsDefined(typeof(T), b) ? ResolveErrorCode<T>(Enum.GetName(typeof(T), b)) : b.ToString(CultureInfo.InvariantCulture);
 
-        public static string ResolveErrorCode<T>(ushort sh) where T : struct
-        {
-            return Enum.IsDefined(typeof(T), sh) ? ResolveErrorCode<T>(Enum.GetName(typeof(T), sh)) : sh.ToString(CultureInfo.InvariantCulture);
-        }
+        public static string ResolveErrorCode<T>(ushort sh) where T : struct => Enum.IsDefined(typeof(T), sh) ? ResolveErrorCode<T>(Enum.GetName(typeof(T), sh)) : sh.ToString(CultureInfo.InvariantCulture);
 
         public static string ResolveErrorCode<T>(string s) where T : struct
         {

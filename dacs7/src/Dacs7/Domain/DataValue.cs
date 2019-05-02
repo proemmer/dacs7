@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using Dacs7.Domain;
 using Dacs7.Protocols.SiemensPlc;
@@ -9,7 +9,7 @@ namespace Dacs7
 {
     public class DataValue
     {
-        private ReadItem _meta;
+        private readonly ReadItem _meta;
         private object _value;
 
 

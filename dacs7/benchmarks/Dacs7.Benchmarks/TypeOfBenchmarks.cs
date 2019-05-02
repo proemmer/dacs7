@@ -22,37 +22,37 @@ namespace Dacs7.Benchmarks
         public static Type CharArray = typeof(char[]);
         public static Type CharList = typeof(List<char>);
 
-        public static Type UInt16 = typeof(UInt16);
-        public static Type UInt16Array = typeof(UInt16[]);
-        public static Type UInt16List = typeof(List<UInt16>);
+        public static Type UInt16 = typeof(ushort);
+        public static Type UInt16Array = typeof(ushort[]);
+        public static Type UInt16List = typeof(List<ushort>);
 
-        public static Type Int16 = typeof(Int16);
-        public static Type Int16Array = typeof(Int16[]);
-        public static Type Int16List = typeof(List<Int16>);
+        public static Type Int16 = typeof(short);
+        public static Type Int16Array = typeof(short[]);
+        public static Type Int16List = typeof(List<short>);
 
-        public static Type UInt32 = typeof(UInt32);
-        public static Type UInt32Array = typeof(UInt32[]);
-        public static Type UInt32List = typeof(List<UInt32>);
+        public static Type UInt32 = typeof(uint);
+        public static Type UInt32Array = typeof(uint[]);
+        public static Type UInt32List = typeof(List<uint>);
 
-        public static Type Int32 = typeof(Int32);
-        public static Type Int32Array = typeof(Int32[]);
-        public static Type Int32List = typeof(List<Int32>);
+        public static Type Int32 = typeof(int);
+        public static Type Int32Array = typeof(int[]);
+        public static Type Int32List = typeof(List<int>);
 
-        public static Type UInt64 = typeof(UInt64);
-        public static Type UInt64Array = typeof(UInt64[]);
-        public static Type UInt64List = typeof(List<UInt64>);
+        public static Type UInt64 = typeof(ulong);
+        public static Type UInt64Array = typeof(ulong[]);
+        public static Type UInt64List = typeof(List<ulong>);
 
-        public static Type Int64 = typeof(Int64);
-        public static Type Int64Array = typeof(Int64[]);
-        public static Type Int64List = typeof(List<Int64>);
+        public static Type Int64 = typeof(long);
+        public static Type Int64Array = typeof(long[]);
+        public static Type Int64List = typeof(List<long>);
 
-        public static Type Single = typeof(Single);
-        public static Type SingleArray = typeof(Single[]);
-        public static Type SingleList = typeof(List<Single>);
+        public static Type Single = typeof(float);
+        public static Type SingleArray = typeof(float[]);
+        public static Type SingleList = typeof(List<float>);
 
         public static Type Bool = typeof(bool);
 
-        [Params(typeof(List<Single>), typeof(byte), typeof(char), typeof(bool), typeof(TypeOfBenchmarks))]
+        [Params(typeof(List<float>), typeof(byte), typeof(char), typeof(bool), typeof(TypeOfBenchmarks))]
         public Type Type;
 
         [Benchmark]
@@ -62,13 +62,13 @@ namespace Dacs7.Benchmarks
                 Type == typeof(Memory<byte>) ||
                 Type == typeof(string) || Type == typeof(bool) ||
                 Type == typeof(char) || Type == typeof(char[]) || Type == typeof(List<char>) ||
-                Type == typeof(UInt16) || Type == typeof(UInt16[]) || Type == typeof(List<UInt16>) ||
-                Type == typeof(UInt32) || Type == typeof(UInt32[]) || Type == typeof(List<UInt32>) ||
-                Type == typeof(UInt64) || Type == typeof(UInt64[]) || Type == typeof(List<UInt64>) ||
-                Type == typeof(Int16) || Type == typeof(Int16[]) || Type == typeof(List<Int16>) ||
-                Type == typeof(Int32) || Type == typeof(Int32[]) || Type == typeof(List<Int32>) ||
-                Type == typeof(Int64) || Type == typeof(Int64[]) || Type == typeof(List<Int64>) ||
-                Type == typeof(Single) || Type == typeof(Single[]) || Type == typeof(List<Single>))
+                Type == typeof(ushort) || Type == typeof(ushort[]) || Type == typeof(List<ushort>) ||
+                Type == typeof(uint) || Type == typeof(uint[]) || Type == typeof(List<uint>) ||
+                Type == typeof(ulong) || Type == typeof(ulong[]) || Type == typeof(List<ulong>) ||
+                Type == typeof(short) || Type == typeof(short[]) || Type == typeof(List<short>) ||
+                Type == typeof(int) || Type == typeof(int[]) || Type == typeof(List<int>) ||
+                Type == typeof(long) || Type == typeof(long[]) || Type == typeof(List<long>) ||
+                Type == typeof(float) || Type == typeof(float[]) || Type == typeof(List<float>))
             {
                 return true;
             }

@@ -1,4 +1,7 @@
-﻿using System.Net;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using System.Net;
 using System.Net.Sockets;
 
 namespace Dacs7.Communication

@@ -36,7 +36,7 @@ namespace Dacs7.Helper
         /// <devdoc>
         ///    <para>Initializes a new instance of the <see cref='System.ComponentModel.DescriptionAttribute'/> class.</para>
         /// </devdoc>
-        public DescriptionAttribute(string description) => this._description = description;
+        public DescriptionAttribute(string description) => _description = description;
 
         /// <devdoc>
         ///    <para>Gets the description stored in this attribute.</para>

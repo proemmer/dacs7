@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using System;
 using System.Buffers;
@@ -123,7 +123,7 @@ namespace Dacs7.Protocols.Rfc1006
             span[offset++] = datagram.ParmCodeDestTsap;
             span[offset++] = datagram.DestTsapLength;
             datagram.DestTsap.CopyTo(mem.Slice(offset));
-            offset += datagram.DestTsapLength;
+            //offset += datagram.DestTsapLength;
 
             return result;
         }

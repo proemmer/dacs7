@@ -1,7 +1,4 @@
-﻿
-
-using Dacs7;
-using Dacs7.ReadWrite;
+﻿using Dacs7.ReadWrite;
 using Dacs7Tests.ServerHelper;
 using System;
 using System.Collections.Generic;
@@ -56,7 +53,7 @@ namespace Dacs7.Tests
         [Fact]
         public async Task CreateWriteReferenceTest()
         {
-          
+
             await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 var item = WriteItem.Create("DB210", 192, false);
@@ -136,7 +133,7 @@ namespace Dacs7.Tests
             {
                 const string datablock = "DB1";
                 var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10006, (uint)0),
-                                                            WriteItem.Create(datablock, 10010, (int)0))).ToArray();
+                                                            WriteItem.Create(datablock, 10010, 0))).ToArray();
 
 
                 var results = (await client.ReadAsync(ReadItem.Create<uint>(datablock, 10006),
@@ -147,10 +144,10 @@ namespace Dacs7.Tests
                 Assert.Equal(typeof(uint), results[0].Type);
                 Assert.Equal((uint)0, (uint)results[0].Value);
                 Assert.Equal(typeof(int), results[1].Type);
-                Assert.Equal((int)0, (int)results[1].Value);
+                Assert.Equal(0, (int)results[1].Value);
 
                 writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10006, (uint)15),
-                                                        WriteItem.Create(datablock, 10010, (int)25))).ToArray();
+                                                        WriteItem.Create(datablock, 10010, 25))).ToArray();
 
                 results = (await client.ReadAsync(ReadItem.Create<uint>(datablock, 10006),
                                                   ReadItem.Create<int>(datablock, 10010))).ToArray();
@@ -159,10 +156,10 @@ namespace Dacs7.Tests
                 Assert.Equal(typeof(uint), results[0].Type);
                 Assert.Equal((ushort)15, (uint)results[0].Value);
                 Assert.Equal(typeof(int), results[1].Type);
-                Assert.Equal((int)25, (int)results[1].Value);
+                Assert.Equal(25, (int)results[1].Value);
 
                 writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10006, (uint)0),
-                                                            WriteItem.Create(datablock, 10010, (int)0))).ToArray();
+                                                            WriteItem.Create(datablock, 10010, 0))).ToArray();
 
             });
         }
@@ -173,25 +170,25 @@ namespace Dacs7.Tests
             await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
                 const string datablock = "DB1";
-                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10014, (Single)0.0))).ToArray();
+                var writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10014, (float)0.0))).ToArray();
 
 
-                var results = (await client.ReadAsync(ReadItem.Create<Single>(datablock, 10014))).ToArray();
+                var results = (await client.ReadAsync(ReadItem.Create<float>(datablock, 10014))).ToArray();
 
 
                 Assert.Single(results);
-                Assert.Equal(typeof(Single), results[0].Type);
-                Assert.Equal((Single)0.0, (Single)results[0].Value);
+                Assert.Equal(typeof(float), results[0].Type);
+                Assert.Equal((float)0.0, (float)results[0].Value);
 
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10014, (Single)0.5))).ToArray();
+                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10014, (float)0.5))).ToArray();
 
-                results = (await client.ReadAsync(ReadItem.Create<Single>(datablock, 10014))).ToArray();
+                results = (await client.ReadAsync(ReadItem.Create<float>(datablock, 10014))).ToArray();
 
                 Assert.Single(results);
-                Assert.Equal(typeof(Single), results[0].Type);
-                Assert.Equal((Single)0.5, (Single)results[0].Value);
+                Assert.Equal(typeof(float), results[0].Type);
+                Assert.Equal((float)0.5, (float)results[0].Value);
 
-                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10014, (Single)0.0))).ToArray();
+                writeResults = (await client.WriteAsync(WriteItem.Create(datablock, 10014, (float)0.0))).ToArray();
 
             });
         }
@@ -392,7 +389,7 @@ namespace Dacs7.Tests
             const string datablock = "DB141";
             await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
-                
+
                 var data = new List<ReadItem>{ ReadItem.Create<char[]>(datablock, 28, 14),
                                                ReadItem.Create<char[]>(datablock, 46, 10),
                                                ReadItem.Create<char[]>(datablock, 106, 10),
@@ -490,7 +487,7 @@ namespace Dacs7.Tests
             await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
 
-                var data = new List<WriteItem>{ WriteItem.Create<string>(datablock, 12, 8, "12345678")};
+                var data = new List<WriteItem> { WriteItem.Create<string>(datablock, 12, 8, "12345678") };
 
                 var writeResults = await client.WriteAsync(data);
                 Assert.Equal(data.Count, writeResults.Count());
@@ -527,7 +524,7 @@ namespace Dacs7.Tests
                 var readResults2 = await client.ReadAsync(data1);
 
 
-                Assert.False( readResults1.FirstOrDefault().Data.Span.SequenceEqual(readResults2.FirstOrDefault().Data.Span));
+                Assert.False(readResults1.FirstOrDefault().Data.Span.SequenceEqual(readResults2.FirstOrDefault().Data.Span));
 
 
             }, 240);

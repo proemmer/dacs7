@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using System;
 using System.Buffers;
@@ -16,13 +16,13 @@ namespace Dacs7.Protocols.Rfc1006
     {
         private int _frameSize;
 
-        private const byte Prefix0 = 0x03;
-        private const byte Prefix1 = 0x00;
-        private const byte TpduSizeMin = 0x04;
-        private const byte TpduSizeMax = 0x0e;
-        private const int DefaultFrameSize = 1024;
-        private const int DatagramTypeOffset = 5;
-        private const int TpktHeaderSize = 4;
+        private const byte _prefix0 = 0x03;
+        private const byte _prefix1 = 0x00;
+        private const byte _tpduSizeMin = 0x04;
+        private const byte _tpduSizeMax = 0x0e;
+        private const int _defaultFrameSize = 1024;
+        private const int _datagramTypeOffset = 5;
+        private const int _tpktHeaderSize = 4;
 
 
 
@@ -54,20 +54,20 @@ namespace Dacs7.Protocols.Rfc1006
         /// <summary>
         /// The minimum data size we need to detect the datagram type
         /// </summary>
-        public static int MinimumBufferSize => TpktHeaderSize + 2;
+        public static int MinimumBufferSize => _tpktHeaderSize + 2;
 
         /// <summary>
         /// The size of the data header
         /// </summary>
-        public static int DataHeaderSize => TpktHeaderSize + 3;
+        public static int DataHeaderSize => _tpktHeaderSize + 3;
 
-        public Rfc1006ProtocolContext() => FrameSize = DefaultFrameSize;
+        public Rfc1006ProtocolContext() => FrameSize = _defaultFrameSize;
 
-        public void CalculateTpduSize(int frameSize = DefaultFrameSize)
+        public void CalculateTpduSize(int frameSize = _defaultFrameSize)
         {
             var b = -1;
-            for (var i = frameSize; i > 0; i = i >> 1, ++b) ;
-            b = Math.Max(TpduSizeMin, Math.Min(TpduSizeMax, b));
+            for (var i = frameSize; i > 0; i >>= 1, ++b) ;
+            b = Math.Max(_tpduSizeMin, Math.Min(_tpduSizeMax, b));
             SizeTpduReceiving = new byte[] { (byte)b };
             SizeTpduSending = new byte[] { (byte)b };
             _frameSize = frameSize;
@@ -78,7 +78,7 @@ namespace Dacs7.Protocols.Rfc1006
             const int optionsMinLength = 7;
             const int TpduCrWithoutProperties = 6;
             var tmp = Convert.ToUInt16(optionsMinLength + context.SourceTsap.Length + context.DestTsap.Length + TpduCrWithoutProperties);
-            length = (ushort)(tmp + TpktHeaderSize + 1); // add 1 because li is without li
+            length = (ushort)(tmp + _tpktHeaderSize + 1); // add 1 because li is without li
             li = Convert.ToByte(tmp);
         }
 
@@ -94,9 +94,9 @@ namespace Dacs7.Protocols.Rfc1006
         {
 
             var span = memory.Span;
-            if (span[0] == Prefix0 && span[1] == Prefix1)
+            if (span[0] == _prefix0 && span[1] == _prefix1)
             {
-                switch (span[DatagramTypeOffset])
+                switch (span[_datagramTypeOffset])
                 {
                     case 0xd0:
                         datagramType = typeof(ConnectionConfirmedDatagram);// CC

@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using System;
 using System.Collections.Generic;
@@ -34,7 +34,7 @@ namespace Dacs7
                 {
                     if (cts != null) cts.Dispose();
                     return t.Result;
-                });
+                }, TaskScheduler.Default);
             }
             return WaitAsync(CancellationToken.None);
         }
@@ -80,7 +80,7 @@ namespace Dacs7
                             registration.Dispose();
                         }
                         return t.Result;
-                    });
+                    }, TaskScheduler.Default);
                 }
             }
         }

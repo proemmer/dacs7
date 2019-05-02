@@ -1,5 +1,5 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License in the project root for license information.
+// See License in the project root for license information.
 
 using Dacs7.Communication;
 using Dacs7.Communication.Socket;
@@ -9,6 +9,7 @@ using Dacs7.Protocols.SiemensPlc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -198,7 +199,7 @@ namespace Dacs7
         {
             var addressPort = address.Split(':');
             var portRackSlot = addressPort.Length > 1 ?
-                                        addressPort[1].Split(',').Select(x => int.Parse(x)).ToArray() :
+                                        addressPort[1].Split(',').Select(x => int.Parse(x, NumberStyles.Integer, CultureInfo.InvariantCulture)).ToArray() :
                                         new int[] { 102, 0, 2 };
             host = addressPort[0];
             port = portRackSlot.Length > 0 ? portRackSlot[0] : 102;

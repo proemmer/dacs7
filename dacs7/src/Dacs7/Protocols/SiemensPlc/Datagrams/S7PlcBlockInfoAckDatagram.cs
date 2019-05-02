@@ -1,8 +1,12 @@
-﻿using System;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using Dacs7.Metadata;
+using System;
 using System.Buffers.Binary;
 using System.Text;
-using Dacs7.Helper;
-using Dacs7.Metadata;
+
+
 
 namespace Dacs7.Protocols.SiemensPlc
 {
@@ -56,16 +60,13 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
 
-    
-        public static string GetCheckSum(int offset, byte[] b)
-        {
-            return string.Format("0x{0:X2}{1:X2}", b[offset + 1], b[offset]);
-        }
+
+        public static string GetCheckSum(int offset, byte[] b) => $"0x{b[offset + 1]:X2}{b[offset]:X2}";
 
         public static string GetCheckSum(int checksum)
         {
             var b = BitConverter.GetBytes(checksum);
-            return string.Format("0x{0:X2}{1:X2}", b[1], b[0]);
+            return $"0x{b[1]:X2}{b[0]:X2}";
         }
 
 
@@ -124,7 +125,7 @@ namespace Dacs7.Protocols.SiemensPlc
                     result.Unknown2 = span[offset++];
                     result.Checksum = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
                     result.Reserved1 = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(offset, 4)); offset += 4;
-                    result.Reserved2 = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(offset, 4)); offset += 4;
+                    result.Reserved2 = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(offset, 4));
                 }
             }
             return result;

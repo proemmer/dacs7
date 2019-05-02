@@ -35,7 +35,7 @@ namespace Dacs7Cli
                         }.Configure();
                         var result = await Read(addressOption.HasValue() ? addressOption.Value() : "localhost",
                                                 maxJobsOption.HasValue() ? ushort.Parse(maxJobsOption.Value()) : (ushort)10,
-                                                blockArgument.Value, 
+                                                blockArgument.Value,
                                                 options.LoggerFactory);
 
                         await Task.Delay(500);
@@ -52,7 +52,7 @@ namespace Dacs7Cli
 
 
 
-        private static async Task<int> Read(string address,  ushort maxJobs, string block, ILoggerFactory loggerFactory)
+        private static async Task<int> Read(string address, ushort maxJobs, string block, ILoggerFactory loggerFactory)
         {
             var client = new Dacs7Client(address, PlcConnectionType.Pg, 5000, loggerFactory)
             {
@@ -97,7 +97,7 @@ namespace Dacs7Cli
         {
             var type = input.Substring(0, input.Count(x => x >= 'A' && x <= 'Z' || x >= 'a' && x <= 'z')).ToUpper();
             var number = input.Substring(type.Length).Trim();
-            if (int.TryParse(number, out int blockNumber))
+            if (int.TryParse(number, out var blockNumber))
             {
                 return (Enum.Parse<PlcBlockType>(type, true), blockNumber);
             }
