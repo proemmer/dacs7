@@ -103,35 +103,23 @@ namespace Dacs7.Protocols
         }
 
         /// <summary>
-        /// Close al open wait handlers and the transport channel
+        /// Close all open wait handlers and the transport channel
         /// </summary>
         /// <returns></returns>
         public async Task CloseAsync()
         {
             _closeCalled = true;
-            foreach (var item in _writeHandler)
-            {
-                item.Value.Event?.Set(null);
-            }
-            foreach (var item in _readHandler)
-            {
-                item.Value.Event?.Set(null);
-            }
-            foreach (var item in _blockInfoHandler)
-            {
-                item.Value.Event?.Set(null);
-            }
-            foreach (var item in _alarmHandler)
-            {
-                item.Value.Event?.Set(null);
-            }
-            if (_alarmUpdateHandler.Id != 0)
-            {
-                _alarmUpdateHandler.Event?.Set(null);
-                await DisableAlarmUpdatesAsync().ConfigureAwait(false);
-            }
+            await CanclePendingEvents().ConfigureAwait(false);
             await _transport.Client.CloseAsync().ConfigureAwait(false);
             await Task.Delay(1).ConfigureAwait(false); // This ensures that the user can call connect after reconnect. (Otherwise he has to sleep for a while)
+        }
+
+        private async Task CanclePendingEvents()
+        {
+            await CancelWriteHandlingAsync().ConfigureAwait(false);
+            await CancelReadHandlingAsync().ConfigureAwait(false);
+            await CancelMetaDataHandlingAsync().ConfigureAwait(false);
+            await CancelAlarmHandlingAsync().ConfigureAwait(false);
         }
 
         public void Dispose()
@@ -277,6 +265,9 @@ namespace Dacs7.Protocols
                 }
                 else if (state == ConnectionState.Closed)
                 {
+
+                    await CanclePendingEvents().ConfigureAwait(false);
+
                     if (_concurrentJobs != null)
                     {
                         _concurrentJobs?.Dispose();

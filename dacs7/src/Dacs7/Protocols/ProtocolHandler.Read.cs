@@ -18,6 +18,24 @@ namespace Dacs7.Protocols
         private static readonly List<S7DataItemSpecification> _defaultReadJobResult = new List<S7DataItemSpecification>();
         private readonly ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
 
+
+        public Task CancelReadHandlingAsync()
+        {
+            try
+            {
+                foreach (var item in _readHandler.ToList())
+                {
+                    item.Value.Event?.Set(null);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Exception while cancelling read handling. Exception was {0}", ex.Message);
+            }
+            return Task.CompletedTask;
+        }
+
+
         public async Task<Dictionary<ReadItem, S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItem> vars)
         {
             if (ConnectionState != ConnectionState.Opened)

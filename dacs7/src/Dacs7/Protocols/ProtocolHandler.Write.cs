@@ -25,6 +25,23 @@ namespace Dacs7.Protocols
     {
         private readonly ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>> _writeHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>>();
 
+        public Task CancelWriteHandlingAsync()
+        {
+            try
+            {
+                foreach (var item in _writeHandler.ToList())
+                {
+                    item.Value.Event?.Set(null);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Exception while cancelling write handling. Exception was {0}", ex.Message);
+            }
+            return Task.CompletedTask;
+        }
+
+
         public async Task<IEnumerable<ItemResponseRetValue>> WriteAsync(IEnumerable<WriteItem> vars)
         {
             if (ConnectionState != ConnectionState.Opened)

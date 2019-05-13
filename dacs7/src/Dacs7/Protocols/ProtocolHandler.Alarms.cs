@@ -23,6 +23,33 @@ namespace Dacs7.Protocols
         private CallbackHandler<S7AlarmUpdateAckDatagram> _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
         private readonly ConcurrentDictionary<ushort, CallbackHandler<S7AlarmIndicationDatagram>> _alarmIndicationHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7AlarmIndicationDatagram>>();
 
+
+        public async Task CancelAlarmHandlingAsync()
+        {
+            try
+            {
+                foreach (var item in _alarmHandler.ToList())
+                {
+                    item.Value.Event?.Set(null);
+                }
+
+                foreach (var item in _alarmIndicationHandler.ToList())
+                {
+                    item.Value.Event?.Set(null);
+                }
+
+                if (_alarmUpdateHandler.Id != 0)
+                {
+                    _alarmUpdateHandler.Event?.Set(null);
+                    await DisableAlarmUpdatesAsync().ConfigureAwait(false);
+                }
+            }
+            catch(Exception ex)
+            {
+                _logger.LogWarning("Exception while cancelling alarm handling. Exception was {0}", ex.Message);
+            }
+        }
+
         public async Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync()
         {
             if (ConnectionState != ConnectionState.Opened)

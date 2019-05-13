@@ -7,6 +7,7 @@ using Dacs7.Protocols.SiemensPlc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -15,6 +16,23 @@ namespace Dacs7.Protocols
     internal sealed partial class ProtocolHandler 
     {
         private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>> _blockInfoHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>>();
+
+
+        public Task CancelMetaDataHandlingAsync()
+        {
+            try
+            {
+                foreach (var item in _blockInfoHandler.ToList())
+                {
+                    item.Value.Event?.Set(null);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Exception while cancelling metadata handling. Exception was {0}", ex.Message);
+            }
+            return Task.CompletedTask; 
+        }
 
         public async Task<S7PlcBlockInfoAckDatagram> ReadBlockInfoAsync(PlcBlockType type, int blocknumber)
         {
