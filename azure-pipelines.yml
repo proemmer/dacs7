@@ -35,7 +35,7 @@ steps:
 - template: eng/run.yml
   parameters:
     solution: './dacs7/dacs7.sln'
-    artifactNamePrefix: 'Insite.OpcUaClient'
+    artifactNamePrefix: 'dacs7'
     framework: 'netcoreapp2.2'
     runTests: 'false'
     dotnetCoreSdk: '2.2.203'
