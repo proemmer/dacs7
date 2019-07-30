@@ -11,5 +11,18 @@ namespace Dacs7
             base($"There is too much data ({actual} bytes) for a single job, please split jobs to a maximum of {expected} bytes per call!")
         {
         }
+
+        public Dacs7ToMuchDataPerCallException()
+        {
+        }
+
+        public Dacs7ToMuchDataPerCallException(string message) : base(message)
+        {
+        }
+
+        public Dacs7ToMuchDataPerCallException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
     }
 }

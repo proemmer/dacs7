@@ -37,6 +37,9 @@ namespace Dacs7
         [Description("Not implemented")]
         NotImplemented = 0x01F0,
 
+        [Description("Not implemented or frame error")]
+        NotImplementedOrFrameError = 0x8104,
+
         [Description("L7 invalid CPU state")]
         L7InvalidCpuState = 0x8001,
 

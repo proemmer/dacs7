@@ -12,6 +12,17 @@ namespace Dacs7
         public ErrorClass ErrorClass { get; private set; }
         public byte ErrorCode { get; private set; }
 
+        public Dacs7Exception()
+        {
+        }
+
+        public Dacs7Exception(string message) : base(message)
+        {
+        }
+
+        public Dacs7Exception(string message, Exception innerException) : base(message, innerException)
+        {
+        }
 
         public Dacs7Exception(byte eClass, byte code) :
             base($"No success error class and code: class: <{ResolveErrorCode<ErrorClass>(eClass)}>, code: <{code}>")
@@ -47,6 +58,7 @@ namespace Dacs7
             }
             return e.ToString();
         }
+
         #endregion
     }
 }
