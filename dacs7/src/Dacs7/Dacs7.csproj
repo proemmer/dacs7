@@ -32,8 +32,8 @@
 
 
 
-    <Version>2.1.0-beta4</Version>
-    <SignAssembly>true</SignAssembly>
+    <Version>2.1.0-beta5</Version>
+    <!--<SignAssembly>true</SignAssembly>-->
     
     
     <AssemblyOriginatorKeyFile>C:\Projects\Tools\signatures\dacs7\dacs7.snk</AssemblyOriginatorKeyFile>
