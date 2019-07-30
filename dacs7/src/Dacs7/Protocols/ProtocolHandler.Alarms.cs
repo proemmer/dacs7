@@ -46,7 +46,7 @@ namespace Dacs7.Protocols
             }
             catch(Exception ex)
             {
-                _logger.LogWarning("Exception while cancelling alarm handling. Exception was {0}", ex.Message);
+                _logger.LogWarning("Exception while canceling alarm handling. Exception was {0}", ex.Message);
             }
         }
 
@@ -72,9 +72,10 @@ namespace Dacs7.Protocols
                         using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
                         {
 
+                            CallbackHandler<S7PendingAlarmAckDatagram> cbh;
                             using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                             {
-                                var cbh = new CallbackHandler<S7PendingAlarmAckDatagram>(id);
+                                cbh = new CallbackHandler<S7PendingAlarmAckDatagram>(id);
                                 _alarmHandler.TryAdd(cbh.Id, cbh);
                                 try
                                 {
@@ -90,33 +91,33 @@ namespace Dacs7.Protocols
                                 }
                             }
 
-                            if (alarmResults == null)
+                            HandleErrorResult(id, cbh, alarmResults);
+
+                            if (alarmResults.UserData.Data.UserDataLength > 4)
                             {
-                                if (_closeCalled)
+                                if (memoryOwner == null)
                                 {
-                                    ThrowHelper.ThrowNotConnectedException();
+                                    totalLength = BinaryPrimitives.ReadUInt16BigEndian(alarmResults.UserData.Data.Data.Span.Slice(4, 2)) + 6; // 6 is the header
+                                    memoryOwner = MemoryPool<byte>.Shared.Rent(totalLength);
                                 }
-                                else
-                                {
-                                    ThrowHelper.ThrowReadTimeoutException(id);
-                                }
+
+                                alarmResults.UserData.Data.Data.CopyTo(memoryOwner.Memory.Slice(currentPosition, alarmResults.UserData.Data.Data.Length));
+                                currentPosition += alarmResults.UserData.Data.Data.Length;
+                                sequenceNumber = alarmResults.UserData.Parameter.SequenceNumber;
+                            }
+                            else
+                            {
+                                totalLength = 0;
                             }
 
-                            if (memoryOwner == null)
-                            {
-                                totalLength = BinaryPrimitives.ReadUInt16BigEndian(alarmResults.UserData.Data.Data.Span.Slice(4, 2)) + 6; // 6 is the header
-                                memoryOwner = MemoryPool<byte>.Shared.Rent(totalLength);
-                            }
-
-                            alarmResults.UserData.Data.Data.CopyTo(memoryOwner.Memory.Slice(currentPosition, alarmResults.UserData.Data.Data.Length));
-                            currentPosition += alarmResults.UserData.Data.Data.Length;
-                            sequenceNumber = alarmResults.UserData.Parameter.SequenceNumber;
                         }
                     }
                 } while (alarmResults.UserData.Parameter.LastDataUnit == 0x01);
 
-
-                alarms = S7PendingAlarmAckDatagram.TranslateFromSslData(memoryOwner.Memory, totalLength);
+                if (memoryOwner != null)
+                {
+                    alarms = S7PendingAlarmAckDatagram.TranslateFromSslData(memoryOwner.Memory, totalLength);
+                }
 
             }
             finally
@@ -125,7 +126,26 @@ namespace Dacs7.Protocols
             }
 
 
-            return alarms; // TODO:  change the IPlcAlarm interface!
+            return alarms;
+        }
+
+        private void HandleErrorResult(ushort id, CallbackHandler<S7PendingAlarmAckDatagram> cbh, S7PendingAlarmAckDatagram alarmResults)
+        {
+            if (alarmResults == null)
+            {
+                if (_closeCalled)
+                {
+                    ThrowHelper.ThrowNotConnectedException();
+                }
+                else
+                {
+                    if (cbh.Exception != null)
+                    {
+                        ThrowHelper.ThrowException(cbh.Exception);
+                    }
+                    ThrowHelper.ThrowReadTimeoutException(id);
+                }
+            }
         }
 
         public async Task<AlarmUpdateResult> ReceiveAlarmUpdatesAsync(CancellationToken ct)
@@ -233,6 +253,13 @@ namespace Dacs7.Protocols
 
             if (_alarmHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out var cbh))
             {
+                if (data.UserData.Parameter.ParamErrorCode != 0)
+                {
+                    _logger.LogError("Error while reading pending alarms for reference {0}. ParamErrorCode: {1}", data.UserData.Header.ProtocolDataUnitReference, data.UserData.Parameter.ParamErrorCode);
+                    cbh.Exception = new Dacs7ParameterException(data.UserData.Parameter.ParamErrorCode);
+                    cbh.Event.Set(null);
+                }
+
                 if (data.UserData.Data == null)
                 {
                     _logger.LogWarning("No data from pending alarm  ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);

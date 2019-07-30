@@ -20,8 +20,18 @@ namespace Dacs7
         public Type Type => _meta.ResultType;
         public Memory<byte> Data { get; }
 
+        /// <summary>
+        /// The value as an object.
+        /// </summary>
         public object Value => _value ?? (_value = _meta.ConvertMemoryToData(Data));
 
+
+        /// <summary>
+        /// Get the value converted to the generic type.
+        /// In this method there is also an validation included
+        /// </summary>
+        /// <typeparam name="T">expected result type</typeparam>
+        /// <returns></returns>
         public T GetValue<T>()
         {
             var expected = typeof(T);

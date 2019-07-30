@@ -92,7 +92,7 @@ namespace Dacs7.Protocols
                     {
                         ThrowHelper.ThrowException(cbh.Exception);
                     }
-                    ThrowHelper.ThrowWriteTimeoutException(id);
+                    ThrowHelper.ThrowReadTimeoutException(id);
                 }
             }
         }
@@ -105,7 +105,7 @@ namespace Dacs7.Protocols
             {
                 if (data.UserData.Parameter.ParamErrorCode != 0)
                 {
-                    _logger.LogError("Error while readinf blockdata for reference {0}. ParamErrorCode: {1}", data.UserData.Header.ProtocolDataUnitReference, data.UserData.Parameter.ParamErrorCode);
+                    _logger.LogError("Error while reading blockdata for reference {0}. ParamErrorCode: {1}", data.UserData.Header.ProtocolDataUnitReference, data.UserData.Parameter.ParamErrorCode);
                     cbh.Exception = new Dacs7ParameterException(data.UserData.Parameter.ParamErrorCode);
                     cbh.Event.Set(null);
                 }

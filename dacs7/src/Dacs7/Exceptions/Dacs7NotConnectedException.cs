@@ -17,5 +17,13 @@ namespace Dacs7
             base("Dacs7 has no connection to the plc!", ex)
         {
         }
+
+        public Dacs7NotConnectedException(string message) : base(message)
+        {
+        }
+
+        public Dacs7NotConnectedException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
     }
 }

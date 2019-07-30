@@ -2,7 +2,7 @@
   "profiles": {
     "Dacs7Cli": {
       "commandName": "Project",
-      "commandLineArgs": "read --address 192.168.1.60:102,0,1 -l 2000 -r  \"DB250.0,b,100\""
+      "commandLineArgs": "readalarms --address 192.168.1.60:102,0,1 -d"
     }
   }
 }
