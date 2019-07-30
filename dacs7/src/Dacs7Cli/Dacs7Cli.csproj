@@ -5,6 +5,8 @@
     <LangVersion>latest</LangVersion>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <RuntimeIdentifier>win7-x86</RuntimeIdentifier>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 
 
