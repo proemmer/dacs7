@@ -1,0 +1,14 @@
+
+parameters:
+  solution: ''
+  nugetConfig: 'nuget.config'
+  
+steps:
+
+# restore nuget packages for the solution
+- script: dotnet restore --configfile  ${{ parameters.nugetConfig }} ${{ parameters.solution }}
+  displayName: 'dotnet restore --configfile ${{ parameters.nugetConfig }} ${{ parameters.solution }}'
+
+# build solution
+- script: dotnet build --no-restore --configfile  ${{ parameters.nugetConfig }}  --configuration $(buildConfiguration) ${{ parameters.solution }}
+  displayName: 'dotnet build $(buildConfiguration) --configfile  ${{ parameters.nugetConfig }}  --output $(Build.ArtifactStagingDirectory) ${{ parameters.solution }}'

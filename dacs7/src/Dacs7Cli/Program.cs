@@ -46,7 +46,7 @@ namespace Dacs7Cli
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occured: {ex.Message}");
+                Console.WriteLine($"An error occurred: {ex.Message}");
                 return 1;
             }
 

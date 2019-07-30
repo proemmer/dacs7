@@ -1,0 +1,23 @@
+
+parameters:
+  framework: ''
+  solution: ''
+  filter: ''
+  
+steps:
+# run tests on test projects with a filter
+- task: DotNetCoreCLI@2
+  inputs:
+    command: test
+    arguments: '--configuration $(buildConfiguration) --filter "${{ parameters.filter }}" --framework ${{ parameters.framework }} ${{ parameters.solution }} --collect "Code coverage" --no-restore '
+  displayName: 'dotnet test --configuration $(buildConfiguration) --filter ${{ parameters.filter }} --framework ${{ parameters.framework }} ${{ parameters.solution }} --collect "Code coverage"'
+  condition: and(succeeded(), not(eq('${{ parameters.filter }}', '')))
+
+# run tests on test projects without filter
+- task: DotNetCoreCLI@2
+  inputs:
+    command: test
+    arguments: '--configuration $(buildConfiguration) --framework ${{ parameters.framework }} ${{ parameters.solution }} --collect "Code coverage" --no-restore '
+  displayName: 'dotnet test --configuration $(buildConfiguration) --framework ${{ parameters.framework }} ${{ parameters.solution }} --collect "Code coverage"'
+  condition: and(succeeded(), eq('${{ parameters.filter }}', ''))
+

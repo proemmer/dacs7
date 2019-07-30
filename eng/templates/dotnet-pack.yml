@@ -1,0 +1,23 @@
+
+parameters:
+  versionSuffix: ''
+  feed: 'dev'
+  solution: ''
+
+steps:
+
+# publish packages
+- script: dotnet pack --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)\packages --include-symbols  --version-suffix ${{ parameters.versionSuffix }}  ${{ parameters.solution }}
+  displayName: 'dotnet pack --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)\packages --include-symbols  --version-suffix ${{ parameters.versionSuffix }} ${{ parameters.solution }}'
+
+
+- task: NuGetCommand@2
+  displayName: push packages to ${{ parameters.feed }}
+  inputs:
+    command: 'push'
+    feedsToUse: 'select'
+    packagesToPush: '$(Build.ArtifactStagingDirectory)/packages/**/*.nupkg;!$(Build.ArtifactStagingDirectory)/packages/**/*.symbols.nupkg'
+    nuGetFeedType: 'internal'
+    publishVstsFeed: '${{ parameters.feed }}'
+    allowPackageConflicts: true
+    versioningScheme: 'off'

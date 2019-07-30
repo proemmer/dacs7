@@ -1,0 +1,45 @@
+# ASP.NET Core
+# Build and test ASP.NET Core projects targeting .NET Core.
+# Add steps that run tests, create a NuGet package, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+
+# specify triggers
+trigger:
+  branches:
+    include:
+    - master
+    - releases/*
+  paths:
+    exclude:
+    - data/*
+    - Samples/*
+    - licenses/*
+    - docfx/*
+    - IlsTools/*
+
+pr:
+  - master
+  - releases/*
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  pushAsRelease: $[startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/')]
+  nugetChannelName: 'dev'
+
+steps:
+- script: "echo Build.SourceBranch: $(Build.SourceBranch); buildConfiguration: $(buildConfiguration); pushAsRelease: $(pushAsRelease)"
+
+- template: eng/run.yml
+  parameters:
+    solution: './dacs7/dacs7.sln'
+    artifactNamePrefix: 'Insite.OpcUaClient'
+    framework: 'netcoreapp2.2'
+    runTests: 'false'
+    dotnetCoreSdk: '2.2.203'
+    nugetConfig: './dacs7/nuget.config'
+    nugetChannelName: $(nugetChannelName)
+
+    

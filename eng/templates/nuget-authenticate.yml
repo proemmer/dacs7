@@ -1,0 +1,13 @@
+
+parameters:
+  channelName: 'dev'
+  nugetConfig: 'nuget.config'
+  
+steps:
+
+# update credentials
+- task: NuGetCommand@2
+  displayName: 'Authenticate with Azure DevOps NuGet'
+  inputs:
+    command: custom
+    arguments: sources update -Name "${{ parameters.channelName }}" -Username "vsts" -Password "$(System.AccessToken)" -StorePasswordInClearText -ConfigFile ${{ parameters.nugetConfig }}

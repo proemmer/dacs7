@@ -1,0 +1,79 @@
+
+parameters:
+  solution: ''
+  publishProject: ''
+  artifactNamePrefix: ''
+  framework: ''
+  runTests: 'true'
+  dotnetCoreSdk: ''
+  nugetConfig: './NuGet.Config'
+  nugetChannelName: ''
+  testFilter: ''
+  
+  
+steps:
+
+- script: "echo solution: ${{ parameters.solution }}; dotnetCoreSdk: ${{ parameters.dotnetCoreSdk }}; nugetConfig: ${{ parameters.nugetConfig }}; nugetChannelName: ${{ parameters.nugetChannelName }}; publishProject: ${{ parameters.publishProject }}; artifactNamePrefix: ${{ parameters.artifactNamePrefix }};framework: ${{ parameters.framework }}; pushAsRelease: $(pushAsRelease); runTests: ${{ parameters.runTests }}; testFilter: ${{ parameters.testFilter }};"
+
+- task: UseDotNet@2
+  displayName: 'Use .NET Core sdk'
+  inputs:
+    packageType: sdk
+    version: '${{ parameters.dotnetCoreSdk }}'
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+  condition: and(succeeded(), ne('${{ parameters.dotnetCoreSdk }}', ''))
+
+# add nuget authentication if configured
+- ${{ if ne(parameters.nugetChannelName, '') }}:
+  - template: templates/nuget-authenticate.yml 
+    parameters: 
+      channelName: '${{ parameters.nugetChannelName }}'
+      nugetConfig: '${{ parameters.nugetConfig }}'
+
+# build the solution
+- template: templates/dotnet-build.yml 
+  parameters: 
+    solution: '${{ parameters.solution }}'
+    nugetConfig: '${{ parameters.nugetConfig }}'
+
+# run tests if configured
+- ${{ if eq(parameters.runTests, 'true') }}:
+  - template: templates/dotnet-test.yml
+    parameters: 
+      solution: '${{ parameters.solution }}'
+      framework: '${{ parameters.framework }}'
+      filter:  '${{ parameters.testFilter }}'
+
+# publish a win-x64 project if some is configured
+- ${{ if ne(parameters.publishProject, '') }}:
+  - template: templates/dotnet-publish.yml
+    parameters: 
+      runtime: 'win-x64'
+      publishProject: '${{ parameters.publishProject }}'
+      artifactNamePrefix: '${{ parameters.artifactNamePrefix }}'
+      framework: '${{ parameters.framework }}'
+
+# publish a win-x86 project if some is configured
+- ${{ if ne(parameters.publishProject, '') }}:
+  - template: templates/dotnet-publish.yml
+    parameters: 
+      runtime: 'win-x86'
+      publishProject: '${{ parameters.publishProject }}'
+      artifactNamePrefix: '${{ parameters.artifactNamePrefix }}'
+      framework: '${{ parameters.framework }}'
+
+# if this comes from master branch, create a CI build on the dev feed
+- ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/master') }}:
+  - template: templates/dotnet-pack.yml
+    parameters: 
+      versionSuffix: '$(Build.BuildNumber)'
+      feed: '${{ parameters.nugetChannelName }}'
+      solution: '${{ parameters.solution }}'
+
+# if this comes from a release branch, create a CI build on the public feed
+- ${{ if startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/') }}:
+  - template: templates/dotnet-pack.yml
+    parameters: 
+      versionSuffix: ''
+      feed: 'public'
+      solution: '${{ parameters.solution }}'

@@ -1,0 +1,22 @@
+
+parameters:
+  runtime: 'win-x64'
+  publishProject: ''
+  artifactNamePrefix: ''
+  framework: ''
+
+steps:
+
+- task: DotNetCoreCLI@2
+  inputs: 
+    command: 'publish'
+    projects:  '${{ parameters.publishProject }}'
+    publishWebProjects: false
+    arguments: '--framework ${{ parameters.framework }} --runtime ${{ parameters.runtime }} --configuration $(buildConfiguration)  --output $(Build.ArtifactStagingDirectory)\publish\${{ parameters.runtime }} '
+    zipAfterPublish: false
+  displayName: 'dotnet publish ${{ parameters.publishProject }} --framework ${{ parameters.framework }} --runtime ${{ parameters.runtime }} --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)\publish\${{ parameters.runtime }} '
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)\publish\${{ parameters.runtime }}'
+    ArtifactName: '${{ parameters.artifactNamePrefix }}.${{ parameters.runtime }}.$(Build.BuildNumber)'
