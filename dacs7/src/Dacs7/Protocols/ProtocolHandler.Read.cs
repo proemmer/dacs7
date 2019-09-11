@@ -30,7 +30,7 @@ namespace Dacs7.Protocols
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Exception while cancelling read handling. Exception was {0}", ex.Message);
+                _logger.LogWarning("Exception while canceling read handling. Exception was {0}", ex.Message);
             }
             return Task.CompletedTask;
         }

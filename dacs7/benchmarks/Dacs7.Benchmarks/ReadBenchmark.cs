@@ -2,6 +2,7 @@
 using BenchmarkDotNet.Diagnostics.Windows.Configs;
 using BenchmarkDotNet.Engines;
 using Dacs7.ReadWrite;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Dacs7.Benchmarks
@@ -21,6 +22,9 @@ namespace Dacs7.Benchmarks
 
         [Params("DB250.0,b,100", "DB250.0,b,1000", "DB250.1000,x1", "DB250.1100,w,10")]
         public string Tag { get; set; }
+
+        [Params(300)]
+        public int Loops { get; set; }
 
 
         [GlobalSetup]
@@ -43,7 +47,12 @@ namespace Dacs7.Benchmarks
         [Benchmark]
         public async Task ReadAsync()
         {
-            var results = await _client.ReadAsync(_item);
+            var results = new List<Task<IEnumerable<DataValue>>>();
+            for (int i = 0; i < Loops; i++)
+            {
+                results.Add(_client.ReadAsync(_item)); 
+            }
+            await Task.WhenAll(results.ToArray()).ConfigureAwait(false);
         }
 
     }
