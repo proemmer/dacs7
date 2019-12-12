@@ -4,7 +4,7 @@
     <TargetFrameworks>netcoreapp2.1;net461</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <!--<DefineConstants>REALPLC;$(AdditionalConstants)</DefineConstants>-->
-    <!--<SignAssembly>true</SignAssembly>-->
+    <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>C:\Projects\Tools\signatures\dacs7\dacs7.snk</AssemblyOriginatorKeyFile>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
