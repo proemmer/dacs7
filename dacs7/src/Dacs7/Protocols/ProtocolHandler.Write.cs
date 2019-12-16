@@ -36,7 +36,7 @@ namespace Dacs7.Protocols
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Exception while cancelling write handling. Exception was {0}", ex.Message);
+                _logger?.LogWarning("Exception while cancelling write handling. Exception was {0}", ex.Message);
             }
             return Task.CompletedTask;
         }
@@ -148,19 +148,19 @@ namespace Dacs7.Protocols
             {
                 if (data.Header.Error.ErrorClass != 0)
                 {
-                    _logger.LogError("Error while writing data for reference {0}. ErrorClass: {1}  ErrorCode:{2}", data.Header.Header.ProtocolDataUnitReference, data.Header.Error.ErrorClass, data.Header.Error.ErrorCode);
+                    _logger?.LogError("Error while writing data for reference {0}. ErrorClass: {1}  ErrorCode:{2}", data.Header.Header.ProtocolDataUnitReference, data.Header.Error.ErrorClass, data.Header.Error.ErrorCode);
                     cbh.Exception = new Dacs7Exception(data.Header.Error.ErrorClass, data.Header.Error.ErrorCode);
                 }
                 if (data.Data == null)
                 {
-                    _logger.LogWarning("No data from write ack received for reference {0}", data.Header.Header.ProtocolDataUnitReference);
+                    _logger?.LogWarning("No data from write ack received for reference {0}", data.Header.Header.ProtocolDataUnitReference);
                 }
 
                 cbh.Event.Set(data.Data);
             }
             else
             {
-                _logger.LogWarning("No write handler found for received write ack reference {0}", data.Header.Header.ProtocolDataUnitReference);
+                _logger?.LogWarning("No write handler found for received write ack reference {0}", data.Header.Header.ProtocolDataUnitReference);
             }
         }
 

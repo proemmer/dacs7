@@ -29,7 +29,7 @@ namespace Dacs7.Protocols
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Exception while cancelling metadata handling. Exception was {0}", ex.Message);
+                _logger?.LogWarning("Exception while cancelling metadata handling. Exception was {0}", ex.Message);
             }
             return Task.CompletedTask; 
         }
@@ -105,19 +105,19 @@ namespace Dacs7.Protocols
             {
                 if (data.UserData.Parameter.ParamErrorCode != 0)
                 {
-                    _logger.LogError("Error while reading blockdata for reference {0}. ParamErrorCode: {1}", data.UserData.Header.ProtocolDataUnitReference, data.UserData.Parameter.ParamErrorCode);
+                    _logger?.LogError("Error while reading blockdata for reference {0}. ParamErrorCode: {1}", data.UserData.Header.ProtocolDataUnitReference, data.UserData.Parameter.ParamErrorCode);
                     cbh.Exception = new Dacs7ParameterException(data.UserData.Parameter.ParamErrorCode);
                     cbh.Event.Set(null);
                 }
                 if (data.UserData.Data == null)
                 {
-                    _logger.LogWarning("No data from blockinfo ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
+                    _logger?.LogWarning("No data from blockinfo ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
                 }
                 cbh.Event.Set(data);
             }
             else
             {
-                _logger.LogWarning("No block info handler found for received read ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
+                _logger?.LogWarning("No block info handler found for received read ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
             }
         }
     }

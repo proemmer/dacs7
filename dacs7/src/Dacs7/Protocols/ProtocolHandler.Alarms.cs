@@ -46,7 +46,7 @@ namespace Dacs7.Protocols
             }
             catch(Exception ex)
             {
-                _logger.LogWarning("Exception while canceling alarm handling. Exception was {0}", ex.Message);
+                _logger?.LogWarning("Exception while canceling alarm handling. Exception was {0}", ex.Message);
             }
         }
 
@@ -255,20 +255,20 @@ namespace Dacs7.Protocols
             {
                 if (data.UserData.Parameter.ParamErrorCode != 0)
                 {
-                    _logger.LogError("Error while reading pending alarms for reference {0}. ParamErrorCode: {1}", data.UserData.Header.ProtocolDataUnitReference, data.UserData.Parameter.ParamErrorCode);
+                    _logger?.LogError("Error while reading pending alarms for reference {0}. ParamErrorCode: {1}", data.UserData.Header.ProtocolDataUnitReference, data.UserData.Parameter.ParamErrorCode);
                     cbh.Exception = new Dacs7ParameterException(data.UserData.Parameter.ParamErrorCode);
                     cbh.Event.Set(null);
                 }
 
                 if (data.UserData.Data == null)
                 {
-                    _logger.LogWarning("No data from pending alarm  ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
+                    _logger?.LogWarning("No data from pending alarm  ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
                 }
                 cbh.Event.Set(data);
             }
             else
             {
-                _logger.LogWarning("No read handler found for received pending alarm ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
+                _logger?.LogWarning("No read handler found for received pending alarm ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
             }
         }
 
@@ -280,13 +280,13 @@ namespace Dacs7.Protocols
             {
                 if (data.UserData.Data == null)
                 {
-                    _logger.LogWarning("No data from alarm update ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
+                    _logger?.LogWarning("No data from alarm update ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
                 }
                 _alarmUpdateHandler.Event.Set(data);
             }
             else
             {
-                _logger.LogWarning("No read handler found for received alarm update ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
+                _logger?.LogWarning("No read handler found for received alarm update ack reference {0}", data.UserData.Header.ProtocolDataUnitReference);
             }
         }
 
@@ -295,7 +295,7 @@ namespace Dacs7.Protocols
             var data = S7AlarmIndicationDatagram.TranslateFromMemory(buffer);
             if (data.UserData.Data == null)
             {
-                _logger.LogWarning("No data from alarm update ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
+                _logger?.LogWarning("No data from alarm update ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
             }
 
             foreach (var handler in _alarmIndicationHandler.Values)

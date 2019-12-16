@@ -30,7 +30,7 @@ namespace Dacs7.Protocols
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("Exception while canceling read handling. Exception was {0}", ex.Message);
+                _logger?.LogWarning("Exception while canceling read handling. Exception was {0}", ex.Message);
             }
             return Task.CompletedTask;
         }
@@ -151,18 +151,18 @@ namespace Dacs7.Protocols
             {
                 if (data.Header.Error.ErrorClass != 0)
                 {
-                    _logger.LogError("Error while reading data for reference {0}. ErrorClass: {1}  ErrorCode:{2}", data.Header.Header.ProtocolDataUnitReference, data.Header.Error.ErrorClass, data.Header.Error.ErrorCode);
+                    _logger?.LogError("Error while reading data for reference {0}. ErrorClass: {1}  ErrorCode:{2}", data.Header.Header.ProtocolDataUnitReference, data.Header.Error.ErrorClass, data.Header.Error.ErrorCode);
                     cbh.Exception = new Dacs7Exception(data.Header.Error.ErrorClass, data.Header.Error.ErrorCode);
                 }
                 if (data.Data == null)
                 {
-                    _logger.LogWarning("No data from read ack received for reference {0}", data.Header.Header.ProtocolDataUnitReference);
+                    _logger?.LogWarning("No data from read ack received for reference {0}", data.Header.Header.ProtocolDataUnitReference);
                 }
                 cbh.Event.Set(data.Data);
             }
             else
             {
-                _logger.LogWarning("No read handler found for received read ack reference {0}", data.Header.Header.ProtocolDataUnitReference);
+                _logger?.LogWarning("No read handler found for received read ack reference {0}", data.Header.Header.ProtocolDataUnitReference);
             }
         }
 
@@ -176,7 +176,7 @@ namespace Dacs7.Protocols
             }
             else
             {
-                _logger.LogWarning("No read handler found for received read job reference {0}", data.Header.ProtocolDataUnitReference);
+                _logger?.LogWarning("No read handler found for received read job reference {0}", data.Header.ProtocolDataUnitReference);
             }
         }
 
