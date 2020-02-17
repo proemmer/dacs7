@@ -43,28 +43,36 @@ namespace Dacs7.Domain
                 case 'e' when singleElement: selector = PlcArea.IB; return true;  // German
                 case 'I' when singleElement: selector = PlcArea.IB; return true;  // English
                 case 'E' when singleElement: selector = PlcArea.IB; return true;  // German
+                case 'I' when area.Length == 2 && (area[1] == 'B' || area[1] == 'b'): selector = PlcArea.IB; return true;  // Old syntax
+                case 'i' when area.Length == 2 && (area[1] == 'B' || area[1] == 'b'): selector = PlcArea.IB; return true;  // Old syntax
 
                 // Marker
                 case 'm' when singleElement: selector = PlcArea.FB; return true;  // English and German
                 case 'M' when singleElement: selector = PlcArea.FB; return true;  // English and German
+                case 'F' when area.Length == 2 && (area[1] == 'B' || area[1] == 'b'): selector = PlcArea.FB; return true;  // Old syntax
+                case 'f' when area.Length == 2 && (area[1] == 'B' || area[1] == 'b'): selector = PlcArea.FB; return true;  // Old syntax
 
                 // Ouputs
                 case 'q' when singleElement: selector = PlcArea.QB; return true;  // English
                 case 'a' when singleElement: selector = PlcArea.QB; return true;  // German
-
                 case 'Q' when singleElement: selector = PlcArea.QB; return true;  // English
                 case 'A' when singleElement: selector = PlcArea.QB; return true;  // German
+                case 'Q' when area.Length == 2 && (area[1] == 'B' || area[1] == 'b'): selector = PlcArea.QB; return true;  // Old syntax
+                case 'q' when area.Length == 2 && (area[1] == 'B' || area[1] == 'b'): selector = PlcArea.QB; return true;  // Old syntax
 
                 // Timer
                 case 't' when singleElement: selector = PlcArea.TM; return true;  // English and German
                 case 'T' when singleElement: selector = PlcArea.TM; return true;  // English and German
+                case 'T' when area.Length == 2 && (area[1] == 'M' || area[1] == 'm'): selector = PlcArea.TM; return true;  // Old syntax
+                case 't' when area.Length == 2 && (area[1] == 'M' || area[1] == 'm'): selector = PlcArea.TM; return true;  // Old syntax
 
                 // Counter
                 case 'c' when singleElement: selector = PlcArea.CT; return true;  // English
                 case 'z' when singleElement: selector = PlcArea.CT; return true;  // German
-
                 case 'C' when singleElement: selector = PlcArea.CT; return true;  // English
                 case 'Z' when singleElement: selector = PlcArea.CT; return true;  // German
+                case 'C' when area.Length == 2 && (area[1] == 'T' || area[1] == 't'): selector = PlcArea.CT; return true;  // Old syntax
+                case 'c' when area.Length == 2 && (area[1] == 'T' || area[1] == 't'): selector = PlcArea.CT; return true;  // Old syntax
 
                 case 'd' when area.Length > 2:
                 case 'D' when area.Length > 2:

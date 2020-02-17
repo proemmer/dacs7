@@ -29,7 +29,7 @@ namespace Dacs7.Protocols
             }
             catch (Exception ex)
             {
-                _logger?.LogWarning("Exception while cancelling metadata handling. Exception was {0}", ex.Message);
+                _logger?.LogWarning("Exception while canceling meta data handling. Exception was {0}", ex.Message);
             }
             return Task.CompletedTask; 
         }
