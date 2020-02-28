@@ -2,6 +2,7 @@
 // See License in the project root for license information.
 
 using Dacs7.Domain;
+using Dacs7.Protocols.SiemensPlc.Datagrams;
 using System;
 
 namespace Dacs7.Protocols.SiemensPlc
@@ -73,7 +74,7 @@ namespace Dacs7.Protocols.SiemensPlc
             return false;
         }
 
-        private bool TryDetectJobType(Memory<byte> memory, out Type datagramType)
+        private static bool TryDetectJobType(Memory<byte> memory, out Type datagramType)
         {
             if (memory.Length > _minimumDataSize)
             {
@@ -95,7 +96,7 @@ namespace Dacs7.Protocols.SiemensPlc
             return false;
         }
 
-        private bool TryDetectAckDataType(Memory<byte> memory, out Type datagramType)
+        private static bool TryDetectAckDataType(Memory<byte> memory, out Type datagramType)
         {
             if (memory.Length > _minimumAckDetectionSize)
             {
@@ -117,7 +118,7 @@ namespace Dacs7.Protocols.SiemensPlc
             return false;
         }
 
-        private bool TryDetectUserDataDataType(Memory<byte> memory, out Type datagramType)
+        private static bool TryDetectUserDataDataType(Memory<byte> memory, out Type datagramType)
         {
             if (memory.Length > 22)
             {
@@ -130,6 +131,12 @@ namespace Dacs7.Protocols.SiemensPlc
                             {
                                 case UserDataSubFunctionBlock.BlockInfo:  // Write Var
                                     datagramType = typeof(S7PlcBlockInfoAckDatagram);
+                                    return true;
+                                case UserDataSubFunctionBlock.List:  // Write Var
+                                    datagramType = typeof(S7PlcBlocksCountAckDatagram);
+                                    return true;
+                                case UserDataSubFunctionBlock.ListType:  // Write Var
+                                    datagramType = typeof(S7PlcBlocksOfTypeAckDatagram);
                                     return true;
                             }
                         }

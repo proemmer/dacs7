@@ -5,7 +5,7 @@
 namespace Dacs7.Metadata
 {
 
-    public interface IPlcBlocks
+    public interface IPlcBlock
     {
         int Number { get; }
         byte Flags { get; }

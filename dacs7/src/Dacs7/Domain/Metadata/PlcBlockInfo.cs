@@ -2,6 +2,7 @@
 // See License in the project root for license information.
 
 using System;
+using System.Text;
 
 namespace Dacs7.Metadata
 {
@@ -36,6 +37,43 @@ namespace Dacs7.Metadata
 
 
         public ushort Checksum { get; internal set; }
+
+
+        public static string GetLanguage(byte b)
+        {
+            switch (b)
+            {
+                case 0x00:
+                    return "Not defined";
+                case 0x01:
+                    return "AWL";
+                case 0x02:
+                    return "KOP";
+                case 0x03:
+                    return "FUP";
+                case 0x04:
+                    return "SCL";
+                case 0x05:
+                    return "DB";
+                case 0x06:
+                    return "GRAPH";
+                case 0x07:
+                    return "SDB";
+                case 0x08:
+                    return "CPU-DB";                        /* DB was created from Plc program (CREAT_DB) */
+                case 0x11:
+                    return "SDB (after overall reset)";     /* another SDB, don't know what it means, in SDB 1 and SDB 2, uncertain*/
+                case 0x12:
+                    return "SDB (routing)";                 /* another SDB, in SDB 999 and SDB 1000 (routing information), uncertain */
+                case 0x29:
+                    return "Encrypt";                       /* block is encrypted with S7-Block-Privacy */
+                case 0x1a:
+                    return "S7-Pdiag";
+                case 0x1d:
+                    return "SFM";                     
+            }
+            return string.Empty;
+        }
 
     }
 }

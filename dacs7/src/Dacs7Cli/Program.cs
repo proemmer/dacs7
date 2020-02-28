@@ -23,6 +23,8 @@ namespace Dacs7Cli
                 ReadAlarmsCommand.Register(app);
                 WatchAlarmsCommand.Register(app);
                 TaskReadCommand.Register(app);
+                BlocksCountCommand.Register(app);
+                BlocksOfTypeCommand.Register(app);
 
                 app.Command("help", cmd =>
                 {

@@ -3,6 +3,7 @@
 
 using Dacs7.Communication;
 using Dacs7.Protocols.SiemensPlc;
+using Dacs7.Protocols.SiemensPlc.Datagrams;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Sockets;
@@ -171,6 +172,14 @@ namespace Dacs7.Protocols
             else if (datagramType == typeof(S7PlcBlockInfoAckDatagram))
             {
                 ReceivedS7PlcBlockInfoAckDatagram(buffer);
+            }
+            else if (datagramType == typeof(S7PlcBlocksCountAckDatagram))
+            {
+                ReceivedS7PlcBlocksCountAckDatagram(buffer);
+            }
+            else if (datagramType == typeof(S7PlcBlocksOfTypeAckDatagram))
+            {
+                ReceivedS7PlcBlocksOfTypeAckDatagram(buffer);
             }
             else if (datagramType == typeof(S7PendingAlarmAckDatagram))
             {

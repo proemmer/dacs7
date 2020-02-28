@@ -11,9 +11,8 @@
     <PackageId>Dacs7</PackageId>
     <PackageTags>siemens plc S7 PC-S7-Connection TCP/IP-S7 communication .netcore Automation HMI C# VB.Net RFC-1006 IsoOnTcp-S7 SIMATIC</PackageTags>
     <PackageReleaseNotes>
-      * Added nullcheck befor writing log message because the customer is able to do not provide a logger factory.
-      * Extended tag parser to also support old tag areas (IB, FB, QB)
-</PackageReleaseNotes>
+      * Added additonal metadata functions (ReadBlocksCountAsync, ReadBlocksOfTypeAsync)
+    </PackageReleaseNotes>
     <PackageProjectUrl>http://proemmer.github.io/dacs7</PackageProjectUrl>
     <PackageLicenseUrl>https://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
@@ -25,7 +24,7 @@
 
 
 
-    <Version>2.1.1</Version>
+    <Version>2.1.2</Version>
     <SignAssembly>true</SignAssembly>
     
     

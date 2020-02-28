@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
 // See License in the project root for license information.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Dacs7.Metadata
@@ -43,6 +45,25 @@ namespace Dacs7.Metadata
             }
             return null;
         }
+
+
+        /// <summary>
+        /// Reads the counts of all blocks available in the plc
+        /// </summary>
+        /// <param name="client"></param>
+        /// <returns></returns>
+        public static async Task<IPlcBlocksCount> ReadBlocksCountAsync(this Dacs7Client client)
+        {
+            var result = await client.ProtocolHandler.ReadBocksCountInfoAsync().ConfigureAwait(false);
+            if (result != null)
+            {
+                return result.Counts;
+            }
+            return null;
+        }
+
+        public static async Task<IEnumerable<IPlcBlock>> ReadBlocksOfTypeAsync(this Dacs7Client client, PlcBlockType type)
+            => await client.ProtocolHandler.ReadBlocksOfTypesAsync(type).ConfigureAwait(false);
 
     }
 }
