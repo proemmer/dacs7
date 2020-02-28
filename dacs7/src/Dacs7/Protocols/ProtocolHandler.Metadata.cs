@@ -8,7 +8,6 @@ using Dacs7.Protocols.SiemensPlc.Datagrams;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Buffers;
-using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
