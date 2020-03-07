@@ -2,6 +2,7 @@
 // See License in the project root for license information.
 
 using Dacs7.Domain;
+using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc.Datagrams;
 using System;
 
@@ -30,12 +31,13 @@ namespace Dacs7.Protocols.SiemensPlc
         public const int ReadAckHeader = 12;     // 12 Header   (ACK Header)
         public const int ReadAckParameter = 2;      // header for each telegram
         public const int ReadItemAckHeader = 4;  // header for each item
-
+        public const int MinimumReadAckItemSize = ReadAckHeader + ReadAckParameter + ReadItemAckHeader;
 
         public const int WriteHeader = 10;
         public const int WriteParameter = 2;
         public const int WriteParameterItem = 12; // each item
         public const int WriteDataItem = 4;       // each item + length
+        public const int MinimumWriteItemSize = WriteHeader + WriteParameter + WriteParameterItem + WriteDataItem;
 
 
 
@@ -47,8 +49,8 @@ namespace Dacs7.Protocols.SiemensPlc
         public int Timeout { get; set; }
 
 
-        public ushort ReadItemMaxLength => (ushort)(PduSize - 18);   //18 Header and some other data    // in the result message
-        public ushort WriteItemMaxLength => (ushort)(PduSize - 28);  //28 Header and some other data
+        public ushort ReadItemMaxLength => (ushort)(PduSize - MinimumReadAckItemSize);   //18 Header and some other data    // in the result message
+        public ushort WriteItemMaxLength => (ushort)(PduSize - MinimumWriteItemSize);  //28 Header and some other data
 
 
         #region datagram detection
