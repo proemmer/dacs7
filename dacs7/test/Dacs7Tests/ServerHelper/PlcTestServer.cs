@@ -1,4 +1,4 @@
-﻿#define REALPLC
+﻿// #define REALPLC
 using Dacs7;
 using Snap7;
 using System;

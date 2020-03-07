@@ -323,38 +323,38 @@ namespace Dacs7.Tests
             });
         }
 
-        [Fact]
-        public async Task ReadWriteBigDBData2()
-        {
-            await PlcTestServer.ExecuteClientAsync(async (client) =>
-            {
-                var data = Enumerable.Repeat((byte)0x00, 1000).ToArray();
-                var originWriteTags = new Dictionary<string, object>
-                {
-                    { $"DB6114.2500,b,1000" , data }
-                };
+        //[Fact]
+        //public async Task ReadWriteBigDBData2()
+        //{
+        //    await PlcTestServer.ExecuteClientAsync(async (client) =>
+        //    {
+        //        var data = Enumerable.Repeat((byte)0x00, 1000).ToArray();
+        //        var originWriteTags = new Dictionary<string, object>
+        //        {
+        //            { $"DB6114.2500,b,1000" , data }
+        //        };
 
-                var writeResults = (await client.WriteAsync(originWriteTags)).ToArray();
-                var results = (await client.ReadAsync(originWriteTags.Keys)).ToArray();
+        //        var writeResults = (await client.WriteAsync(originWriteTags)).ToArray();
+        //        var results = (await client.ReadAsync(originWriteTags.Keys)).ToArray();
 
-                Assert.True(results.FirstOrDefault().Data.ToArray().SequenceEqual(data));
+        //        Assert.True(results.FirstOrDefault().Data.ToArray().SequenceEqual(data));
 
-                var data2 = Enumerable.Repeat((byte)0x20, 1000).ToArray();
-                var writeTags = new Dictionary<string, object>
-                {
-                    { $"DB6114.2500,b,1000" , data2 }
-                };
+        //        var data2 = Enumerable.Repeat((byte)0x20, 1000).ToArray();
+        //        var writeTags = new Dictionary<string, object>
+        //        {
+        //            { $"DB6114.2500,b,1000" , data2 }
+        //        };
 
-                writeResults = (await client.WriteAsync(writeTags)).ToArray();
+        //        writeResults = (await client.WriteAsync(writeTags)).ToArray();
 
-                results = (await client.ReadAsync(writeTags.Keys)).ToArray();
+        //        results = (await client.ReadAsync(writeTags.Keys)).ToArray();
 
-                Assert.True(results.FirstOrDefault().Data.ToArray().SequenceEqual(data2));
+        //        Assert.True(results.FirstOrDefault().Data.ToArray().SequenceEqual(data2));
 
-                writeResults = (await client.WriteAsync(originWriteTags)).ToArray();
+        //        writeResults = (await client.WriteAsync(originWriteTags)).ToArray();
 
-            });
-        }
+        //    });
+        //}
 
         [Fact]
         public async Task ReadWriteMultibleWords()
