@@ -1663,11 +1663,14 @@ namespace Snap7
         protected static extern int Srv_Destroy(ref IntPtr Server);
         ~S7Server()
         {
-            foreach (var Item in HArea)
+            if (HArea != null)
             {
-                var handle = Item.Value;
-                if (handle != null)
-                    handle.Free();
+                foreach (var Item in HArea)
+                {
+                    var handle = Item.Value;
+                    if (handle != null)
+                        handle.Free();
+                }
             }
             Srv_Destroy(ref Server);
         }
