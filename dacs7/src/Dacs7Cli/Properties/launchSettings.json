@@ -2,7 +2,7 @@
   "profiles": {
     "Dacs7Cli": {
       "commandName": "Project",
-      "commandLineArgs": "blocksoftype --address 192.168.0.148:102,0,2 -d Fb"
+      "commandLineArgs": "blocksoftype --address 192.168.0.148:102,0,2 -d DB > C:\\temp\\dbs.txt"
     }
   }
 }

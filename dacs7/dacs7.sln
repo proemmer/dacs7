@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26228.10
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29827.131
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DCFBD9E3-6789-487F-8392-5E73ACE85648}"
 EndProject
@@ -19,10 +19,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "benchmarks", "benchmarks", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dacs7.Benchmarks", "benchmarks\Dacs7.Benchmarks\Dacs7.Benchmarks.csproj", "{F2BC6BFF-F0F9-4436-AE3D-4AC31BF2971E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dacs7.Papper.Tests", "test\Dacs7.Papper.Tests\Dacs7.Papper.Tests.csproj", "{83418894-0EB8-42B8-90A3-3E83FD7CE443}"
+EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -44,6 +43,10 @@ Global
 		{F2BC6BFF-F0F9-4436-AE3D-4AC31BF2971E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F2BC6BFF-F0F9-4436-AE3D-4AC31BF2971E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F2BC6BFF-F0F9-4436-AE3D-4AC31BF2971E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83418894-0EB8-42B8-90A3-3E83FD7CE443}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83418894-0EB8-42B8-90A3-3E83FD7CE443}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83418894-0EB8-42B8-90A3-3E83FD7CE443}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83418894-0EB8-42B8-90A3-3E83FD7CE443}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -53,9 +56,13 @@ Global
 		{51541E59-5555-4A0C-9836-C8EDEEEBBD65} = {AB2DBA20-91FE-498F-9550-F35A8995C453}
 		{15A87724-ADA8-42B7-88A3-F54FFEAD109B} = {DCFBD9E3-6789-487F-8392-5E73ACE85648}
 		{F2BC6BFF-F0F9-4436-AE3D-4AC31BF2971E} = {20CE0866-9745-4D3F-9C25-C9692F39FD1E}
+		{83418894-0EB8-42B8-90A3-3E83FD7CE443} = {AB2DBA20-91FE-498F-9550-F35A8995C453}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D5E0F073-E005-4767-B014-BAD86D648E95}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 	GlobalSection(Performance) = preSolution
 		HasPerformanceSessions = true

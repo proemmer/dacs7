@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
 // See License in the project root for license information.
 
-using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
 using System;
 using System.Collections.Generic;
@@ -11,8 +10,8 @@ namespace Dacs7.Protocols
     internal sealed class ReadPackage
     {
         private readonly int _maxSize;
-        private int _sizeRequest = Rfc1006ProtocolContext.DataHeaderSize + SiemensPlcProtocolContext.ReadHeader + SiemensPlcProtocolContext.ReadParameter;
-        private int _sizeResponse = Rfc1006ProtocolContext.DataHeaderSize + SiemensPlcProtocolContext.ReadAckHeader + SiemensPlcProtocolContext.ReadAckParameter;
+        private int _sizeRequest = SiemensPlcProtocolContext.ReadHeader + SiemensPlcProtocolContext.ReadParameter;
+        private int _sizeResponse = SiemensPlcProtocolContext.ReadAckHeader + SiemensPlcProtocolContext.ReadAckParameter;
         private readonly List<ReadItem> _items = new List<ReadItem>();
 
 
@@ -38,12 +37,15 @@ namespace Dacs7.Protocols
         public bool TryAdd(ReadItem item)
         {
             var size = item.NumberOfItems;
-            if (Free >= size)
+            var newReqSize = _sizeRequest + SiemensPlcProtocolContext.ReadItemSize;
+            var newRespSize = _sizeResponse + size + SiemensPlcProtocolContext.ReadItemAckHeader;
+            var readItemSize = Math.Max(_sizeRequest, _sizeResponse);
+            if (Free >= readItemSize)
             {
                 _items.Add(item);
-                _sizeRequest += SiemensPlcProtocolContext.ReadItemSize;
-                _sizeResponse += size + SiemensPlcProtocolContext.ReadItemAckHeader;
-                Size = Math.Max(_sizeRequest, _sizeResponse);
+                _sizeRequest = newReqSize;
+                _sizeResponse = newRespSize;
+                Size = readItemSize;
                 return true;
             }
             return false;

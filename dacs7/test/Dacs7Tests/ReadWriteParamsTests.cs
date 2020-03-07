@@ -88,6 +88,40 @@ namespace Dacs7.Tests
 
         }
 
+
+
+        [Fact]
+        public async Task CreateMultiWriteTest()
+        {
+
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
+            {
+
+                var items = new List<WriteItem>();
+                var data = new byte[18];
+
+                items.Add(WriteItem.Create("DB1993", 8, new byte[86]));
+
+                items.Add(WriteItem.Create("DB1993", 2122, new byte[878]));
+                items.Add(WriteItem.Create("DB1993", 102, new byte[18]));
+                items.Add(WriteItem.Create("DB1993", 3008, new byte[492]));
+                items.Add(WriteItem.Create("DB1993", 4122, new byte[378]));
+                items.Add(WriteItem.Create("DB1993", 122, new byte[18]));
+                items.Add(WriteItem.Create("DB1993", 14, new byte[86]));
+                items.Add(WriteItem.Create("DB1993", 722, new byte[78]));
+                items.Add(WriteItem.Create("DB1993", 1422, new byte[78]));
+
+                for (int i = 0; i < 37; i++)
+                {
+                    items.Add(WriteItem.Create("DB1993", 142 + (i * 20), data));
+                }
+
+                var writeResults = (await client.WriteAsync(items)).ToArray();
+
+            });
+
+        }
+
         [Fact]
         public async Task ReadWriteSingleWords()
         {
