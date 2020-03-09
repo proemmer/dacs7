@@ -417,6 +417,9 @@ namespace Dacs7.Tests
             });
         }
 
+
+#if REAL_PLC
+        // The plcTest server says size mismatch, but the real plc says ok
         [Fact]
         public async Task ReadWriteMultibleCharsLongerThanPDUSize()
         {
@@ -489,7 +492,7 @@ namespace Dacs7.Tests
                 Assert.True(writeResults.All(x => x == ItemResponseRetValue.Success));
             }, 240);
         }
-
+#endif
 
         [Fact]
         public async Task WriteMultiCharsAndString()

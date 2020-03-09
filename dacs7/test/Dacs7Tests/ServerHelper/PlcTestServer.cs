@@ -27,7 +27,7 @@ namespace Dacs7Tests.ServerHelper
         public void Dispose() => PlcTestServer.Stop();
 
     }
-
+   
     [CollectionDefinition("PlcServer collection")]
     public class PlcServerCollection : ICollectionFixture<PlcServerFixture>
     {
@@ -50,12 +50,13 @@ namespace Dacs7Tests.ServerHelper
             {3, new byte[10] },
             {141, new byte[20000] },
             {962, new byte[1000] },
+            {4, new byte[10000] },
         };
 
 
 #if REALPLC
-        //public static readonly string Address = "192.168.0.148"; // SoftPLC
-        public static readonly string Address = "192.168.0.220";   // HardPLC
+        public static readonly string Address = "192.168.0.148"; // SoftPLC
+        //public static readonly string Address = "192.168.0.220";   // HardPLC
         //public static readonly string Address = "192.168.1.60:102,0,1";   // TIA PLC
         public static readonly PlcConnectionType ConnectionType = PlcConnectionType.Pg;
         public static readonly int Timeout = 5000;

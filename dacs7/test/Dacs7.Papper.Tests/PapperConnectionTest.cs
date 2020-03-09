@@ -1,5 +1,6 @@
 using Customer.Data.DB_SpindlePos_BST1;
 using Dacs7.ReadWrite;
+using Insite.Customer.Data.DB_IPSC_Konfig;
 using Papper;
 using System;
 using System.Collections.Generic;
@@ -16,8 +17,10 @@ namespace Dacs7.Papper.Tests
         private PlcDataMapper _mapper;
 
 
-        [Fact]
-        public async Task TestMultiWrite()
+        [Theory]
+        [InlineData("DB_SpindlePos_BST1", typeof(DB_SpindlePos_BST1))]
+        [InlineData("DB_IPSC_Konfig", typeof(DB_IPSC_Konfig))]
+        public async Task TestMultiWrite(string mapping, Type type)
         {
             _client = new Dacs7Client("192.168.1.60:102,0,1", PlcConnectionType.Basic, 5000);
             await _client.ConnectAsync();
@@ -29,12 +32,12 @@ namespace Dacs7.Papper.Tests
                                                          Papper_OnWrite,
                                                          OptimizerType.Items);
 
-                _mapper.AddMapping(typeof(DB_SpindlePos_BST1));
+                _mapper.AddMapping(type);
             }
 
 
-            var data = await _mapper.ReadAsync(PlcReadReference.FromAddress("DB_SpindlePos_BST1.This"));
-            await _mapper.WriteAsync(PlcWriteReference.FromAddress("DB_SpindlePos_BST1.This", data));
+            var data = await _mapper.ReadAsync(PlcReadReference.FromAddress($"{mapping}.This"));
+            await _mapper.WriteAsync(PlcWriteReference.FromAddress($"{mapping}.This", data));
 
 
             await _client.DisconnectAsync();

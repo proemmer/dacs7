@@ -1672,7 +1672,11 @@ namespace Snap7
                         handle.Free();
                 }
             }
-            Srv_Destroy(ref Server);
+
+            if (Server != IntPtr.Zero)
+            {
+                Srv_Destroy(ref Server);
+            }
         }
 
         [DllImport(S7Consts.Snap7LibName)]

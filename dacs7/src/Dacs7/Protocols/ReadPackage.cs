@@ -39,7 +39,7 @@ namespace Dacs7.Protocols
             var size = item.NumberOfItems;
             var newReqSize = _sizeRequest + SiemensPlcProtocolContext.ReadItemSize;
             var newRespSize = _sizeResponse + size + SiemensPlcProtocolContext.ReadItemAckHeader;
-            var readItemSize = Math.Max(_sizeRequest, _sizeResponse);
+            var readItemSize = Math.Max(newReqSize, newRespSize);
             if (Free >= readItemSize)
             {
                 _items.Add(item);
