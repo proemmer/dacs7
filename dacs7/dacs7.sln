@@ -19,7 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "benchmarks", "benchmarks", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dacs7.Benchmarks", "benchmarks\Dacs7.Benchmarks\Dacs7.Benchmarks.csproj", "{F2BC6BFF-F0F9-4436-AE3D-4AC31BF2971E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dacs7.Papper.Tests", "test\Dacs7.Papper.Tests\Dacs7.Papper.Tests.csproj", "{83418894-0EB8-42B8-90A3-3E83FD7CE443}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Dacs7.Papper.Tests", "test\Dacs7.Papper.Tests\Dacs7.Papper.Tests.csproj", "{83418894-0EB8-42B8-90A3-3E83FD7CE443}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

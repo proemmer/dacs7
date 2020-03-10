@@ -1,3 +1,4 @@
+using Customer.Data.DB_Setup_AGV_BST1;
 using Customer.Data.DB_SpindlePos_BST1;
 using Dacs7.ReadWrite;
 using Insite.Customer.Data.DB_IPSC_Konfig;
@@ -20,6 +21,7 @@ namespace Dacs7.Papper.Tests
         [Theory]
         [InlineData("DB_SpindlePos_BST1", typeof(DB_SpindlePos_BST1))]
         [InlineData("DB_IPSC_Konfig", typeof(DB_IPSC_Konfig))]
+        [InlineData("DB_Setup_AGV_BST1", typeof(DB_Setup_AGV_BST1))]
         public async Task TestMultiWrite(string mapping, Type type)
         {
             _client = new Dacs7Client("192.168.1.60:102,0,1", PlcConnectionType.Basic, 5000);
@@ -182,7 +184,7 @@ namespace Dacs7.Papper.Tests
             try
             {
 
-
+                var result = writes.ToList();
                 var results = await _client.WriteAsync(writes.SelectMany(BuildWritePackages)).ConfigureAwait(false);
 
 
@@ -227,7 +229,7 @@ namespace Dacs7.Papper.Tests
 
                 if (w.Data.Length > 2)
                 {
-                    result.Add(WriteItem.Create(w.Selector, (ushort)(w.Offset + 1), w.Data.Slice(1, w.Data.Length - 2)));
+                    result.Add(WriteItem.Create(w.Selector, (w.Offset + 1), w.Data.Slice(1, w.Data.Length - 2)));
                 }
 
                 if (w.Data.Length > 1)
@@ -248,7 +250,8 @@ namespace Dacs7.Papper.Tests
             {
                 if (bm.GetBit(j))
                 {
-                    result.Add(WriteItem.Create(w.Selector, (ushort)(currentOffset + j), currentByte.GetBit(j)));
+                    var bitOffset = (currentOffset + j);
+                    result.Add(WriteItem.Create(w.Selector, bitOffset, currentByte.GetBit(j)));
                     bm = bm.SetBit(j, false);
                     if (bm == 0)
                     {
