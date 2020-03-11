@@ -264,9 +264,13 @@ namespace Dacs7.Domain
                     rType = length > 1 ? typeof(ushort[]) : vtype;
                     return true;
                 case 'l' when type.Length > 1 && type[1] == 'i':
-                    vtype = typeof(sbyte);
-                    rType = length > 1 ? typeof(sbyte[]) : vtype;
+                    vtype = typeof(long);
+                    rType = length > 1 ? typeof(long[]) : vtype;
                     break;
+                case 'l' when type.Length > 1 && type[1] == 'w':
+                    vtype = typeof(ulong);
+                    rType = length > 1 ? typeof(ulong[]) : vtype;
+                    return true;
                 case 'i':
                     vtype = typeof(short);
                     rType = length > 1 ? typeof(short[]) : vtype;
