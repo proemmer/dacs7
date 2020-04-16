@@ -167,6 +167,14 @@ namespace Dacs7.Protocols
                     {
                         return new AlarmUpdateResult(_alarmUpdateHandler.Id == 0, result.AlarmMessage.Alarms.ToList(), () => DisableAlarmUpdatesAsync());
                     }
+                    else
+                    {
+                        _logger?.LogDebug("AlarmIndication handler received with null result for handler id {0}.", waitHandler.Id);
+                    }
+                }
+                else
+                {
+                    _logger?.LogWarning("Could not add alarm indication handler with id {0} to handler list", waitHandler.Id);
                 }
             }
             finally
@@ -188,25 +196,32 @@ namespace Dacs7.Protocols
                 {
                     using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
                     {
-                        using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
+                        if (_concurrentJobs == null) return false;
+                        try
                         {
-                            if (_alarmUpdateHandler.Id == 0)
+                            using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                             {
-                                cbh = new CallbackHandler<S7AlarmUpdateAckDatagram>(id);
-                                _alarmUpdateHandler = cbh;
-                                try
+                                if (_alarmUpdateHandler.Id == 0)
                                 {
-                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                    cbh = new CallbackHandler<S7AlarmUpdateAckDatagram>(id);
+                                    _alarmUpdateHandler = cbh;
+                                    try
+                                    {
+                                        if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                            return false;
+                                        await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
+                                    }
+                                    catch (Exception)
+                                    {
+                                        _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
                                         return false;
-
-                                    await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
-                                }
-                                catch (Exception)
-                                {
-                                    _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
-                                    return false;
+                                    }
                                 }
                             }
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            return false;
                         }
                     }
                 }
@@ -218,28 +233,41 @@ namespace Dacs7.Protocols
         {
             if (_alarmUpdateHandler.Id != 0)
             {
+                if (_concurrentJobs == null) return false;
                 using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildAlarmUpdateRequest(_s7Context, _alarmUpdateHandler.Id, false), out var memoryLength))
                 {
                     using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
                     {
-                        using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
+                        if (_concurrentJobs == null) return false;
+                        try
                         {
-                            if (_alarmUpdateHandler.Id != 0)
+                            using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                             {
-
-                                try
+                                if (_alarmUpdateHandler.Id != 0)
                                 {
-                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                    try
+                                    {
+                                        if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                            return false;
+
+                                        if (_alarmUpdateHandler.Event == null)
+                                        {
+                                            return false;
+                                        }
+
+                                        await _alarmUpdateHandler.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
+                                        _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
+                                    }
+                                    catch (Exception)
+                                    {
                                         return false;
-
-                                    await _alarmUpdateHandler.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
-                                    _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
-                                }
-                                catch (Exception)
-                                {
-                                    return false;
+                                    }
                                 }
                             }
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            return false;
                         }
                     }
                 }
