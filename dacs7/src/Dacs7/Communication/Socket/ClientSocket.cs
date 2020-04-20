@@ -98,7 +98,18 @@ namespace Dacs7.Communication
             // Write the locally buffered data to the network.
             try
             {
-                var result = await _socket.SendAsync(new ArraySegment<byte>(data.ToArray()), SocketFlags.None).ConfigureAwait(false);
+                if (_socket != null)
+                {
+                    var result = await _socket.SendAsync(new ArraySegment<byte>(data.ToArray()), SocketFlags.None).ConfigureAwait(false);
+                    if(result != data.Length)
+                    {
+                        return SocketError.Fault;
+                    }
+                }
+                else
+                {
+                    return SocketError.Fault;
+                }
             }
             catch (Exception)
             {
