@@ -17,6 +17,7 @@ namespace Dacs7.Communication
         private System.Net.Sockets.Socket _socket;
         private readonly ClientSocketConfiguration _config;
         private CancellationTokenSource _tokenSource;
+        private Task _receivingTask;
 
 
         public sealed override string Identity
@@ -26,12 +27,13 @@ namespace Dacs7.Communication
 
                 if (_identity == null)
                 {
-                    if (_socket != null)
+                    var socket = _socket;
+                    if (socket != null)
                     {
-                        var epLocal = _socket.LocalEndPoint as IPEndPoint;
+                        var epLocal = socket.LocalEndPoint as IPEndPoint;
                         try
                         {
-                            var epRemote = _socket.RemoteEndPoint as IPEndPoint;
+                            var epRemote = socket.RemoteEndPoint as IPEndPoint;
                             _identity = $"{epLocal.Address}:{epLocal.Port}-{(epRemote != null ? epRemote.Address.ToString() : _config.Hostname)}:{(epRemote != null ? epRemote.Port : _config.ServiceName)}";
                         }
                         catch (Exception)
@@ -82,12 +84,12 @@ namespace Dacs7.Communication
 
 
                 _tokenSource = new CancellationTokenSource();
-                _ = await Task.Factory.StartNew(() => StartReceive(), _tokenSource.Token,TaskCreationOptions.LongRunning, TaskScheduler.Default).ConfigureAwait(false);
+                _receivingTask = await Task.Factory.StartNew(() => StartReceive(), _tokenSource.Token,TaskCreationOptions.LongRunning, TaskScheduler.Default).ConfigureAwait(false);
                 await PublishConnectionStateChanged(true).ConfigureAwait(false);
             }
             catch (Exception)
             {
-                DisposeSocket();
+                await DisposeSocketAsync();
                 await HandleSocketDown().ConfigureAwait(false);
                 if (!internalCall) throw;
             }
@@ -127,11 +129,13 @@ namespace Dacs7.Communication
         public sealed override async Task CloseAsync()
         {
             await base.CloseAsync().ConfigureAwait(false);
-            DisposeSocket();
+            await DisposeSocketAsync();
         }
 
-        private void DisposeSocket()
+        private async ValueTask DisposeSocketAsync()
         {
+            _tokenSource?.Cancel();
+
             if (_socket != null)
             {
                 try
@@ -139,8 +143,25 @@ namespace Dacs7.Communication
                     _socket?.Dispose();
                 }
                 catch (ObjectDisposedException) { }
-                _socket = null;
             }
+
+            if (_tokenSource != null)
+            {
+                try
+                {
+                    _tokenSource.Dispose();
+                }
+                catch (ObjectDisposedException) { }
+            }
+
+            if (_receivingTask != null)
+            {
+                await _receivingTask.ConfigureAwait(false);
+            }
+
+            _socket = null;
+            _tokenSource = null;
+            _receivingTask = null;
         }
 
         private async Task StartReceive()
@@ -234,6 +255,6 @@ namespace Dacs7.Communication
             _socket.Blocking = blocking;
         }
 
-        public void Dispose() => DisposeSocket();
+        public void Dispose() => DisposeSocketAsync().ConfigureAwait(false).GetAwaiter().GetResult();
     }
 }
