@@ -168,7 +168,7 @@ namespace Dacs7.Communication
         {
             var connectionInfo = _socket.RemoteEndPoint.ToString();
             _logger?.LogDebug("Socket connection receive loop started. ({0})", connectionInfo);
-            var receiveBuffer = ArrayPool<byte>.Shared.Rent(_socket.ReceiveBufferSize * 2);
+            var receiveBuffer = ArrayPool<byte>.Shared.Rent(_socket.ReceiveBufferSize);
             var receiveOffset = 0;
             var bufferOffset = 0;
             var span = new Memory<byte>(receiveBuffer);
@@ -178,7 +178,8 @@ namespace Dacs7.Communication
                 {
                     try
                     {
-                        var buffer = new ArraySegment<byte>(receiveBuffer, receiveOffset, _socket.ReceiveBufferSize);
+                        var maximumReceiveDataSize = _socket.ReceiveBufferSize - receiveOffset;
+                        var buffer = new ArraySegment<byte>(receiveBuffer, receiveOffset, maximumReceiveDataSize);
                         var received = await _socket.ReceiveAsync(buffer, SocketFlags.Partial).ConfigureAwait(false);
 
                         if (received == 0) return;
@@ -212,7 +213,14 @@ namespace Dacs7.Communication
                     {
                         if (_socket != null && !_shutdown)
                         {
-                            _logger?.LogError("Socket exception ({0}): {1}", connectionInfo, ex.Message);
+                            if (_logger.IsEnabled(LogLevel.Debug))
+                            {
+                                _logger?.LogError("Socket exception ({0}): {1} - Stacktrace {2}", connectionInfo, ex.Message, ex.StackTrace);
+                            }
+                            else
+                            {
+                                _logger?.LogError("Socket exception ({0}): {1}", connectionInfo, ex.Message);
+                            }
                         }
                     }
                 }

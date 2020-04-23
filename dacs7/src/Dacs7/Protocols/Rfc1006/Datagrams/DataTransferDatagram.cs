@@ -83,21 +83,29 @@ namespace Dacs7.Protocols.Rfc1006
         public static DataTransferDatagram TranslateFromMemory(Memory<byte> data, out int processed)
         {
             var span = data.Span;
+            var tkptLength = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(2, 2));
+            if (data.Length < tkptLength)
+            {
+                processed = 0;
+                return null;
+            }
+
             var result = new DataTransferDatagram
             {
                 Tkpt = new TpktDatagram
                 {
                     Sync1 = span[0],
                     Sync2 = span[1],
-                    Length = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(2, 2))
+                    Length = tkptLength
                 },
                 Li = span[4],
                 PduType = span[5],
                 TpduNr = span[6]
             };
 
-            var length = result.Tkpt.Length - 7;
-            result.Payload = data.Slice(7, length);
+
+            var length = result.Tkpt.Length - Rfc1006ProtocolContext.DataHeaderSize;
+            result.Payload = data.Slice(Rfc1006ProtocolContext.DataHeaderSize, length);
             processed = result.Tkpt.Length;
             return result;
         }
@@ -108,15 +116,18 @@ namespace Dacs7.Protocols.Rfc1006
                                                                 out int processed)
         {
             var datagram = TranslateFromMemory(buffer, out processed);
-            if (datagram.TpduNr == EndOfTransmition)
+            if (datagram != null)
             {
-                if (context.FrameBuffer.Any()) ApplyPayloadFromFrameBuffer(context.FrameBuffer, datagram);
-                needMoteData = false;
-                return datagram;
-            }
-            else if (!datagram.Payload.IsEmpty)
-            {
-                AddPayloadToFrameBuffer(context.FrameBuffer, datagram);
+                if (datagram.TpduNr == EndOfTransmition)
+                {
+                    if (context.FrameBuffer.Any()) ApplyPayloadFromFrameBuffer(context.FrameBuffer, datagram);
+                    needMoteData = false;
+                    return datagram;
+                }
+                else if (!datagram.Payload.IsEmpty)
+                {
+                    AddPayloadToFrameBuffer(context.FrameBuffer, datagram);
+                }
             }
             needMoteData = true;
             return datagram;

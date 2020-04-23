@@ -63,16 +63,23 @@ namespace Dacs7.Protocols
                         using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                         {
                             cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
-                            _readHandler.TryAdd(cbh.Id, cbh);
-                            try
+                            if (_readHandler.TryAdd(cbh.Id, cbh))
                             {
-                                if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
-                                    return false;
-                                readResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
+                                
+                                try
+                                {
+                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                        return false;
+                                    readResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
+                                }
+                                finally
+                                {
+                                    _readHandler.TryRemove(cbh.Id, out _);
+                                }
                             }
-                            finally
+                            else
                             {
-                                _readHandler.TryRemove(cbh.Id, out _);
+                                _logger?.LogWarning("Could not add read handler with reference <{id}>.", cbh.Id);
                             }
                         }
 

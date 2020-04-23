@@ -233,7 +233,7 @@ namespace Dacs7.Protocols
                     {
                         ThrowHelper.ThrowException(cbh.Exception);
                     }
-                    ThrowHelper.ThrowReadTimeoutException(id);
+                    ThrowHelper.ThrowReadTimeoutException($"Metadata read operation timeout for job {id}");
                 }
             }
         }

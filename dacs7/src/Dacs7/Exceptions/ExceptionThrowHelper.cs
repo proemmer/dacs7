@@ -25,6 +25,8 @@ namespace Dacs7
 
         public static void ThrowReadTimeoutException(ushort id) => throw new Dacs7ReadTimeoutException(id);
 
+        public static void ThrowReadTimeoutException(string message) => throw new Dacs7ReadTimeoutException(message);
+
         public static void ThrowTimeoutException() => throw new TimeoutException();
 
         public static void ThrowCouldNotAddPackageException(string type) => throw new InvalidOperationException($"Could not add {type}.");
