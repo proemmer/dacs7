@@ -141,6 +141,7 @@ namespace Dacs7.Protocols
             {
                 if (_concurrentJobs != null)
                 {
+                    _logger?.LogDebug("Calling dispose for concurrent jobs.");
                     _concurrentJobs?.Dispose();
                     _concurrentJobs = null;
                 }
@@ -252,12 +253,19 @@ namespace Dacs7.Protocols
         private void ReceivedCommunicationSetupAck(Memory<byte> buffer)
         {
             var data = S7CommSetupAckDataDatagram.TranslateFromMemory(buffer);
+
+            var oldSemaCount = _s7Context.MaxAmQCalling;
             _s7Context.MaxAmQCalling = data.Parameter.MaxAmQCalling;
             _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalled;
             _s7Context.PduSize = data.Parameter.PduLength;
 
-            if (_concurrentJobs != null) _concurrentJobs.Dispose();
-            _concurrentJobs = new SemaphoreSlim(_s7Context.MaxAmQCalling);
+
+            var oldSema = _concurrentJobs;
+            if (oldSema == null || oldSemaCount != _s7Context.MaxAmQCalling)
+            {
+                _concurrentJobs = new SemaphoreSlim(_s7Context.MaxAmQCalling);
+                oldSema?.Dispose();
+            }
 
             _ = UpdateConnectionState(ConnectionState.Opened);
             _connectEvent.Set(true);

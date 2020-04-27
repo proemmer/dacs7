@@ -22,6 +22,11 @@ namespace Dacs7.Helper
 
         public static async Task<SemaphoreGuard> Async(SemaphoreSlim semaphore)
         {
+            if (semaphore == null)
+            {
+                ThrowArgumnetNullException(nameof(semaphore));
+                return null!;
+            }
             var guard = new SemaphoreGuard(semaphore, false);
             await semaphore.WaitAsync().ConfigureAwait(false);
             return guard;
@@ -37,6 +42,7 @@ namespace Dacs7.Helper
         }
 
         private static void ThrowObjectDisposedException(SemaphoreGuard guard) => throw new ObjectDisposedException(guard.ToString());
+        private static void ThrowArgumnetNullException(string parameterName) => throw new ArgumentNullException(parameterName);
     }
 
 

@@ -30,17 +30,17 @@ namespace Dacs7.Protocols
             {
                 foreach (var item in _alarmHandler.ToList())
                 {
-                    item.Value.Event?.Set(null);
+                    item.Value?.Event?.Set(null);
                 }
 
                 foreach (var item in _alarmIndicationHandler.ToList())
                 {
-                    item.Value.Event?.Set(null);
+                    item.Value?.Event?.Set(null);
                 }
 
-                if (_alarmUpdateHandler.Id != 0)
+                if (_alarmUpdateHandler?.Id != 0)
                 {
-                    _alarmUpdateHandler.Event?.Set(null);
+                    _alarmUpdateHandler?.Event?.Set(null);
                     await DisableAlarmUpdatesAsync().ConfigureAwait(false);
                 }
             }
@@ -72,23 +72,33 @@ namespace Dacs7.Protocols
                         using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
                         {
 
-                            CallbackHandler<S7PendingAlarmAckDatagram> cbh;
-                            using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
+                            CallbackHandler<S7PendingAlarmAckDatagram> cbh = null;
+                            try
                             {
-                                cbh = new CallbackHandler<S7PendingAlarmAckDatagram>(id);
-                                _alarmHandler.TryAdd(cbh.Id, cbh);
-                                try
+                                using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                                 {
-                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
-                                        return null;
+                                    cbh = new CallbackHandler<S7PendingAlarmAckDatagram>(id);
+                                    _alarmHandler.TryAdd(cbh.Id, cbh);
+                                    try
+                                    {
+                                        if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                            return null;
 
-                                    alarmResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
-
+                                        if (cbh.Event != null)
+                                        {
+                                            alarmResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
+                                        }
+                                    }
+                                    finally
+                                    {
+                                        _alarmHandler.TryRemove(cbh.Id, out _);
+                                    }
                                 }
-                                finally
-                                {
-                                    _alarmHandler.TryRemove(cbh.Id, out _);
-                                }
+                            }
+                            catch (ObjectDisposedException)
+                            {
+                                if (cbh == null) return alarms; // client was shut down without any result, so we return an empty list.
+                                // if we have a result we could handle it.
                             }
 
                             HandleErrorResult(id, cbh, alarmResults);
@@ -162,14 +172,21 @@ namespace Dacs7.Protocols
                 var waitHandler = new CallbackHandler<S7AlarmIndicationDatagram>(userId);
                 if (_alarmIndicationHandler.TryAdd(waitHandler.Id, waitHandler))
                 {
-                    var result = await waitHandler.Event.WaitAsync(ct).ConfigureAwait(false);
-                    if (result != null)
+                    if (waitHandler.Event != null)
                     {
-                        return new AlarmUpdateResult(_alarmUpdateHandler.Id == 0, result.AlarmMessage.Alarms.ToList(), () => DisableAlarmUpdatesAsync());
+                        var result = await waitHandler.Event.WaitAsync(ct).ConfigureAwait(false);
+                        if (result != null)
+                        {
+                            return new AlarmUpdateResult(_alarmUpdateHandler?.Id == 0, result.AlarmMessage.Alarms.ToList(), () => DisableAlarmUpdatesAsync());
+                        }
+                        else
+                        {
+                            _logger?.LogDebug("AlarmIndication handler received with null result for handler id {0}.", waitHandler.Id);
+                        }
                     }
                     else
                     {
-                        _logger?.LogDebug("AlarmIndication handler received with null result for handler id {0}.", waitHandler.Id);
+                        _logger?.LogWarning("Alarm indication handler with id {0} has currently no event handler.", waitHandler.Id);
                     }
                 }
                 else
@@ -182,14 +199,14 @@ namespace Dacs7.Protocols
                 _alarmIndicationHandler.TryRemove(userId, out _);
             }
 
-            return new AlarmUpdateResult(_alarmUpdateHandler.Id == 0, () => DisableAlarmUpdatesAsync());
+            return new AlarmUpdateResult(_alarmUpdateHandler?.Id == 0, () => DisableAlarmUpdatesAsync());
         }
 
 
         private async Task<bool> EnableAlarmUpdatesAsync()
         {
-            CallbackHandler<S7AlarmUpdateAckDatagram> cbh;
-            if (_alarmUpdateHandler.Id == 0)
+            CallbackHandler<S7AlarmUpdateAckDatagram> cbh = null;
+            if (_alarmUpdateHandler?.Id == 0)
             {
                 var id = GetNextReferenceId();
                 using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildAlarmUpdateRequest(_s7Context, id), out var memoryLength))
@@ -201,7 +218,7 @@ namespace Dacs7.Protocols
                         {
                             using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                             {
-                                if (_alarmUpdateHandler.Id == 0)
+                                if (_alarmUpdateHandler?.Id == 0)
                                 {
                                     cbh = new CallbackHandler<S7AlarmUpdateAckDatagram>(id);
                                     _alarmUpdateHandler = cbh;
@@ -221,6 +238,7 @@ namespace Dacs7.Protocols
                         }
                         catch (ObjectDisposedException)
                         {
+                            _alarmUpdateHandler = cbh;
                             return false;
                         }
                     }
@@ -231,7 +249,7 @@ namespace Dacs7.Protocols
 
         private async Task<bool> DisableAlarmUpdatesAsync()
         {
-            if (_alarmUpdateHandler.Id != 0)
+            if (_alarmUpdateHandler?.Id != 0)
             {
                 if (_concurrentJobs == null) return false;
                 using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildAlarmUpdateRequest(_s7Context, _alarmUpdateHandler.Id, false), out var memoryLength))
@@ -243,19 +261,17 @@ namespace Dacs7.Protocols
                         {
                             using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                             {
-                                if (_alarmUpdateHandler.Id != 0)
+                                if (_alarmUpdateHandler?.Id != 0)
                                 {
                                     try
                                     {
                                         if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
                                             return false;
 
-                                        if (_alarmUpdateHandler.Event == null)
+                                        if (_alarmUpdateHandler?.Event != null)
                                         {
-                                            return false;
+                                            await _alarmUpdateHandler.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
                                         }
-
-                                        await _alarmUpdateHandler.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
                                         _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
                                     }
                                     catch (Exception)
