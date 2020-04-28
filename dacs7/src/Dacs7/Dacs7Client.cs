@@ -20,16 +20,15 @@ namespace Dacs7
     public delegate void ConnectionStateChangedEventHandler(Dacs7Client session, Dacs7ConnectionState e);
 
 
-    public sealed partial class Dacs7Client
+    public sealed partial class Dacs7Client : IDisposable
     {
         private Dictionary<string, ReadItem> _registeredTags = new Dictionary<string, ReadItem>();
-        private readonly SiemensPlcProtocolContext _s7Context;
         private Dacs7ConnectionState _state = Dacs7ConnectionState.Closed;
         private readonly ILogger _logger;
 
         internal ProtocolHandler ProtocolHandler { get; private set; }
         internal Dictionary<string, ReadItem> RegisteredTags => _registeredTags;
-        internal SiemensPlcProtocolContext S7Context => _s7Context;
+        internal SiemensPlcProtocolContext S7Context { get; private set; }
 
         /// <summary>
         /// True if the connection is fully applied
@@ -41,12 +40,12 @@ namespace Dacs7
         /// </summary>
         public ushort MaxAmQCalling
         {
-            get => _s7Context.MaxAmQCalling;
+            get => S7Context.MaxAmQCalling;
             set
             {
                 if (_state == Dacs7ConnectionState.Closed)
                 {
-                    _s7Context.MaxAmQCalling = value;
+                    S7Context.MaxAmQCalling = value;
                 }
                 else
                 {
@@ -60,12 +59,12 @@ namespace Dacs7
         /// </summary>
         public ushort MaxAmQCalled
         {
-            get => _s7Context.MaxAmQCalled;
+            get => S7Context.MaxAmQCalled;
             set
             {
                 if (_state == Dacs7ConnectionState.Closed)
                 {
-                    _s7Context.MaxAmQCalled = value;
+                    S7Context.MaxAmQCalled = value;
                 }
                 else
                 {
@@ -79,12 +78,12 @@ namespace Dacs7
         /// </summary>
         public ushort PduSize
         {
-            get => _s7Context.PduSize;
+            get => S7Context.PduSize;
             set
             {
                 if (_state == Dacs7ConnectionState.Closed)
                 {
-                    _s7Context.PduSize = value;
+                    S7Context.PduSize = value;
                 }
                 else
                 {
@@ -93,12 +92,10 @@ namespace Dacs7
             }
         }
 
-
         /// <summary>
         /// Register to the connection state events
         /// </summary>
         public event ConnectionStateChangedEventHandler ConnectionStateChanged;
-
 
         /// <summary>
         /// Constructor of Dacs7Client
@@ -108,10 +105,9 @@ namespace Dacs7
         public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg, int timeout = 5000, ILoggerFactory loggerFactory = null)
         {
             _logger = loggerFactory?.CreateLogger<Dacs7Client>();
-            _s7Context = new SiemensPlcProtocolContext { Timeout = timeout };
-            ProtocolHandler = new ProtocolHandler(InitializeTransport(address, connectionType), _s7Context, UpdateConnectionState, loggerFactory);
+            S7Context = new SiemensPlcProtocolContext { Timeout = timeout };
+            ProtocolHandler = new ProtocolHandler(InitializeTransport(address, connectionType), S7Context, UpdateConnectionState, loggerFactory);
         }
-
 
         /// <summary>
         /// Connect to the plc
@@ -125,6 +121,10 @@ namespace Dacs7
         /// <returns></returns>
         public Task DisconnectAsync() => ProtocolHandler?.CloseAsync();
 
+        /// <summary>
+        /// Dispose the ressources
+        /// </summary>
+        public void Dispose() => ProtocolHandler?.Dispose();
 
         /// <summary>
         /// Create a readitem for the given tag or reuse an existing one for this tag.
@@ -206,6 +206,7 @@ namespace Dacs7
             rack = portRackSlot.Length > 1 ? portRackSlot[1] : 0;
             slot = portRackSlot.Length > 2 ? portRackSlot[2] : 2;
         }
+
 
     }
 }
