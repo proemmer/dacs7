@@ -44,7 +44,7 @@ namespace Dacs7.Protocols
 
         public async Task<S7PlcBlockInfoAckDatagram> ReadBlockInfoAsync(PlcBlockType type, int blocknumber)
         {
-            if (ConnectionState != ConnectionState.Opened)
+            if (_closeCalled || ConnectionState != ConnectionState.Opened)
                 ThrowHelper.ThrowNotConnectedException();
 
             var id = GetNextReferenceId();
@@ -54,22 +54,30 @@ namespace Dacs7.Protocols
                 {
                     try
                     {
-                        CallbackHandler<S7PlcBlockInfoAckDatagram> cbh;
+                        CallbackHandler<S7PlcBlockInfoAckDatagram> cbh = null;
                         S7PlcBlockInfoAckDatagram blockinfoResult = null;
-                        using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
+                        try
                         {
-                            cbh = new CallbackHandler<S7PlcBlockInfoAckDatagram>(id);
-                            _blockInfoHandler.TryAdd(cbh.Id, cbh);
-                            try
+                            if (_concurrentJobs == null) return null;
+                            using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                             {
-                                if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
-                                    return null;
-                                blockinfoResult = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
+                                cbh = new CallbackHandler<S7PlcBlockInfoAckDatagram>(id);
+                                _blockInfoHandler.TryAdd(cbh.Id, cbh);
+                                try
+                                {
+                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                        return null;
+                                    blockinfoResult = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
+                                }
+                                finally
+                                {
+                                    _blockInfoHandler.TryRemove(cbh.Id, out _);
+                                }
                             }
-                            finally
-                            {
-                                _blockInfoHandler.TryRemove(cbh.Id, out _);
-                            }
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            if (cbh == null) return null;
                         }
 
                         HandlerErrorResult(id, cbh, blockinfoResult);

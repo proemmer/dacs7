@@ -110,12 +110,12 @@ namespace Dacs7.Protocols
         public async Task CloseAsync()
         {
             _closeCalled = true;
-            await CanclePendingEvents().ConfigureAwait(false);
+            await CancelPendingEvents().ConfigureAwait(false);
             await _transport.Client.CloseAsync().ConfigureAwait(false);
             await Task.Delay(1).ConfigureAwait(false); // This ensures that the user can call connect after reconnect. (Otherwise he has to sleep for a while)
         }
 
-        private async Task CanclePendingEvents()
+        private async Task CancelPendingEvents()
         {
             await CancelWriteHandlingAsync().ConfigureAwait(false);
             await CancelReadHandlingAsync().ConfigureAwait(false);
@@ -236,13 +236,11 @@ namespace Dacs7.Protocols
                     var result = await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false);
                     if (result == SocketError.Success)
                     {
-                        //UpdateConnectionState(ConnectionState.PendingOpenPlc);
+                        var oldSemaCount = _s7Context.MaxAmQCalling;
                         _s7Context.MaxAmQCalling = data.Parameter.MaxAmQCalling;
-                        _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalling;
+                        _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalled;
                         _s7Context.PduSize = data.Parameter.PduLength;
-
-                        if (_concurrentJobs != null) _concurrentJobs.Dispose();
-                        _concurrentJobs = new SemaphoreSlim(_s7Context.MaxAmQCalling);
+                        UpdateJobsSemaphore(oldSemaCount, _s7Context.MaxAmQCalling);
 
                         await UpdateConnectionState(ConnectionState.Opened).ConfigureAwait(false);
                     }
@@ -259,16 +257,20 @@ namespace Dacs7.Protocols
             _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalled;
             _s7Context.PduSize = data.Parameter.PduLength;
 
-
-            var oldSema = _concurrentJobs;
-            if (oldSema == null || oldSemaCount != _s7Context.MaxAmQCalling)
-            {
-                _concurrentJobs = new SemaphoreSlim(_s7Context.MaxAmQCalling);
-                oldSema?.Dispose();
-            }
+            UpdateJobsSemaphore(oldSemaCount, _s7Context.MaxAmQCalling);
 
             _ = UpdateConnectionState(ConnectionState.Opened);
             _connectEvent.Set(true);
+        }
+
+        private void UpdateJobsSemaphore(ushort oldSemaCount, ushort newSemaCount)
+        {
+            var oldSema = _concurrentJobs;
+            if (oldSema == null || oldSemaCount != newSemaCount)
+            {
+                _concurrentJobs = new SemaphoreSlim(newSemaCount);
+                oldSema?.Dispose();
+            }
         }
 
         private async Task UpdateConnectionState(ConnectionState state)
@@ -282,14 +284,14 @@ namespace Dacs7.Protocols
                 }
                 else if (state == ConnectionState.Closed)
                 {
+                    await CancelPendingEvents().ConfigureAwait(false);
 
-                    await CanclePendingEvents().ConfigureAwait(false);
-
-                    if (_concurrentJobs != null)
-                    {
-                        _concurrentJobs?.Dispose();
-                        _concurrentJobs = null;
-                    }
+                    // We should not dispose here because some request could be ongoing and where killed due to sema disposing
+                    //if (_concurrentJobs != null)
+                    //{
+                    //    _concurrentJobs?.Dispose();
+                    //    _concurrentJobs = null;
+                    //}
                 }
 
                 ConnectionState = state;

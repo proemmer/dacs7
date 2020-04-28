@@ -52,7 +52,7 @@ namespace Dacs7.Protocols
 
         public async Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync()
         {
-            if (ConnectionState != ConnectionState.Opened)
+            if (_closeCalled || ConnectionState != ConnectionState.Opened)
                 ThrowHelper.ThrowNotConnectedException();
 
             var id = GetNextReferenceId();
@@ -160,7 +160,7 @@ namespace Dacs7.Protocols
 
         public async Task<AlarmUpdateResult> ReceiveAlarmUpdatesAsync(CancellationToken ct)
         {
-            if (ConnectionState != ConnectionState.Opened)
+            if (_closeCalled || ConnectionState != ConnectionState.Opened)
                 ThrowHelper.ThrowNotConnectedException();
 
             if (!await EnableAlarmUpdatesAsync().ConfigureAwait(false))

@@ -38,7 +38,7 @@ namespace Dacs7.Protocols
 
         public async Task<Dictionary<ReadItem, S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItem> vars)
         {
-            if (ConnectionState != ConnectionState.Opened)
+            if (_closeCalled || ConnectionState != ConnectionState.Opened)
                 ThrowHelper.ThrowNotConnectedException();
 
             var result = vars.ToDictionary(x => x, x => null as S7DataItemSpecification);
@@ -59,28 +59,36 @@ namespace Dacs7.Protocols
                     try
                     {
                         IEnumerable<S7DataItemSpecification> readResults = null;
-                        CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh;
-                        using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
+                        CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh = null;
+                        try
                         {
-                            cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
-                            if (_readHandler.TryAdd(cbh.Id, cbh))
+                            if (_concurrentJobs == null) return false;
+                            using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                             {
-                                
-                                try
+                                cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
+                                if (_readHandler.TryAdd(cbh.Id, cbh))
                                 {
-                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
-                                        return false;
-                                    readResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
+
+                                    try
+                                    {
+                                        if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                            return false;
+                                        readResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
+                                    }
+                                    finally
+                                    {
+                                        _readHandler.TryRemove(cbh.Id, out _);
+                                    }
                                 }
-                                finally
+                                else
                                 {
-                                    _readHandler.TryRemove(cbh.Id, out _);
+                                    _logger?.LogWarning("Could not add read handler with reference <{id}>.", cbh.Id);
                                 }
                             }
-                            else
-                            {
-                                _logger?.LogWarning("Could not add read handler with reference <{id}>.", cbh.Id);
-                            }
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            if (cbh == null) return false;
                         }
 
                         HandlerErrorResult(id, readResults, cbh);

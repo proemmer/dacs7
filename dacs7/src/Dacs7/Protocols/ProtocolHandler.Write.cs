@@ -44,7 +44,7 @@ namespace Dacs7.Protocols
 
         public async Task<IEnumerable<ItemResponseRetValue>> WriteAsync(IEnumerable<WriteItem> vars)
         {
-            if (ConnectionState != ConnectionState.Opened)
+            if (_closeCalled || ConnectionState != ConnectionState.Opened)
                 ThrowHelper.ThrowNotConnectedException();
 
 
@@ -60,7 +60,7 @@ namespace Dacs7.Protocols
         private async Task<bool> WritePackage(Dictionary<WriteItem, ItemResponseRetValue> result, WritePackage normalized)
         {
             var id = GetNextReferenceId();
-            CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh;
+            CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh = null;
             using (var dg = S7WriteJobDatagram.TranslateToMemory(S7WriteJobDatagram.BuildWrite(_s7Context, id, normalized.Items), out var memoryLegth))
             {
                 using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLegth), out var sendLength))
@@ -68,20 +68,28 @@ namespace Dacs7.Protocols
                     try
                     {
                         IEnumerable<S7DataItemWriteResult> writeResults = null;
-                        using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
+                        try
                         {
-                            cbh = new CallbackHandler<IEnumerable<S7DataItemWriteResult>>(id);
-                            _writeHandler.TryAdd(cbh.Id, cbh);
-                            try
+                            if (_concurrentJobs == null) return false;
+                            using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                             {
-                                if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
-                                    return false;
-                                writeResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
+                                cbh = new CallbackHandler<IEnumerable<S7DataItemWriteResult>>(id);
+                                _writeHandler.TryAdd(cbh.Id, cbh);
+                                try
+                                {
+                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                        return false;
+                                    writeResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
+                                }
+                                finally
+                                {
+                                    _writeHandler.TryRemove(cbh.Id, out _);
+                                }
                             }
-                            finally
-                            {
-                                _writeHandler.TryRemove(cbh.Id, out _);
-                            }
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            if (cbh == null) return false;
                         }
 
                         HandlerErrorResult(id, cbh, writeResults);
