@@ -46,7 +46,14 @@ namespace Dacs7.Protocols
             }
             catch(Exception ex)
             {
-                _logger?.LogWarning("Exception while canceling alarm handling. Exception was {0}", ex.Message);
+                if (_logger?.IsEnabled(LogLevel.Debug) == true)
+                {
+                    _logger?.LogWarning("Exception while canceling alarm handling. Exception was {0} - StackTrace: {1}", ex.Message, ex.StackTrace);
+                }
+                else
+                {
+                    _logger?.LogWarning("Exception while canceling alarm handling. Exception was {0}", ex.Message);
+                }
             }
         }
 
@@ -78,20 +85,29 @@ namespace Dacs7.Protocols
                                 using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                                 {
                                     cbh = new CallbackHandler<S7PendingAlarmAckDatagram>(id);
-                                    _alarmHandler.TryAdd(cbh.Id, cbh);
-                                    try
+                                    if (_alarmHandler.TryAdd(id, cbh))
                                     {
-                                        if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
-                                            return null;
 
-                                        if (cbh.Event != null)
+                                        _logger?.LogTrace("Alarmhandler with id {id} was added.", id);
+                                        try
                                         {
+                                            if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                            {
+                                                // we return false, because if one send faild we expect also all other ones failed.
+                                                _logger?.LogWarning("Could not send read pending alarm package with reference <{id}>.", id);
+                                                return null;
+                                            }
                                             alarmResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
                                         }
+                                        finally
+                                        {
+                                            _alarmHandler.TryRemove(id, out _);
+                                            _logger?.LogTrace("Alarmhandler with id {id} was removed.", id);
+                                        }
                                     }
-                                    finally
+                                    else
                                     {
-                                        _alarmHandler.TryRemove(cbh.Id, out _);
+                                        _logger?.LogWarning("Could not add pending alarm handler with reference <{id}>.", id);
                                     }
                                 }
                             }

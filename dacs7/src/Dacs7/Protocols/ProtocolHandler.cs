@@ -23,10 +23,9 @@ namespace Dacs7.Protocols
         private readonly SiemensPlcProtocolContext _s7Context;
         private readonly AsyncAutoResetEvent<bool> _connectEvent = new AsyncAutoResetEvent<bool>();
         private readonly ILogger _logger;
-        private readonly object _idLock = new object();
         private readonly Action<ConnectionState> _connectionStateChanged;
 
-        private bool _closeCalled;
+        private volatile bool _closeCalled;
         private SemaphoreSlim _concurrentJobs;
         private int _referenceId;
 
@@ -34,22 +33,12 @@ namespace Dacs7.Protocols
 
         internal ushort GetNextReferenceId()
         {
-            var id = Interlocked.Increment(ref _referenceId);
-
-            if (id < ushort.MinValue || id > ushort.MaxValue)
+            var id = unchecked((ushort)Interlocked.Increment(ref _referenceId));
+            if (id <= ushort.MinValue)
             {
-                lock (_idLock)
-                {
-                    id = Interlocked.Increment(ref _referenceId);
-                    if (id < ushort.MinValue || id > ushort.MaxValue)
-                    {
-                        Interlocked.Exchange(ref _referenceId, 0);
-                        id = Interlocked.Increment(ref _referenceId);
-                    }
-                }
+                return GetNextReferenceId();
             }
-            return Convert.ToUInt16(id);
-
+            return id;
         }
 
         public ProtocolHandler(Transport transport,
@@ -135,7 +124,9 @@ namespace Dacs7.Protocols
         private void Dispose(bool disposing)
         {
             if (_disposed)
+            {
                 return;
+            }
 
             if (disposing)
             {

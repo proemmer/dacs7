@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dacs7.Protocols
@@ -31,12 +32,19 @@ namespace Dacs7.Protocols
             {
                 foreach (var item in _writeHandler.ToList())
                 {
-                    item.Value.Event?.Set(null);
+                    item.Value?.Event?.Set(null);
                 }
             }
             catch (Exception ex)
             {
-                _logger?.LogWarning("Exception while cancelling write handling. Exception was {0}", ex.Message);
+                if (_logger?.IsEnabled(LogLevel.Debug) == true)
+                {
+                    _logger?.LogWarning("Exception while cancelling write handling. Exception was {0} - StackTrace: {1}", ex.Message, ex.StackTrace);
+                }
+                else
+                {
+                    _logger?.LogWarning("Exception while canceling read handling. Exception was {0}", ex.Message);
+                }
             }
             return Task.CompletedTask;
         }
@@ -74,16 +82,28 @@ namespace Dacs7.Protocols
                             using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                             {
                                 cbh = new CallbackHandler<IEnumerable<S7DataItemWriteResult>>(id);
-                                _writeHandler.TryAdd(cbh.Id, cbh);
-                                try
+                                if (_writeHandler.TryAdd(id, cbh))
                                 {
-                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
-                                        return false;
-                                    writeResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
+                                    _logger?.LogTrace("Write handler with id {id} was added.", id);
+                                    try
+                                    {
+                                        if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                        {
+                                            // we return false, because if one send faild we expect also all other ones failed.
+                                            _logger?.LogWarning("Could not send write package with reference <{id}>.", id);
+                                            return false;
+                                        }
+                                        writeResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
+                                    }
+                                    finally
+                                    {
+                                        _writeHandler.TryRemove(id, out _);
+                                        _logger?.LogTrace("Write handler with id {id} was removed.", id);
+                                    }
                                 }
-                                finally
+                                else
                                 {
-                                    _writeHandler.TryRemove(cbh.Id, out _);
+                                    _logger?.LogWarning("Could not add write handler with reference <{id}>.", id);
                                 }
                             }
                         }

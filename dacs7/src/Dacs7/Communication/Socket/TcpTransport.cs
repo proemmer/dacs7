@@ -90,7 +90,7 @@ namespace Dacs7.Communication.Socket
             }
             else if (datagramType == typeof(DataTransferDatagram))
             {
-                using (var datagram = DataTransferDatagram.TranslateFromMemory(buffer.Slice(processed), context, out var needMoreData, out processed))
+                using (var datagram = DataTransferDatagram.TranslateFromMemory(buffer, context, out var needMoreData, out processed))
                 {
                     if (!needMoreData)
                     {

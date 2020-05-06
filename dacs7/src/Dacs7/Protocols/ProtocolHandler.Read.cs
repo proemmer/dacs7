@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dacs7.Protocols
@@ -25,12 +26,19 @@ namespace Dacs7.Protocols
             {
                 foreach (var item in _readHandler.ToList())
                 {
-                    item.Value.Event?.Set(null);
+                    item.Value?.Event?.Set(null);
                 }
             }
             catch (Exception ex)
             {
-                _logger?.LogWarning("Exception while canceling read handling. Exception was {0}", ex.Message);
+                if (_logger?.IsEnabled(LogLevel.Debug) == true)
+                {
+                    _logger?.LogWarning("Exception while canceling read handling. Exception was {0} - StackTrace: {1}", ex.Message, ex.StackTrace);
+                }
+                else
+                {
+                    _logger?.LogWarning("Exception while canceling read handling. Exception was {0}", ex.Message);
+                }
             }
             return Task.CompletedTask;
         }
@@ -66,23 +74,29 @@ namespace Dacs7.Protocols
                             using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                             {
                                 cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
-                                if (_readHandler.TryAdd(cbh.Id, cbh))
+                                if (_readHandler.TryAdd(id, cbh))
                                 {
-
+                                    _logger?.LogTrace("Read handler with id {id} was added.", id);
                                     try
                                     {
                                         if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                        {
+                                            // we cancel return false, because if on esend faild we expect also all other ones failed.
+                                            _logger?.LogWarning("Could not send read package with reference <{id}>.", id);
                                             return false;
+                                        }
                                         readResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
                                     }
                                     finally
                                     {
-                                        _readHandler.TryRemove(cbh.Id, out _);
+                                        _readHandler.TryRemove(id, out _);
+                                        _logger?.LogTrace("Read handler with id {id} was removed.", id);
+                                        
                                     }
                                 }
                                 else
                                 {
-                                    _logger?.LogWarning("Could not add read handler with reference <{id}>.", cbh.Id);
+                                    _logger?.LogWarning("Could not add read handler with reference <{id}>.", id);
                                 }
                             }
                         }
@@ -173,7 +187,15 @@ namespace Dacs7.Protocols
                 {
                     _logger?.LogWarning("No data from read ack received for reference {0}", data.Header.Header.ProtocolDataUnitReference);
                 }
-                cbh.Event.Set(data.Data);
+
+                if(cbh.Event != null)
+                {
+                    cbh.Event.Set(data.Data);
+                }
+                else
+                {
+                    _logger?.LogWarning("No event for read handler found for received read ack reference {0}", data.Header.Header.ProtocolDataUnitReference);
+                }
             }
             else
             {

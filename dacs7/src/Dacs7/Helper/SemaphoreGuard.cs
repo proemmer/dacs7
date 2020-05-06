@@ -20,7 +20,7 @@ namespace Dacs7.Helper
             }
         }
 
-        public static async Task<SemaphoreGuard> Async(SemaphoreSlim semaphore)
+        public static async ValueTask<SemaphoreGuard> Async(SemaphoreSlim semaphore)
         {
             if (semaphore == null)
             {
@@ -28,7 +28,10 @@ namespace Dacs7.Helper
                 return null!;
             }
             var guard = new SemaphoreGuard(semaphore, false);
-            await semaphore.WaitAsync().ConfigureAwait(false);
+
+            // try to grab it sync because it's faster
+            if(!semaphore.Wait(0))
+                await semaphore.WaitAsync().ConfigureAwait(false);
             return guard;
         }
 

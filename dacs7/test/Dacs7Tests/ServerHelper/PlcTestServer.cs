@@ -109,7 +109,8 @@ namespace Dacs7Tests.ServerHelper
 
             do
             {
-                if (_semaphore != null) await _semaphore.WaitAsync();
+                if (_semaphore != null && !_semaphore.Wait(0)) 
+                    await _semaphore.WaitAsync();
                 try
                 {
                     await client.ConnectAsync();

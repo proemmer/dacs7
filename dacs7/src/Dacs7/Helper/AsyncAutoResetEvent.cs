@@ -85,7 +85,6 @@ namespace Dacs7
             }
         }
 
-
         /// <summary>
         /// Set a value for the Event.
         /// </summary>
@@ -111,7 +110,7 @@ namespace Dacs7
                     return false;
                 }
             }
-            toRelease?.SetResult(value);
+            toRelease?.TrySetResult(value);
             return true;
         }
     }

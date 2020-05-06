@@ -12,7 +12,10 @@
     <PackageTags>siemens plc S7 PC-S7-Connection TCP/IP-S7 communication .netcore Automation HMI C# VB.Net RFC-1006 IsoOnTcp-S7 SIMATIC</PackageTags>
     <PackageReleaseNotes>
       * worked on semaphore disposing to avoid objectdisposed and nullrefere exceptions when connection is shutting down
-    </PackageReleaseNotes>
+      * optimized semaphore guard
+      * added more logging
+      * optimized GetNextReferenceId
+</PackageReleaseNotes>
     <PackageProjectUrl>http://proemmer.github.io/dacs7</PackageProjectUrl>
     <PackageLicenseUrl>https://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
@@ -24,7 +27,7 @@
 
 
 
-    <Version>2.1.8</Version>
+    <Version>2.2.0</Version>
     <SignAssembly>true</SignAssembly>
     
     

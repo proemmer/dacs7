@@ -17,7 +17,7 @@ namespace Dacs7.Benchmarks
         private Dacs7Client _client;
         private ReadItem _item;
 
-        [Params("192.168.1.60:102,0,1")]
+        [Params("192.168.0.148:102,0,2")]
         public string Address;
 
         [Params("DB250.0,b,100", "DB250.0,b,1000", "DB250.1000,x1", "DB250.1100,w,10")]
