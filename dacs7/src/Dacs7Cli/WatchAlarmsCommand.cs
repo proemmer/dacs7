@@ -84,7 +84,7 @@ namespace Dacs7Cli
                         {
                             foreach (var alarm in results.Alarms)
                             {
-                                Console.WriteLine($"Alarm update: ID: {alarm.Id}   MsgNumber: {alarm.MsgNumber}  IsAck: {alarm.IsAck} ", alarm);
+                                Console.WriteLine($"Alarm update: ID: {alarm.Id}   MsgNumber: {alarm.MsgNumber} Id: {alarm.Id} IsAck: {alarm.IsAck} IsComing: {alarm.IsComing} IsGoing: {alarm.IsGoing} State: {alarm.State} EventState: {alarm.EventState} AckStateComing: {alarm.AckStateComing}  AckStateGoing: {alarm.AckStateGoing} ", alarm);
                             }
                         }
                         else if (!results.ChannelClosed)

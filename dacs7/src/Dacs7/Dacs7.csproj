@@ -15,6 +15,7 @@
       * optimized semaphore guard
       * added more logging
       * optimized GetNextReferenceId
+      * filed alarm events (also handle ack event)
 </PackageReleaseNotes>
     <PackageProjectUrl>http://proemmer.github.io/dacs7</PackageProjectUrl>
     <PackageLicenseUrl>https://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
@@ -27,7 +28,7 @@
 
 
 
-    <Version>2.2.0</Version>
+    <Version>2.2.1</Version>
     <SignAssembly>true</SignAssembly>
     
     

@@ -84,7 +84,7 @@ namespace Dacs7.Communication
 
 
                 _tokenSource = new CancellationTokenSource();
-                _receivingTask = await Task.Factory.StartNew(() => StartReceive(), _tokenSource.Token,TaskCreationOptions.LongRunning, TaskScheduler.Default).ConfigureAwait(false);
+                _receivingTask = Task.Factory.StartNew(() => StartReceive(), _tokenSource.Token,TaskCreationOptions.LongRunning, TaskScheduler.Default);
                 await PublishConnectionStateChanged(true).ConfigureAwait(false);
             }
             catch (Exception)
