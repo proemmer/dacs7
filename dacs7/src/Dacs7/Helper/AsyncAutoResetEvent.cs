@@ -63,7 +63,7 @@ namespace Dacs7
                 else
                 {
                     CancellationTokenRegistration registration = default;
-                    var tcs = new TaskCompletionSource<T>();
+                    var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
                     if (token != CancellationToken.None)
                     {
                         registration = token.Register(() =>

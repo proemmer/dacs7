@@ -3,13 +3,14 @@
 
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 
 namespace Dacs7.Domain
 {
     internal sealed class TagParser
     {
 
-        public struct TagParserResult
+        public struct TagParserResult : IEquatable<TagParserResult>
         {
             public PlcArea Area { get; internal set; }
             public ushort DbNumber { get; internal set; }
@@ -20,6 +21,26 @@ namespace Dacs7.Domain
             public PlcEncoding Encoding { get; internal set; }
 
             public TagParserState ErrorState { get; internal set; }
+
+            public override bool Equals(object obj) => obj is TagParserResult result && Equals(result);
+            public bool Equals(TagParserResult other) => Area == other.Area && DbNumber == other.DbNumber && Offset == other.Offset && Length == other.Length && EqualityComparer<Type>.Default.Equals(VarType, other.VarType) && EqualityComparer<Type>.Default.Equals(ResultType, other.ResultType) && Encoding == other.Encoding && ErrorState == other.ErrorState;
+
+            public override int GetHashCode()
+            {
+                var hashCode = 1919716321;
+                hashCode = hashCode * -1521134295 + Area.GetHashCode();
+                hashCode = hashCode * -1521134295 + DbNumber.GetHashCode();
+                hashCode = hashCode * -1521134295 + Offset.GetHashCode();
+                hashCode = hashCode * -1521134295 + Length.GetHashCode();
+                hashCode = hashCode * -1521134295 + EqualityComparer<Type>.Default.GetHashCode(VarType);
+                hashCode = hashCode * -1521134295 + EqualityComparer<Type>.Default.GetHashCode(ResultType);
+                hashCode = hashCode * -1521134295 + Encoding.GetHashCode();
+                hashCode = hashCode * -1521134295 + ErrorState.GetHashCode();
+                return hashCode;
+            }
+
+            public static bool operator ==(TagParserResult left, TagParserResult right) => left.Equals(right);
+            public static bool operator !=(TagParserResult left, TagParserResult right) => !(left == right);
         }
 
         public static TagParserResult ParseTag(string tag) => ParseTag(tag, true);
