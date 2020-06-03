@@ -78,11 +78,14 @@ namespace Dacs7Cli
                 }
                 ).ToList();
 
-                await client.WriteAsync(write);
-
+                var results = await client.WriteAsync(write);
+                var resultEnumerator = results.GetEnumerator();
                 foreach (var item in write)
                 {
-                    logger?.LogInformation($"Write: {item.Key}={item.Value}");
+                    if (resultEnumerator.MoveNext())
+                    {
+                        logger?.LogInformation($"Write: {item.Key}={item.Value}  result: {resultEnumerator.Current}");
+                    }
                 }
             }
             catch (Exception ex)
