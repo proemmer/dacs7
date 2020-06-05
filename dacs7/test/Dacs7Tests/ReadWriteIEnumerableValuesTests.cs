@@ -323,6 +323,27 @@ namespace Dacs7.Tests
             });
         }
 
+
+        [Fact]
+        // DB2241.0,B,15450
+        public async Task WriteBigDBData()
+        {
+            await PlcTestServer.ExecuteClientAsync(async (client) =>
+            {
+                var data = Enumerable.Repeat((byte)0x00, 15450).ToArray();
+                var originWriteTags = new Dictionary<string, object>
+                {
+                    { $"DB2241.0,b,15450" , data }
+                };
+
+                var writeResults = (await client.WriteAsync(originWriteTags)).ToArray();
+                Assert.Equal(ItemResponseRetValue.DataError, writeResults[0]);
+                var results = (await client.ReadAsync(originWriteTags.Keys)).ToArray();
+                Assert.Equal(ItemResponseRetValue.DataError, results[0].ReturnCode);
+
+            });
+        }
+
         //[Fact]
         //public async Task ReadWriteBigDBData2()
         //{

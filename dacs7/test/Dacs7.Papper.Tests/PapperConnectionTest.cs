@@ -24,7 +24,7 @@ namespace Dacs7.Papper.Tests
         [InlineData("DB_Setup_AGV_BST1", typeof(DB_Setup_AGV_BST1))]
         public async Task TestMultiWrite(string mapping, Type type)
         {
-            _client = new Dacs7Client("192.168.1.60:102,0,1", PlcConnectionType.Basic, 5000);
+            _client = new Dacs7Client("192.168.0.148:102,0,2", PlcConnectionType.Basic, 5000);
             await _client.ConnectAsync();
 
             if (_client.IsConnected && (_mapper == null || _mapper.PduSize > _client.PduSize))

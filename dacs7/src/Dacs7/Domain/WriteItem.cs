@@ -20,6 +20,8 @@ namespace Dacs7
 
         internal new WriteItem Parent { get; set; }
 
+        internal new bool IsPart => Parent != null;
+
         internal WriteItem()
         {
         }
@@ -94,6 +96,7 @@ namespace Dacs7
         public static WriteItem CreateChild(WriteItem item, int offset, ushort length)
         {
             var result = ReadItem.CreateChild(item, offset, length).Clone();
+            result.Parent = item;
             result.Data = item.Data.Slice(offset - item.Offset, length);
             return result;
         }
