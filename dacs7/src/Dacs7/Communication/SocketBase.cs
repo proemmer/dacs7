@@ -59,6 +59,8 @@ namespace Dacs7.Communication
             return Task.CompletedTask;
         }
 
+        public void EnableAutoReconnectReconnect() => _disableReconnect = false; // we have a connection, so enable reconnect
+
         protected abstract Task InternalOpenAsync(bool internalCall = false);
 
         public abstract Task<SocketError> SendAsync(Memory<byte> data);

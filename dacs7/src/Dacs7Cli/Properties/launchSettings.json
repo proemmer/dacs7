@@ -2,7 +2,7 @@
   "profiles": {
     "Dacs7Cli": {
       "commandName": "Project",
-      "commandLineArgs": "write --address 192.168.0.148  \"DB2241.0,B,15450=T\""
+      "commandLineArgs": "write --address 127.0.0.1:1888  \"DB2241.0,B,15450=T\""
     }
   }
 }

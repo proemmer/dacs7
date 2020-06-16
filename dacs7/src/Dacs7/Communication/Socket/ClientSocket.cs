@@ -80,8 +80,8 @@ namespace Dacs7.Communication
                 _logger?.LogDebug("Socket connected. ({0}:{1})", _config.Hostname, _config.ServiceName);
                 if (_config.KeepAlive)
                     _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, 1);
-                _disableReconnect = false; // we have a connection, so enable reconnect
 
+                if (internalCall) EnableAutoReconnectReconnect();
 
                 _tokenSource = new CancellationTokenSource();
                 _receivingTask = Task.Factory.StartNew(() => StartReceive(), _tokenSource.Token,TaskCreationOptions.LongRunning, TaskScheduler.Default);
