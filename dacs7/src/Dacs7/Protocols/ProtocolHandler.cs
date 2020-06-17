@@ -75,15 +75,16 @@ namespace Dacs7.Protocols
                     await _transport.Client.OpenAsync().ConfigureAwait(false);
                     try
                     {
-                        if (!await _connectEvent.WaitAsync(_s7Context.Timeout * 2).ConfigureAwait(false))
+                        if (!_transport.Client.IsConnected) ThrowHelper.ThrowNotConnectedException();
+
+                        if (!await _connectEvent.WaitAsync(_s7Context.Timeout * 2).ConfigureAwait(false) || !_transport.Client.IsConnected)
                         {
-                            await CloseAsync().ConfigureAwait(false);
                             ThrowHelper.ThrowNotConnectedException();
                         }
                     }
                     catch (TimeoutException)
                     {
-                        await CloseAsync().ConfigureAwait(false);
+                        await InternalCloseAsync().ConfigureAwait(false);
                         ThrowHelper.ThrowNotConnectedException();
                     }
 
@@ -92,7 +93,7 @@ namespace Dacs7.Protocols
                 }
                 catch (Dacs7NotConnectedException)
                 {
-                    await CloseAsync().ConfigureAwait(false);
+                    await InternalCloseAsync().ConfigureAwait(false);
                     throw;
                 }
                 catch (Exception ex)
@@ -107,6 +108,14 @@ namespace Dacs7.Protocols
         /// </summary>
         /// <returns></returns>
         public async Task CloseAsync()
+        {
+            using (await SemaphoreGuard.Async(_connectSema))
+            {
+                await InternalCloseAsync().ConfigureAwait(false);
+            }
+        }
+
+        private async Task InternalCloseAsync()
         {
             if (!_closeCalled)
             {
@@ -281,6 +290,9 @@ namespace Dacs7.Protocols
         {
             if (ConnectionState != state)
             {
+                ConnectionState = state;
+                _connectionStateChanged?.Invoke(state);
+
 
                 if (state == ConnectionState.TransportOpened)
                 {
@@ -297,9 +309,7 @@ namespace Dacs7.Protocols
                     //    _concurrentJobs = null;
                     //}
                 }
-
-                ConnectionState = state;
-                _connectionStateChanged?.Invoke(state);
+                
             }
         }
 

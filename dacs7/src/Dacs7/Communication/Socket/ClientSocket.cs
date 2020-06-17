@@ -213,7 +213,7 @@ namespace Dacs7.Communication
                     {
                         if (_socket != null && !_shutdown)
                         {
-                            if (_logger.IsEnabled(LogLevel.Debug))
+                            if (_logger?.IsEnabled(LogLevel.Debug) == true)
                             {
                                 _logger?.LogError("Socket exception ({0}): {1} - Stacktrace {2}", connectionInfo, ex.Message, ex.StackTrace);
                             }
