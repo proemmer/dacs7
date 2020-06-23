@@ -67,7 +67,8 @@ namespace Dacs7.Communication
         {
             try
             {
-                if (_shutdown) return;
+                if (_shutdown || IsConnected) return;
+                await DisposeSocketAsync().ConfigureAwait(false);
                 _identity = null;
                 _socket = new System.Net.Sockets.Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
                 {

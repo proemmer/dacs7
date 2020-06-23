@@ -290,24 +290,26 @@ namespace Dacs7.Protocols
         {
             if (ConnectionState != state)
             {
+                if((state == ConnectionState.TransportOpened && ConnectionState != ConnectionState.PendingOpenTransport) ||
+                    state == ConnectionState.PendingOpenPlc && ConnectionState != ConnectionState.TransportOpened)
+                {
+                    // ignore state change
+                    return;
+                }
+
                 ConnectionState = state;
                 _connectionStateChanged?.Invoke(state);
 
 
                 if (state == ConnectionState.TransportOpened)
                 {
+                    // start comm setup only if state is in pending open transport
                     await StartS7CommunicationSetup().ConfigureAwait(false);
+                    // after this ack received we should be in state PendingOpenPlc
                 }
                 else if (state == ConnectionState.Closed)
                 {
                     await CancelPendingEvents().ConfigureAwait(false);
-
-                    // We should not dispose here because some request could be ongoing and where killed due to sema disposing
-                    //if (_concurrentJobs != null)
-                    //{
-                    //    _concurrentJobs?.Dispose();
-                    //    _concurrentJobs = null;
-                    //}
                 }
                 
             }

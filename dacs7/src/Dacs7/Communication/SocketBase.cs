@@ -4,7 +4,9 @@
 
 using Microsoft.Extensions.Logging;
 using System;
+using System.Net.Http.Headers;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dacs7.Communication
@@ -16,17 +18,14 @@ namespace Dacs7.Communication
         public delegate Task OnConnectionStateChangedHandler(string socketHandle, bool connected);
         public delegate Task<int> OnDataReceivedHandler(string socketHandle, Memory<byte> aBuffer);
         public delegate Task OnSocketShutdownHandler(string socketHandle);
-
-        #region Fields
         protected readonly IConfiguration _configuration;
         protected readonly ILogger _logger;
+        
 
         protected bool _disableReconnect;
         protected bool _shutdown;
         protected string _identity;
-        #endregion
 
-        #region Properties
 
         public bool IsConnected { get; protected set; }
         public bool Shutdown => _shutdown;
@@ -38,7 +37,7 @@ namespace Dacs7.Communication
 
         public abstract string Identity { get; }
 
-        #endregion
+
 
         public SocketBase(IConfiguration configuration, ILogger logger)
         {
@@ -59,7 +58,10 @@ namespace Dacs7.Communication
             return Task.CompletedTask;
         }
 
-        public void EnableAutoReconnectReconnect() => _disableReconnect = false; // we have a connection, so enable reconnect
+        public void EnableAutoReconnectReconnect()
+        {
+            _disableReconnect = _configuration.AutoconnectTime <= 0; // we have a connection, so enable reconnect if configured
+        }
 
         protected abstract Task InternalOpenAsync(bool internalCall = false);
 

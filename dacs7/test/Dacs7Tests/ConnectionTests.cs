@@ -7,6 +7,20 @@ namespace Dacs7.Tests
 {
     public class ConnectionTests
     {
+
+        public enum PlcShutdonMode
+        {
+            StopAfterConnect,
+            StopAfterCrReceived,
+            StopAfterCrReceivedAndCcWasResponded,
+            StopAfterPlcSetupReceived,
+            StopAfterPlcSetupWasReceivedAndResponded,
+            StopAfterFirstMessageAfterSetup
+        }
+
+
+
+
         [Theory]
         [InlineData(1)]
         [InlineData(10)]
@@ -15,67 +29,139 @@ namespace Dacs7.Tests
         [InlineData(150)]
         [InlineData(1000)]
         [InlineData(2000)]
-        public async Task ConnectToPlcButAbortBeforRFC1006Finished(int sleepTime)
+        [InlineData(2500)]
+        [InlineData(5000)]
+        [InlineData(4995)]
+        [InlineData(5010)]
+        public async Task ServerDiconnectedAfterConnectTest(int sleepTime)
         {
-
-            static async Task RunPlcSimu(int delay)
-            {
-                var listener = new TcpListener(IPAddress.Loopback, 1999);
-                listener.Start();
-
-                var client = listener.AcceptTcpClient();
-                await Task.Delay(delay);
-                client.Close();
-                listener.Stop();
-            }
-
-
-            _ = Task.Run(() => RunPlcSimu(sleepTime));
-
-            var client = new Dacs7Client("127.0.0.1:1999", PlcConnectionType.Basic, 5000)
+            _ = Task.Run(() => RunPlcSimu(1999, sleepTime, PlcShutdonMode.StopAfterConnect));
+            var client = new Dacs7Client("127.0.0.1:1999", PlcConnectionType.Basic, 500)
             {
                 PduSize = 960
             };
+            await Assert.ThrowsAsync<Dacs7NotConnectedException>(async () => await client.ConnectAsync());
+        }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(50)]
+        [InlineData(100)]
+        [InlineData(150)]
+        [InlineData(1000)]
+        [InlineData(2000)]
+        [InlineData(2500)]
+        [InlineData(5000)]
+        [InlineData(4995)]
+        [InlineData(5010)]
+        public async Task ServerDisconnectedAfterFirstMessageReceivedTest(int sleepTime)
+        {
+            _ = Task.Run(() => RunPlcSimu(1998, sleepTime, PlcShutdonMode.StopAfterCrReceived));
+            var client = new Dacs7Client("127.0.0.1:1998", PlcConnectionType.Basic, 500)
+            {
+                PduSize = 960
+            };
             await Assert.ThrowsAsync<Dacs7NotConnectedException>(async () => await client.ConnectAsync());
 
         }
 
         [Theory]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(50)]
         [InlineData(100)]
-        public async Task ConnectToPlcButAbortAfterRFC1006Finished(int sleepTime)
+        [InlineData(150)]
+        [InlineData(1000)]
+        [InlineData(2000)]
+        [InlineData(2500)]
+        [InlineData(5000)]
+        [InlineData(4995)]
+        [InlineData(5010)]
+        public async Task ServerDisconnectedAfterCCResponseTest(int sleepTime)
         {
-
-            static async Task RunPlcSimu(int delay)
+            _ = Task.Run(() => RunPlcSimu(1997, sleepTime, PlcShutdonMode.StopAfterCrReceivedAndCcWasResponded));
+            var client = new Dacs7Client("127.0.0.1:1997", PlcConnectionType.Basic, 500)
             {
-                var listener = new TcpListener(IPAddress.Loopback, 1999);
-                listener.Start();
+                PduSize = 960
+            };
+            await Assert.ThrowsAsync<Dacs7NotConnectedException>(async () => await client.ConnectAsync());
+        }
 
-                var client = listener.AcceptTcpClient();
-                var buffer = new byte[50];
-                using (NetworkStream stream = client.GetStream())
-                {
-                    var read = await stream.ReadAsync(buffer, 0, buffer.Length);
+        [Theory]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(50)]
+        [InlineData(100)]
+        [InlineData(150)]
+        [InlineData(1000)]
+        [InlineData(2000)]
+        [InlineData(2500)]
+        [InlineData(5000)]
+        [InlineData(4995)]
+        [InlineData(5010)]
+        public async Task ServerDisconnectAftePlcSetupReceivedTest(int sleepTime)
+        {
+            _ = Task.Run(() => RunPlcSimu(1996, sleepTime, PlcShutdonMode.StopAfterPlcSetupReceived));
+            var client = new Dacs7Client("127.0.0.1:1996", PlcConnectionType.Basic, 500)
+            {
+                PduSize = 960
+            };
+            await Assert.ThrowsAsync<Dacs7NotConnectedException>(async () => await client.ConnectAsync());
+        }
 
-                    var sendData = new byte[] { 0x03, 0x00, 0x00, 0x16, 0x11, 0xd0, 0x00, 0x01, 0x08, 0x5c, 0x00, 0xc0, 0x01, 0x0a, 0xc1, 0x02, 0x01, 0x00, 0xc2, 0x02, 0x01, 0x02 };
-                    await stream.WriteAsync(sendData, 0, sendData.Length);
 
 
-                    read = await stream.ReadAsync(buffer, 0, buffer.Length);
-                    sendData = new byte[] { 0x03, 0x00, 0x00, 0x1b, 0x02, 0xf0, 0x80, 0x32, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x00, 0x00, 0x05, 0x00, 0x05, 0x01, 0xe0 };
-                    await stream.WriteAsync(sendData, 0, sendData.Length);
 
-                    await Task.Delay(delay);
-                }
+        [Theory]
+        [InlineData(5, 3)]
+        [InlineData(10, 3)]
+        [InlineData(100, 3)]
+        public async Task ServerDisconnectAfterSucessfullyConnectedAndWaitingForManualReconnectTest(int sleepTime, int loops)
+        {
+            var client = new Dacs7Client("127.0.0.1:1995", PlcConnectionType.Basic, 500)
+            {
+                PduSize = 960
+            };
 
-                client.Close();
-                listener.Stop();
+            for (int i = 0; i < loops; i++)
+            {
+                _ = Task.Run(() => RunPlcSimu(1995, sleepTime, PlcShutdonMode.StopAfterPlcSetupWasReceivedAndResponded));
+
+                await client.ConnectAsync();
+                Assert.True(client.IsConnected, "Not Connected!");
+
+                await Task.Delay((sleepTime * 2) + 100);
+                Assert.False(client.IsConnected, "Not Disconnected!");
+
+                _ = Task.Run(() => RunPlcSimu(1995, sleepTime, PlcShutdonMode.StopAfterCrReceived));
+
+                await Assert.ThrowsAsync<Dacs7NotConnectedException>(async () => await client.ConnectAsync());
+                Assert.False(client.IsConnected, "Not Connected!");
+
+
+                _ = Task.Run(() => RunPlcSimu(1995, sleepTime, PlcShutdonMode.StopAfterPlcSetupWasReceivedAndResponded));
+
+                await client.ConnectAsync();
+                Assert.True(client.IsConnected, "Not Connected!");
+
+                await Task.Delay((sleepTime * 2) + 100);
+                Assert.False(client.IsConnected, "Not Disconnected!");
+
+                await client.DisconnectAsync();
+                Assert.False(client.IsConnected, "Not Disconnected!");
             }
+        }
 
 
-            _ = Task.Run(() => RunPlcSimu(sleepTime));
+        [Theory]
+        [InlineData(100)]
+        public async Task ServerDisconnectAfterSucessfullyConnectedAndWaitingForAutoReconnectTest(int sleepTime)
+        {
+            // simaulate plc disconnect after sleeptime
+            _ = Task.Run(() => RunPlcSimu(1994, sleepTime, PlcShutdonMode.StopAfterPlcSetupWasReceivedAndResponded));
 
-            var client = new Dacs7Client("127.0.0.1:1999", PlcConnectionType.Basic, 5000)
+            var client = new Dacs7Client("127.0.0.1:1994", PlcConnectionType.Basic, 500, null, 500)
             {
                 PduSize = 960
             };
@@ -86,13 +172,103 @@ namespace Dacs7.Tests
             await Task.Delay(sleepTime * 2);
             Assert.False(client.IsConnected, "Not Disconnected!");
 
-            _ = Task.Run(() => RunPlcSimu(10000));
+            _ = Task.Run(() => RunPlcSimu(1994, 2000, PlcShutdonMode.StopAfterPlcSetupWasReceivedAndResponded));
 
-            await Task.Delay(5000);
+            await Task.Delay(500); // wait for autoReconnect
             Assert.True(client.IsConnected, "Not Reconnected!");
 
             await client.DisconnectAsync();
             Assert.False(client.IsConnected, "Not Disconnected!");
+        }
+
+        [Theory]
+        [InlineData(1, 3)]
+        [InlineData(10, 3)]
+        [InlineData(100, 3)]
+        public async Task AutoReconnectTest(int sleepTime, int loops)
+        {
+            var client = new Dacs7Client("127.0.0.1:1993", PlcConnectionType.Basic, 5000)
+            {
+                PduSize = 960
+            };
+
+
+            for (int i = 0; i < loops; i++)
+            {
+                _ = Task.Run(() => RunPlcSimu(1993, sleepTime, PlcShutdonMode.StopAfterPlcSetupWasReceivedAndResponded));
+
+                await client.ConnectAsync();
+                Assert.True(client.IsConnected, "Not Connected!");
+
+                await Task.Delay((sleepTime * 2) + 100);
+                Assert.False(client.IsConnected, "Not Disconnected!");
+
+                _ = Task.Run(() => RunPlcSimu(1993, sleepTime, PlcShutdonMode.StopAfterCrReceived));
+
+                await Assert.ThrowsAsync<Dacs7NotConnectedException>(async () => await client.ConnectAsync());
+                Assert.False(client.IsConnected, "Not Connected!");
+
+
+                _ = Task.Run(() => RunPlcSimu(1993, sleepTime, PlcShutdonMode.StopAfterPlcSetupWasReceivedAndResponded));
+
+                await client.ConnectAsync();
+                Assert.True(client.IsConnected, "Not Connected!");
+
+                await Task.Delay((sleepTime * 2) + 100);
+                Assert.False(client.IsConnected, "Not Disconnected!");
+
+
+
+                await client.DisconnectAsync();
+                Assert.False(client.IsConnected, "Not Disconnected!");
+            }
+
+        }
+
+
+        private static async Task RunPlcSimu(int port, int delay, PlcShutdonMode endMode = 0)
+        {
+            var listener = new TcpListener(IPAddress.Loopback, port);
+            listener.Start();
+
+            var client = listener.AcceptTcpClient();
+            var buffer = new byte[50];
+            using (NetworkStream stream = client.GetStream())
+            {
+                if (endMode != PlcShutdonMode.StopAfterConnect)
+                {
+                    if ((int)endMode >= (int)PlcShutdonMode.StopAfterCrReceived)
+                    {
+                        // CR, CC
+                        await stream.ReadAsync(buffer, 0, buffer.Length);
+                        if ((int)endMode >= (int)PlcShutdonMode.StopAfterCrReceivedAndCcWasResponded)
+                        {
+                            var sendData = new byte[] { 0x03, 0x00, 0x00, 0x16, 0x11, 0xd0, 0x00, 0x01, 0x08, 0x5c, 0x00, 0xc0, 0x01, 0x0a, 0xc1, 0x02, 0x01, 0x00, 0xc2, 0x02, 0x01, 0x02 };
+                            await stream.WriteAsync(sendData, 0, sendData.Length);
+                        }
+                    }
+                    if ((int)endMode >= (int)PlcShutdonMode.StopAfterPlcSetupReceived)
+                    {
+                        // PlcSetup
+                        await stream.ReadAsync(buffer, 0, buffer.Length);
+                        if ((int)endMode >= (int)PlcShutdonMode.StopAfterPlcSetupWasReceivedAndResponded)
+                        {
+                            var sendData = new byte[] { 0x03, 0x00, 0x00, 0x1b, 0x02, 0xf0, 0x80, 0x32, 0x03, 0x00, 0x00, 0x00, 0x01, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x00, 0x00, 0x05, 0x00, 0x05, 0x01, 0xe0 };
+                            await stream.WriteAsync(sendData, 0, sendData.Length);
+                        }
+                    }
+                    if ((int)endMode >= (int)PlcShutdonMode.StopAfterFirstMessageAfterSetup)
+                    {
+                        // PlcSetup
+                        await stream.ReadAsync(buffer, 0, buffer.Length);
+                    }
+                }
+
+                await Task.Delay(delay);
+            }
+
+            client.Close();
+            listener.Stop();
         }
     }
 }

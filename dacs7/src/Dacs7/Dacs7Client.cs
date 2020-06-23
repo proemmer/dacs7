@@ -97,16 +97,17 @@ namespace Dacs7
         /// </summary>
         public event ConnectionStateChangedEventHandler ConnectionStateChanged;
 
+
         /// <summary>
         /// Constructor of Dacs7Client
         /// </summary>
         /// <param name="address">The address of the plc  [IP or Hostname]:[Rack],[Slot]  where as rack and slot ar optional  default is Rack = 0, Slot = 2</param>
         /// <param name="connectionType">The <see cref="PlcConnectionType"/> for the connection.</param>
-        public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg, int timeout = 5000, ILoggerFactory loggerFactory = null)
+        public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg, int timeout = 5000, ILoggerFactory loggerFactory = null, int autoReconnectTime = 5000)
         {
             _logger = loggerFactory?.CreateLogger<Dacs7Client>();
             S7Context = new SiemensPlcProtocolContext { Timeout = timeout };
-            ProtocolHandler = new ProtocolHandler(InitializeTransport(address, connectionType), S7Context, UpdateConnectionState, loggerFactory);
+            ProtocolHandler = new ProtocolHandler(InitializeTransport(address, connectionType, autoReconnectTime), S7Context, UpdateConnectionState, loggerFactory);
         }
 
         /// <summary>
@@ -175,7 +176,7 @@ namespace Dacs7
             }
         }
 
-        private TcpTransport InitializeTransport(string address, PlcConnectionType connectionType)
+        private TcpTransport InitializeTransport(string address, PlcConnectionType connectionType, int autoReconnectTime)
         {
             _logger?.LogDebug("Start configuring dacs7 with Socket interface");
             ParseParametersFromAddress(address, out var host, out var port, out var rack, out var slot);
@@ -187,7 +188,8 @@ namespace Dacs7
                 new ClientSocketConfiguration
                 {
                     Hostname = host,
-                    ServiceName = port
+                    ServiceName = port,
+                    AutoconnectTime = autoReconnectTime
                 }
             );
             _logger?.LogDebug("Transport-Configuration: {0}.", transport.Configuration);

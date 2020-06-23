@@ -71,7 +71,7 @@ namespace Dacs7.Communication.Socket
         {
             var state = OnGetConnectionState?.Invoke();
             if (state == ConnectionState.Closed && connected) return SendTcpConnectionRequest();
-            if (state == ConnectionState.Opened && !connected) return OnUpdateConnectionState?.Invoke(ConnectionState.Closed);
+            if (state != ConnectionState.Closed && !connected) return OnUpdateConnectionState?.Invoke(ConnectionState.Closed); // close in any case
             return Task.CompletedTask;
         }
 
