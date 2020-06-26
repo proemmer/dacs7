@@ -9,6 +9,7 @@ namespace Dacs7.Domain
         ReadSsl = 0x01,     //"Read SZL"
         Msgs = 0x02,       //"Message service"  Header constant is also different here
         TransStop = 0x03,  //"Transition to STOP"              //PLC changed state to STOP 
+        AlarmSQInd = 0x11,
         AlarmInd = 0x12,   //"ALARM indication"                //PLC is indicating a ALARM message 
         AlarmInit = 0x13,  //"ALARM initiate"                  //HMI/SCADA initiating ALARM subscription 
         AlarmAck1 = 0x0b,  //"ALARM ack 1"                    //Alarm was acknowledged in HMI/SCADA 
