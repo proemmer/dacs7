@@ -95,6 +95,20 @@ namespace Dacs7
         }
 
         /// <summary>
+        /// Event is set but nobody is watching
+        /// </summary>
+        public bool IsSet => _signaled;
+
+        /// <summary>
+        /// Reset the event
+        /// </summary>
+        public void Reset()
+        {
+            _lastValue = default;
+            _signaled = false;
+        }
+
+        /// <summary>
         /// Set a value for the Event.
         /// </summary>
         /// <param name="value">Vslue to set</param>

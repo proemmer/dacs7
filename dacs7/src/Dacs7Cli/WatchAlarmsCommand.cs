@@ -77,24 +77,27 @@ namespace Dacs7Cli
                     });
 
 
-                    while (true)
+
+                    using (var subscription = client.CreateAlarmSubscription())
                     {
-                        var results = await client.ReceiveAlarmUpdatesAsync(c.Token);
-                        if (results.HasAlarms)
+                        while (true)
                         {
-                            foreach (var alarm in results.Alarms)
+                            var results = await subscription.ReceiveAlarmUpdatesAsync(c.Token);
+                            if (results.HasAlarms)
                             {
-                                Console.WriteLine($"Alarm update: ID: {alarm.Id}   MsgNumber: {alarm.MsgNumber} Id: {alarm.Id} IsAck: {alarm.IsAck} IsComing: {alarm.IsComing} IsGoing: {alarm.IsGoing} State: {alarm.State} EventState: {alarm.EventState} AckStateComing: {alarm.AckStateComing}  AckStateGoing: {alarm.AckStateGoing} ", alarm);
+                                foreach (var alarm in results.Alarms)
+                                {
+                                    Console.WriteLine($"Alarm update: ID: {alarm.Id}   MsgNumber: {alarm.MsgNumber} Id: {alarm.Id} IsAck: {alarm.IsAck} IsComing: {alarm.IsComing} IsGoing: {alarm.IsGoing} State: {alarm.State} EventState: {alarm.EventState} AckStateComing: {alarm.AckStateComing}  AckStateGoing: {alarm.AckStateGoing} ", alarm);
+                                }
                             }
-                        }
-                        else if (!results.ChannelClosed)
-                        {
-                            await results.CloseUpdateChannel();
-                            break;
-                        }
-                        else
-                        {
-                            break;
+                            else if (!results.ChannelClosed)
+                            {
+                                break;
+                            }
+                            else
+                            {
+                                break;
+                            }
                         }
                     }
 
