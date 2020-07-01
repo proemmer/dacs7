@@ -60,6 +60,14 @@
   <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.2'">
     <DefineConstants>SPANSUPPORT;$(AdditionalConstants)</DefineConstants>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp3.1'">
+    <DefineConstants>SPANSUPPORT;$(AdditionalConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp3.2'">
+    <DefineConstants>SPANSUPPORT;$(AdditionalConstants)</DefineConstants>
+  </PropertyGroup>
   
 
   <ItemGroup>

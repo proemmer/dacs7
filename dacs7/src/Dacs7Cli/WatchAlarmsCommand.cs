@@ -80,6 +80,11 @@ namespace Dacs7Cli
 
                     using (var subscription = client.CreateAlarmSubscription())
                     {
+                        var pendingResults = await client.ReadPendingAlarmsAsync();
+                        foreach (var alarm in pendingResults)
+                        {
+                            Console.WriteLine($"Pending Alarm: ID: {alarm.Id}   MsgNumber: {alarm.MsgNumber} Id: {alarm.Id} IsAck: {alarm.IsAck} IsComing: {alarm.IsComing} IsGoing: {alarm.IsGoing} State: {alarm.State} EventState: {alarm.EventState} AckStateComing: {alarm.AckStateComing}  AckStateGoing: {alarm.AckStateGoing} ", alarm);
+                        }
                         while (true)
                         {
                             var results = await subscription.ReceiveAlarmUpdatesAsync(c.Token);
