@@ -1,0 +1,83 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/default.css">
+    <link rel="stylesheet" href="../styles/main.css">
+  </head>
+  <body>
+    <article>
+<h1 id="read-from-plc">read from plc</h1>
+
+<p>You have a couple of possibilities to read data from the plc. These are described below.</p>
+<p>You can read more the one data in a single call of the read method by providing the read items to the method.</p>
+<p>For each read item you will get a DataValue as a result.</p>
+<pre><code class="lang-cs">    public class DataValue
+    {
+        ItemResponseRetValue ReturnCode { get; }
+        bool IsSuccessReturnCode { get; }
+        Type Type { get; }
+        Memory&lt;byte&gt; Data { get; }
+        object Value { get; };
+        T GetValue&lt;T&gt;();
+
+        string GetValueAsString(this DataValue dataValue, string separator = &quot; &quot;);
+        string GetValueAsString(this DataValue dataValue, DataValueFormatter formatter, string separator = &quot; &quot;)
+    }
+</code></pre>
+<h2 id="read-data-by-using-the-tag-syntax">Read data by using the tag syntax</h2>
+<p>For details of this syntax see the area TagSyntax.</p>
+<pre><code class="lang-cs">
+// Read arrays of bytes from the PLC by using the tag syntax shorthand method
+var readResults1 = await _client.ReadAsync(&quot;DB1114.0,b,100&quot;, &quot;DB1114.100,b,500&quot;);
+
+// Read arrays of bytes from the PLC by using the tag syntax and the read items.
+var readResults1 = await _client.ReadAsync(ReadItem.CreateFromTag(&quot;DB1114.0,b,100&quot;), 
+                                           ReadItem.CreateFromTag(&quot;DB1114.100,b,500&quot;));
+
+
+</code></pre>
+<h2 id="read-data-by-using-the-read-item-class">Read data by using the read item class</h2>
+<pre><code class="lang-cs">var readResults = await _client.ReadAsync(ReadItem.Create&lt;ushort&gt;(&quot;DB1114&quot;, 0, 100), 
+                                          ReadItem.Create&lt;byte[]&gt;(&quot;DB1114&quot;, 100, 500));
+if (results.Count() == 2)
+{
+    if(readResults[0].IsSuccessReturnCode) 
+    {
+        Console.WriteLine(readResults[0].Value);
+    }
+    // or
+    if(readResults[1].IsSuccessReturnCode) 
+    {
+        Console.WriteLine(readResults[1].GetValue&lt;byte[]&gt;());
+    }
+}
+</code></pre>
+<h2 id="read-and-write-bit-data">Read and write bit data</h2>
+<p>The offset is normally in bytes, but if you address a Boolean, you have to pass the address in bits (byteOffset * 8 + bitOffset).</p>
+<pre><code class="lang-cs">var readResults = await client.ReadAsync(ReadItem.Create&lt;bool&gt;(&quot;DB1&quot;, baseOffset),
+                                         ReadItem.Create&lt;bool&gt;(&quot;DB1&quot;, baseOffset + 5))
+
+</code></pre>
+<h3 id="read-and-write-string-data">Read and Write string data</h3>
+<p>If the given type is a string or char you can also specify if its the Unicode variant of them (this means 2byte per sign).
+You also have to specify the encoding of the strings.</p>
+<p>currently we support the following encodings:</p>
+<pre><code class="lang-cs">    public enum PlcEncoding
+    {
+        UTF7,           // for normal strings 
+        Unicode,        // for wide strings (used 2 bytes per letter)
+        Windows1252     // default encoding for normal strings
+    }
+</code></pre>
+<p>Unicode is only supported in TIA to address WString an WChar.</p>
+<pre><code class="lang-cs">var readResults = await client.ReadAsync(ReadItem.Create&lt;string&gt;(&quot;DB1&quot;, 0, 10, PlcEncoding.Windows1252))
+
+</code></pre>
+</article>
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

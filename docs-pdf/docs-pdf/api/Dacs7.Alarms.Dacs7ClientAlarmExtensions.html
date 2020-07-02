@@ -1,0 +1,236 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/default.css">
+    <link rel="stylesheet" href="../styles/main.css">
+  </head>
+  <body>
+    <article>
+  
+  
+  <h1 id="Dacs7_Alarms_Dacs7ClientAlarmExtensions" data-uid="Dacs7.Alarms.Dacs7ClientAlarmExtensions" class="text-break">Class Dacs7ClientAlarmExtensions
+  </h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><span class="xref">System.Object</span></div>
+    <div class="level1"><span class="xref">Dacs7ClientAlarmExtensions</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetHashCode()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetType()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.MemberwiseClone()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ToString()</span>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="Dacs7.Alarms.html">Dacs7.Alarms</a></h6>
+  <h6><strong>Assembly</strong>: Dacs7.dll</h6>
+  <h5 id="Dacs7_Alarms_Dacs7ClientAlarmExtensions_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static class Dacs7ClientAlarmExtensions</code></pre>
+  </div>
+  <h3 id="methods">Methods
+  </h3>
+  <a id="Dacs7_Alarms_Dacs7ClientAlarmExtensions_CreateAlarmSubscription_" data-uid="Dacs7.Alarms.Dacs7ClientAlarmExtensions.CreateAlarmSubscription*"></a>
+  <h4 id="Dacs7_Alarms_Dacs7ClientAlarmExtensions_CreateAlarmSubscription_Dacs7_Dacs7Client_" data-uid="Dacs7.Alarms.Dacs7ClientAlarmExtensions.CreateAlarmSubscription(Dacs7.Dacs7Client)">CreateAlarmSubscription(Dacs7Client)</h4>
+  <div class="markdown level1 summary"><p>Create a alarm subscription.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static AlarmSubscription CreateAlarmSubscription(this Dacs7Client client)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Dacs7.Dacs7Client.html">Dacs7Client</a></td>
+        <td><span class="parametername">client</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Dacs7.Alarms.AlarmSubscription.html">AlarmSubscription</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Dacs7_Alarms_Dacs7ClientAlarmExtensions_ReadPendingAlarmsAsync_" data-uid="Dacs7.Alarms.Dacs7ClientAlarmExtensions.ReadPendingAlarmsAsync*"></a>
+  <h4 id="Dacs7_Alarms_Dacs7ClientAlarmExtensions_ReadPendingAlarmsAsync_Dacs7_Dacs7Client_" data-uid="Dacs7.Alarms.Dacs7ClientAlarmExtensions.ReadPendingAlarmsAsync(Dacs7.Dacs7Client)">ReadPendingAlarmsAsync(Dacs7Client)</h4>
+  <div class="markdown level1 summary"><p>Reads all pending alarms from the plc</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;IEnumerable&lt;IPlcAlarm&gt;&gt; ReadPendingAlarmsAsync(this Dacs7Client client)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Dacs7.Dacs7Client.html">Dacs7Client</a></td>
+        <td><span class="parametername">client</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.Collections.Generic.IEnumerable</span>&lt;<a class="xref" href="Dacs7.Alarms.IPlcAlarm.html">IPlcAlarm</a>&gt;&gt;</td>
+        <td><p>A list of <a class="xref" href="Dacs7.Alarms.IPlcAlarm.html">IPlcAlarm</a></p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Dacs7_Alarms_Dacs7ClientAlarmExtensions_ReceiveAlarmUpdatesAsync_" data-uid="Dacs7.Alarms.Dacs7ClientAlarmExtensions.ReceiveAlarmUpdatesAsync*"></a>
+  <h4 id="Dacs7_Alarms_Dacs7ClientAlarmExtensions_ReceiveAlarmUpdatesAsync_Dacs7_Alarms_AlarmSubscription_System_Threading_CancellationToken_" data-uid="Dacs7.Alarms.Dacs7ClientAlarmExtensions.ReceiveAlarmUpdatesAsync(Dacs7.Alarms.AlarmSubscription,System.Threading.CancellationToken)">ReceiveAlarmUpdatesAsync(AlarmSubscription, CancellationToken)</h4>
+  <div class="markdown level1 summary"><p>Wait for a alarm event</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;AlarmUpdateResult&gt; ReceiveAlarmUpdatesAsync(this AlarmSubscription subscription, CancellationToken ct)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Dacs7.Alarms.AlarmSubscription.html">AlarmSubscription</a></td>
+        <td><span class="parametername">subscription</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Threading.CancellationToken</span></td>
+        <td><span class="parametername">ct</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Dacs7.Alarms.AlarmUpdateResult.html">AlarmUpdateResult</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Dacs7_Alarms_Dacs7ClientAlarmExtensions_ReceiveAlarmUpdatesAsync_" data-uid="Dacs7.Alarms.Dacs7ClientAlarmExtensions.ReceiveAlarmUpdatesAsync*"></a>
+  <h4 id="Dacs7_Alarms_Dacs7ClientAlarmExtensions_ReceiveAlarmUpdatesAsync_Dacs7_Dacs7Client_System_Threading_CancellationToken_" data-uid="Dacs7.Alarms.Dacs7ClientAlarmExtensions.ReceiveAlarmUpdatesAsync(Dacs7.Dacs7Client,System.Threading.CancellationToken)">ReceiveAlarmUpdatesAsync(Dacs7Client, CancellationToken)</h4>
+  <div class="markdown level1 summary"><p>This method returns if the plcalarms get updated.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[Obsolete(&quot;ReceiveAlarmUpdatesAsync is deprecated, please use AlarmSubscription class instead.&quot;)]
+public static Task&lt;AlarmUpdateResult&gt; ReceiveAlarmUpdatesAsync(this Dacs7Client client, CancellationToken ct)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Dacs7.Dacs7Client.html">Dacs7Client</a></td>
+        <td><span class="parametername">client</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Threading.CancellationToken</span></td>
+        <td><span class="parametername">ct</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Dacs7.Alarms.AlarmUpdateResult.html">AlarmUpdateResult</a>&gt;</td>
+        <td><p><a class="xref" href="Dacs7.Alarms.AlarmUpdateResult.html">AlarmUpdateResult</a></p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+</article>
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

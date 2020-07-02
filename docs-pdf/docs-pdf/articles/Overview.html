@@ -1,0 +1,131 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/default.css">
+    <link rel="stylesheet" href="../styles/main.css">
+  </head>
+  <body>
+    <article>
+<h1 id="dacs7">dacs7</h1>
+
+<p>Data access S7 is a library to connect to S7 plcs for reading and writing data.</p>
+<!-- TOC -->
+<ul>
+<li><a href="#dacs7">dacs7</a></li>
+<li><a href="#nuget">NuGet</a></li>
+<li><a href="#description">Description</a></li>
+<li><a href="#sample-code">Sample-Code</a>
+<ul>
+<li><a href="#open-and-close-a-connection-to-the-plc">Open and close a connection to the PLC</a></li>
+<li><a href="#using-tag-methods">Using tag methods</a>
+<ul>
+<li><a href="#read-and-write-byte-data">Read and Write byte data</a></li>
+<li><a href="#read-and-write-bit-data">Read and Write bit data</a></li>
+</ul>
+</li>
+<li><a href="#using-itemspecification-methods">Using ItemSpecification methods</a>
+<ul>
+<li><a href="#write-and-read-single-data">Read and Write byte data</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#compatibility">Compatibility</a>
+<ul>
+<li><a href="#additional-tia-settings-1200-and-1500-cpus">Additional TIA Settings (1200 and 1500 CPUs)</a>
+<ul>
+<li><a href="#db-properties">DB Properties</a></li>
+<li><a href="#fullaccess">FullAccess</a></li>
+<li><a href="#connection-mechanisms">Connection mechanisms</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<!-- /TOC -->
+<h1 id="nuget">NuGet</h1>
+<pre><code>PM&gt;  Install-Package Dacs7
+</code></pre>
+<h1 id="description">Description</h1>
+<p>Dacs7 is used to connect to a SIEMENS Plc by using the RFC1006 protocol to perform operations.</p>
+<h1 id="compatibility">Compatibility</h1>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;"></th>
+<th style="text-align: center;">300</th>
+<th style="text-align: center;">400</th>
+<th style="text-align: center;">WinAC</th>
+<th style="text-align: center;">1200</th>
+<th style="text-align: center;">1500</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">DB Read/Write</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+</tr>
+<tr>
+<td style="text-align: left;">EB Read/Write</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+</tr>
+<tr>
+<td style="text-align: left;">AB Read/Write</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+</tr>
+<tr>
+<td style="text-align: left;">MB Read/Write</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+</tr>
+<tr>
+<td style="text-align: left;">TM Read/Write</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: left;">CT Read/Write</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;">X</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+</tbody>
+</table>
+<h2 id="additional-tia-settings-1200-and-1500-cpus">Additional TIA Settings (1200 and 1500 CPUs)</h2>
+<h3 id="db-properties">DB Properties</h3>
+<p>Select the DB in the left pane under 'Program blocks' and click 'Properties' in the context menu.</p>
+<image src="images/BlockSettings.PNG" class="inline"></image>
+<h3 id="fullaccess">FullAccess</h3>
+<p>Select the CPU in the left pane and click 'Properties' in the context menu and go to 'Protection &amp; Security'.</p>
+<image src="images/FullAccess.PNG" class="inline"></image>
+<h3 id="connection-mechanisms">Connection mechanisms</h3>
+<p>Select the CPU in the left pane and click 'Properties' in the context menu and go to 'Protection &amp; Security/Connection mechanisms'.</p>
+<image src="images/Connectionmechanism.PNG" class="inline"></image>
+</article>
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

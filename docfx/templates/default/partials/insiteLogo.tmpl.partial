@@ -1,0 +1,3 @@
+<a href="https://proemmer.azurewebsites.net/" class="link-to-homepage" title="Visit proemmer.azurewebsites.net">
+    <img src="{{_rel}}images/me.png"/>
+</a>

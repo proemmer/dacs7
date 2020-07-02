@@ -23,7 +23,7 @@ namespace Dacs7
         /// <summary>
         /// The value as an object.
         /// </summary>
-        public object Value => _value ?? (_value = _meta.ConvertMemoryToData(Data));
+        public object Value => _value ??= _meta.ConvertMemoryToData(Data);
 
 
         /// <summary>

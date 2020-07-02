@@ -1,0 +1,207 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Tag syntax </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Tag syntax ">
+    <meta name="generator" content="docfx 2.45.1.0">
+    
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="text/javascript" href="../styles/encrypter.js">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="../toc.html">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        <a href="https://proemmer.azurewebsites.net/" class="link-to-homepage" title="Visit proemmer.azurewebsites.net">
+            <img src="../images/me.png">
+        </a>        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+              <h1 id="tag-syntax">Tag syntax</h1>
+              
+<p>The Tag syntax of dacs7 has the format:</p>
+<p><code>Area.Offset,DataType[,Length]</code></p>
+<h2 id="area">Area</h2>
+<p>dacs7 supports english and german mnemonic and also its own syntax (The input is not case sensitive)
+Possible values for the area:</p>
+<ul>
+<li><strong>Input</strong>:  i, e, I, E, IB, ib, Ib, iB</li>
+<li><strong>Marker</strong>:  m, M, FB, Fb, fb, fB</li>
+<li><strong>Output</strong>:  q, a, Q, A, Qa, QA, qa, qA</li>
+<li><strong>Timer</strong>:  t, T, tm, Tm, TM, tM</li>
+<li><strong>Counter</strong>: c, z, C, Z, CT, ct, Ct, cT</li>
+<li><strong>Datablock</strong>: db1, Db1, DB1, dB1</li>
+</ul>
+<h2 id="offset">Offset</h2>
+<p>The offset in byte from the beginning of the specified area.</p>
+<h2 id="type">Type</h2>
+<p>Possible values for the type:</p>
+<ul>
+<li><strong>x[bit]</strong>:  Boolean  using a bit you also have to specify the bit number in the datatype part.</li>
+<li><strong>b</strong>:       Byte</li>
+<li><strong>w</strong>:       Word (ushort)</li>
+<li><strong>dw</strong>:      DWord (uint)</li>
+<li><strong>lw</strong>:      LongWord (ulong)</li>
+<li><strong>si</strong>:      SmallInt (sbyte)</li>
+<li><strong>i</strong>:       Int (short)</li>
+<li><strong>di</strong>:      DInt (int)</li>
+<li><strong>li</strong>:      LongInt (long)</li>
+<li><strong>r</strong>:       Real (float)</li>
+<li><strong>c</strong>:       Char</li>
+<li><strong>wc</strong>:      WChar  (string)</li>
+<li><strong>s</strong>:       String</li>
+<li><strong>ws</strong>:      WString (string)</li>
+</ul>
+<p><strong>Length</strong></p>
+<p>This part is optional, the default value is 1. (a special case is the string type, this specifies the length of the string, so it is currently not possible to read a string array in one command);</p>
+<h2 id="samples">Samples</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Tag</th>
+<th style="text-align: center;">Area</th>
+<th style="text-align: center;">offset</th>
+<th style="text-align: center;">data type</th>
+<th style="text-align: center;">length</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">DB1.0,b,100</td>
+<td style="text-align: center;">Datablock number 1</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">Byte</td>
+<td style="text-align: center;">100</td>
+</tr>
+<tr>
+<td style="text-align: left;">DB3.1,x0</td>
+<td style="text-align: center;">Datablock number 3</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">Bool[bit 0]</td>
+<td style="text-align: center;">1</td>
+</tr>
+<tr>
+<td style="text-align: left;">DB3.1,x5</td>
+<td style="text-align: center;">Datablock number 3</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">Bool[bit 5]</td>
+<td style="text-align: center;">1</td>
+</tr>
+<tr>
+<td style="text-align: left;">DB2.10,w</td>
+<td style="text-align: center;">Datablock number 2</td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">ushort</td>
+<td style="text-align: center;">1</td>
+</tr>
+<tr>
+<td style="text-align: left;">DB2.10,i</td>
+<td style="text-align: center;">Datablock number 2</td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">short</td>
+<td style="text-align: center;">1</td>
+</tr>
+<tr>
+<td style="text-align: left;">DB2.10,dw</td>
+<td style="text-align: center;">Datablock number 2</td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">uint</td>
+<td style="text-align: center;">1</td>
+</tr>
+<tr>
+<td style="text-align: left;">DB2.10,di</td>
+<td style="text-align: center;">Datablock number 2</td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">int</td>
+<td style="text-align: center;">1</td>
+</tr>
+<tr>
+<td style="text-align: left;">M.10,x0</td>
+<td style="text-align: center;">Marker</td>
+<td style="text-align: center;">10</td>
+<td style="text-align: center;">Bool[bit 0]</td>
+<td style="text-align: center;">1</td>
+</tr>
+</tbody>
+</table>
+
+            </article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a class="back-to-top" href="#top">Back to top</a>
+            </span>
+            
+            <span>Copyright © Benjamin Proemmer
+          </span></div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

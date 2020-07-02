@@ -7,13 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace Dacs7
-{
-    public enum PlcEncoding
-    {
-        Ascii,
-        Unicode
-    }
-
+{ 
     public class WriteItem : ReadItem
     {
         internal Memory<byte> Data { get; set; }
@@ -65,7 +59,7 @@ namespace Dacs7
         /// <param name="data">data to write</param>
         /// <param name="encoding">write unicode data (only TIA  WString and WChar</param>
         /// <returns><see cref="WriteItem"/></returns>
-        public static WriteItem Create<T>(string area, int offset, ushort length, T data, PlcEncoding encoding = PlcEncoding.Ascii)
+        public static WriteItem Create<T>(string area, int offset, ushort length, T data, PlcEncoding encoding = PlcEncoding.Windows1252)
         {
             var result = Create<T>(area, offset, length, encoding).Clone();
             result.Data = result.ConvertDataToMemory(data);
@@ -81,7 +75,7 @@ namespace Dacs7
         /// <param name="data">data to write</param>
         /// <param name="encoding">write unicode data (only TIA  WString and WChar</param>
         /// <returns><see cref="WriteItem"/></returns>
-        public static WriteItem Create<T>(string area, int offset, T data, PlcEncoding encoding = PlcEncoding.Ascii)
+        public static WriteItem Create<T>(string area, int offset, T data, PlcEncoding encoding = PlcEncoding.Windows1252)
             => Create(area, offset, GetDataItemCount(data), data, encoding);
 
 

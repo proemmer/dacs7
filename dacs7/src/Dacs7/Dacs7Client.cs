@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -105,6 +106,7 @@ namespace Dacs7
         /// <param name="connectionType">The <see cref="PlcConnectionType"/> for the connection.</param>
         public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg, int timeout = 5000, ILoggerFactory loggerFactory = null, int autoReconnectTime = 5000)
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             _logger = loggerFactory?.CreateLogger<Dacs7Client>();
             S7Context = new SiemensPlcProtocolContext { Timeout = timeout };
             ProtocolHandler = new ProtocolHandler(InitializeTransport(address, connectionType, autoReconnectTime), S7Context, UpdateConnectionState, loggerFactory);

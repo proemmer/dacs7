@@ -1,0 +1,486 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class Dacs7Client
+   </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class Dacs7Client
+   ">
+    <meta name="generator" content="docfx 2.45.1.0">
+    
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="text/javascript" href="../styles/encrypter.js">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="../toc.html">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content">
+              
+              
+              <h1 id="Dacs7_Dacs7Client" data-uid="Dacs7.Dacs7Client">Class Dacs7Client
+              </h1>
+              <div class="markdown level0 summary"></div>
+              <div class="markdown level0 conceptual"></div>
+              <div class="inheritance">
+                <h5>Inheritance</h5>
+                  <div class="level0"><span class="xref">System.Object</span></div>
+                  <div class="level1"><span class="xref">Dacs7Client</span></div>
+              </div>
+              <div class="inheritedMembers">
+                <h5>Inherited Members</h5>
+                <div>
+                  <span class="xref">System.Object.Equals(System.Object)</span>
+                </div>
+                <div>
+                  <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
+                </div>
+                <div>
+                  <span class="xref">System.Object.GetHashCode()</span>
+                </div>
+                <div>
+                  <span class="xref">System.Object.GetType()</span>
+                </div>
+                <div>
+                  <span class="xref">System.Object.MemberwiseClone()</span>
+                </div>
+                <div>
+                  <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+                </div>
+                <div>
+                  <span class="xref">System.Object.ToString()</span>
+                </div>
+              </div>
+              <h6><strong>Namespace</strong>:Dacs7</h6>
+              <h6><strong>Assembly</strong>:Dacs7.dll</h6>
+              <h5 id="Dacs7_Dacs7Client_syntax">Syntax</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public sealed class Dacs7Client : IDisposable</code></pre>
+              </div>
+              <h3 id="constructors">Constructors
+              </h3>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Dacs7Client.cs/#L107">View Source</a>
+              </span>
+              <a id="Dacs7_Dacs7Client__ctor_" data-uid="Dacs7.Dacs7Client.#ctor*"></a>
+              <h4 id="Dacs7_Dacs7Client__ctor_System_String_Dacs7_PlcConnectionType_System_Int32_Microsoft_Extensions_Logging_ILoggerFactory_System_Int32_" data-uid="Dacs7.Dacs7Client.#ctor(System.String,Dacs7.PlcConnectionType,System.Int32,Microsoft.Extensions.Logging.ILoggerFactory,System.Int32)">Dacs7Client(String, PlcConnectionType, Int32, ILoggerFactory, Int32)</h4>
+              <div class="markdown level1 summary"><p>Constructor of Dacs7Client</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg, int timeout = 5000, ILoggerFactory loggerFactory = null, int autoReconnectTime = 5000)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.String</span></td>
+                    <td><span class="parametername">address</span></td>
+                    <td><p>The address of the plc  [IP or Hostname]:[Rack],[Slot]  where as rack and slot ar optional  default is Rack = 0, Slot = 2</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td><a class="xref" href="Dacs7.PlcConnectionType.html">PlcConnectionType</a></td>
+                    <td><span class="parametername">connectionType</span></td>
+                    <td><p>The <a class="xref" href="Dacs7.PlcConnectionType.html">PlcConnectionType</a> for the connection.</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">timeout</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">Microsoft.Extensions.Logging.ILoggerFactory</span></td>
+                    <td><span class="parametername">loggerFactory</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">autoReconnectTime</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h3 id="properties">Properties
+              </h3>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Dacs7Client.cs/#L37">View Source</a>
+              </span>
+              <a id="Dacs7_Dacs7Client_IsConnected_" data-uid="Dacs7.Dacs7Client.IsConnected*"></a>
+              <h4 id="Dacs7_Dacs7Client_IsConnected" data-uid="Dacs7.Dacs7Client.IsConnected">IsConnected</h4>
+              <div class="markdown level1 summary"><p>True if the connection is fully applied</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public bool IsConnected { get; }</code></pre>
+              </div>
+              <h5 class="propertyValue">Property Value</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Boolean</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Dacs7Client.cs/#L61">View Source</a>
+              </span>
+              <a id="Dacs7_Dacs7Client_MaxAmQCalled_" data-uid="Dacs7.Dacs7Client.MaxAmQCalled*"></a>
+              <h4 id="Dacs7_Dacs7Client_MaxAmQCalled" data-uid="Dacs7.Dacs7Client.MaxAmQCalled">MaxAmQCalled</h4>
+              <div class="markdown level1 summary"><p>Maximum Jos waiting for response</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public ushort MaxAmQCalled { get; set; }</code></pre>
+              </div>
+              <h5 class="propertyValue">Property Value</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.UInt16</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Dacs7Client.cs/#L42">View Source</a>
+              </span>
+              <a id="Dacs7_Dacs7Client_MaxAmQCalling_" data-uid="Dacs7.Dacs7Client.MaxAmQCalling*"></a>
+              <h4 id="Dacs7_Dacs7Client_MaxAmQCalling" data-uid="Dacs7.Dacs7Client.MaxAmQCalling">MaxAmQCalling</h4>
+              <div class="markdown level1 summary"><p>Maximum Jobs calling</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public ushort MaxAmQCalling { get; set; }</code></pre>
+              </div>
+              <h5 class="propertyValue">Property Value</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.UInt16</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Dacs7Client.cs/#L80">View Source</a>
+              </span>
+              <a id="Dacs7_Dacs7Client_PduSize_" data-uid="Dacs7.Dacs7Client.PduSize*"></a>
+              <h4 id="Dacs7_Dacs7Client_PduSize" data-uid="Dacs7.Dacs7Client.PduSize">PduSize</h4>
+              <div class="markdown level1 summary"><p>The negotiated pdu size.</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public ushort PduSize { get; set; }</code></pre>
+              </div>
+              <h5 class="propertyValue">Property Value</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.UInt16</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h3 id="methods">Methods
+              </h3>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Dacs7Client.cs/#L119">View Source</a>
+              </span>
+              <a id="Dacs7_Dacs7Client_ConnectAsync_" data-uid="Dacs7.Dacs7Client.ConnectAsync*"></a>
+              <h4 id="Dacs7_Dacs7Client_ConnectAsync" data-uid="Dacs7.Dacs7Client.ConnectAsync">ConnectAsync()</h4>
+              <div class="markdown level1 summary"><p>Connect to the plc</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public Task ConnectAsync()</code></pre>
+              </div>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Threading.Tasks.Task</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Dacs7Client.cs/#L125">View Source</a>
+              </span>
+              <a id="Dacs7_Dacs7Client_DisconnectAsync_" data-uid="Dacs7.Dacs7Client.DisconnectAsync*"></a>
+              <h4 id="Dacs7_Dacs7Client_DisconnectAsync" data-uid="Dacs7.Dacs7Client.DisconnectAsync">DisconnectAsync()</h4>
+              <div class="markdown level1 summary"><p>Disconnect from the plc</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public Task DisconnectAsync()</code></pre>
+              </div>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Threading.Tasks.Task</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Dacs7Client.cs/#L130">View Source</a>
+              </span>
+              <a id="Dacs7_Dacs7Client_Dispose_" data-uid="Dacs7.Dacs7Client.Dispose*"></a>
+              <h4 id="Dacs7_Dacs7Client_Dispose" data-uid="Dacs7.Dacs7Client.Dispose">Dispose()</h4>
+              <div class="markdown level1 summary"><p>Dispose the ressources</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public void Dispose()</code></pre>
+              </div>
+              <h5 class="implements">Implements</h5>
+                  <div><span class="xref">System.IDisposable.Dispose()</span></div>
+              <h3 id="events">Events
+              </h3>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Dacs7Client.cs/#L99">View Source</a>
+              </span>
+              <h4 id="Dacs7_Dacs7Client_ConnectionStateChanged" data-uid="Dacs7.Dacs7Client.ConnectionStateChanged">ConnectionStateChanged</h4>
+              <div class="markdown level1 summary"><p>Register to the connection state events</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public event ConnectionStateChangedEventHandler ConnectionStateChanged</code></pre>
+              </div>
+              <h5 class="eventType">Event Type</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><a class="xref" href="Dacs7.ConnectionStateChangedEventHandler.html">ConnectionStateChangedEventHandler</a></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h3 id="extensionmethods">Extension Methods</h3>
+              <div>
+                  <a class="xref" href="Dacs7.Dacs7ClientRegisterExtensions.html#Dacs7_Dacs7ClientRegisterExtensions_RegisterAsync_Dacs7_Dacs7Client_System_String___">Dacs7ClientRegisterExtensions.RegisterAsync(Dacs7Client, String[])</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.Dacs7ClientRegisterExtensions.html#Dacs7_Dacs7ClientRegisterExtensions_RegisterAsync_Dacs7_Dacs7Client_System_Collections_Generic_IEnumerable_System_String__">Dacs7ClientRegisterExtensions.RegisterAsync(Dacs7Client, IEnumerable&lt;String&gt;)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.Dacs7ClientRegisterExtensions.html#Dacs7_Dacs7ClientRegisterExtensions_UnregisterAsync_Dacs7_Dacs7Client_System_String___">Dacs7ClientRegisterExtensions.UnregisterAsync(Dacs7Client, String[])</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.Dacs7ClientRegisterExtensions.html#Dacs7_Dacs7ClientRegisterExtensions_UnregisterAsync_Dacs7_Dacs7Client_System_Collections_Generic_IEnumerable_System_String__">Dacs7ClientRegisterExtensions.UnregisterAsync(Dacs7Client, IEnumerable&lt;String&gt;)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.Dacs7ClientRegisterExtensions.html#Dacs7_Dacs7ClientRegisterExtensions_IsTagRegistered_Dacs7_Dacs7Client_System_String_">Dacs7ClientRegisterExtensions.IsTagRegistered(Dacs7Client, String)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.Alarms.Dacs7ClientAlarmExtensions.html#Dacs7_Alarms_Dacs7ClientAlarmExtensions_ReadPendingAlarmsAsync_Dacs7_Dacs7Client_">Dacs7ClientAlarmExtensions.ReadPendingAlarmsAsync(Dacs7Client)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.Alarms.Dacs7ClientAlarmExtensions.html#Dacs7_Alarms_Dacs7ClientAlarmExtensions_ReceiveAlarmUpdatesAsync_Dacs7_Dacs7Client_System_Threading_CancellationToken_">Dacs7ClientAlarmExtensions.ReceiveAlarmUpdatesAsync(Dacs7Client, CancellationToken)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.Alarms.Dacs7ClientAlarmExtensions.html#Dacs7_Alarms_Dacs7ClientAlarmExtensions_CreateAlarmSubscription_Dacs7_Dacs7Client_">Dacs7ClientAlarmExtensions.CreateAlarmSubscription(Dacs7Client)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.Metadata.Dacs7ClientMetadataExtensions.html#Dacs7_Metadata_Dacs7ClientMetadataExtensions_ReadBlockInfoAsync_Dacs7_Dacs7Client_Dacs7_Metadata_PlcBlockType_System_Int32_">Dacs7ClientMetadataExtensions.ReadBlockInfoAsync(Dacs7Client, PlcBlockType, Int32)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.Metadata.Dacs7ClientMetadataExtensions.html#Dacs7_Metadata_Dacs7ClientMetadataExtensions_ReadBlocksCountAsync_Dacs7_Dacs7Client_">Dacs7ClientMetadataExtensions.ReadBlocksCountAsync(Dacs7Client)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.Metadata.Dacs7ClientMetadataExtensions.html#Dacs7_Metadata_Dacs7ClientMetadataExtensions_ReadBlocksOfTypeAsync_Dacs7_Dacs7Client_Dacs7_Metadata_PlcBlockType_">Dacs7ClientMetadataExtensions.ReadBlocksOfTypeAsync(Dacs7Client, PlcBlockType)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.ReadWrite.Dacs7ClientReadExtensions.html#Dacs7_ReadWrite_Dacs7ClientReadExtensions_GetReadItemMaxLength_Dacs7_Dacs7Client_">Dacs7ClientReadExtensions.GetReadItemMaxLength(Dacs7Client)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.ReadWrite.Dacs7ClientReadExtensions.html#Dacs7_ReadWrite_Dacs7ClientReadExtensions_ReadAsync_Dacs7_Dacs7Client_System_String___">Dacs7ClientReadExtensions.ReadAsync(Dacs7Client, String[])</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.ReadWrite.Dacs7ClientReadExtensions.html#Dacs7_ReadWrite_Dacs7ClientReadExtensions_ReadAsync_Dacs7_Dacs7Client_Dacs7_ReadItem___">Dacs7ClientReadExtensions.ReadAsync(Dacs7Client, ReadItem[])</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.ReadWrite.Dacs7ClientReadExtensions.html#Dacs7_ReadWrite_Dacs7ClientReadExtensions_ReadAsync_Dacs7_Dacs7Client_System_Collections_Generic_IEnumerable_System_String__">Dacs7ClientReadExtensions.ReadAsync(Dacs7Client, IEnumerable&lt;String&gt;)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.ReadWrite.Dacs7ClientReadExtensions.html#Dacs7_ReadWrite_Dacs7ClientReadExtensions_ReadAsync_Dacs7_Dacs7Client_System_Collections_Generic_IEnumerable_Dacs7_ReadItem__">Dacs7ClientReadExtensions.ReadAsync(Dacs7Client, IEnumerable&lt;ReadItem&gt;)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.ReadWrite.Dacs7ClientWriteExtensions.html#Dacs7_ReadWrite_Dacs7ClientWriteExtensions_GetWriteItemMaxLength_Dacs7_Dacs7Client_">Dacs7ClientWriteExtensions.GetWriteItemMaxLength(Dacs7Client)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.ReadWrite.Dacs7ClientWriteExtensions.html#Dacs7_ReadWrite_Dacs7ClientWriteExtensions_WriteAsync_Dacs7_Dacs7Client_System_Collections_Generic_KeyValuePair_System_String_System_Object____">Dacs7ClientWriteExtensions.WriteAsync(Dacs7Client, KeyValuePair&lt;String, Object&gt;[])</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.ReadWrite.Dacs7ClientWriteExtensions.html#Dacs7_ReadWrite_Dacs7ClientWriteExtensions_WriteAsync_Dacs7_Dacs7Client_Dacs7_WriteItem___">Dacs7ClientWriteExtensions.WriteAsync(Dacs7Client, WriteItem[])</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.ReadWrite.Dacs7ClientWriteExtensions.html#Dacs7_ReadWrite_Dacs7ClientWriteExtensions_WriteAsync_Dacs7_Dacs7Client_System_Collections_Generic_IEnumerable_System_Collections_Generic_KeyValuePair_System_String_System_Object___">Dacs7ClientWriteExtensions.WriteAsync(Dacs7Client, IEnumerable&lt;KeyValuePair&lt;String, Object&gt;&gt;)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.ReadWrite.Dacs7ClientWriteExtensions.html#Dacs7_ReadWrite_Dacs7ClientWriteExtensions_WriteAsync_Dacs7_Dacs7Client_System_Collections_Generic_IEnumerable_Dacs7_WriteItem__">Dacs7ClientWriteExtensions.WriteAsync(Dacs7Client, IEnumerable&lt;WriteItem&gt;)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.Helper.Converter.html#Dacs7_Helper_Converter_SetSwap__1___0_System_IFormatProvider_">Converter.SetSwap&lt;T&gt;(T, IFormatProvider)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.Helper.Converter.html#Dacs7_Helper_Converter_SetNoSwap__1___0_">Converter.SetNoSwap&lt;T&gt;(T)</a>
+              </div>
+              <div>
+                  <a class="xref" href="Dacs7.Helper.Converter.html#Dacs7_Helper_Converter_ToByteArray__1___0_System_Int32_">Converter.ToByteArray&lt;T&gt;(T, Int32)</a>
+              </div>
+            </article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Dacs7Client.cs/#L24" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a class="back-to-top" href="#top">Back to top</a>
+            </span>
+            
+            <span>Copyright © Benjamin Proemmer
+          </span></div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

@@ -69,7 +69,20 @@ namespace Dacs7.Domain
 
                                 result.Span[0] = (byte)(item.NumberOfItems - ReadItem.StringHeaderSize);
                                 result.Span[1] = (byte)s.Length;
-                                Encoding.ASCII.GetBytes(s).AsSpan().CopyTo(result.Span.Slice(ReadItem.StringHeaderSize));
+
+
+                                Encoding usedEncoding = Encoding.UTF7;
+                                switch(item.Encoding)
+                                {
+                                    case PlcEncoding.Windows1252:
+                                        {
+                                            usedEncoding = Encoding.GetEncoding(1252);
+                                            break;
+                                        }
+                                }
+
+
+                                usedEncoding.GetBytes(s).AsSpan().CopyTo(result.Span.Slice(ReadItem.StringHeaderSize));
                                 return result;
                             }
                         }

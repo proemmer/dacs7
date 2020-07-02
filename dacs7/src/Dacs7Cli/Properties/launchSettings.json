@@ -2,7 +2,7 @@
   "profiles": {
     "Dacs7Cli": {
       "commandName": "Project",
-      "commandLineArgs": "watchalarms --address 192.168.0.148 -t"
+      "commandLineArgs": "write --address 192.168.0.148 -t db6.0,s,100=\"—äÜé\""
     }
   }
 }
