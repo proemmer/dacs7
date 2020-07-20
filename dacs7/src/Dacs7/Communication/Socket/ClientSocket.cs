@@ -175,7 +175,7 @@ namespace Dacs7.Communication
             var span = new Memory<byte>(receiveBuffer);
             try
             {
-                while (_socket != null && _tokenSource != null && !_tokenSource.IsCancellationRequested)
+                while (_socket != null && _socket.Connected && _tokenSource != null && !_tokenSource.IsCancellationRequested)
                 {
                     try
                     {
