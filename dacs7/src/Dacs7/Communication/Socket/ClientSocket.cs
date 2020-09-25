@@ -67,7 +67,8 @@ namespace Dacs7.Communication
         {
             try
             {
-                if (_shutdown) return;
+                if (_shutdown || IsConnected) return;
+                await DisposeSocketAsync().ConfigureAwait(false);
                 _identity = null;
                 _socket = new System.Net.Sockets.Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
                 {
@@ -80,8 +81,8 @@ namespace Dacs7.Communication
                 _logger?.LogDebug("Socket connected. ({0}:{1})", _config.Hostname, _config.ServiceName);
                 if (_config.KeepAlive)
                     _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, 1);
-                _disableReconnect = false; // we have a connection, so enable reconnect
 
+                if (internalCall) EnableAutoReconnectReconnect();
 
                 _tokenSource = new CancellationTokenSource();
                 _receivingTask = Task.Factory.StartNew(() => StartReceive(), _tokenSource.Token,TaskCreationOptions.LongRunning, TaskScheduler.Default);
@@ -174,7 +175,7 @@ namespace Dacs7.Communication
             var span = new Memory<byte>(receiveBuffer);
             try
             {
-                while (_socket != null && _tokenSource != null && !_tokenSource.IsCancellationRequested)
+                while (_socket != null && _socket.Connected && _tokenSource != null && !_tokenSource.IsCancellationRequested)
                 {
                     try
                     {
@@ -213,7 +214,7 @@ namespace Dacs7.Communication
                     {
                         if (_socket != null && !_shutdown)
                         {
-                            if (_logger.IsEnabled(LogLevel.Debug))
+                            if (_logger?.IsEnabled(LogLevel.Debug) == true)
                             {
                                 _logger?.LogError("Socket exception ({0}): {1} - Stacktrace {2}", connectionInfo, ex.Message, ex.StackTrace);
                             }

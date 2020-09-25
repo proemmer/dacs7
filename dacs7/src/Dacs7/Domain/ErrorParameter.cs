@@ -46,6 +46,9 @@ namespace Dacs7
         [Description("L7 PDU size error")]
         L7PduSizeErr = 0x8500,
 
+        [Description("(At least) one of the given blocks not found on the module")]
+        AtLeatOneOfTheGivenBlocksNotFound = 0xD209,
+
         [Description("L7 invalid SZL ID")]
         L7InvalidSzlID = 0xD401,
 

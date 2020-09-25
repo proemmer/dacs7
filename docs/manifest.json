@@ -1,0 +1,1200 @@
+{
+  "homepages": [],
+  "source_base_path": "C:/Projects/Source/dacs7/docfx",
+  "xrefmap": "xrefmap.yml",
+  "files": [
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Alarms.AlarmMessageType.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Alarms.AlarmMessageType.html",
+          "hash": "OwP9weFTsdq8HwmnmARCow=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Alarms.AlarmSubscription.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Alarms.AlarmSubscription.html",
+          "hash": "AtDNRLQKUMMhglHWouAy/g=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Alarms.AlarmUpdateResult.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Alarms.AlarmUpdateResult.html",
+          "hash": "O1wHSs4quSn+5DC4CBbJUw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Alarms.Dacs7ClientAlarmExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Alarms.Dacs7ClientAlarmExtensions.html",
+          "hash": "9kEm/kvthUe+FQQdsNLqOA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Alarms.IPlcAlarm.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Alarms.IPlcAlarm.html",
+          "hash": "7Yj9L6wFGquTJ5ZOFN5niA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Alarms.IPlcAlarmAssotiatedValue.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Alarms.IPlcAlarmAssotiatedValue.html",
+          "hash": "deliqpWrJAmbiIyYh9FGdw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Alarms.IPlcAlarmDetails.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Alarms.IPlcAlarmDetails.html",
+          "hash": "yr7pB8bJSJ7n9+yIZmT1PQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Alarms.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Alarms.html",
+          "hash": "iXfn4TG5/VMF7jNKV3RZGA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.AsyncAutoResetEvent-1.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.AsyncAutoResetEvent-1.html",
+          "hash": "QUw2WVrZvzEpgXnUogLfhA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Communication.ClientSocketConfiguration.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Communication.ClientSocketConfiguration.html",
+          "hash": "H2C4qnE2CrzOMNuEP2v+aw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Communication.IConfiguration.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Communication.IConfiguration.html",
+          "hash": "pLApNlY47Fnda1j+kiCqsg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Communication.ISocketConfiguration.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Communication.ISocketConfiguration.html",
+          "hash": "ABoTd2ONCLA6t3orv0gGVQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Communication.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Communication.html",
+          "hash": "hsdUFXP7CCJWec/0uydR6g=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.ConnectionStateChangedEventHandler.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.ConnectionStateChangedEventHandler.html",
+          "hash": "wiWpuy+KI/nztLi+ITfO8A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Control.PlcStateInfo.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Control.PlcStateInfo.html",
+          "hash": "9HwlTDddxwbHx5amv3XysQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Control.PlcStates.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Control.PlcStates.html",
+          "hash": "erLF5/ybLC3C0rd2BKOsfQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Control.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Control.html",
+          "hash": "n00LiJ43kJFB6Yy4E2J4hA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Dacs7Client.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Dacs7Client.html",
+          "hash": "sQS0PsMqdTj41cXOE4semQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Dacs7ClientRegisterExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Dacs7ClientRegisterExtensions.html",
+          "hash": "IcwuyxsCduINZFpsE2uXOw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Dacs7ConnectionState.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Dacs7ConnectionState.html",
+          "hash": "ylC9bZpSv9k8QETw5su1dw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Dacs7ContentException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Dacs7ContentException.html",
+          "hash": "s0ePqXCRG5m5gn9KZwhwcg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Dacs7Exception.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Dacs7Exception.html",
+          "hash": "VdOVCPxnjCAzvoqDj6eL6A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Dacs7NotConnectedException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Dacs7NotConnectedException.html",
+          "hash": "2aqoLeL94pmmI6wzkqzfFQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Dacs7ParameterException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Dacs7ParameterException.html",
+          "hash": "zWt9Ug+1oeY1fFHWwZWtuA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Dacs7ReadTimeoutException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Dacs7ReadTimeoutException.html",
+          "hash": "tp2VfHG7Oiwz9rsLfO7ntg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Dacs7ReturnCodeException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Dacs7ReturnCodeException.html",
+          "hash": "Qa7hPuHVsVyln1V620ldGw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Dacs7TagParserException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Dacs7TagParserException.html",
+          "hash": "eaigGMTX9x3FLMKzDLV16A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Dacs7ToMuchDataPerCallException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Dacs7ToMuchDataPerCallException.html",
+          "hash": "Ih2c568VotayeChu4khdYQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Dacs7TypeNotSupportedException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Dacs7TypeNotSupportedException.html",
+          "hash": "35M1YxyWoFvFicH02bOaUg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Dacs7WriteTimeoutException.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Dacs7WriteTimeoutException.html",
+          "hash": "fflrXrWJyk5nnacR/IxxCg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.DataValue.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.DataValue.html",
+          "hash": "XpxHeB3NTmTwYytb1dLziQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.DataValueFormatter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.DataValueFormatter.html",
+          "hash": "O8S6TO2L0RDg16EYycNcQg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.DataValueFormatterExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.DataValueFormatterExtensions.html",
+          "hash": "BTKu8UkoSyGuXWI7DaXEjA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Domain.DataTransportSize.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Domain.DataTransportSize.html",
+          "hash": "rDSWyQWuMi1KEOASPUBD6A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Domain.TagParserState.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Domain.TagParserState.html",
+          "hash": "u5Nwasp/G9Mak1OgLnlcvQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Domain.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Domain.html",
+          "hash": "W1vC7wPwdB63prRNIMrRDw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.ErrorClass.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.ErrorClass.html",
+          "hash": "SxpL1OUICw6zi/wYMgl4oA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.ErrorHandling.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.ErrorHandling.html",
+          "hash": "BEwl9nqT6FFCOgUec9EDLQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.ErrorParameter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.ErrorParameter.html",
+          "hash": "UMpvodUkqsaWIJ07jzaR7Q=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Helper.Converter.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Helper.Converter.html",
+          "hash": "7dlo95RNm7Lnc5derV1M5w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Helper.DescriptionAttribute.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Helper.DescriptionAttribute.html",
+          "hash": "ZavsFX0mWabiIX6rS6k8zg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Helper.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Helper.html",
+          "hash": "IY8/FCNu02S34KoI+KrTNw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.ItemExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.ItemExtensions.html",
+          "hash": "izrAK/Al+rYVMXbYwbSI/Q=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.ItemResponseRetValue.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.ItemResponseRetValue.html",
+          "hash": "kTkpBuPvV5YuUOQCXU3c+w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Metadata.BlockSecurity.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Metadata.BlockSecurity.html",
+          "hash": "xsGfAJjEC1edBGpy2SMjEw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Metadata.Dacs7ClientMetadataExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Metadata.Dacs7ClientMetadataExtensions.html",
+          "hash": "wq6U3Ntxlm/ZgZKY6PFecA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Metadata.IPlcBlock.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Metadata.IPlcBlock.html",
+          "hash": "AqY7dykQgO3pzXkmfkQfaA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Metadata.IPlcBlockInfo.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Metadata.IPlcBlockInfo.html",
+          "hash": "9dJNDI4OuQtIinKQ9Ljv7Q=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Metadata.IPlcBlocksCount.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Metadata.IPlcBlocksCount.html",
+          "hash": "eLYd7oCLgP+Ac98RfLDUCw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Metadata.PlcBlockAttributes.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Metadata.PlcBlockAttributes.html",
+          "hash": "bHU/k5FUmG5OCz0pI6TeAA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Metadata.PlcBlockInfo.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Metadata.PlcBlockInfo.html",
+          "hash": "j6KYqqyXDq7BuXXgvMG2Vw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Metadata.PlcBlockLanguage.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Metadata.PlcBlockLanguage.html",
+          "hash": "lcvAPhozavDXQR9QJPGfFQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Metadata.PlcBlockType.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Metadata.PlcBlockType.html",
+          "hash": "vVnBI1Ep4QjNUIXKL66YrQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Metadata.PlcSubBlockType.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Metadata.PlcSubBlockType.html",
+          "hash": "9qlXIMz4whmUyGdZfe3ssA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Metadata.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Metadata.html",
+          "hash": "AFRKzHbvv8zgo8JiQ5GrRA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.PlcArea.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.PlcArea.html",
+          "hash": "tZrtHekWM7q62p2uuiH+qQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.PlcConnectionType.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.PlcConnectionType.html",
+          "hash": "cd0zZ4e30w5GosJ8tgZnzg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.PlcEncoding.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.PlcEncoding.html",
+          "hash": "4r+94EdPABkAXp2+ini7EQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Protocols.SiemensPlc.S7PlcAlarmAssotiatedValue.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Protocols.SiemensPlc.S7PlcAlarmAssotiatedValue.html",
+          "hash": "0+NfOZZ+U1L+aKuxbQMXew=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Protocols.SiemensPlc.S7PlcAlarmDetails.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Protocols.SiemensPlc.S7PlcAlarmDetails.html",
+          "hash": "keAx9g6VGvjDX4fBgidr9A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Protocols.SiemensPlc.S7PlcAlarmItemDatagram.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Protocols.SiemensPlc.S7PlcAlarmItemDatagram.html",
+          "hash": "FVUGDyzjm8avpFxE3nB3VQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.Protocols.SiemensPlc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.Protocols.SiemensPlc.html",
+          "hash": "n4QBXwR+WYY76t3blCHe6w=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.ReadItem.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.ReadItem.html",
+          "hash": "O+C0kN7ch2ItSb/fo2oprQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.ReadWrite.Dacs7ClientReadExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.ReadWrite.Dacs7ClientReadExtensions.html",
+          "hash": "FCnQ4NwzaiZG1EYxKlhb+A=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.ReadWrite.Dacs7ClientWriteExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.ReadWrite.Dacs7ClientWriteExtensions.html",
+          "hash": "r3YxNNFGS9OPRXfd+t210g=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.ReadWrite.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.ReadWrite.html",
+          "hash": "O9hrmKFS2EiRHRw8b3S4nQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.WriteItem.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.WriteItem.html",
+          "hash": "hq07tBjFeLg1Q2yJQ0QXXA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7.html",
+          "hash": "Qfs0vpJTjKvF/Rg3NAoJaA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7Cli.Options.OptionsBase.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7Cli.Options.OptionsBase.html",
+          "hash": "JJxLghie3v1Vg/Sd4OJwtw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7Cli.Options.ReadAlarmsOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7Cli.Options.ReadAlarmsOptions.html",
+          "hash": "g/704u2Y9O8FWdY+OChtpg=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7Cli.Options.ReadOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7Cli.Options.ReadOptions.html",
+          "hash": "tAinLKmWYcwVK5Q9RnUjGQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7Cli.Options.WatchAlarmsOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7Cli.Options.WatchAlarmsOptions.html",
+          "hash": "UOohGkmTLwXXs8AEtTkysQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7Cli.Options.WatchOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7Cli.Options.WatchOptions.html",
+          "hash": "NI0MNhUERQgsaZDNLQHxbQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7Cli.Options.WriteOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7Cli.Options.WriteOptions.html",
+          "hash": "z5sUh0rmfbw2IrI2Rn4eTA=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Dacs7Cli.Options.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Dacs7Cli.Options.html",
+          "hash": "cf+7AqZ0BB716UT/vAxebw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "api/index.md",
+      "output": {
+        ".html": {
+          "relative_path": "api/index.html",
+          "hash": "LBcpc/Dp7ihni8YHBvZjbQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/Overview.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/Overview.html",
+          "hash": "5DJwMtSVh1BrXpuc3dDWTQ=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/openclose.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/openclose.html",
+          "hash": "CoJ6oFIYCH9YA2yXT618Fw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/read.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/read.html",
+          "hash": "7DKD3vhr/YoqgX+CUBSZjw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/tagsyntax.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/tagsyntax.html",
+          "hash": "/nQs4o7uPGxtu9i45ZrTpw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "articles/write.md",
+      "output": {
+        ".html": {
+          "relative_path": "articles/write.html",
+          "hash": "Go5WEalQCmWWBFPEbMl/Ww=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/BlockSettings.PNG",
+      "output": {
+        "resource": {
+          "relative_path": "images/BlockSettings.PNG"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/Connectionmechanism.PNG",
+      "output": {
+        "resource": {
+          "relative_path": "images/Connectionmechanism.PNG"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/FullAccess.PNG",
+      "output": {
+        "resource": {
+          "relative_path": "images/FullAccess.PNG"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/GitHub120px.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/GitHub120px.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/GitHub32px.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/GitHub32px.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/GitHub64px.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/GitHub64px.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/GitHubWhite120px.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/GitHubWhite120px.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/GitHubWhite32px.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/GitHubWhite32px.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/GitHubWhite64px.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/GitHubWhite64px.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/font-logo.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/font-logo.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/logo.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/logo.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/me.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/me.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Resource",
+      "source_relative_path": "images/websiteLogoTile.png",
+      "output": {
+        "resource": {
+          "relative_path": "images/websiteLogoTile.png"
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "index.md",
+      "output": {
+        ".html": {
+          "relative_path": "index.html",
+          "hash": "Avydmy5OdOikeqfM7oAotw=="
+        }
+      },
+      "is_incremental": true,
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "toc.yml",
+      "output": {
+        ".html": {
+          "relative_path": "toc.html",
+          "hash": "CYjTUMVEuDWYOs6pBfTHfQ=="
+        }
+      },
+      "is_incremental": false,
+      "version": ""
+    }
+  ],
+  "incremental_info": [
+    {
+      "status": {
+        "can_incremental": true,
+        "incrementalPhase": "build",
+        "total_file_count": 0,
+        "skipped_file_count": 0
+      },
+      "processors": {
+        "ResourceDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor ResourceDocumentProcessor cannot support incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "incrementalPhase": "build",
+          "total_file_count": 0,
+          "skipped_file_count": 0
+        },
+        "TocDocumentProcessor": {
+          "can_incremental": false,
+          "details": "Processor TocDocumentProcessor cannot support incremental build because the processor doesn't implement ISupportIncrementalDocumentProcessor interface.",
+          "incrementalPhase": "build",
+          "total_file_count": 0,
+          "skipped_file_count": 0
+        },
+        "ConceptualDocumentProcessor": {
+          "can_incremental": true,
+          "incrementalPhase": "build",
+          "total_file_count": 7,
+          "skipped_file_count": 7
+        },
+        "ManagedReferenceDocumentProcessor": {
+          "can_incremental": true,
+          "incrementalPhase": "build",
+          "total_file_count": 75,
+          "skipped_file_count": 75
+        }
+      }
+    },
+    {
+      "status": {
+        "can_incremental": true,
+        "details": "Can support incremental post processing.",
+        "incrementalPhase": "postProcessing",
+        "total_file_count": 0,
+        "skipped_file_count": 0
+      },
+      "processors": {}
+    }
+  ],
+  "version_info": {},
+  "groups": [
+    {
+      "xrefmap": "xrefmap.yml"
+    }
+  ]
+}

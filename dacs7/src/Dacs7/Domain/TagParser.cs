@@ -252,7 +252,7 @@ namespace Dacs7.Domain
         {
             vtype = typeof(object);
             rType = typeof(object);
-            encoding = PlcEncoding.Ascii;
+            encoding = PlcEncoding.Windows1252;
 
             switch (type[0])
             {

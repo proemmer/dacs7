@@ -5,6 +5,7 @@ using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Dacs7Cli

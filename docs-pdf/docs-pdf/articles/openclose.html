@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/default.css">
+    <link rel="stylesheet" href="../styles/main.css">
+  </head>
+  <body>
+    <article>
+<h2 id="open-and-close-a-connection-to-the-plc">Open and close a connection to the PLC</h2>
+
+<p>Creating an instance of the dacs7 client has a couple of optional settings. The minimum you have to specify is the IP address.
+This means you can connect to a plc by using only <code>127.0.0.1</code>. The syntax for the address parameter is</p>
+<p><code>IP:[Port],[Rack],[Slot]</code></p>
+<p>where each parameter except the IP address is optional, but if you like to specify the rack, you also have to specify the port.
+The default parameters for the optional parameters are:</p>
+<ul>
+<li>Port: 102</li>
+<li>Rack: 0</li>
+<li>slot: 2</li>
+</ul>
+<pre><code class="lang-cs">//create an instance of the client
+var client = new Dacs7Client(&quot;127.0.0.1:102,0,2&quot;);
+</code></pre>
+<p>A more advanced constructor which can be used is the following one where you can specify some additional options.</p>
+<pre><code class="lang-cs">
+var client = new Dacs7Client( address: &quot;127.0.0.1:102,0,2&quot;, 
+                              connectionType: PlcConnectionType.Pg, 
+                              timeout: 5000, 
+                              loggerFactory = null, 
+                              autoReconnectTime: 5000);
+</code></pre>
+<p>Parameters for connection type:</p>
+<pre><code class="lang-cs">    public enum PlcConnectionType : ushort
+    {
+        Pg = 0x01,
+        Op = 0x02,
+        Basic = 0x03
+    }
+</code></pre>
+<p>The timeout is used for read and write operations to wait for a response. In the case of the connect operation, dacs7 use 2 * timeout.</p>
+<p>Auto reconnect time is the time to wait before dacs7 tries to reconnect the socket.</p>
+<p>After an instance was created you can use <code>ConnectAsync</code> to connect to the plc and <code>DisconnectAsync</code> to disconnect. If the connection could not be established, dacs7 throws a  <code>Dacs7NotConnectedException</code>.</p>
+<pre><code class="lang-cs">await client.ConnectAsync();
+...
+await client.DisconnectAsync();
+</code></pre>
+</article>
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

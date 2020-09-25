@@ -14,7 +14,6 @@ namespace Dacs7.Communication
         public int AutoconnectTime { get; set; } = 5000; // <= 0 means disabled
         public string NetworkAdapter { get; set; }
         public bool KeepAlive { get; set; } = false;
-        public int ReconnectInterval { get; set; } = 500;
 
         public ClientSocketConfiguration()
         {

@@ -1,0 +1,377 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/default.css">
+    <link rel="stylesheet" href="../styles/main.css">
+  </head>
+  <body>
+    <article>
+  
+  
+  <h1 id="Dacs7_WriteItem" data-uid="Dacs7.WriteItem" class="text-break">Class WriteItem
+  </h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><span class="xref">System.Object</span></div>
+    <div class="level1"><a class="xref" href="Dacs7.ReadItem.html">ReadItem</a></div>
+    <div class="level2"><span class="xref">WriteItem</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="Dacs7.ReadItem.html#Dacs7_ReadItem_StringHeaderSize">ReadItem.StringHeaderSize</a>
+    </div>
+    <div>
+      <a class="xref" href="Dacs7.ReadItem.html#Dacs7_ReadItem_UnicodeStringHeaderSize">ReadItem.UnicodeStringHeaderSize</a>
+    </div>
+    <div>
+      <a class="xref" href="Dacs7.ReadItem.html#Dacs7_ReadItem_Area">ReadItem.Area</a>
+    </div>
+    <div>
+      <a class="xref" href="Dacs7.ReadItem.html#Dacs7_ReadItem_DbNumber">ReadItem.DbNumber</a>
+    </div>
+    <div>
+      <a class="xref" href="Dacs7.ReadItem.html#Dacs7_ReadItem_Offset">ReadItem.Offset</a>
+    </div>
+    <div>
+      <a class="xref" href="Dacs7.ReadItem.html#Dacs7_ReadItem_NumberOfItems">ReadItem.NumberOfItems</a>
+    </div>
+    <div>
+      <a class="xref" href="Dacs7.ReadItem.html#Dacs7_ReadItem_VarType">ReadItem.VarType</a>
+    </div>
+    <div>
+      <a class="xref" href="Dacs7.ReadItem.html#Dacs7_ReadItem_ResultType">ReadItem.ResultType</a>
+    </div>
+    <div>
+      <a class="xref" href="Dacs7.ReadItem.html#Dacs7_ReadItem_Encoding">ReadItem.Encoding</a>
+    </div>
+    <div>
+      <a class="xref" href="Dacs7.ReadItem.html#Dacs7_ReadItem_CreateFromTag_System_String_">ReadItem.CreateFromTag(String)</a>
+    </div>
+    <div>
+      <a class="xref" href="Dacs7.ReadItem.html#Dacs7_ReadItem_Create__1_System_String_System_Int32_Dacs7_PlcEncoding_">ReadItem.Create&lt;T&gt;(String, Int32, PlcEncoding)</a>
+    </div>
+    <div>
+      <a class="xref" href="Dacs7.ReadItem.html#Dacs7_ReadItem_Create__1_System_String_System_Int32_System_UInt16_Dacs7_PlcEncoding_">ReadItem.Create&lt;T&gt;(String, Int32, UInt16, PlcEncoding)</a>
+    </div>
+    <div>
+      <a class="xref" href="Dacs7.ReadItem.html#Dacs7_ReadItem_GetElementSize_Dacs7_PlcArea_System_Type_Dacs7_PlcEncoding_">ReadItem.GetElementSize(PlcArea, Type, PlcEncoding)</a>
+    </div>
+    <div>
+      <a class="xref" href="Dacs7.ReadItem.html#Dacs7_ReadItem_EnsureSupportedType_Dacs7_ReadItem_">ReadItem.EnsureSupportedType(ReadItem)</a>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetHashCode()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetType()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.MemberwiseClone()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ToString()</span>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="Dacs7.html">Dacs7</a></h6>
+  <h6><strong>Assembly</strong>: Dacs7.dll</h6>
+  <h5 id="Dacs7_WriteItem_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public class WriteItem : ReadItem</code></pre>
+  </div>
+  <h3 id="methods">Methods
+  </h3>
+  <a id="Dacs7_WriteItem_Create_" data-uid="Dacs7.WriteItem.Create*"></a>
+  <h4 id="Dacs7_WriteItem_Create__1_System_String_System_Int32___0_Dacs7_PlcEncoding_" data-uid="Dacs7.WriteItem.Create``1(System.String,System.Int32,``0,Dacs7.PlcEncoding)">Create&lt;T&gt;(String, Int32, T, PlcEncoding)</h4>
+  <div class="markdown level1 summary"><p>Create a <a class="xref" href="Dacs7.WriteItem.html">WriteItem</a> from the given parameter.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static WriteItem Create&lt;T&gt;(string area, int offset, T data, PlcEncoding encoding = PlcEncoding.Windows1252)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">area</span></td>
+        <td><p>Area in the plc (e.g.  db1, i or e, m, q or a, t, c or z</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Int32</span></td>
+        <td><span class="parametername">offset</span></td>
+        <td><p>offset in byte</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">T</span></td>
+        <td><span class="parametername">data</span></td>
+        <td><p>data to write</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Dacs7.PlcEncoding.html">PlcEncoding</a></td>
+        <td><span class="parametername">encoding</span></td>
+        <td><p>write unicode data (only TIA  WString and WChar</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Dacs7.WriteItem.html">WriteItem</a></td>
+        <td><p><a class="xref" href="Dacs7.WriteItem.html">WriteItem</a></p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">T</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Dacs7_WriteItem_Create_" data-uid="Dacs7.WriteItem.Create*"></a>
+  <h4 id="Dacs7_WriteItem_Create__1_System_String_System_Int32_System_UInt16___0_Dacs7_PlcEncoding_" data-uid="Dacs7.WriteItem.Create``1(System.String,System.Int32,System.UInt16,``0,Dacs7.PlcEncoding)">Create&lt;T&gt;(String, Int32, UInt16, T, PlcEncoding)</h4>
+  <div class="markdown level1 summary"><p>Create a <a class="xref" href="Dacs7.WriteItem.html">WriteItem</a> from the given parameter.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static WriteItem Create&lt;T&gt;(string area, int offset, ushort length, T data, PlcEncoding encoding = PlcEncoding.Windows1252)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">area</span></td>
+        <td><p>Area in the plc (e.g.  db1, i or e, m, q or a, t, c or z</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Int32</span></td>
+        <td><span class="parametername">offset</span></td>
+        <td><p>offset in byte</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.UInt16</span></td>
+        <td><span class="parametername">length</span></td>
+        <td><p>number of items</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">T</span></td>
+        <td><span class="parametername">data</span></td>
+        <td><p>data to write</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Dacs7.PlcEncoding.html">PlcEncoding</a></td>
+        <td><span class="parametername">encoding</span></td>
+        <td><p>write unicode data (only TIA  WString and WChar</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Dacs7.WriteItem.html">WriteItem</a></td>
+        <td><p><a class="xref" href="Dacs7.WriteItem.html">WriteItem</a></p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">T</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Dacs7_WriteItem_CreateChild_" data-uid="Dacs7.WriteItem.CreateChild*"></a>
+  <h4 id="Dacs7_WriteItem_CreateChild_Dacs7_WriteItem_System_Int32_System_UInt16_" data-uid="Dacs7.WriteItem.CreateChild(Dacs7.WriteItem,System.Int32,System.UInt16)">CreateChild(WriteItem, Int32, UInt16)</h4>
+  <div class="markdown level1 summary"><p>Create a child from a write item. (becuase of max write item size)</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static WriteItem CreateChild(WriteItem item, int offset, ushort length)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Dacs7.WriteItem.html">WriteItem</a></td>
+        <td><span class="parametername">item</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Int32</span></td>
+        <td><span class="parametername">offset</span></td>
+        <td><p>offset in bytes, if you address booleans, you have to pass the address in bits (byteoffset * 8 + bitoffset)</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.UInt16</span></td>
+        <td><span class="parametername">length</span></td>
+        <td><p>The number of items to read</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Dacs7.WriteItem.html">WriteItem</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Dacs7_WriteItem_CreateFromTag_" data-uid="Dacs7.WriteItem.CreateFromTag*"></a>
+  <h4 id="Dacs7_WriteItem_CreateFromTag_System_String_System_Object_" data-uid="Dacs7.WriteItem.CreateFromTag(System.String,System.Object)">CreateFromTag(String, Object)</h4>
+  <div class="markdown level1 summary"><p>Create a <a class="xref" href="Dacs7.WriteItem.html">WriteItem</a> from the given tag name.
+Tag names are:
+[Area].[OffsetInByte],[Datatype],[NumberofItems]</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static WriteItem CreateFromTag(string tag, object data)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.String</span></td>
+        <td><span class="parametername">tag</span></td>
+        <td><p>Format:  [Area].[Offset],[Type],[Number Of Items  or in Case of bytes and strings the length of them]</p>
+</td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Object</span></td>
+        <td><span class="parametername">data</span></td>
+        <td><p>data to write</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Dacs7.WriteItem.html">WriteItem</a></td>
+        <td><p><a class="xref" href="Dacs7.WriteItem.html">WriteItem</a></p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="extensionmethods">Extension Methods</h3>
+  <div>
+      <a class="xref" href="Dacs7.ItemExtensions.html#Dacs7_ItemExtensions_From_Dacs7_ReadItem_System_Memory_System_Byte__">ItemExtensions.From(ReadItem, Memory&lt;Byte&gt;)</a>
+  </div>
+  <div>
+      <a class="xref" href="Dacs7.Helper.Converter.html#Dacs7_Helper_Converter_SetSwap__1___0_System_IFormatProvider_">Converter.SetSwap&lt;T&gt;(T, IFormatProvider)</a>
+  </div>
+  <div>
+      <a class="xref" href="Dacs7.Helper.Converter.html#Dacs7_Helper_Converter_SetNoSwap__1___0_">Converter.SetNoSwap&lt;T&gt;(T)</a>
+  </div>
+  <div>
+      <a class="xref" href="Dacs7.Helper.Converter.html#Dacs7_Helper_Converter_ToByteArray__1___0_System_Int32_">Converter.ToByteArray&lt;T&gt;(T, Int32)</a>
+  </div>
+</article>
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

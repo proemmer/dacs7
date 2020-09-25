@@ -79,7 +79,7 @@ namespace Dacs7
         }
 
 
-        public static ReadItem Create<T>(string area, int offset, PlcEncoding encoding = PlcEncoding.Ascii)
+        public static ReadItem Create<T>(string area, int offset, PlcEncoding encoding = PlcEncoding.Windows1252)
             => Create<T>(area, offset, 1, encoding);
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace Dacs7
         /// <param name="length">The number of items to read</param>
         /// <param name="unicode">IF the given type is a string or char you can also specifiy if its the unicode variant of them (this means 2byte per sign)</param>
         /// <returns></returns>
-        public static ReadItem Create<T>(string area, int offset, ushort length, PlcEncoding encoding = PlcEncoding.Ascii)
+        public static ReadItem Create<T>(string area, int offset, ushort length, PlcEncoding encoding = PlcEncoding.Windows1252)
         {
             if (!TagParser.TryDetectArea(area.AsSpan(), out var selector, out var db))
             {

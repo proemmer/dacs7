@@ -7,18 +7,14 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace Dacs7
-{
-    public enum PlcEncoding
-    {
-        Ascii,
-        Unicode
-    }
-
+{ 
     public class WriteItem : ReadItem
     {
         internal Memory<byte> Data { get; set; }
 
         internal new WriteItem Parent { get; set; }
+
+        internal new bool IsPart => Parent != null;
 
         internal WriteItem()
         {
@@ -63,7 +59,7 @@ namespace Dacs7
         /// <param name="data">data to write</param>
         /// <param name="encoding">write unicode data (only TIA  WString and WChar</param>
         /// <returns><see cref="WriteItem"/></returns>
-        public static WriteItem Create<T>(string area, int offset, ushort length, T data, PlcEncoding encoding = PlcEncoding.Ascii)
+        public static WriteItem Create<T>(string area, int offset, ushort length, T data, PlcEncoding encoding = PlcEncoding.Windows1252)
         {
             var result = Create<T>(area, offset, length, encoding).Clone();
             result.Data = result.ConvertDataToMemory(data);
@@ -79,7 +75,7 @@ namespace Dacs7
         /// <param name="data">data to write</param>
         /// <param name="encoding">write unicode data (only TIA  WString and WChar</param>
         /// <returns><see cref="WriteItem"/></returns>
-        public static WriteItem Create<T>(string area, int offset, T data, PlcEncoding encoding = PlcEncoding.Ascii)
+        public static WriteItem Create<T>(string area, int offset, T data, PlcEncoding encoding = PlcEncoding.Windows1252)
             => Create(area, offset, GetDataItemCount(data), data, encoding);
 
 
@@ -94,6 +90,7 @@ namespace Dacs7
         public static WriteItem CreateChild(WriteItem item, int offset, ushort length)
         {
             var result = ReadItem.CreateChild(item, offset, length).Clone();
+            result.Parent = item;
             result.Data = item.Data.Slice(offset - item.Offset, length);
             return result;
         }

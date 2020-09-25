@@ -1,0 +1,198 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/default.css">
+    <link rel="stylesheet" href="../styles/main.css">
+  </head>
+  <body>
+    <article>
+  
+  
+  <h1 id="Dacs7_Metadata_Dacs7ClientMetadataExtensions" data-uid="Dacs7.Metadata.Dacs7ClientMetadataExtensions" class="text-break">Class Dacs7ClientMetadataExtensions
+  </h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><span class="xref">System.Object</span></div>
+    <div class="level1"><span class="xref">Dacs7ClientMetadataExtensions</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetHashCode()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetType()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.MemberwiseClone()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ToString()</span>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="Dacs7.Metadata.html">Dacs7.Metadata</a></h6>
+  <h6><strong>Assembly</strong>: Dacs7.dll</h6>
+  <h5 id="Dacs7_Metadata_Dacs7ClientMetadataExtensions_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static class Dacs7ClientMetadataExtensions</code></pre>
+  </div>
+  <h3 id="methods">Methods
+  </h3>
+  <a id="Dacs7_Metadata_Dacs7ClientMetadataExtensions_ReadBlockInfoAsync_" data-uid="Dacs7.Metadata.Dacs7ClientMetadataExtensions.ReadBlockInfoAsync*"></a>
+  <h4 id="Dacs7_Metadata_Dacs7ClientMetadataExtensions_ReadBlockInfoAsync_Dacs7_Dacs7Client_Dacs7_Metadata_PlcBlockType_System_Int32_" data-uid="Dacs7.Metadata.Dacs7ClientMetadataExtensions.ReadBlockInfoAsync(Dacs7.Dacs7Client,Dacs7.Metadata.PlcBlockType,System.Int32)">ReadBlockInfoAsync(Dacs7Client, PlcBlockType, Int32)</h4>
+  <div class="markdown level1 summary"><p>Read the meta data of a block from the PLC.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;IPlcBlockInfo&gt; ReadBlockInfoAsync(this Dacs7Client client, PlcBlockType type, int blocknumber)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Dacs7.Dacs7Client.html">Dacs7Client</a></td>
+        <td><span class="parametername">client</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Dacs7.Metadata.PlcBlockType.html">PlcBlockType</a></td>
+        <td><span class="parametername">type</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Int32</span></td>
+        <td><span class="parametername">blocknumber</span></td>
+        <td><p>Specify the Number of the block</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Dacs7.Metadata.IPlcBlockInfo.html">IPlcBlockInfo</a>&gt;</td>
+        <td><p><a class="xref" href="Dacs7.Metadata.IPlcBlockInfo.html">IPlcBlockInfo</a> where you have access tho the detailed meta data of the block.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Dacs7_Metadata_Dacs7ClientMetadataExtensions_ReadBlocksCountAsync_" data-uid="Dacs7.Metadata.Dacs7ClientMetadataExtensions.ReadBlocksCountAsync*"></a>
+  <h4 id="Dacs7_Metadata_Dacs7ClientMetadataExtensions_ReadBlocksCountAsync_Dacs7_Dacs7Client_" data-uid="Dacs7.Metadata.Dacs7ClientMetadataExtensions.ReadBlocksCountAsync(Dacs7.Dacs7Client)">ReadBlocksCountAsync(Dacs7Client)</h4>
+  <div class="markdown level1 summary"><p>Reads the counts of all blocks available in the plc</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;IPlcBlocksCount&gt; ReadBlocksCountAsync(this Dacs7Client client)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Dacs7.Dacs7Client.html">Dacs7Client</a></td>
+        <td><span class="parametername">client</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<a class="xref" href="Dacs7.Metadata.IPlcBlocksCount.html">IPlcBlocksCount</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Dacs7_Metadata_Dacs7ClientMetadataExtensions_ReadBlocksOfTypeAsync_" data-uid="Dacs7.Metadata.Dacs7ClientMetadataExtensions.ReadBlocksOfTypeAsync*"></a>
+  <h4 id="Dacs7_Metadata_Dacs7ClientMetadataExtensions_ReadBlocksOfTypeAsync_Dacs7_Dacs7Client_Dacs7_Metadata_PlcBlockType_" data-uid="Dacs7.Metadata.Dacs7ClientMetadataExtensions.ReadBlocksOfTypeAsync(Dacs7.Dacs7Client,Dacs7.Metadata.PlcBlockType)">ReadBlocksOfTypeAsync(Dacs7Client, PlcBlockType)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static Task&lt;IEnumerable&lt;IPlcBlock&gt;&gt; ReadBlocksOfTypeAsync(this Dacs7Client client, PlcBlockType type)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Dacs7.Dacs7Client.html">Dacs7Client</a></td>
+        <td><span class="parametername">client</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="Dacs7.Metadata.PlcBlockType.html">PlcBlockType</a></td>
+        <td><span class="parametername">type</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span>&lt;<span class="xref">System.Collections.Generic.IEnumerable</span>&lt;<a class="xref" href="Dacs7.Metadata.IPlcBlock.html">IPlcBlock</a>&gt;&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+</article>
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

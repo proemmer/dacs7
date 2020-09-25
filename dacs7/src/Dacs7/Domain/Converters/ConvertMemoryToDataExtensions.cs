@@ -80,10 +80,21 @@ namespace Dacs7.Domain
                     var current = data.Span.Length - ReadItem.StringHeaderSize;
 
                     length = (byte)Math.Min(Math.Min(max, (int)length), current);
+                    var usedEncoding = Encoding.UTF7;
+                    switch (item.Encoding)
+                    {
+                        case PlcEncoding.Windows1252:
+                            {
+                                usedEncoding = Encoding.GetEncoding(1252);
+                                break;
+                            }
+
+                    }
+
 #if SPANSUPPORT
-                    return length > 0 ? Encoding.ASCII.GetString(data.Slice(ReadItem.StringHeaderSize, length).Span) : string.Empty;
+                    return length > 0 ? usedEncoding.GetString(data.Slice(ReadItem.StringHeaderSize, length).Span) : string.Empty;
 #else
-                    return length > 0 ? Encoding.ASCII.GetString(data.Span.Slice(ReadItem.StringHeaderSize, length).ToArray()) : string.Empty;
+                    return length > 0 ? usedEncoding.GetString(data.Span.Slice(ReadItem.StringHeaderSize, length).ToArray()) : string.Empty;
 #endif
 
                 }

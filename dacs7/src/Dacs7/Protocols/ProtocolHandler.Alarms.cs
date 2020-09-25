@@ -17,11 +17,14 @@ using System.Threading.Tasks;
 
 namespace Dacs7.Protocols
 {
+
+
     internal sealed partial class ProtocolHandler
     {
         private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>> _alarmHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>>();
         private CallbackHandler<S7AlarmUpdateAckDatagram> _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
         private readonly ConcurrentDictionary<ushort, CallbackHandler<S7AlarmIndicationDatagram>> _alarmIndicationHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7AlarmIndicationDatagram>>();
+        private readonly ConcurrentDictionary<ushort, AlarmSubscription> _subscriptions = new ConcurrentDictionary<ushort, AlarmSubscription>();
 
 
         public async Task CancelAlarmHandlingAsync()
@@ -44,7 +47,7 @@ namespace Dacs7.Protocols
                     await DisableAlarmUpdatesAsync().ConfigureAwait(false);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 if (_logger?.IsEnabled(LogLevel.Debug) == true)
                 {
@@ -60,7 +63,9 @@ namespace Dacs7.Protocols
         public async Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync()
         {
             if (_closeCalled || ConnectionState != ConnectionState.Opened)
+            {
                 ThrowHelper.ThrowNotConnectedException();
+            }
 
             var id = GetNextReferenceId();
             var sequenceNumber = (byte)0x00;
@@ -113,7 +118,10 @@ namespace Dacs7.Protocols
                             }
                             catch (ObjectDisposedException)
                             {
-                                if (cbh == null) return alarms; // client was shut down without any result, so we return an empty list.
+                                if (cbh == null)
+                                {
+                                    return alarms; // client was shut down without any result, so we return an empty list.
+                                }
                                 // if we have a result we could handle it.
                             }
 
@@ -174,13 +182,35 @@ namespace Dacs7.Protocols
             }
         }
 
+        public AlarmSubscription CreateAlarmSubscription()
+        {
+            var userId = GetNextReferenceId();
+            var waitHandler = new CallbackHandler<S7AlarmIndicationDatagram>(userId);
+            var subscription = new AlarmSubscription(this, waitHandler);
+            if (_alarmIndicationHandler.TryAdd(waitHandler.Id, waitHandler))
+            {
+                if (_subscriptions.TryAdd(waitHandler.Id, subscription))
+                {
+                    return subscription;
+                }
+            }
+            ThrowHelper.ThrowException(new InvalidOperationException());
+            return null;
+        }
+
+
+        [Obsolete("ReceiveAlarmUpdatesAsync is deprecated, please use AlarmSubscription class instead.")]
         public async Task<AlarmUpdateResult> ReceiveAlarmUpdatesAsync(CancellationToken ct)
         {
             if (_closeCalled || ConnectionState != ConnectionState.Opened)
+            {
                 ThrowHelper.ThrowNotConnectedException();
+            }
 
             if (!await EnableAlarmUpdatesAsync().ConfigureAwait(false))
+            {
                 ThrowHelper.ThrowNotConnectedException();
+            }
 
             var userId = GetNextReferenceId();
             try
@@ -219,6 +249,71 @@ namespace Dacs7.Protocols
         }
 
 
+
+        internal async Task RemoveAlarmSubscriptionAsync(AlarmSubscription subscription)
+        {
+            var userId = subscription.CallbackHandler.Id;
+            if (_subscriptions.TryRemove(userId, out _))
+            {
+                if (_alarmIndicationHandler.TryRemove(userId, out _))
+                {
+                    if (!_alarmIndicationHandler.Any())
+                    {
+                        await DisableAlarmUpdatesAsync().ConfigureAwait(false);
+                    }
+                }
+            }
+        }
+
+        internal async Task<AlarmUpdateResult> ReceiveAlarmUpdatesAsync(AlarmSubscription subscription, CancellationToken ct)
+        {
+            if (_closeCalled || ConnectionState != ConnectionState.Opened)
+            {
+                ThrowHelper.ThrowNotConnectedException();
+            }
+
+            if (!await EnableAlarmUpdatesAsync().ConfigureAwait(false))
+            {
+                ThrowHelper.ThrowNotConnectedException();
+            }
+
+            if (subscription.CallbackHandler != null)
+            {
+                if (subscription.CallbackHandler.Event != null)
+                {
+                    subscription.CallbackHandler.Event.Reset();
+                    if (!subscription.TryGetDatagram(out var result))
+                    {
+                        await subscription.CallbackHandler.Event.WaitAsync(ct).ConfigureAwait(false);
+
+                        if (subscription.TryGetDatagram(out result) && result != null)
+                        {
+                            return new AlarmUpdateResult(_alarmUpdateHandler?.Id == 0, result.AlarmMessage.Alarms.ToList(), null);
+                        }
+                        else
+                        {
+                            _logger?.LogDebug("AlarmIndication handler received with null result for handler id {0}.", subscription.CallbackHandler.Id);
+                        }
+                    }
+                    else if (result != null)
+                    {
+                        return new AlarmUpdateResult(_alarmUpdateHandler?.Id == 0, result.AlarmMessage.Alarms.ToList(), null);
+                    }
+                }
+                else
+                {
+                    _logger?.LogWarning("Alarm indication handler with id {0} has currently no event handler.", subscription.CallbackHandler.Id);
+                }
+            }
+            else
+            {
+                _logger?.LogWarning("Could not add alarm indication handler with id {0} to handler list", subscription.CallbackHandler.Id);
+            }
+
+            return new AlarmUpdateResult(_alarmUpdateHandler?.Id == 0, null);
+        }
+
+
         private async Task<bool> EnableAlarmUpdatesAsync()
         {
             CallbackHandler<S7AlarmUpdateAckDatagram> cbh = null;
@@ -229,7 +324,11 @@ namespace Dacs7.Protocols
                 {
                     using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
                     {
-                        if (_concurrentJobs == null) return false;
+                        if (_concurrentJobs == null)
+                        {
+                            return false;
+                        }
+
                         try
                         {
                             using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
@@ -241,7 +340,10 @@ namespace Dacs7.Protocols
                                     try
                                     {
                                         if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                        {
                                             return false;
+                                        }
+
                                         await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
                                     }
                                     catch (Exception)
@@ -267,12 +369,20 @@ namespace Dacs7.Protocols
         {
             if (_alarmUpdateHandler?.Id != 0)
             {
-                if (_concurrentJobs == null) return false;
+                if (_concurrentJobs == null)
+                {
+                    return false;
+                }
+
                 using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildAlarmUpdateRequest(_s7Context, _alarmUpdateHandler.Id, false), out var memoryLength))
                 {
                     using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
                     {
-                        if (_concurrentJobs == null) return false;
+                        if (_concurrentJobs == null)
+                        {
+                            return false;
+                        }
+
                         try
                         {
                             using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
@@ -282,7 +392,9 @@ namespace Dacs7.Protocols
                                     try
                                     {
                                         if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                        {
                                             return false;
+                                        }
 
                                         if (_alarmUpdateHandler?.Event != null)
                                         {
@@ -358,11 +470,17 @@ namespace Dacs7.Protocols
                 _logger?.LogWarning("No data from alarm update ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
             }
 
-            foreach (var handler in _alarmIndicationHandler.Values)
+            foreach (var subscription in _subscriptions.Values)
+            {
+                subscription.AddDatagram(data);
+            }
+
+            foreach (var handler in _alarmIndicationHandler.Where(x => !_subscriptions.ContainsKey(x.Key)).Select(x => x.Value))
             {
                 handler.Event.Set(data);
             }
         }
 
     }
+
 }
