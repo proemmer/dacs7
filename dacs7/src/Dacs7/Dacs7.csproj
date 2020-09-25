@@ -28,7 +28,7 @@
 
 
 
-    <Version>2.2.3-beta2</Version>
+    <Version>2.2.3-beta7</Version>
     <SignAssembly>true</SignAssembly>
     
     
@@ -48,6 +48,7 @@
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.5.1" />
     <PackageReference Include="System.Runtime" Version="4.3.0" />
     <PackageReference Include="System.Runtime.Numerics" Version="4.3.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.5.0" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
     <PackageReference Include="System.Threading.Tasks.Parallel" Version="4.3.0" />
     <PackageReference Include="System.Threading.Thread" Version="4.3.0" />
@@ -58,6 +59,14 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp2.2'">
+    <DefineConstants>SPANSUPPORT;$(AdditionalConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp3.1'">
+    <DefineConstants>SPANSUPPORT;$(AdditionalConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)'=='netcoreapp3.2'">
     <DefineConstants>SPANSUPPORT;$(AdditionalConstants)</DefineConstants>
   </PropertyGroup>
   

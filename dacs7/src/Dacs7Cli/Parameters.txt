@@ -3,3 +3,10 @@ read --address benjipc677c  DB1.80000,x,1
 
 
 watchalarms --address 192.168.0.148:102,0,2 -d 
+
+
+
+
+
+dacs7cli write --address 192.168.0.148  DB253.4,x0=true
+dacs7cli write --address 192.168.0.148  DB253.4,x0=false

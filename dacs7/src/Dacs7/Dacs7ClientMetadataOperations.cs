@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
 // See License in the project root for license information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -62,8 +61,8 @@ namespace Dacs7.Metadata
             return null;
         }
 
-        public static async Task<IEnumerable<IPlcBlock>> ReadBlocksOfTypeAsync(this Dacs7Client client, PlcBlockType type)
-            => await client.ProtocolHandler.ReadBlocksOfTypesAsync(type).ConfigureAwait(false);
+        public static Task<IEnumerable<IPlcBlock>> ReadBlocksOfTypeAsync(this Dacs7Client client, PlcBlockType type)
+            => client.ProtocolHandler.ReadBlocksOfTypesAsync(type);
 
     }
 }

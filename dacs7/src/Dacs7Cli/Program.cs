@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.CommandLineUtils;
+using Microsoft.Extensions.CommandLineUtils;
 using System;
 
 namespace Dacs7Cli

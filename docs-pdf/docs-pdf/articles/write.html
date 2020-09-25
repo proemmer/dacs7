@@ -1,0 +1,92 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/default.css">
+    <link rel="stylesheet" href="../styles/main.css">
+  </head>
+  <body>
+    <article>
+<h1 id="write-to-plc">write to plc</h1>
+
+<p>You have a couple of possibilities to write data to the plc. These are described below.</p>
+<p>You can write more the one data in a single call of the write method by providing the write items to the method.</p>
+<p>For each write item you will get a ItemResponseRetValue as a result.</p>
+<pre><code class="lang-cs">    public enum ItemResponseRetValue : byte
+    {
+        Reserved = 0x00,
+        [Description(&quot;Hardware error&quot;)]
+        HardwareFault = 0x01,
+
+        [Description(&quot;Accessing the object not allowed&quot;)]
+        AccessFault = 0x03,
+
+        [Description(&quot;Invalid address&quot;)]
+        OutOfRange = 0x05,       //the desired address is beyond limit for this PLC 
+
+        [Description(&quot;Data type not supported&quot;)]
+        NotSupported = 0x06,     //Type is not supported 
+
+        [Description(&quot;Data type inconsistent&quot;)]
+        SizeMismatch = 0x07,     //Data type inconsistent 
+
+        [Description(&quot;Object does not exist&quot;)]
+        DataError = 0x0a,        //the desired item is not available in the PLC, e.g. when trying to read a non existing DB
+
+        [Description(&quot;Success&quot;)]
+        Success = 0xFF,
+    }
+</code></pre>
+<h2 id="read-data-by-using-the-tag-syntax">Read data by using the tag syntax</h2>
+<p>For details of this syntax see the area TagSyntax.</p>
+<pre><code class="lang-cs">var data1 = new byte[100];
+var data2 = new byte[500];
+
+// Write arrays of bytes to the PLC by using the tag syntax shorthand method
+var writeResults1 = await _client.WriteAsync((&quot;DB1114.0,b,100&quot;, data1), (&quot;DB1114.100,b,500&quot;, data2));
+
+// Write arrays of bytes from the PLC by using the tag syntax and the write items.
+var readResults2 = await _client.WriteAsync(WriteItem.CreateFromTag(&quot;DB1114.0,b,100&quot;, data1), 
+                                           WriteItem.CreateFromTag(&quot;DB1114.100,b,500&quot;, data2));
+
+
+</code></pre>
+<h2 id="write-data-by-using-the-read-item-class">Write data by using the read item class</h2>
+<pre><code class="lang-cs">var data = new byte[500];
+
+var writeResults = await _client.WriteAsync(WriteItem.Create&lt;ushort&gt;(&quot;DB1114&quot;, 0, 100, (ushort)0x02), 
+                                          WriteItem.Create&lt;byte[]&gt;(&quot;DB1114&quot;, 100, 500, data));
+if (writeResults.Count() == 2)
+{
+    Console.WriteLine(writeResults[0]);
+    Console.WriteLine(writeResults[1]);
+}
+</code></pre>
+<h2 id="write-bit-data">Write bit data</h2>
+<p>The offset is normally in bytes, but if you address a Boolean, you have to pass the address in bits (byteOffset * 8 + bitOffset).</p>
+<pre><code class="lang-cs">var writeResults = await client.WriteAsync(WriteItem.Create&lt;bool&gt;(&quot;DB1&quot;, baseOffset, false),
+                                         WriteItem.Create&lt;bool&gt;(&quot;DB1&quot;, baseOffset + 5, true))
+
+</code></pre>
+<h3 id="write-string-data">Write string data</h3>
+<p>If the given type is a string or char you can also specify if its the Unicode variant of them (this means 2byte per sign).
+You also have to specify the encoding of the strings.</p>
+<p>currently we support the following encodings:</p>
+<pre><code class="lang-cs">    public enum PlcEncoding
+    {
+        UTF7,           // for normal strings 
+        Unicode,        // for wide strings (used 2 bytes per letter)
+        Windows1252     // default encoding for normal strings
+    }
+</code></pre>
+<p>Unicode is only supported in TIA to address WString an WChar.</p>
+<pre><code class="lang-cs">var writeResults = await client.WriteAsync(WriteItem.Create&lt;string&gt;(&quot;DB1&quot;, 0, 10, &quot;Test&quot;, PlcEncoding.Windows1252))
+
+</code></pre>
+</article>
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

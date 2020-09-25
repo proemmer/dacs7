@@ -7,7 +7,6 @@ namespace Dacs7.Tests
     public class ReadWriteExceptionsTests
     {
 
-
         [Fact]
         public void TestWriteItemInvalidNumberOfBitsThrowsException()
         {

@@ -1,0 +1,272 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  <head>
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/default.css">
+    <link rel="stylesheet" href="../styles/main.css">
+  </head>
+  <body>
+    <article>
+  
+  
+  <h1 id="Dacs7_Alarms_AlarmUpdateResult" data-uid="Dacs7.Alarms.AlarmUpdateResult" class="text-break">Class AlarmUpdateResult
+  </h1>
+  <div class="markdown level0 summary"></div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><span class="xref">System.Object</span></div>
+    <div class="level1"><span class="xref">AlarmUpdateResult</span></div>
+  </div>
+  <div classs="implements">
+    <h5>Implements</h5>
+    <div><span class="xref">System.IDisposable</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetHashCode()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.GetType()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.MemberwiseClone()</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+    </div>
+    <div>
+      <span class="xref">System.Object.ToString()</span>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="Dacs7.Alarms.html">Dacs7.Alarms</a></h6>
+  <h6><strong>Assembly</strong>: Dacs7.dll</h6>
+  <h5 id="Dacs7_Alarms_AlarmUpdateResult_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public class AlarmUpdateResult : IDisposable</code></pre>
+  </div>
+  <h3 id="constructors">Constructors
+  </h3>
+  <a id="Dacs7_Alarms_AlarmUpdateResult__ctor_" data-uid="Dacs7.Alarms.AlarmUpdateResult.#ctor*"></a>
+  <h4 id="Dacs7_Alarms_AlarmUpdateResult__ctor_System_Boolean_System_Collections_Generic_IEnumerable_Dacs7_Alarms_IPlcAlarm__System_Func_System_Threading_Tasks_Task__" data-uid="Dacs7.Alarms.AlarmUpdateResult.#ctor(System.Boolean,System.Collections.Generic.IEnumerable{Dacs7.Alarms.IPlcAlarm},System.Func{System.Threading.Tasks.Task})">AlarmUpdateResult(Boolean, IEnumerable&lt;IPlcAlarm&gt;, Func&lt;Task&gt;)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public AlarmUpdateResult(bool channelCompleted, IEnumerable&lt;IPlcAlarm&gt; alarms, Func&lt;Task&gt; closeAction)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Boolean</span></td>
+        <td><span class="parametername">channelCompleted</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.IEnumerable</span>&lt;<a class="xref" href="Dacs7.Alarms.IPlcAlarm.html">IPlcAlarm</a>&gt;</td>
+        <td><span class="parametername">alarms</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Func</span>&lt;<span class="xref">System.Threading.Tasks.Task</span>&gt;</td>
+        <td><span class="parametername">closeAction</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Dacs7_Alarms_AlarmUpdateResult__ctor_" data-uid="Dacs7.Alarms.AlarmUpdateResult.#ctor*"></a>
+  <h4 id="Dacs7_Alarms_AlarmUpdateResult__ctor_System_Boolean_System_Func_System_Threading_Tasks_Task__" data-uid="Dacs7.Alarms.AlarmUpdateResult.#ctor(System.Boolean,System.Func{System.Threading.Tasks.Task})">AlarmUpdateResult(Boolean, Func&lt;Task&gt;)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public AlarmUpdateResult(bool channelCompleted, Func&lt;Task&gt; closeAction)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Boolean</span></td>
+        <td><span class="parametername">channelCompleted</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><span class="xref">System.Func</span>&lt;<span class="xref">System.Threading.Tasks.Task</span>&gt;</td>
+        <td><span class="parametername">closeAction</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="properties">Properties
+  </h3>
+  <a id="Dacs7_Alarms_AlarmUpdateResult_Alarms_" data-uid="Dacs7.Alarms.AlarmUpdateResult.Alarms*"></a>
+  <h4 id="Dacs7_Alarms_AlarmUpdateResult_Alarms" data-uid="Dacs7.Alarms.AlarmUpdateResult.Alarms">Alarms</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public IEnumerable&lt;IPlcAlarm&gt; Alarms { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Collections.Generic.IEnumerable</span>&lt;<a class="xref" href="Dacs7.Alarms.IPlcAlarm.html">IPlcAlarm</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Dacs7_Alarms_AlarmUpdateResult_ChannelClosed_" data-uid="Dacs7.Alarms.AlarmUpdateResult.ChannelClosed*"></a>
+  <h4 id="Dacs7_Alarms_AlarmUpdateResult_ChannelClosed" data-uid="Dacs7.Alarms.AlarmUpdateResult.ChannelClosed">ChannelClosed</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool ChannelClosed { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Boolean</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Dacs7_Alarms_AlarmUpdateResult_HasAlarms_" data-uid="Dacs7.Alarms.AlarmUpdateResult.HasAlarms*"></a>
+  <h4 id="Dacs7_Alarms_AlarmUpdateResult_HasAlarms" data-uid="Dacs7.Alarms.AlarmUpdateResult.HasAlarms">HasAlarms</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public bool HasAlarms { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Boolean</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="methods">Methods
+  </h3>
+  <a id="Dacs7_Alarms_AlarmUpdateResult_CloseUpdateChannel_" data-uid="Dacs7.Alarms.AlarmUpdateResult.CloseUpdateChannel*"></a>
+  <h4 id="Dacs7_Alarms_AlarmUpdateResult_CloseUpdateChannel" data-uid="Dacs7.Alarms.AlarmUpdateResult.CloseUpdateChannel">CloseUpdateChannel()</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">[Obsolete(&quot;This method is obsolet if you use the alarm subscription.&quot;)]
+public Task CloseUpdateChannel()</code></pre>
+  </div>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Threading.Tasks.Task</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <a id="Dacs7_Alarms_AlarmUpdateResult_Dispose_" data-uid="Dacs7.Alarms.AlarmUpdateResult.Dispose*"></a>
+  <h4 id="Dacs7_Alarms_AlarmUpdateResult_Dispose" data-uid="Dacs7.Alarms.AlarmUpdateResult.Dispose">Dispose()</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public void Dispose()</code></pre>
+  </div>
+  <a id="Dacs7_Alarms_AlarmUpdateResult_Dispose_" data-uid="Dacs7.Alarms.AlarmUpdateResult.Dispose*"></a>
+  <h4 id="Dacs7_Alarms_AlarmUpdateResult_Dispose_System_Boolean_" data-uid="Dacs7.Alarms.AlarmUpdateResult.Dispose(System.Boolean)">Dispose(Boolean)</h4>
+  <div class="markdown level1 summary"></div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="decalaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">protected virtual void Dispose(bool disposing)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-striped table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="xref">System.Boolean</span></td>
+        <td><span class="parametername">disposing</span></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="implements">Implements</h3>
+  <div>
+      <span class="xref">System.IDisposable</span>
+  </div>
+  <h3 id="extensionmethods">Extension Methods</h3>
+  <div>
+      <a class="xref" href="Dacs7.Helper.Converter.html#Dacs7_Helper_Converter_SetSwap__1___0_System_IFormatProvider_">Converter.SetSwap&lt;T&gt;(T, IFormatProvider)</a>
+  </div>
+  <div>
+      <a class="xref" href="Dacs7.Helper.Converter.html#Dacs7_Helper_Converter_SetNoSwap__1___0_">Converter.SetNoSwap&lt;T&gt;(T)</a>
+  </div>
+  <div>
+      <a class="xref" href="Dacs7.Helper.Converter.html#Dacs7_Helper_Converter_ToByteArray__1___0_System_Int32_">Converter.ToByteArray&lt;T&gt;(T, Int32)</a>
+  </div>
+</article>
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

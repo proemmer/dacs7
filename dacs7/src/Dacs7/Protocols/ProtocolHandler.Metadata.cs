@@ -12,12 +12,11 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dacs7.Protocols
 {
-    internal sealed partial class ProtocolHandler 
+    internal sealed partial class ProtocolHandler
     {
         private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>> _blockInfoHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>>();
         private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlocksCountAckDatagram>> _blocksCountHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlocksCountAckDatagram>>();
@@ -47,13 +46,15 @@ namespace Dacs7.Protocols
                     _logger?.LogWarning("Exception while canceling meta data handling. Exception was {0}", ex.Message);
                 }
             }
-            return Task.CompletedTask; 
+            return Task.CompletedTask;
         }
 
         public async Task<S7PlcBlockInfoAckDatagram> ReadBlockInfoAsync(PlcBlockType type, int blocknumber)
         {
             if (_closeCalled || ConnectionState != ConnectionState.Opened)
+            {
                 ThrowHelper.ThrowNotConnectedException();
+            }
 
             var id = GetNextReferenceId();
             using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlockInfoRequest(_s7Context, id, type, blocknumber), out var memoryLength))
@@ -66,14 +67,18 @@ namespace Dacs7.Protocols
                         S7PlcBlockInfoAckDatagram blockinfoResult = null;
                         try
                         {
-                            if (_concurrentJobs == null) return null;
+                            if (_concurrentJobs == null)
+                            {
+                                return null;
+                            }
+
                             using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                             {
                                 cbh = new CallbackHandler<S7PlcBlockInfoAckDatagram>(id);
                                 if (_blockInfoHandler.TryAdd(id, cbh))
                                 {
                                     _logger?.LogTrace("Metadata read handler with id {id} was added.", id);
-                                    
+
                                     try
                                     {
                                         if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
@@ -98,7 +103,10 @@ namespace Dacs7.Protocols
                         }
                         catch (ObjectDisposedException)
                         {
-                            if (cbh == null) return null;
+                            if (cbh == null)
+                            {
+                                return null;
+                            }
                         }
 
                         HandlerErrorResult(id, cbh, blockinfoResult);
@@ -118,7 +126,9 @@ namespace Dacs7.Protocols
         public async Task<S7PlcBlocksCountAckDatagram> ReadBocksCountInfoAsync()
         {
             if (ConnectionState != ConnectionState.Opened)
+            {
                 ThrowHelper.ThrowNotConnectedException();
+            }
 
             var id = GetNextReferenceId();
             using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlocksCountRequest(_s7Context, id), out var memoryLength))
@@ -136,7 +146,10 @@ namespace Dacs7.Protocols
                             try
                             {
                                 if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                {
                                     return null;
+                                }
+
                                 blockinfoResult = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
                             }
                             finally
@@ -162,7 +175,9 @@ namespace Dacs7.Protocols
         public async Task<IEnumerable<IPlcBlock>> ReadBlocksOfTypesAsync(PlcBlockType type)
         {
             if (ConnectionState != ConnectionState.Opened)
+            {
                 ThrowHelper.ThrowNotConnectedException();
+            }
 
             var id = GetNextReferenceId();
             var sequenceNumber = (byte)0x00;
@@ -189,7 +204,9 @@ namespace Dacs7.Protocols
                                 try
                                 {
                                     if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                    {
                                         return null;
+                                    }
 
                                     blocksOfTypeResults = await cbh.Event.WaitAsync(_s7Context.Timeout).ConfigureAwait(false);
 
@@ -273,15 +290,18 @@ namespace Dacs7.Protocols
 
             if (_blockInfoHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out var cbh))
             {
-                if (data.UserData.Parameter.ParamErrorCode != 0)
+                if (data.UserData.Parameter.ParamErrorCode != (int)ErrorParameter.AtLeatOneOfTheGivenBlocksNotFound)
                 {
-                    _logger?.LogError("Error while reading blockdata for reference {0}. ParamErrorCode: {1}", data.UserData.Header.ProtocolDataUnitReference, data.UserData.Parameter.ParamErrorCode);
-                    cbh.Exception = new Dacs7ParameterException(data.UserData.Parameter.ParamErrorCode);
-                    cbh.Event.Set(null);
-                }
-                if (data.UserData.Data == null)
-                {
-                    _logger?.LogWarning("No data from blockinfo ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
+                    if (data.UserData.Parameter.ParamErrorCode != 0)
+                    {
+                        _logger?.LogError("Error while reading blockdata for reference {0}. ParamErrorCode: {1}", data.UserData.Header.ProtocolDataUnitReference, data.UserData.Parameter.ParamErrorCode);
+                        cbh.Exception = new Dacs7ParameterException(data.UserData.Parameter.ParamErrorCode);
+                        cbh.Event.Set(null);
+                    }
+                    if (data.UserData.Data == null)
+                    {
+                        _logger?.LogWarning("No data from blockinfo ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
+                    }
                 }
                 cbh.Event.Set(data);
             }

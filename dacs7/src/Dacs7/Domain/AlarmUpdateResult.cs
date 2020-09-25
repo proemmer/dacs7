@@ -25,6 +25,7 @@ namespace Dacs7.Alarms
         public IEnumerable<IPlcAlarm> Alarms { get; }
         public bool ChannelClosed { get; }
 
+        [Obsolete("This method is obsolet if you use the alarm subscription.")]
         public Task CloseUpdateChannel() => _closeAction?.Invoke();
 
         public void Dispose()

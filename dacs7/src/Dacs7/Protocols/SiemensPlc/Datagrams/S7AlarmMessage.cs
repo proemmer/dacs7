@@ -93,6 +93,7 @@ namespace Dacs7.Protocols.SiemensPlc
                                         {
                                             alarm.AckStateGoing = span[offset++];
                                             alarm.AckStateComing = span[offset++]; // 0x00 == no ack  0x01  == ack
+                                            alarm.Going = new S7PlcAlarmDetails { Timestamp = current.Timestamp };
                                         }
                                         break;
                                     default:

@@ -2,6 +2,7 @@
 // See License in the project root for license information.
 
 using Dacs7.Communication;
+using Dacs7.Helper;
 using Dacs7.Protocols.SiemensPlc;
 using Dacs7.Protocols.SiemensPlc.Datagrams;
 using Microsoft.Extensions.Logging;
@@ -27,6 +28,7 @@ namespace Dacs7.Protocols
 
         private volatile bool _closeCalled;
         private SemaphoreSlim _concurrentJobs;
+        private SemaphoreSlim _connectSema = new SemaphoreSlim(1);
         private int _referenceId;
 
         public ConnectionState ConnectionState { get; private set; } = ConnectionState.Closed;
@@ -63,32 +65,41 @@ namespace Dacs7.Protocols
         /// <returns></returns>
         public async Task OpenAsync()
         {
-            try
+            if (_transport.Client.IsConnected) return; // if connection is already open do nothing
+            using (await SemaphoreGuard.Async(_connectSema))
             {
-                _closeCalled = false;
-                await _transport.Client.OpenAsync().ConfigureAwait(false);
+                if (_transport.Client.IsConnected) return;  // if connection is already open do nothing
                 try
                 {
-                    if (!await _connectEvent.WaitAsync(_s7Context.Timeout * 10).ConfigureAwait(false))
+                    _closeCalled = false;
+                    await _transport.Client.OpenAsync().ConfigureAwait(false);
+                    try
                     {
-                        await CloseAsync().ConfigureAwait(false);
+                        if (!_transport.Client.IsConnected) ThrowHelper.ThrowNotConnectedException();
+
+                        if (!await _connectEvent.WaitAsync(_s7Context.Timeout * 2).ConfigureAwait(false) || !_transport.Client.IsConnected)
+                        {
+                            ThrowHelper.ThrowNotConnectedException();
+                        }
+                    }
+                    catch (TimeoutException)
+                    {
+                        await InternalCloseAsync().ConfigureAwait(false);
                         ThrowHelper.ThrowNotConnectedException();
                     }
+
+                    // tcp and rfc1006 connection is open, so enable auto reconnect
+                    _transport.Client.EnableAutoReconnectReconnect();
                 }
-                catch (TimeoutException)
+                catch (Dacs7NotConnectedException)
                 {
-                    await CloseAsync().ConfigureAwait(false);
-                    ThrowHelper.ThrowNotConnectedException();
+                    await InternalCloseAsync().ConfigureAwait(false);
+                    throw;
                 }
-            }
-            catch (Dacs7NotConnectedException)
-            {
-                await CloseAsync().ConfigureAwait(false);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                ThrowHelper.ThrowNotConnectedException(ex);
+                catch (Exception ex)
+                {
+                    ThrowHelper.ThrowNotConnectedException(ex);
+                }
             }
         }
 
@@ -98,10 +109,21 @@ namespace Dacs7.Protocols
         /// <returns></returns>
         public async Task CloseAsync()
         {
-            _closeCalled = true;
-            await CancelPendingEvents().ConfigureAwait(false);
-            await _transport.Client.CloseAsync().ConfigureAwait(false);
-            await Task.Delay(1).ConfigureAwait(false); // This ensures that the user can call connect after reconnect. (Otherwise he has to sleep for a while)
+            using (await SemaphoreGuard.Async(_connectSema))
+            {
+                await InternalCloseAsync().ConfigureAwait(false);
+            }
+        }
+
+        private async Task InternalCloseAsync()
+        {
+            if (!_closeCalled)
+            {
+                _closeCalled = true;
+                await CancelPendingEvents().ConfigureAwait(false);
+                await _transport.Client.CloseAsync().ConfigureAwait(false);
+                await Task.Delay(1).ConfigureAwait(false); // This ensures that the user can call connect after reconnect. (Otherwise he has to sleep for a while)   
+            }
         }
 
         private async Task CancelPendingEvents()
@@ -268,25 +290,28 @@ namespace Dacs7.Protocols
         {
             if (ConnectionState != state)
             {
-
-                if (state == ConnectionState.TransportOpened)
+                if((state == ConnectionState.TransportOpened && ConnectionState != ConnectionState.PendingOpenTransport) ||
+                    state == ConnectionState.PendingOpenPlc && ConnectionState != ConnectionState.TransportOpened)
                 {
-                    await StartS7CommunicationSetup().ConfigureAwait(false);
-                }
-                else if (state == ConnectionState.Closed)
-                {
-                    await CancelPendingEvents().ConfigureAwait(false);
-
-                    // We should not dispose here because some request could be ongoing and where killed due to sema disposing
-                    //if (_concurrentJobs != null)
-                    //{
-                    //    _concurrentJobs?.Dispose();
-                    //    _concurrentJobs = null;
-                    //}
+                    // ignore state change
+                    return;
                 }
 
                 ConnectionState = state;
                 _connectionStateChanged?.Invoke(state);
+
+
+                if (state == ConnectionState.TransportOpened)
+                {
+                    // start comm setup only if state is in pending open transport
+                    await StartS7CommunicationSetup().ConfigureAwait(false);
+                    // after this ack received we should be in state PendingOpenPlc
+                }
+                else if (state == ConnectionState.Closed)
+                {
+                    await CancelPendingEvents().ConfigureAwait(false);
+                }
+                
             }
         }
 

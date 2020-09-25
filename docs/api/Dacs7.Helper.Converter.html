@@ -1,0 +1,2076 @@
+﻿<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Class Converter
+   </title>
+    <meta name="viewport" content="width=device-width">
+    <meta name="title" content="Class Converter
+   ">
+    <meta name="generator" content="docfx 2.45.1.0">
+    
+    <link rel="shortcut icon" href="../favicon.ico">
+    <link rel="stylesheet" href="../styles/docfx.vendor.css">
+    <link rel="stylesheet" href="../styles/docfx.css">
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="text/javascript" href="../styles/encrypter.js">
+    <meta property="docfx:navrel" content="../toc.html">
+    <meta property="docfx:tocrel" content="../toc.html">
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix">
+    <div id="wrapper">
+      <header>
+        
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+            </div>
+          </div>
+        </nav>
+        
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content">
+              
+              
+              <h1 id="Dacs7_Helper_Converter" data-uid="Dacs7.Helper.Converter">Class Converter
+              </h1>
+              <div class="markdown level0 summary"></div>
+              <div class="markdown level0 conceptual"></div>
+              <div class="inheritance">
+                <h5>Inheritance</h5>
+                  <div class="level0"><span class="xref">System.Object</span></div>
+                  <div class="level1"><span class="xref">Converter</span></div>
+              </div>
+              <div class="inheritedMembers">
+                <h5>Inherited Members</h5>
+                <div>
+                  <span class="xref">System.Object.Equals(System.Object)</span>
+                </div>
+                <div>
+                  <span class="xref">System.Object.Equals(System.Object, System.Object)</span>
+                </div>
+                <div>
+                  <span class="xref">System.Object.GetHashCode()</span>
+                </div>
+                <div>
+                  <span class="xref">System.Object.GetType()</span>
+                </div>
+                <div>
+                  <span class="xref">System.Object.MemberwiseClone()</span>
+                </div>
+                <div>
+                  <span class="xref">System.Object.ReferenceEquals(System.Object, System.Object)</span>
+                </div>
+                <div>
+                  <span class="xref">System.Object.ToString()</span>
+                </div>
+              </div>
+              <h6><strong>Namespace</strong>:Dacs7.Helper</h6>
+              <h6><strong>Assembly</strong>:Dacs7.dll</h6>
+              <h5 id="Dacs7_Helper_Converter_syntax">Syntax</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static class Converter</code></pre>
+              </div>
+              <h3 id="methods">Methods
+              </h3>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L593">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_BinGet_" data-uid="Dacs7.Helper.Converter.BinGet*"></a>
+              <h4 id="Dacs7_Helper_Converter_BinGet__1_System_String_" data-uid="Dacs7.Helper.Converter.BinGet``1(System.String)">BinGet&lt;T&gt;(String)</h4>
+              <div class="markdown level1 summary"><p>Converts a binary string to a value of T</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static T BinGet&lt;T&gt;(this string binString)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.String</span></td>
+                    <td><span class="parametername">binString</span></td>
+                    <td><p>e.g. 0110</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">T</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="typeParameters">Type Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="parametername">T</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L585">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_BinGetBytes_" data-uid="Dacs7.Helper.Converter.BinGetBytes*"></a>
+              <h4 id="Dacs7_Helper_Converter_BinGetBytes_System_String_" data-uid="Dacs7.Helper.Converter.BinGetBytes(System.String)">BinGetBytes(String)</h4>
+              <div class="markdown level1 summary"><p>Creates a byte array from the binary string.</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static byte[] BinGetBytes(this string binString)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.String</span></td>
+                    <td><span class="parametername">binString</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span>[]</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L344">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_Concat_" data-uid="Dacs7.Helper.Converter.Concat*"></a>
+              <h4 id="Dacs7_Helper_Converter_Concat__1___0_____0___" data-uid="Dacs7.Helper.Converter.Concat``1(``0[],``0[])">Concat&lt;T&gt;(T[], T[])</h4>
+              <div class="markdown level1 summary"><p>Creates a new array with the merged data in it</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static T[] Concat&lt;T&gt;(this T[] data1, T[] data2)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>T[]</td>
+                    <td><span class="parametername">data1</span></td>
+                    <td><p>fist block</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td>T[]</td>
+                    <td><span class="parametername">data2</span></td>
+                    <td><p>second block</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>T[]</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="typeParameters">Type Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="parametername">T</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L788">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_ConvertFromDateTime_" data-uid="Dacs7.Helper.Converter.ConvertFromDateTime*"></a>
+              <h4 id="Dacs7_Helper_Converter_ConvertFromDateTime_System_DateTime_" data-uid="Dacs7.Helper.Converter.ConvertFromDateTime(System.DateTime)">ConvertFromDateTime(DateTime)</h4>
+              <div class="markdown level1 summary"></div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static IList&lt;byte&gt; ConvertFromDateTime(this DateTime dateTime)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.DateTime</span></td>
+                    <td><span class="parametername">dateTime</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Collections.Generic.IList</span>&lt;<span class="xref">System.Byte</span>&gt;</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L748">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_ConvertToDateTime_" data-uid="Dacs7.Helper.Converter.ConvertToDateTime*"></a>
+              <h4 id="Dacs7_Helper_Converter_ConvertToDateTime_System_Collections_Generic_IList_System_Byte__System_Int32_" data-uid="Dacs7.Helper.Converter.ConvertToDateTime(System.Collections.Generic.IList{System.Byte},System.Int32)">ConvertToDateTime(IList&lt;Byte&gt;, Int32)</h4>
+              <div class="markdown level1 summary"><p>Convert a byte list to a Datetime
+given byte array hast the following format
+year month, day hour minutes millisecond</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static DateTime ConvertToDateTime(this IList&lt;byte&gt; data, int offset = 0)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Collections.Generic.IList</span>&lt;<span class="xref">System.Byte</span>&gt;</td>
+                    <td><span class="parametername">data</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">offset</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.DateTime</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L367">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_FromByteArray_" data-uid="Dacs7.Helper.Converter.FromByteArray*"></a>
+              <h4 id="Dacs7_Helper_Converter_FromByteArray__1_System_Byte___" data-uid="Dacs7.Helper.Converter.FromByteArray``1(System.Byte[])">FromByteArray&lt;T&gt;(Byte[])</h4>
+              <div class="markdown level1 summary"></div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static T FromByteArray&lt;T&gt;(this byte[] rawValue)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span>[]</td>
+                    <td><span class="parametername">rawValue</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">T</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="typeParameters">Type Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="parametername">T</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L375">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_GetBcdByte_" data-uid="Dacs7.Helper.Converter.GetBcdByte*"></a>
+              <h4 id="Dacs7_Helper_Converter_GetBcdByte_System_Byte_" data-uid="Dacs7.Helper.Converter.GetBcdByte(System.Byte)">GetBcdByte(Byte)</h4>
+              <div class="markdown level1 summary"></div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static int GetBcdByte(this byte b)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span></td>
+                    <td><span class="parametername">b</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L436">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_GetBcdDWord_" data-uid="Dacs7.Helper.Converter.GetBcdDWord*"></a>
+              <h4 id="Dacs7_Helper_Converter_GetBcdDWord_System_Byte___System_Int32_" data-uid="Dacs7.Helper.Converter.GetBcdDWord(System.Byte[],System.Int32)">GetBcdDWord(Byte[], Int32)</h4>
+              <div class="markdown level1 summary"></div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static int GetBcdDWord(this byte[] b, int offset = 0)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span>[]</td>
+                    <td><span class="parametername">b</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">offset</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L399">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_GetBcdWord_" data-uid="Dacs7.Helper.Converter.GetBcdWord*"></a>
+              <h4 id="Dacs7_Helper_Converter_GetBcdWord_System_Byte___System_Int32_" data-uid="Dacs7.Helper.Converter.GetBcdWord(System.Byte[],System.Int32)">GetBcdWord(Byte[], Int32)</h4>
+              <div class="markdown level1 summary"></div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static int GetBcdWord(this byte[] b, int offset = 0)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span>[]</td>
+                    <td><span class="parametername">b</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">offset</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L293">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_GetBit_" data-uid="Dacs7.Helper.Converter.GetBit*"></a>
+              <h4 id="Dacs7_Helper_Converter_GetBit_System_Byte_System_Int32_" data-uid="Dacs7.Helper.Converter.GetBit(System.Byte,System.Int32)">GetBit(Byte, Int32)</h4>
+              <div class="markdown level1 summary"><p>Determine the state of a bit in a byte</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static bool GetBit(this byte data, int bit)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span></td>
+                    <td><span class="parametername">data</span></td>
+                    <td><p>byte to check</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">bit</span></td>
+                    <td><p>bit number  0..7</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Boolean</span></td>
+                    <td><p>the state of the bit</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L276">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_GetBit_" data-uid="Dacs7.Helper.Converter.GetBit*"></a>
+              <h4 id="Dacs7_Helper_Converter_GetBit_System_Byte___System_Int32_" data-uid="Dacs7.Helper.Converter.GetBit(System.Byte[],System.Int32)">GetBit(Byte[], Int32)</h4>
+              <div class="markdown level1 summary"><p>Determine the state of a bit in a byte array</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static bool GetBit(this byte[] data, int bit)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span>[]</td>
+                    <td><span class="parametername">data</span></td>
+                    <td><p>byte to check</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">bit</span></td>
+                    <td><p>bit number  0..7</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Boolean</span></td>
+                    <td><p>the state of the bit</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L165">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_GetNoSwap_" data-uid="Dacs7.Helper.Converter.GetNoSwap*"></a>
+              <h4 id="Dacs7_Helper_Converter_GetNoSwap__1_System_Byte___System_Int32_" data-uid="Dacs7.Helper.Converter.GetNoSwap``1(System.Byte[],System.Int32)">GetNoSwap&lt;T&gt;(Byte[], Int32)</h4>
+              <div class="markdown level1 summary"><p>Converts a give <see cref="!:byte[]"></see>  to T- with not swapped bytes</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static T GetNoSwap&lt;T&gt;(this byte[] buffer, int offset = 0)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span>[]</td>
+                    <td><span class="parametername">buffer</span></td>
+                    <td><p>buffer to extract the value</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">offset</span></td>
+                    <td><p>offset to the first byte if the value</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">T</span></td>
+                    <td><p>The value  of type T</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="typeParameters">Type Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="parametername">T</span></td>
+                    <td><p>byte ... Single</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L155">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_GetNoSwap_" data-uid="Dacs7.Helper.Converter.GetNoSwap*"></a>
+              <h4 id="Dacs7_Helper_Converter_GetNoSwap__1_System_Collections_Generic_IEnumerable_System_Byte__System_Int32_" data-uid="Dacs7.Helper.Converter.GetNoSwap``1(System.Collections.Generic.IEnumerable{System.Byte},System.Int32)">GetNoSwap&lt;T&gt;(IEnumerable&lt;Byte&gt;, Int32)</h4>
+              <div class="markdown level1 summary"><p>Converts a give <span class="xref">System.Collections.Generic.IEnumerable&lt;T&gt;</span> to T- with not swapped bytes</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static T GetNoSwap&lt;T&gt;(this IEnumerable&lt;byte&gt; buffer, int offset = 0)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Collections.Generic.IEnumerable</span>&lt;<span class="xref">System.Byte</span>&gt;</td>
+                    <td><span class="parametername">buffer</span></td>
+                    <td><p>buffer to extract the value</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">offset</span></td>
+                    <td><p>offset to the first byte if the value</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">T</span></td>
+                    <td><p>The value  of type T</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="typeParameters">Type Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="parametername">T</span></td>
+                    <td><p>byte ... Single</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L116">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_GetSwap_" data-uid="Dacs7.Helper.Converter.GetSwap*"></a>
+              <h4 id="Dacs7_Helper_Converter_GetSwap__1_System_Byte___System_Int32_" data-uid="Dacs7.Helper.Converter.GetSwap``1(System.Byte[],System.Int32)">GetSwap&lt;T&gt;(Byte[], Int32)</h4>
+              <div class="markdown level1 summary"><p>Converts a give <see cref="!:byte[]"></see> to T- with swapped bytes</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static T GetSwap&lt;T&gt;(this byte[] buffer, int offset = 0)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span>[]</td>
+                    <td><span class="parametername">buffer</span></td>
+                    <td><p>buffer to extract the value</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">offset</span></td>
+                    <td><p>offset to the first byte if the value</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">T</span></td>
+                    <td><p>The value of type T</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="typeParameters">Type Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="parametername">T</span></td>
+                    <td><p>byte ... Single</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L107">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_GetSwap_" data-uid="Dacs7.Helper.Converter.GetSwap*"></a>
+              <h4 id="Dacs7_Helper_Converter_GetSwap__1_System_Collections_Generic_IEnumerable_System_Byte__System_Int32_" data-uid="Dacs7.Helper.Converter.GetSwap``1(System.Collections.Generic.IEnumerable{System.Byte},System.Int32)">GetSwap&lt;T&gt;(IEnumerable&lt;Byte&gt;, Int32)</h4>
+              <div class="markdown level1 summary"><p>Converts a give <span class="xref">System.Collections.Generic.IEnumerable&lt;T&gt;</span> to T - with swapped bytes</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static T GetSwap&lt;T&gt;(this IEnumerable&lt;byte&gt; buffer, int offset = 0)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Collections.Generic.IEnumerable</span>&lt;<span class="xref">System.Byte</span>&gt;</td>
+                    <td><span class="parametername">buffer</span></td>
+                    <td><p>buffer to extract the value</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">offset</span></td>
+                    <td><p>offset to the first byte if the value</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">T</span></td>
+                    <td><p>The value of type T</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="typeParameters">Type Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="parametername">T</span></td>
+                    <td><p>byte ... Single</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L530">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_HexGet_" data-uid="Dacs7.Helper.Converter.HexGet*"></a>
+              <h4 id="Dacs7_Helper_Converter_HexGet__1_System_String_" data-uid="Dacs7.Helper.Converter.HexGet``1(System.String)">HexGet&lt;T&gt;(String)</h4>
+              <div class="markdown level1 summary"><p>Extract a value from the hex string</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static T HexGet&lt;T&gt;(this string hexString)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.String</span></td>
+                    <td><span class="parametername">hexString</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">T</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="typeParameters">Type Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="parametername">T</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L522">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_HexGetBytes_" data-uid="Dacs7.Helper.Converter.HexGetBytes*"></a>
+              <h4 id="Dacs7_Helper_Converter_HexGetBytes_System_String_" data-uid="Dacs7.Helper.Converter.HexGetBytes(System.String)">HexGetBytes(String)</h4>
+              <div class="markdown level1 summary"><p>Converts a hex string to a byte array</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static byte[] HexGetBytes(this string hexString)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.String</span></td>
+                    <td><span class="parametername">hexString</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span>[]</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L648">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_IsInHexFormat_" data-uid="Dacs7.Helper.Converter.IsInHexFormat*"></a>
+              <h4 id="Dacs7_Helper_Converter_IsInHexFormat_System_String_" data-uid="Dacs7.Helper.Converter.IsInHexFormat(System.String)">IsInHexFormat(String)</h4>
+              <div class="markdown level1 summary"><p>Determines if given string is in proper hexadecimal string format</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static bool IsInHexFormat(this string hexString)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.String</span></td>
+                    <td><span class="parametername">hexString</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Boolean</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L387">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_SetBcdByte_" data-uid="Dacs7.Helper.Converter.SetBcdByte*"></a>
+              <h4 id="Dacs7_Helper_Converter_SetBcdByte_System_Int32_" data-uid="Dacs7.Helper.Converter.SetBcdByte(System.Int32)">SetBcdByte(Int32)</h4>
+              <div class="markdown level1 summary"></div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static byte SetBcdByte(this int value)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">value</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L451">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_SetBcdDWord_" data-uid="Dacs7.Helper.Converter.SetBcdDWord*"></a>
+              <h4 id="Dacs7_Helper_Converter_SetBcdDWord_System_Int32_System_Int32_" data-uid="Dacs7.Helper.Converter.SetBcdDWord(System.Int32,System.Int32)">SetBcdDWord(Int32, Int32)</h4>
+              <div class="markdown level1 summary"></div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static byte[] SetBcdDWord(this int value, int offset = 0)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">value</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">offset</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span>[]</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L411">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_SetBcdWord_" data-uid="Dacs7.Helper.Converter.SetBcdWord*"></a>
+              <h4 id="Dacs7_Helper_Converter_SetBcdWord_System_Int32_System_Int32_" data-uid="Dacs7.Helper.Converter.SetBcdWord(System.Int32,System.Int32)">SetBcdWord(Int32, Int32)</h4>
+              <div class="markdown level1 summary"></div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static byte[] SetBcdWord(this int value, int offset = 0)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">value</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">offset</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span>[]</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L309">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_SetBit_" data-uid="Dacs7.Helper.Converter.SetBit*"></a>
+              <h4 id="Dacs7_Helper_Converter_SetBit_System_Byte_System_Int32_System_Boolean_" data-uid="Dacs7.Helper.Converter.SetBit(System.Byte,System.Int32,System.Boolean)">SetBit(Byte, Int32, Boolean)</h4>
+              <div class="markdown level1 summary"><p>Set or reset s bit in a byte</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static byte SetBit(this byte data, int bit, bool value)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span></td>
+                    <td><span class="parametername">data</span></td>
+                    <td><p>byte to change</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">bit</span></td>
+                    <td><p>bit number  0..7</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Boolean</span></td>
+                    <td><span class="parametername">value</span></td>
+                    <td><p>value to apply</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span></td>
+                    <td><p>the changed byte</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L67">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_SetNoSwap_" data-uid="Dacs7.Helper.Converter.SetNoSwap*"></a>
+              <h4 id="Dacs7_Helper_Converter_SetNoSwap__1___0_" data-uid="Dacs7.Helper.Converter.SetNoSwap``1(``0)">SetNoSwap&lt;T&gt;(T)</h4>
+              <div class="markdown level1 summary"><p>Converts a number to a byte array  from byte ... Single
+With not swapped bytes</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static byte[] SetNoSwap&lt;T&gt;(this T value)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">T</span></td>
+                    <td><span class="parametername">value</span></td>
+                    <td><p>Value to convert</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span>[]</td>
+                    <td><p>The value as <see cref="!:byte[]"></see></p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="typeParameters">Type Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="parametername">T</span></td>
+                    <td><p>byte ... Single</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L24">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_SetSwap_" data-uid="Dacs7.Helper.Converter.SetSwap*"></a>
+              <h4 id="Dacs7_Helper_Converter_SetSwap__1___0_System_IFormatProvider_" data-uid="Dacs7.Helper.Converter.SetSwap``1(``0,System.IFormatProvider)">SetSwap&lt;T&gt;(T, IFormatProvider)</h4>
+              <div class="markdown level1 summary"><p>Converts a number to a byte array  from byte ... Single
+With swapped bytes</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static byte[] SetSwap&lt;T&gt;(this T value, IFormatProvider formatProvider = null)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">T</span></td>
+                    <td><span class="parametername">value</span></td>
+                    <td><p>Value to convert</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.IFormatProvider</span></td>
+                    <td><span class="parametername">formatProvider</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span>[]</td>
+                    <td><p>The value as <see cref="!:byte[]"></see></p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="typeParameters">Type Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="parametername">T</span></td>
+                    <td><p>byte ... Single</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L325">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_SubArray_" data-uid="Dacs7.Helper.Converter.SubArray*"></a>
+              <h4 id="Dacs7_Helper_Converter_SubArray__1___0___System_Int32_System_Int32_System_Boolean_" data-uid="Dacs7.Helper.Converter.SubArray``1(``0[],System.Int32,System.Int32,System.Boolean)">SubArray&lt;T&gt;(T[], Int32, Int32, Boolean)</h4>
+              <div class="markdown level1 summary"><p>Retrieves a sub array from this instance.</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static T[] SubArray&lt;T&gt;(this T[] data, int skip, int length = -1, bool realloc = false)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>T[]</td>
+                    <td><span class="parametername">data</span></td>
+                    <td><p>array instance to extract the sub array</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">skip</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">length</span></td>
+                    <td><p>length of the sub array</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Boolean</span></td>
+                    <td><span class="parametername">realloc</span></td>
+                    <td><p>if the sub array is equal to the array the sub array will be returned</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>T[]</td>
+                    <td><p>a copy of this sub array</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="typeParameters">Type Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="parametername">T</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L243">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_SwapDInt_" data-uid="Dacs7.Helper.Converter.SwapDInt*"></a>
+              <h4 id="Dacs7_Helper_Converter_SwapDInt_System_Int32_" data-uid="Dacs7.Helper.Converter.SwapDInt(System.Int32)">SwapDInt(Int32)</h4>
+              <div class="markdown level1 summary"><p>Swap an integer (32bit)</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static int SwapDInt(this int intVal)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">intVal</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><p>swapped int</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L214">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_SwapDWord_" data-uid="Dacs7.Helper.Converter.SwapDWord*"></a>
+              <h4 id="Dacs7_Helper_Converter_SwapDWord_System_UInt32_" data-uid="Dacs7.Helper.Converter.SwapDWord(System.UInt32)">SwapDWord(UInt32)</h4>
+              <div class="markdown level1 summary"><p>Swap a dword</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static uint SwapDWord(this uint dword)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.UInt32</span></td>
+                    <td><span class="parametername">dword</span></td>
+                    <td><p>given dword to swap</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.UInt32</span></td>
+                    <td><p>swapped dword</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L229">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_SwapInt_" data-uid="Dacs7.Helper.Converter.SwapInt*"></a>
+              <h4 id="Dacs7_Helper_Converter_SwapInt_System_Int16_" data-uid="Dacs7.Helper.Converter.SwapInt(System.Int16)">SwapInt(Int16)</h4>
+              <div class="markdown level1 summary"><p>Swap an short integer (16bit)</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static short SwapInt(this short intVal)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Int16</span></td>
+                    <td><span class="parametername">intVal</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Int16</span></td>
+                    <td><p>swapped shortint</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L259">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_SwapSingle_" data-uid="Dacs7.Helper.Converter.SwapSingle*"></a>
+              <h4 id="Dacs7_Helper_Converter_SwapSingle_System_Single_" data-uid="Dacs7.Helper.Converter.SwapSingle(System.Single)">SwapSingle(Single)</h4>
+              <div class="markdown level1 summary"><p>Swap an single (32bit float)</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static float SwapSingle(this float intVal)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Single</span></td>
+                    <td><span class="parametername">intVal</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Single</span></td>
+                    <td><p>swapped int</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L202">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_SwapWord_" data-uid="Dacs7.Helper.Converter.SwapWord*"></a>
+              <h4 id="Dacs7_Helper_Converter_SwapWord_System_UInt16_" data-uid="Dacs7.Helper.Converter.SwapWord(System.UInt16)">SwapWord(UInt16)</h4>
+              <div class="markdown level1 summary"><p>Swap a word</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static ushort SwapWord(this ushort word)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.UInt16</span></td>
+                    <td><span class="parametername">word</span></td>
+                    <td><p>given word to swap</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.UInt16</span></td>
+                    <td><p>swapped word</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L482">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_ToBinString_" data-uid="Dacs7.Helper.Converter.ToBinString*"></a>
+              <h4 id="Dacs7_Helper_Converter_ToBinString_System_Byte_" data-uid="Dacs7.Helper.Converter.ToBinString(System.Byte)">ToBinString(Byte)</h4>
+              <div class="markdown level1 summary"></div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static string ToBinString(this byte b)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span></td>
+                    <td><span class="parametername">b</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.String</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L490">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_ToBinString_" data-uid="Dacs7.Helper.Converter.ToBinString*"></a>
+              <h4 id="Dacs7_Helper_Converter_ToBinString_System_Collections_Generic_IEnumerable_System_Byte__System_String_System_Int32_System_Int32_" data-uid="Dacs7.Helper.Converter.ToBinString(System.Collections.Generic.IEnumerable{System.Byte},System.String,System.Int32,System.Int32)">ToBinString(IEnumerable&lt;Byte&gt;, String, Int32, Int32)</h4>
+              <div class="markdown level1 summary"></div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static string ToBinString(this IEnumerable&lt;byte&gt; bytes, string separator = &quot;&quot;, int offset = 0, int length = 2147483647)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Collections.Generic.IEnumerable</span>&lt;<span class="xref">System.Byte</span>&gt;</td>
+                    <td><span class="parametername">bytes</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.String</span></td>
+                    <td><span class="parametername">separator</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">offset</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">length</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.String</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L353">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_ToByteArray_" data-uid="Dacs7.Helper.Converter.ToByteArray*"></a>
+              <h4 id="Dacs7_Helper_Converter_ToByteArray__1___0_System_Int32_" data-uid="Dacs7.Helper.Converter.ToByteArray``1(``0,System.Int32)">ToByteArray&lt;T&gt;(T, Int32)</h4>
+              <div class="markdown level1 summary"></div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static byte[] ToByteArray&lt;T&gt;(this T value, int maxLength)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">T</span></td>
+                    <td><span class="parametername">value</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">maxLength</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span>[]</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="typeParameters">Type Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="parametername">T</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L626">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_ToDateTime_" data-uid="Dacs7.Helper.Converter.ToDateTime*"></a>
+              <h4 id="Dacs7_Helper_Converter_ToDateTime_System_Byte___System_Int32_" data-uid="Dacs7.Helper.Converter.ToDateTime(System.Byte[],System.Int32)">ToDateTime(Byte[], Int32)</h4>
+              <div class="markdown level1 summary"><p>converts the given byte array to an DateTime, if the value is not in range, DateTime.MinValue will be returned</p>
+</div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static DateTime ToDateTime(this byte[] data, int offset = 0)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Byte</span>[]</td>
+                    <td><span class="parametername">data</span></td>
+                    <td><p>minimum 8 byte - offset</p>
+</td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">offset</span></td>
+                    <td><p>offset to first byte</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.DateTime</span></td>
+                    <td><p>DateTime</p>
+</td>
+                  </tr>
+                </tbody>
+              </table>
+              
+              <span class="small pull-right mobile-hide">
+                <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L506">View Source</a>
+              </span>
+              <a id="Dacs7_Helper_Converter_ToHexString_" data-uid="Dacs7.Helper.Converter.ToHexString*"></a>
+              <h4 id="Dacs7_Helper_Converter_ToHexString_System_Collections_Generic_IEnumerable_System_Byte__System_String_System_Int32_System_Int32_System_Boolean_" data-uid="Dacs7.Helper.Converter.ToHexString(System.Collections.Generic.IEnumerable{System.Byte},System.String,System.Int32,System.Int32,System.Boolean)">ToHexString(IEnumerable&lt;Byte&gt;, String, Int32, Int32, Boolean)</h4>
+              <div class="markdown level1 summary"></div>
+              <div class="markdown level1 conceptual"></div>
+              <h5 class="decalaration">Declaration</h5>
+              <div class="codewrapper">
+                <pre><code class="lang-csharp hljs">public static string ToHexString(this IEnumerable&lt;byte&gt; bytes, string separator = &quot;&quot;, int offset = 0, int length = 2147483647, bool reverse = true)</code></pre>
+              </div>
+              <h5 class="parameters">Parameters</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.Collections.Generic.IEnumerable</span>&lt;<span class="xref">System.Byte</span>&gt;</td>
+                    <td><span class="parametername">bytes</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.String</span></td>
+                    <td><span class="parametername">separator</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">offset</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Int32</span></td>
+                    <td><span class="parametername">length</span></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td><span class="xref">System.Boolean</span></td>
+                    <td><span class="parametername">reverse</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+              <h5 class="returns">Returns</h5>
+              <table class="table table-bordered table-striped table-condensed">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><span class="xref">System.String</span></td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </article>
+          </div>
+          
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/proemmer/dacs7/edit/proemmer/ConnectionBug/dacs7/src/Dacs7/Helper/Converter.cs/#L13" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+              <!-- <p><a class="back-to-top" href="#top">Back to top</a><p> -->
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a class="back-to-top" href="#top">Back to top</a>
+            </span>
+            
+            <span>Copyright © Benjamin Proemmer
+          </span></div>
+        </div>
+      </footer>
+    </div>
+    
+    <script type="text/javascript" src="../styles/docfx.vendor.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

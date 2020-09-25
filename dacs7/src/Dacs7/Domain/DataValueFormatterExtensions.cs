@@ -13,11 +13,11 @@ namespace Dacs7
     public static class DataValueFormatterExtensions
     {
 
-        public static string GetValueAsString(this DataValue dataValue, string seperator = " ") => GetValueAsString(dataValue, null, seperator);
+        public static string GetValueAsString(this DataValue dataValue, string separator = " ") => GetValueAsString(dataValue, null, separator);
 
-        public static string GetValueAsString(this DataValue dataValue, DataValueFormatter formatter, string seperator = " ")
+        public static string GetValueAsString(this DataValue dataValue, DataValueFormatter formatter, string separator = " ")
         {
-            var result = FormattedResult(dataValue, seperator);
+            var result = FormattedResult(dataValue, separator);
             return formatter != null ? formatter(dataValue.Value, result) : result;
         }
 
