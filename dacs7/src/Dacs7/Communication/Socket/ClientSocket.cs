@@ -52,6 +52,24 @@ namespace Dacs7.Communication
 
         public ClientSocket(ClientSocketConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration, loggerFactory?.CreateLogger<ClientSocket>()) => _config = configuration;
 
+        public ClientSocket(System.Net.Sockets.Socket socket, ClientSocketConfiguration configuration, ILogger logger) : base(configuration, logger)
+        {
+            _socket = socket;
+            _config = configuration;
+
+            try
+            {
+                _tokenSource = new CancellationTokenSource();
+                _receivingTask = Task.Factory.StartNew(() => StartReceive(), _tokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                PublishConnectionStateChanged(true).ConfigureAwait(false);
+            }
+            catch (Exception)
+            {
+                _ = DisposeSocketAsync();
+                _ = HandleSocketDown().ConfigureAwait(false);
+            }
+        }
+
 
         /// <summary>
         /// Starts the server such that it is listening for 

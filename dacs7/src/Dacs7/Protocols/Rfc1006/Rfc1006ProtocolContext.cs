@@ -115,5 +115,6 @@ namespace Dacs7.Protocols.Rfc1006
         }
 
         public void UpdateFrameSize(ConnectionConfirmedDatagram res) => FrameSizeSending = 1 << res.SizeTpduReceiving.Span[0];
+        public void UpdateFrameSize(ConnectionRequestDatagram res) => FrameSizeSending = 1 << res.SizeTpduReceiving.Span[0];
     }
 }

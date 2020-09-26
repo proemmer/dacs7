@@ -30,6 +30,7 @@ namespace Dacs7.Communication
 
 
         public abstract void ConfigureClient(ILoggerFactory loggerFactory);
+        public abstract void ConfigureServer(ILoggerFactory loggerFactory);
         public abstract IMemoryOwner<byte> Build(Memory<byte> buffer, out int length);
     }
 }

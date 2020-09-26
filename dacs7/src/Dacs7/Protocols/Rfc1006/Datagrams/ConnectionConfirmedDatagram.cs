@@ -59,7 +59,7 @@ namespace Dacs7.Protocols.Rfc1006
             _destTsap = null;
         }
 
-        public ConnectionConfirmedDatagram BuildCc(Rfc1006ProtocolContext context, ConnectionRequestDatagram req)
+        public static ConnectionConfirmedDatagram BuildCc(Rfc1006ProtocolContext context, ConnectionRequestDatagram req)
         {
             context.CalcLength(context, out var li, out var length);
             req.SizeTpduReceiving.Span.CopyTo(context.SizeTpduSending.Span);
