@@ -160,7 +160,7 @@ namespace Dacs7
         /// Updates the internal connection state, and publish a change to <see cref="ConnectionStateChanged"/>
         /// </summary>
         /// <param name="state">The new connection state</param>
-        private void UpdateConnectionState(ConnectionState state)
+        private void UpdateConnectionState(ProtocolHandler handler, ConnectionState state)
         {
             var dacs7State = Dacs7ConnectionState.Closed;
             switch (state)

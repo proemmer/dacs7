@@ -79,7 +79,7 @@ namespace Dacs7.Protocols
                                     _logger?.LogTrace("Read handler with id {id} was added.", id);
                                     try
                                     {
-                                        if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                        if (await _transport.Connection.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
                                         {
                                             // we cancel return false, because if on esend faild we expect also all other ones failed.
                                             _logger?.LogWarning("Could not send read package with reference <{id}>.", id);
@@ -203,19 +203,19 @@ namespace Dacs7.Protocols
             }
         }
 
-        private void ReceivedReadJob(Memory<byte> buffer)
-        {
-            var data = S7ReadJobDatagram.TranslateFromMemory(buffer);
+        //private void ReceivedReadJob(Memory<byte> buffer)
+        //{
+        //    var data = S7ReadJobDatagram.TranslateFromMemory(buffer);
 
-            if (_readHandler.TryGetValue(data.Header.ProtocolDataUnitReference, out var cbh))
-            {
-                cbh.Event.Set(_defaultReadJobResult);
-            }
-            else
-            {
-                _logger?.LogWarning("No read handler found for received read job reference {0}", data.Header.ProtocolDataUnitReference);
-            }
-        }
+        //    if (_readHandler.TryGetValue(data.Header.ProtocolDataUnitReference, out var cbh))
+        //    {
+        //        cbh.Event.Set(_defaultReadJobResult);
+        //    }
+        //    else
+        //    {
+        //        _logger?.LogWarning("No read handler found for received read job reference {0}", data.Header.ProtocolDataUnitReference);
+        //    }
+        //}
 
         private static IEnumerable<ReadPackage> CreateReadPackages(SiemensPlcProtocolContext s7Context, IEnumerable<ReadItem> vars)
         {

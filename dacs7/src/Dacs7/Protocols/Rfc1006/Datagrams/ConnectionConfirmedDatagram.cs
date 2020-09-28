@@ -22,7 +22,7 @@ namespace Dacs7.Protocols.Rfc1006
 
         public byte Li { get; set; }
 
-        public byte PduType { get; set; } // = 0xd0;
+        public byte PduType { get; set; }  = 0xd0;
 
         public short DstRef { get; set; } //  = 0x0001;                     // TPDU Destination Reference
 
@@ -32,7 +32,7 @@ namespace Dacs7.Protocols.Rfc1006
 
         public byte ParmCodeTpduSize { get; set; } = 0xc0;
 
-        public byte SizeTpduReceivingLength { get; set; }
+        public byte SizeTpduReceivingLength { get; set; } = 0x01;
 
         public Memory<byte> SizeTpduReceiving { get; set; }              // Allowed sizes: 128(7), 256(8), 512(9), 1024(10), 2048(11) octets
 
@@ -61,6 +61,7 @@ namespace Dacs7.Protocols.Rfc1006
 
         public static ConnectionConfirmedDatagram BuildCc(Rfc1006ProtocolContext context, ConnectionRequestDatagram req)
         {
+            context.DestTsap = req.DestTsap;
             context.CalcLength(context, out var li, out var length);
             req.SizeTpduReceiving.Span.CopyTo(context.SizeTpduSending.Span);
             var result = new ConnectionConfirmedDatagram

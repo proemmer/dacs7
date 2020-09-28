@@ -15,26 +15,39 @@ namespace Dacs7.Communication.Socket
     internal sealed class TcpTransport : Transport
     {
         private readonly Rfc1006ProtocolContext _context;
+        private readonly System.Net.Sockets.Socket _socket;
 
-        public TcpTransport(Rfc1006ProtocolContext context, ClientSocketConfiguration config) : base(context, config) => _context = context;
+        public TcpTransport(Rfc1006ProtocolContext context, ClientSocketConfiguration config, System.Net.Sockets.Socket usedSocket = null) : base(context, config)
+        {
+            _context = context;
+            _socket = usedSocket;
+        }
         public TcpTransport(Rfc1006ProtocolContext context, ServerSocketConfiguration config) : base(context, config) => _context = context;
 
         public sealed override void ConfigureClient(ILoggerFactory loggerFactory)
         {
-            Client = new ClientSocket(Configuration as ClientSocketConfiguration, loggerFactory)
+            var clientSocket = new ClientSocket(Configuration as ClientSocketConfiguration, loggerFactory)
             {
                 OnRawDataReceived = OnTcpSocketRawDataReceived,
                 OnConnectionStateChanged = OnTcpSocketConnectionStateChanged
             };
+            
+            if(_socket != null)
+            {
+                _ = clientSocket.UseSocketAsync(_socket);
+            }
+
+            Connection = clientSocket;
         }
 
         public sealed override void ConfigureServer(ILoggerFactory loggerFactory)
-        {
-            //Client = new ClientSocket(Configuration as ClientSocketConfiguration, loggerFactory)
-            //{
-            //    OnRawDataReceived = OnTcpSocketRawDataReceived,
-            //    OnConnectionStateChanged = OnTcpSocketConnectionStateChanged
-            //};
+        { 
+            Connection = new ServerSocket(Configuration as ServerSocketConfiguration, loggerFactory)
+            {
+                OnRawDataReceived = OnTcpSocketRawDataReceived,
+                OnConnectionStateChanged = OnTcpSocketConnectionStateChanged,
+                OnNewSocketConnected = OnNewSocketConnected
+            };
         }
 
 
@@ -79,7 +92,7 @@ namespace Dacs7.Communication.Socket
         private Task OnTcpSocketConnectionStateChanged(string socketHandle, bool connected)
         {
             var state = OnGetConnectionState?.Invoke();
-            if (state == ConnectionState.Closed && connected) return SendTcpConnectionRequest();
+            if (state == ConnectionState.Closed && connected && _socket == null) return SendTcpConnectionRequest();
             if (state != ConnectionState.Closed && !connected) return OnUpdateConnectionState?.Invoke(ConnectionState.Closed); // close in any case
             return Task.CompletedTask;
         }
@@ -123,7 +136,7 @@ namespace Dacs7.Communication.Socket
         {
             using (var datagram = ConnectionConfirmedDatagram.TranslateToMemory(ConnectionConfirmedDatagram.BuildCc(_context, cr), out var memoryLegth))
             {
-                var result = await Client.SendAsync(datagram.Memory.Slice(0, memoryLegth)).ConfigureAwait(false);
+                var result = await Connection.SendAsync(datagram.Memory.Slice(0, memoryLegth)).ConfigureAwait(false);
                 if (result == SocketError.Success)
                 {
                     OnUpdateConnectionState?.Invoke(ConnectionState.TransportOpened);
@@ -135,7 +148,7 @@ namespace Dacs7.Communication.Socket
         {
             using (var datagram = ConnectionRequestDatagram.TranslateToMemory(ConnectionRequestDatagram.BuildCr(_context), out var memoryLegth))
             {
-                var result = await Client.SendAsync(datagram.Memory.Slice(0, memoryLegth)).ConfigureAwait(false);
+                var result = await Connection.SendAsync(datagram.Memory.Slice(0, memoryLegth)).ConfigureAwait(false);
                 if (result == SocketError.Success)
                 {
                     OnUpdateConnectionState?.Invoke(ConnectionState.PendingOpenTransport);

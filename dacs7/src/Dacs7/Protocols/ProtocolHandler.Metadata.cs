@@ -81,7 +81,7 @@ namespace Dacs7.Protocols
 
                                     try
                                     {
-                                        if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                        if (await _transport.Connection.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
                                         {
                                             // we return false, because if one send faild we expect also all other ones failed.
                                             _logger?.LogWarning("Could not send metadata read package with reference <{id}>.", id);
@@ -145,7 +145,7 @@ namespace Dacs7.Protocols
                             _blocksCountHandler.TryAdd(cbh.Id, cbh);
                             try
                             {
-                                if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                if (await _transport.Connection.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
                                 {
                                     return null;
                                 }
@@ -203,7 +203,7 @@ namespace Dacs7.Protocols
                                 _blocksOfTypeHandler.TryAdd(cbh.Id, cbh);
                                 try
                                 {
-                                    if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                    if (await _transport.Connection.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
                                     {
                                         return null;
                                     }

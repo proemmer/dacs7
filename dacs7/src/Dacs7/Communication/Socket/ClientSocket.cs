@@ -39,7 +39,7 @@ namespace Dacs7.Communication
                         catch (Exception)
                         {
                             return string.Empty;
-                        };
+                        }
                     }
                     else
                     {
@@ -50,23 +50,26 @@ namespace Dacs7.Communication
             }
         }
 
-        public ClientSocket(ClientSocketConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration, loggerFactory?.CreateLogger<ClientSocket>()) => _config = configuration;
-
-        public ClientSocket(System.Net.Sockets.Socket socket, ClientSocketConfiguration configuration, ILogger logger) : base(configuration, logger)
+        public ClientSocket(ClientSocketConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration, loggerFactory?.CreateLogger<ClientSocket>())
         {
-            _socket = socket;
             _config = configuration;
+        }
+
+
+        public async Task UseSocketAsync(System.Net.Sockets.Socket socket)
+        {
 
             try
             {
+                _socket = socket;
                 _tokenSource = new CancellationTokenSource();
                 _receivingTask = Task.Factory.StartNew(() => StartReceive(), _tokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-                PublishConnectionStateChanged(true).ConfigureAwait(false);
+                await PublishConnectionStateChanged(true).ConfigureAwait(false);
             }
             catch (Exception)
             {
-                _ = DisposeSocketAsync();
-                _ = HandleSocketDown().ConfigureAwait(false);
+                await DisposeSocketAsync();
+                await HandleSocketDown().ConfigureAwait(false);
             }
         }
 

@@ -25,8 +25,6 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
 
-
-
         public static S7ReadJobDatagram BuildRead(SiemensPlcProtocolContext context, int id, IEnumerable<ReadItem> vars)
         {
             var result = new S7ReadJobDatagram();
@@ -41,6 +39,7 @@ namespace Dacs7.Protocols.SiemensPlc
                         ItemSpecLength = item.NumberOfItems,
                         DbNumber = item.DbNumber,
                         Area = (byte)item.Area,
+                        Offset = item.Offset,
                         Address = S7AddressItemSpecificationDatagram.GetAddress(item.Offset, item.VarType)
                     });
                 }

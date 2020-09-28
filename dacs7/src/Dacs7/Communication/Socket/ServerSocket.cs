@@ -4,7 +4,6 @@
 using Dacs7.Communication.Socket;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -22,7 +21,7 @@ namespace Dacs7.Communication
         private Task _receivingTask;
         private volatile bool _unbinding;
 
-        private readonly List<ClientSocket> _clients = new List<ClientSocket>();
+        private readonly List<System.Net.Sockets.Socket> _clients = new List<System.Net.Sockets.Socket>();
 
 
         public sealed override string Identity
@@ -55,7 +54,7 @@ namespace Dacs7.Communication
             }
         }
 
-        public ServerSocket(ServerSocketConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration, loggerFactory?.CreateLogger<ClientSocket>()) => _config = configuration;
+        public ServerSocket(ServerSocketConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration, loggerFactory?.CreateLogger<ServerSocket>()) => _config = configuration;
 
 
 
@@ -73,7 +72,11 @@ namespace Dacs7.Communication
         {
             try
             {
-                if (_shutdown || IsConnected) return;
+                if (_shutdown || IsConnected)
+                {
+                    return;
+                }
+
                 await DisposeSocketAsync().ConfigureAwait(false);
                 _identity = null;
                 _socket = new System.Net.Sockets.Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
@@ -104,7 +107,10 @@ namespace Dacs7.Communication
             {
                 await DisposeSocketAsync();
                 await HandleSocketDown().ConfigureAwait(false);
-                if (!internalCall) throw;
+                if (!internalCall)
+                {
+                    throw;
+                }
             }
         }
 
@@ -175,7 +181,7 @@ namespace Dacs7.Communication
 
             foreach (var client in _clients)
             {
-                await client.CloseAsync().ConfigureAwait(false);
+                client.Close();
                 client.Dispose();
             }
 
@@ -204,10 +210,12 @@ namespace Dacs7.Communication
                     {
                         var acceptSocket = await _socket.AcceptAsync().ConfigureAwait(false);
                         acceptSocket.NoDelay = true;
+                        _clients.Add(acceptSocket);
+                        if(OnNewSocketConnected != null)
+                        {
+                            await OnNewSocketConnected.Invoke(acceptSocket).ConfigureAwait(false);
+                        }
 
-                        var connection = new ClientSocket(acceptSocket, ClientSocketConfiguration.FromSocket(acceptSocket), _logger);
-
-                        _clients.Add(connection);
                     }
                     catch (SocketException) when (!_unbinding)
                     {

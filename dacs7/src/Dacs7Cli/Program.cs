@@ -25,6 +25,7 @@ namespace Dacs7Cli
                 TaskReadCommand.Register(app);
                 BlocksCountCommand.Register(app);
                 BlocksOfTypeCommand.Register(app);
+                ServeCommand.Register(app);
 
                 app.Command("help", cmd =>
                 {

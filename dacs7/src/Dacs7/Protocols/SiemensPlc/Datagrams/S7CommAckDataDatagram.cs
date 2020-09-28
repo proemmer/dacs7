@@ -13,7 +13,7 @@ namespace Dacs7.Protocols.SiemensPlc
         public S7CommSetupParameterDatagram Parameter { get; set; } = new S7CommSetupParameterDatagram();
 
 
-        public static S7CommSetupAckDataDatagram BuildFrom(SiemensPlcProtocolContext context, S7CommSetupDatagram incoming)
+        public static S7CommSetupAckDataDatagram BuildFrom(SiemensPlcProtocolContext context, S7CommSetupDatagram incoming, int id)
         {
             context.MaxAmQCalling = Math.Min(incoming.Parameter.MaxAmQCalling, context.MaxAmQCalling);
             context.MaxAmQCalled = Math.Min(incoming.Parameter.MaxAmQCalled, context.MaxAmQCalled);
@@ -30,6 +30,7 @@ namespace Dacs7.Protocols.SiemensPlc
                     PduLength = context.PduSize
                 }
             };
+            result.Header.Header.ProtocolDataUnitReference = (ushort)id;
             result.Header.Header.ParamLength = 8;
             return result;
         }
