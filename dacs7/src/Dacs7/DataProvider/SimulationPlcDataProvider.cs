@@ -1,12 +1,12 @@
-﻿using System;
+﻿using Dacs7.Domain;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Dacs7
+namespace Dacs7.DataProvider
 {
     public class SimulationPlcDataProvider : IPlcDataProvider
     {
-
         private static readonly Lazy<SimulationPlcDataProvider> _default = new Lazy<SimulationPlcDataProvider>(() => new SimulationPlcDataProvider());
         private readonly Dictionary<PlcArea, Dictionary<ushort, PlcDataEntry>> _plcData = new Dictionary<PlcArea, Dictionary<ushort, PlcDataEntry>>();
 
@@ -81,14 +81,14 @@ namespace Dacs7
                     continue;
                 }
 
-
-                
                 Memory<byte> data = new byte[size];
                 dataEntry.Data.Slice(item.Offset, size).CopyTo(data);
                 result.Add(new ReadResultItem(item, ItemResponseRetValue.Success, data));
             }
             return Task.FromResult(result);
         }
+
+
 
         public Task<List<WriteResultItem>> WriteAsync(List<WriteRequestItem> writeItems)
         {

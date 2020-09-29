@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Dacs7
+namespace Dacs7.Domain
 {
-
     internal class PlcDataEntry : IDisposable
     {
         private readonly IMemoryOwner<byte> _owner;
@@ -36,17 +32,5 @@ namespace Dacs7
         public Memory<byte> Data => _owner == null ? _externalData : _owner.Memory;
 
         public void Dispose() => _owner?.Dispose();
-    }
-
-
-
-    public interface IPlcDataProvider
-    {
-        bool Register(PlcArea area, ushort dataLength, ushort dbNumber = (ushort)0);
-        bool Register(PlcArea area, ushort dataLength, Memory<byte> data, ushort dbNumber = (ushort)0);
-        bool Release(PlcArea area, ushort dbNumber = 0);
-
-        Task<List<ReadResultItem>> ReadAsync(List<ReadRequestItem> readItems);
-        Task<List<WriteResultItem>> WriteAsync(List<WriteRequestItem> writeItems);
     }
 }

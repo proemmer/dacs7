@@ -3,6 +3,7 @@
 
 using Dacs7.Communication;
 using Dacs7.Communication.Socket;
+using Dacs7.DataProvider;
 using Dacs7.Helper;
 using Dacs7.Protocols.SiemensPlc;
 using Dacs7.Protocols.SiemensPlc.Datagrams;

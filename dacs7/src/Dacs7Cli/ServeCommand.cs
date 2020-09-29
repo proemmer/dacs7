@@ -1,4 +1,5 @@
 ﻿using Dacs7;
+using Dacs7.DataProvider;
 using Dacs7Cli.Options;
 using Microsoft.Extensions.CommandLineUtils;
 using Microsoft.Extensions.Logging;
@@ -58,7 +59,7 @@ namespace Dacs7Cli
 
         private static async Task<int> Serve(ServerOptions options, ILoggerFactory loggerFactory)
         {
-            var server = new Dacs7Server(options.Port, 5000, loggerFactory, SimulationPlcDataProvider.Instance)
+            var server = new Dacs7Server(options.Port, SimulationPlcDataProvider.Instance, loggerFactory)
             {
                 MaxAmQCalled = (ushort)options.MaxJobs,
                 MaxAmQCalling = (ushort)options.MaxJobs

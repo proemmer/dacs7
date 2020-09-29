@@ -1,10 +1,10 @@
 ﻿using Dacs7.Communication;
 using Dacs7.Communication.Socket;
+using Dacs7.DataProvider;
 using Dacs7.Protocols;
 using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -101,11 +101,11 @@ namespace Dacs7
         /// </summary>
         /// <param name="address">The address of the plc  [IP or Hostname]:[Rack],[Slot]  where as rack and slot ar optional  default is Rack = 0, Slot = 2</param>
         /// <param name="connectionType">The <see cref="PlcConnectionType"/> for the connection.</param>
-        public Dacs7Server(int port, int timeout = 5000, ILoggerFactory loggerFactory = null, IPlcDataProvider provider = null)
+        public Dacs7Server(int port, IPlcDataProvider provider, ILoggerFactory loggerFactory = null)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             _logger = loggerFactory?.CreateLogger<Dacs7Client>();
-            S7Context = new SiemensPlcProtocolContext { Timeout = timeout };
+            S7Context = new SiemensPlcProtocolContext();
             ProtocolHandler = new ProtocolHandler(InitializeTransport(port), S7Context, UpdateConnectionState, loggerFactory, NewSocketConnected);
             _loggerFactory = loggerFactory;
             _provider = provider;
@@ -222,6 +222,7 @@ namespace Dacs7
                         );
             var handler = new ProtocolHandler(transport, s7Context, ClientConnectionStateChanged, _loggerFactory, null, _provider);
             _handler.Add(handler);
+            _logger.LogInformation("New client was connected to server, total connection is {connections}", _handler.Count);
         }
 
         private void ClientConnectionStateChanged(ProtocolHandler handler, ConnectionState state)
@@ -231,6 +232,7 @@ namespace Dacs7
                 if (_handler.Remove(handler))
                 {
                     handler.Dispose();
+                    _logger.LogInformation("Client was disconnected from server, total connection is {connections}", _handler.Count);
                 }
             }
         }
