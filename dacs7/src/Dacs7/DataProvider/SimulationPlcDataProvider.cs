@@ -54,8 +54,7 @@ namespace Dacs7.DataProvider
             return true;
         }
     
-    
-    
+
         public Task<List<ReadResultItem>> ReadAsync(List<ReadRequestItem> readItems)
         {
             var result = new List<ReadResultItem>();
@@ -87,8 +86,6 @@ namespace Dacs7.DataProvider
             }
             return Task.FromResult(result);
         }
-
-
 
         public Task<List<WriteResultItem>> WriteAsync(List<WriteRequestItem> writeItems)
         {

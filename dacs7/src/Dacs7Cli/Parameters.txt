@@ -12,3 +12,9 @@ dacs7cli write --address 192.168.0.148  DB253.4,x0=true
 dacs7cli write --address 192.168.0.148  DB253.4,x0=false
 
 Dacs7Cli.exe read --address 192.168.0.148 db1.800,w
+
+
+
+serve --port 102 --address 192.168.0.148 --tags DB1.0,B,1000 -x Relay
+
+write --address 192.168.0.148  db1.800,i=16

@@ -208,6 +208,7 @@ namespace Dacs7.Communication
 
                     try
                     {
+                        if (_unbinding || _socket == null) break;
                         var acceptSocket = await _socket.AcceptAsync().ConfigureAwait(false);
                         acceptSocket.NoDelay = true;
                         _clients.Add(acceptSocket);

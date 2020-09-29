@@ -1,9 +1,6 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
 // See License in the project root for license information.
 
-using Dacs7.Domain;
-using System;
-
 namespace Dacs7
 {
 
@@ -11,10 +8,6 @@ namespace Dacs7
     {
         public ItemResponseRetValue ReturnCode { get; private set; }
 
-
-        public WriteResultItem(WriteRequestItem req, ItemResponseRetValue returnCode) : base(req.Area, req.DbNumber, req.NumberOfItems, req.Offset, req.TransportSize, req.ElementSize, req.Address, req.Data)
-        {
-            ReturnCode = returnCode;
-        }
+        public WriteResultItem(WriteRequestItem req, ItemResponseRetValue returnCode) : base(req.Area, req.DbNumber, req.NumberOfItems, req.Offset, req.TransportSize, req.ElementSize, req.Address, req.Data) => ReturnCode = returnCode;
     }
 }
