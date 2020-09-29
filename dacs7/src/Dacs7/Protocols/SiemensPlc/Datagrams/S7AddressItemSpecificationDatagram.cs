@@ -84,9 +84,12 @@ namespace Dacs7.Protocols.SiemensPlc
             Memory<byte> mem = new byte[4];
             address.CopyTo(mem.Slice(1));
             var offset = BinaryPrimitives.ReadInt32BigEndian(mem.Span);
-            offset >>= 3;
 
-            return t != typeof(bool) ? offset : (offset * 8);
+            if (t != typeof(bool))
+            {
+                return offset >>= 3;
+            }
+            return offset;
         }
 
 

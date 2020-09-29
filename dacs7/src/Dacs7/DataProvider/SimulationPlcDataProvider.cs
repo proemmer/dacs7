@@ -1,4 +1,5 @@
 ﻿using Dacs7.Domain;
+using Dacs7.Helper;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -80,9 +81,19 @@ namespace Dacs7.DataProvider
                     continue;
                 }
 
-                Memory<byte> data = new byte[size];
-                dataEntry.Data.Slice(item.Offset, size).CopyTo(data);
-                result.Add(new ReadResultItem(item, ItemResponseRetValue.Success, data));
+                if (item.TransportSize == DataTransportSize.Bit)
+                {
+                    var byteOffset = item.Offset / 8;
+                    var bitNumber = item.Offset % 8;
+                    Memory<byte> data = new byte[] { Converter.GetBit(dataEntry.Data.Span[byteOffset], bitNumber) ? 0x01 : 0x00};
+                    result.Add(new ReadResultItem(item, ItemResponseRetValue.Success, data));
+                }
+                else
+                { 
+                    Memory<byte> data = new byte[size];
+                    dataEntry.Data.Slice(item.Offset, size).CopyTo(data);
+                    result.Add(new ReadResultItem(item, ItemResponseRetValue.Success, data));
+                }
             }
             return Task.FromResult(result);
         }
@@ -104,14 +115,23 @@ namespace Dacs7.DataProvider
                     continue;
                 }
 
-                var size = item.NumberOfItems * item.ElementSize;
-                if (size > dataEntry.Length)
+                if (item.TransportSize == DataTransportSize.Bit)
                 {
-                    result.Add(new WriteResultItem(item, ItemResponseRetValue.OutOfRange));
-                    continue;
+                    var byteOffset = item.Offset / 8;
+                    var bitNumber = item.Offset % 8;
+                    item.Data.Span[byteOffset] = Converter.SetBit(item.Data.Span[byteOffset], bitNumber, item.Data.Span[0] == 0x01);
                 }
+                else
+                {
+                    var size = item.NumberOfItems * item.ElementSize;
+                    if (size > dataEntry.Length)
+                    {
+                        result.Add(new WriteResultItem(item, ItemResponseRetValue.OutOfRange));
+                        continue;
+                    }
 
-                item.Data.Slice(0, size).CopyTo(dataEntry.Data.Slice(item.Offset, size));
+                    item.Data.Slice(0, size).CopyTo(dataEntry.Data.Slice(item.Offset, size));
+                }
                 result.Add(new WriteResultItem(item, ItemResponseRetValue.Success));
             }
             return Task.FromResult(result);
