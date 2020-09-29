@@ -41,7 +41,7 @@ namespace Dacs7.Protocols.SiemensPlc
                         Length = item.NumberOfItems,
                         Data = item.Data,
                         FillByte = numberOfItems == 0 || item.NumberOfItems % 2 == 0 ? Array.Empty<byte>() : new byte[1],
-                        ElementSize = 1 // ??
+                        ElementSize = item.ElementSize
                     });
 
 

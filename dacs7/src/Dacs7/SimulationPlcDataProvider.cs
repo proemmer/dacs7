@@ -61,6 +61,7 @@ namespace Dacs7
             var result = new List<ReadResultItem>();
             foreach (var item in readItems)
             {
+
                 if (!_plcData.TryGetValue(item.Area, out var areaData))
                 {
                     result.Add(new ReadResultItem(item, ItemResponseRetValue.DataError));
@@ -73,14 +74,17 @@ namespace Dacs7
                     continue;
                 }
 
-                if ((item.Offset + item.NumberOfItems) > dataEntry.Length)
+                var size = item.NumberOfItems * item.ElementSize;
+                if ((item.Offset + size) > dataEntry.Length)
                 {
                     result.Add(new ReadResultItem(item, ItemResponseRetValue.OutOfRange));
                     continue;
                 }
 
-                Memory<byte> data = new byte[item.NumberOfItems];
-                dataEntry.Data.Slice(item.Offset, item.NumberOfItems).CopyTo(data);
+
+                
+                Memory<byte> data = new byte[size];
+                dataEntry.Data.Slice(item.Offset, size).CopyTo(data);
                 result.Add(new ReadResultItem(item, ItemResponseRetValue.Success, data));
             }
             return Task.FromResult(result);
@@ -103,13 +107,14 @@ namespace Dacs7
                     continue;
                 }
 
-                if ((item.Offset + item.NumberOfItems) > dataEntry.Length)
+                var size = item.NumberOfItems * item.ElementSize;
+                if (size > dataEntry.Length)
                 {
                     result.Add(new WriteResultItem(item, ItemResponseRetValue.OutOfRange));
                     continue;
                 }
 
-                item.Data.Slice(0, item.NumberOfItems).CopyTo(dataEntry.Data.Slice(item.Offset, item.NumberOfItems));
+                item.Data.Slice(0, size).CopyTo(dataEntry.Data.Slice(item.Offset, size));
                 result.Add(new WriteResultItem(item, ItemResponseRetValue.Success));
             }
             return Task.FromResult(result);

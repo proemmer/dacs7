@@ -11,12 +11,8 @@ namespace Dacs7
     {
         public ItemResponseRetValue ReturnCode { get; private set; }
 
-        public WriteResultItem(PlcArea area, ushort dbNumber, ushort numberOfItems, int offset, DataTransportSize transportSize, byte[] address,  ItemResponseRetValue returnCode, Memory<byte> data ) : base(area, dbNumber, numberOfItems, offset, transportSize, address, data)
-        {
-            ReturnCode = returnCode;
-        }
 
-        public WriteResultItem(WriteRequestItem req, ItemResponseRetValue returnCode) : base(req.Area, req.DbNumber, req.NumberOfItems, req.Offset, req.TransportSize, req.Address, req.Data)
+        public WriteResultItem(WriteRequestItem req, ItemResponseRetValue returnCode) : base(req.Area, req.DbNumber, req.NumberOfItems, req.Offset, req.TransportSize, req.ElementSize, req.Address, req.Data)
         {
             ReturnCode = returnCode;
         }

@@ -2,7 +2,7 @@
   "profiles": {
     "Dacs7Cli": {
       "commandName": "Project",
-      "commandLineArgs": "serve --port 102"
+      "commandLineArgs": "serve --port 102 --tags DB1.0,B,1000"
     }
   }
 }

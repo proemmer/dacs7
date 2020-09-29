@@ -22,6 +22,7 @@ namespace Dacs7Cli
                 var debugOption = cmd.Option("-d | --debug", "Activate debug output", CommandOptionType.NoValue);
                 var traceOption = cmd.Option("-t | --trace", "Trace also dacs7 internals", CommandOptionType.NoValue);
                 var maxJobsOption = cmd.Option("-j | --jobs", "Maximum number of concurrent jobs.", CommandOptionType.SingleValue);
+                var dataareas = cmd.Option("-t | --tags", "Tags.", CommandOptionType.MultipleValue);
 
                 var tagsArguments = cmd.Argument("tags", "Tags to read.", true);
 
@@ -36,7 +37,8 @@ namespace Dacs7Cli
                             Trace = traceOption.HasValue(),
                             Address = addressOption.HasValue() ? addressOption.Value() : "localhost",
                             MaxJobs = maxJobsOption.HasValue() ? int.Parse(maxJobsOption.Value()) : 10,
-                            Port = portOption.HasValue() ? int.Parse(portOption.Value()) : 102
+                            Port = portOption.HasValue() ? int.Parse(portOption.Value()) : 102,
+                            Tags = dataareas.HasValue() ? dataareas.Values : null
                         }.Configure();
                         var result = await Serve(options, options.LoggerFactory);
 
@@ -65,8 +67,16 @@ namespace Dacs7Cli
 
             try
             {
+                if(options.Tags != null)
+                {
+                    foreach (var item in options.Tags)
+                    {
+                        var ri = ReadItem.CreateFromTag(item);
+                        Console.WriteLine($"Register tag {item}");
+                        SimulationPlcDataProvider.Instance.Register(ri.Area, ri.NumberOfItems, ri.DbNumber);
+                    }
+                }
 
-                SimulationPlcDataProvider.Instance.Register(PlcArea.DB, 1000, 1);
                 Console.WriteLine($"Started serving on port {options.Port} !");
                 await server.ConnectAsync();
 

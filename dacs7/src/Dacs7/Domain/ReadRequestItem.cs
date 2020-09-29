@@ -14,11 +14,11 @@ namespace Dacs7
             DbNumber = dbNumber;
             NumberOfItems = numberOfItems;
             Offset = offset;
-            TransportSize = GetDataTransportSizeFromItemTransportSize(area, transportSize);
             Address = address;
+            DetermineTransportAndElementSize(area, transportSize);
         }
 
-        internal ReadRequestItem(PlcArea area, ushort dbNumber, ushort numberOfItems, int offset, DataTransportSize transportSize, Memory<byte> address)
+        internal ReadRequestItem(PlcArea area, ushort dbNumber, ushort numberOfItems, int offset, DataTransportSize transportSize, ushort elementSize, Memory<byte> address)
         {
             Area = area;
             DbNumber = dbNumber;
@@ -26,6 +26,7 @@ namespace Dacs7
             Offset = offset;
             TransportSize = transportSize;
             Address = address;
+            ElementSize = elementSize;
         }
 
 
@@ -33,26 +34,72 @@ namespace Dacs7
         public ushort DbNumber { get; private set; }
         public ushort NumberOfItems { get; internal set; }
         public int Offset { get; private set; }
+        public ushort ElementSize { get; set; }
         public Memory<byte> Address { get; private set; }
         public DataTransportSize TransportSize { get; private set; }
 
 
-        internal static DataTransportSize GetDataTransportSizeFromItemTransportSize(PlcArea area, ItemDataTransportSize t)
+        private void DetermineTransportAndElementSize(PlcArea area, ItemDataTransportSize t)
         {
             if (area == PlcArea.CT || area == PlcArea.TM)
-                return DataTransportSize.OctetString;
+            {
+                TransportSize = DataTransportSize.OctetString;
+                ElementSize = 2;
+                return;
+            }
 
-            if (t == ItemDataTransportSize.Bit)
-                return DataTransportSize.Bit;
-
-            if (t == ItemDataTransportSize.Int)
-                return DataTransportSize.Int;
-
-            if (t == ItemDataTransportSize.Real)
-                return DataTransportSize.Real;
-
-
-            return DataTransportSize.Byte;
+            switch(t)
+            {
+                case ItemDataTransportSize.Bit:
+                    {
+                    TransportSize = DataTransportSize.Bit;
+                    ElementSize = 1;
+                    }
+                    break;
+                case ItemDataTransportSize.Byte:
+                case ItemDataTransportSize.Char:
+                    {
+                        TransportSize = DataTransportSize.Byte;
+                        ElementSize = 1;
+                    }
+                    break;
+                case ItemDataTransportSize.Word:
+                    {
+                        TransportSize = DataTransportSize.Byte;
+                        ElementSize = 2;
+                    }
+                    break;
+                case ItemDataTransportSize.Int:
+                    {
+                        TransportSize = DataTransportSize.Int;
+                        ElementSize = 2;
+                    }
+                    break;
+                case ItemDataTransportSize.Dword:
+                    {
+                        TransportSize = DataTransportSize.Byte;
+                        ElementSize = 4;
+                    }
+                    break;
+                case ItemDataTransportSize.Dint:
+                    {
+                        TransportSize = DataTransportSize.Dint;
+                        ElementSize = 4;
+                    }
+                    break;
+                case ItemDataTransportSize.Real:
+                    {
+                        TransportSize = DataTransportSize.Real;
+                        ElementSize = 4;
+                    }
+                    break;
+                default:
+                    {
+                        TransportSize = DataTransportSize.Byte;
+                        ElementSize = 1;
+                    }
+                    break;
+            }
         }
 
     }
