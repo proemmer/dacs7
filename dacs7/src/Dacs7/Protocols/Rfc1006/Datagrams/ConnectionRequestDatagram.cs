@@ -129,7 +129,7 @@ namespace Dacs7.Protocols.Rfc1006
         }
 
 
-        public static ConnectionRequestDatagram TranslateFromMemory(Memory<byte> data)
+        public static ConnectionRequestDatagram TranslateFromMemory(Memory<byte> data, out int processed)
         {
             var span = data.Span;
             var result = new ConnectionRequestDatagram
@@ -192,6 +192,7 @@ namespace Dacs7.Protocols.Rfc1006
 
             }
 
+            processed = offset;
             return result;
         }
     }

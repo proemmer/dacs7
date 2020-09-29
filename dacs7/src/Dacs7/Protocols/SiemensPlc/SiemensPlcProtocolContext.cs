@@ -46,7 +46,7 @@ namespace Dacs7.Protocols.SiemensPlc
         public ushort MaxAmQCalling { get; set; } = 5; // -> used for negotiation
         public ushort MaxAmQCalled { get; set; } = 5; // -> used for negotiation
         public ushort PduSize { get; set; } = 960;  // defautl pdu size -> used for negotiation
-        public int Timeout { get; set; }
+        public int Timeout { get; set; } = 5000;
 
 
         public ushort ReadItemMaxLength => (ushort)(PduSize - MinimumReadAckItemSize);   //18 Header and some other data    // in the result message

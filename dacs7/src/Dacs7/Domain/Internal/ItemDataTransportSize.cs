@@ -3,7 +3,7 @@
 
 namespace Dacs7.Domain
 {
-    internal enum ItemDataTransportSize
+    public enum ItemDataTransportSize
     {
         //types of 1 byte length 
         Bit = 1,

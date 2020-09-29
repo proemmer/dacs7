@@ -2,6 +2,7 @@
 // See License in the project root for license information.
 
 
+using Dacs7.Protocols;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Http.Headers;
@@ -34,6 +35,7 @@ namespace Dacs7.Communication
 
         public OnConnectionStateChangedHandler OnConnectionStateChanged;
         public OnDataReceivedHandler OnRawDataReceived;
+        public OnNewSocketConnected OnNewSocketConnected;
 
         public abstract string Identity { get; }
 
@@ -74,7 +76,10 @@ namespace Dacs7.Communication
             if (IsConnected != state)
             {
                 IsConnected = state;
-                return OnConnectionStateChanged?.Invoke(identity ?? Identity, IsConnected);
+                if (OnConnectionStateChanged != null)
+                {
+                    return OnConnectionStateChanged?.Invoke(identity ?? Identity, IsConnected);
+                }
             }
             return Task.CompletedTask;
         }

@@ -16,6 +16,7 @@ namespace Dacs7.Communication
         public OnUpdateConnectionState OnUpdateConnectionState;
         public OnDetectAndReceive OnDetectAndReceive;
         public OnGetConnectionState OnGetConnectionState;
+        public OnNewSocketConnected OnNewSocketConnected;
 
         public Transport(IProtocolContext context, IConfiguration config)
         {
@@ -24,12 +25,13 @@ namespace Dacs7.Communication
         }
 
 
-        public SocketBase Client { get; protected set; }
+        public SocketBase Connection { get; protected set; }
         public IConfiguration Configuration { get; private set; }
         public IProtocolContext ProtocolContext { get; private set; }
 
 
         public abstract void ConfigureClient(ILoggerFactory loggerFactory);
+        public abstract void ConfigureServer(ILoggerFactory loggerFactory);
         public abstract IMemoryOwner<byte> Build(Memory<byte> buffer, out int length);
     }
 }

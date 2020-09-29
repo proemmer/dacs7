@@ -28,6 +28,8 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public Memory<byte> Address { get; set; } //= new byte[3];
 
+        public int Offset { get; set; }
+
 
         public static byte GetTransportSize(PlcArea area, Type t)
         {
@@ -77,6 +79,15 @@ namespace Dacs7.Protocols.SiemensPlc
             return address;
         }
 
+        public static int CalcOffsetFromAddress(Memory<byte> address, Type t)
+        {
+            Memory<byte> mem = new byte[4];
+            address.CopyTo(mem.Slice(1));
+            var offset = BinaryPrimitives.ReadInt32BigEndian(mem.Span);
+            offset >>= 3;
+
+            return t != typeof(bool) ? offset : (offset * 8);
+        }
 
 
         public int GetSpecificationLength() => 12;
@@ -116,6 +127,7 @@ namespace Dacs7.Protocols.SiemensPlc
             };
             result.Address = new byte[3];
             data.Slice(9, 3).CopyTo(result.Address);
+            result.Offset = S7AddressItemSpecificationDatagram.CalcOffsetFromAddress(result.Address, result.TransportSize == (byte)ItemDataTransportSize.Bit ? typeof(bool) : typeof(byte));
 
             return result;
         }

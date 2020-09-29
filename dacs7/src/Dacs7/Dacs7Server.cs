@@ -1,16 +1,13 @@
-﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
-// See License in the project root for license information.
-
-using Dacs7.Communication;
+﻿using Dacs7.Communication;
 using Dacs7.Communication.Socket;
+using Dacs7.DataProvider;
 using Dacs7.Protocols;
 using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,14 +15,14 @@ using System.Threading.Tasks;
 namespace Dacs7
 {
 
-    public delegate void ConnectionStateChangedEventHandler(Dacs7Client session, Dacs7ConnectionState e);
-
-
-    public sealed partial class Dacs7Client : IDisposable
+    public sealed partial class Dacs7Server
     {
         private Dictionary<string, ReadItem> _registeredTags = new Dictionary<string, ReadItem>();
         private Dacs7ConnectionState _state = Dacs7ConnectionState.Closed;
         private readonly ILogger _logger;
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly IPlcDataProvider _provider;
+        private readonly List<ProtocolHandler> _handler = new List<ProtocolHandler>();
 
         internal ProtocolHandler ProtocolHandler { get; private set; }
         internal Dictionary<string, ReadItem> RegisteredTags => _registeredTags;
@@ -104,12 +101,14 @@ namespace Dacs7
         /// </summary>
         /// <param name="address">The address of the plc  [IP or Hostname]:[Rack],[Slot]  where as rack and slot ar optional  default is Rack = 0, Slot = 2</param>
         /// <param name="connectionType">The <see cref="PlcConnectionType"/> for the connection.</param>
-        public Dacs7Client(string address, PlcConnectionType connectionType = PlcConnectionType.Pg, int timeout = 5000, ILoggerFactory loggerFactory = null, int autoReconnectTime = 5000)
+        public Dacs7Server(int port, IPlcDataProvider provider, ILoggerFactory loggerFactory = null)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             _logger = loggerFactory?.CreateLogger<Dacs7Client>();
-            S7Context = new SiemensPlcProtocolContext { Timeout = timeout };
-            ProtocolHandler = new ProtocolHandler(InitializeTransport(address, connectionType, autoReconnectTime), S7Context, UpdateConnectionState, loggerFactory);
+            S7Context = new SiemensPlcProtocolContext();
+            ProtocolHandler = new ProtocolHandler(InitializeTransport(port), S7Context, UpdateConnectionState, loggerFactory, NewSocketConnected);
+            _loggerFactory = loggerFactory;
+            _provider = provider;
         }
 
         /// <summary>
@@ -122,12 +121,35 @@ namespace Dacs7
         /// Disconnect from the plc
         /// </summary>
         /// <returns></returns>
-        public Task DisconnectAsync() => ProtocolHandler?.CloseAsync();
+        public async Task DisconnectAsync()
+        {
+            if (ProtocolHandler != null) 
+            {
+                await ProtocolHandler.CloseAsync().ConfigureAwait(false);
+            }
+
+
+            foreach (var item in _handler)
+            {
+                await item.CloseAsync().ConfigureAwait(false);
+                item.Dispose();
+            }
+            _handler.Clear();
+        }
 
         /// <summary>
         /// Dispose the ressources
         /// </summary>
-        public void Dispose() => ProtocolHandler?.Dispose();
+        public void Dispose()
+        {
+            ProtocolHandler?.Dispose();
+
+            foreach (var item in _handler)
+            {
+                item.Dispose();
+            }
+            _handler.Clear();
+        }
 
         /// <summary>
         /// Create a readitem for the given tag or reuse an existing one for this tag.
@@ -150,8 +172,16 @@ namespace Dacs7
             {
                 origin = _registeredTags;
                 var tmp = origin as IEnumerable<KeyValuePair<string, ReadItem>>;
-                if (toAdd != null) tmp = tmp.Union(toAdd);
-                if (toRemove != null) tmp = tmp.Except(toRemove);
+                if (toAdd != null)
+                {
+                    tmp = tmp.Union(toAdd);
+                }
+
+                if (toRemove != null)
+                {
+                    tmp = tmp.Except(toRemove);
+                }
+
                 newDict = tmp.ToDictionary(pair => pair.Key, pair => pair.Value);
             } while (Interlocked.CompareExchange(ref _registeredTags, newDict, origin) != origin);
         }
@@ -174,43 +204,55 @@ namespace Dacs7
             if (_state != dacs7State)
             {
                 _state = dacs7State;
-                ConnectionStateChanged?.Invoke(this, dacs7State);
+                //ConnectionStateChanged?.Invoke(this, dacs7State);
             }
         }
 
-        private TcpTransport InitializeTransport(string address, PlcConnectionType connectionType, int autoReconnectTime)
+
+        private void NewSocketConnected(Socket clientSocket)
+        {
+            var config = ClientSocketConfiguration.FromSocket(clientSocket);
+            var s7Context = new SiemensPlcProtocolContext { Timeout = S7Context.Timeout };
+            var transport = new TcpTransport(
+                            new Rfc1006ProtocolContext
+                            {
+                            },
+                            config,
+                            clientSocket
+                        );
+            var handler = new ProtocolHandler(transport, s7Context, ClientConnectionStateChanged, _loggerFactory, null, _provider);
+            _handler.Add(handler);
+            _logger.LogInformation("New client was connected to server, total connection is {connections}", _handler.Count);
+        }
+
+        private void ClientConnectionStateChanged(ProtocolHandler handler, ConnectionState state)
+        {
+            if(state == ConnectionState.Closed)
+            {
+                if (_handler.Remove(handler))
+                {
+                    handler.Dispose();
+                    _logger.LogInformation("Client was disconnected from server, total connection is {connections}", _handler.Count);
+                }
+            }
+        }
+
+        private TcpTransport InitializeTransport(int port)
         {
             _logger?.LogDebug("Start configuring dacs7 with Socket interface");
-            ParseParametersFromAddress(address, out var host, out var port, out var rack, out var slot);
             var transport = new TcpTransport(
                 new Rfc1006ProtocolContext
                 {
-                    DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType, rack, slot),
+                    //DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType, rack, slot),
                 },
-                new ClientSocketConfiguration
+                new ServerSocketConfiguration
                 {
-                    Hostname = host,
-                    ServiceName = port,
-                    AutoconnectTime = autoReconnectTime
+                    Hostname = "127.0.0.1",
+                    ServiceName = port
                 }
             );
             _logger?.LogDebug("Transport-Configuration: {0}.", transport.Configuration);
-            _logger?.LogDebug("Rfc1006 Configuration: connectionType={0}; Rack={1}; Slot={2}", Enum.GetName(typeof(PlcConnectionType), connectionType), rack, slot);
             return transport;
         }
-
-        private static void ParseParametersFromAddress(string address, out string host, out int port, out int rack, out int slot)
-        {
-            var addressPort = address.Split(':');
-            var portRackSlot = addressPort.Length > 1 ?
-                                        addressPort[1].Split(',').Select(x => int.Parse(x, NumberStyles.Integer, CultureInfo.InvariantCulture)).ToArray() :
-                                        new int[] { 102, 0, 2 };
-            host = addressPort[0];
-            port = portRackSlot.Length > 0 ? portRackSlot[0] : 102;
-            rack = portRackSlot.Length > 1 ? portRackSlot[1] : 0;
-            slot = portRackSlot.Length > 2 ? portRackSlot[2] : 2;
-        }
-
-
     }
 }

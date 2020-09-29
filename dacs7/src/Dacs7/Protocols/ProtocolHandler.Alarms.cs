@@ -96,7 +96,7 @@ namespace Dacs7.Protocols
                                         _logger?.LogTrace("Alarmhandler with id {id} was added.", id);
                                         try
                                         {
-                                            if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                            if (await _transport.Connection.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
                                             {
                                                 // we return false, because if one send faild we expect also all other ones failed.
                                                 _logger?.LogWarning("Could not send read pending alarm package with reference <{id}>.", id);
@@ -339,7 +339,7 @@ namespace Dacs7.Protocols
                                     _alarmUpdateHandler = cbh;
                                     try
                                     {
-                                        if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                        if (await _transport.Connection.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
                                         {
                                             return false;
                                         }
@@ -391,7 +391,7 @@ namespace Dacs7.Protocols
                                 {
                                     try
                                     {
-                                        if (await _transport.Client.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
+                                        if (await _transport.Connection.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false) != SocketError.Success)
                                         {
                                             return false;
                                         }

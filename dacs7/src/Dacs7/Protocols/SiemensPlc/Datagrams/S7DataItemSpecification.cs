@@ -162,9 +162,17 @@ namespace Dacs7.Protocols.SiemensPlc
 
             span[0] = datagram.ReturnCode;
             span[1] = datagram.TransportSize;
-            var size = datagram.ElementSize * datagram.Length;
-            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(2, 2), GetDataLength(size, datagram.TransportSize));
-            datagram.Data.CopyTo(result.Slice(4, size));
+
+            if (datagram.ReturnCode == (byte)ItemResponseRetValue.Success || datagram.ReturnCode == (byte)ItemResponseRetValue.Reserved)
+            {
+                var size = datagram.ElementSize * datagram.Length;
+                BinaryPrimitives.WriteUInt16BigEndian(span.Slice(2, 2), GetDataLength(size, datagram.TransportSize));
+                datagram.Data.CopyTo(result.Slice(4, size));
+            }
+            else
+            {
+                BinaryPrimitives.WriteUInt16BigEndian(span.Slice(2, 2), 0);
+            }
             return result;
         }
 
@@ -176,7 +184,7 @@ namespace Dacs7.Protocols.SiemensPlc
                 ReturnCode = span[0],
                 TransportSize = span[1],
                 Length = SetDataLength(BinaryPrimitives.ReadUInt16BigEndian(span.Slice(2, 2)), span[1]),
-                ElementSize = 1
+                ElementSize = TransportSizeToElementSize((DataTransportSize)span[1])
             };
             result.Data = new byte[result.Length];
             data.Slice(4, result.Length).CopyTo(result.Data);
@@ -184,6 +192,16 @@ namespace Dacs7.Protocols.SiemensPlc
             return result;
         }
 
+
+        private static ushort TransportSizeToElementSize(DataTransportSize t) => t switch {
+                   DataTransportSize.Bit => 1,
+                   DataTransportSize.Byte => 1,
+                   DataTransportSize.Int => 2,
+                   DataTransportSize.Dint => 3,
+                   DataTransportSize.Real => 4,
+                   DataTransportSize.OctetString => 2,
+                   _ => 1
+               };
 
     }
 }
