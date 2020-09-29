@@ -186,8 +186,9 @@ namespace Dacs7.Protocols.SiemensPlc
                 Length = SetDataLength(BinaryPrimitives.ReadUInt16BigEndian(span.Slice(2, 2)), span[1]),
                 ElementSize = TransportSizeToElementSize((DataTransportSize)span[1])
             };
-            result.Data = new byte[result.Length];
-            data.Slice(4, result.Length).CopyTo(result.Data);
+            var size = result.Length * result.ElementSize;
+            result.Data = new byte[size];
+            data.Slice(4, size).CopyTo(result.Data);
 
             return result;
         }

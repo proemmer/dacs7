@@ -2,7 +2,7 @@
   "profiles": {
     "Dacs7Cli": {
       "commandName": "Project",
-      "commandLineArgs": "serve --port 102 --address 192.168.0.148 --tags DB1.0,B,1000 -x Relay"
+      "commandLineArgs": "serve --port 102 --address 192.168.0.148 --tags DB1046.0,B,5000 -x Simulation"
     }
   }
 }

@@ -46,11 +46,6 @@ namespace Dacs7.Protocols.SiemensPlc
             result.Header.Header.ParamLength = (ushort)2;
             result.Header.Header.DataLength = (ushort)result.Data.Count;
             result.ItemCount = (byte)result.Data.Count;
-
-            if(result.Header.Header.DataLength % 2 != 0)
-            {
-                result.Header.Header.DataLength++;// add a fillbyte???
-            }
             return result;
         }
 

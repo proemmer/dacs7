@@ -212,7 +212,7 @@ namespace Dacs7
         private void NewSocketConnected(Socket clientSocket)
         {
             var config = ClientSocketConfiguration.FromSocket(clientSocket);
-            var s7Context = new SiemensPlcProtocolContext { Timeout = S7Context.Timeout };
+            var s7Context = new SiemensPlcProtocolContext { Timeout = S7Context.Timeout, PduSize = S7Context.PduSize };
             var transport = new TcpTransport(
                             new Rfc1006ProtocolContext
                             {

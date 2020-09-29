@@ -91,7 +91,8 @@ namespace Dacs7Cli
             var server = new Dacs7Server(options.Port, provider, loggerFactory)
             {
                 MaxAmQCalled = (ushort)options.MaxJobs,
-                MaxAmQCalling = (ushort)options.MaxJobs
+                MaxAmQCalling = (ushort)options.MaxJobs,
+                PduSize = (ushort)480
             };
             var logger = loggerFactory?.CreateLogger("Dacs7Cli.Serve");
 
