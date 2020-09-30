@@ -13,28 +13,33 @@ namespace Dacs7.Protocols
     internal sealed partial class ProtocolHandler
     {
 
-        private async Task ReceivedWriteJob(Memory<byte> buffer)
+        private Task ReceivedWriteJob(Memory<byte> buffer)
         {
-            
             if (_provider != null)
             {
                 var data = S7WriteJobDatagram.TranslateFromMemory(buffer);
-                var writeRequests = new List<WriteRequestItem>();
-                var dataEnum = data.Data.GetEnumerator();
-                foreach (var rq in data.Items)
-                {
-                    dataEnum.MoveNext();
-                    writeRequests.Add(new WriteRequestItem((PlcArea)rq.Area, rq.DbNumber, rq.ItemSpecLength, rq.Offset, (ItemDataTransportSize)rq.TransportSize, rq.Address, dataEnum.Current.Data));
-                }
-
-                var results = await _provider.WriteAsync(writeRequests).ConfigureAwait(false);
-                await SendWriteJobAck(results).ConfigureAwait(false);
+                Task.Run(() => HandleWriteJobAsync(data).ConfigureAwait(false));
             }
+            return Task.CompletedTask;
         }
 
-        private async Task SendWriteJobAck(List<WriteResultItem> writeItems)
+        private async Task HandleWriteJobAsync(S7WriteJobDatagram data)
         {
-            using (var dgmem = S7WriteJobAckDatagram.TranslateToMemory(S7WriteJobAckDatagram.Build(_s7Context, GetNextReferenceId(), writeItems), out var commemLength))
+            var writeRequests = new List<WriteRequestItem>();
+            var dataEnum = data.Data.GetEnumerator();
+            foreach (var rq in data.Items)
+            {
+                dataEnum.MoveNext();
+                writeRequests.Add(new WriteRequestItem((PlcArea)rq.Area, rq.DbNumber, rq.ItemSpecLength, rq.Offset, (ItemDataTransportSize)rq.TransportSize, rq.Address, dataEnum.Current.Data));
+            }
+
+            var results = await _provider.WriteAsync(writeRequests).ConfigureAwait(false);
+            await SendWriteJobAck(results, data.Header.ProtocolDataUnitReference).ConfigureAwait(false);
+        }
+
+        private async Task SendWriteJobAck(List<WriteResultItem> writeItems, ushort id)
+        {
+            using (var dgmem = S7WriteJobAckDatagram.TranslateToMemory(S7WriteJobAckDatagram.Build(_s7Context, id, writeItems), out var commemLength))
             {
                 using (var sendData = _transport.Build(dgmem.Memory.Slice(0, commemLength), out var sendLength))
                 {

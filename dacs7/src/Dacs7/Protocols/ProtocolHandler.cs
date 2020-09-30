@@ -193,13 +193,12 @@ namespace Dacs7.Protocols
         {
             if (_s7Context.TryDetectDatagramType(payload, out var s7DatagramType))
             {
-                S7DatagramReceived(s7DatagramType, payload);
-                return Task.FromResult(true);
+                return S7DatagramReceived(s7DatagramType, payload);
             }
             return Task.FromResult(false);
         }
 
-        private void S7DatagramReceived(Type datagramType, Memory<byte> buffer)
+        private async Task<bool> S7DatagramReceived(Type datagramType, Memory<byte> buffer)
         {
             if (datagramType == typeof(S7ReadJobAckDatagram))
             {
@@ -233,22 +232,28 @@ namespace Dacs7.Protocols
             {
                 ReceivedCommunicationSetupAck(buffer);
             }
-            else if (datagramType == typeof(S7CommSetupDatagram))
-            {
-                _ = ReceivedCommunicationSetupJob(buffer);
-            }
-            else if (datagramType == typeof(S7ReadJobDatagram))
-            {
-                _ = ReceivedReadJob(buffer);
-            }
-            else if (datagramType == typeof(S7WriteJobDatagram))
-            {
-                _ = ReceivedWriteJob(buffer);
-            }
             else if (datagramType == typeof(S7AlarmIndicationDatagram))
             {
                 ReceivedS7AlarmIndicationDatagram(buffer);
             }
+            else if (datagramType == typeof(S7CommSetupDatagram))
+            {
+                await ReceivedCommunicationSetupJob(buffer).ConfigureAwait(false);
+            }
+            else if (datagramType == typeof(S7ReadJobDatagram))
+            {
+                await ReceivedReadJob(buffer).ConfigureAwait(false);
+            }
+            else if (datagramType == typeof(S7WriteJobDatagram))
+            {
+                await ReceivedWriteJob(buffer).ConfigureAwait(false);
+            }
+
+            else
+            {
+                return false;
+            }
+            return true;
         }
 
         private async Task StartS7CommunicationSetup()
@@ -261,31 +266,6 @@ namespace Dacs7.Protocols
                     if (result == SocketError.Success)
                     {
                         await UpdateConnectionState(ConnectionState.PendingOpenPlc).ConfigureAwait(false);
-                    }
-                }
-            }
-        }
-
-        private async Task ReceivedCommunicationSetupJob(Memory<byte> buffer)
-        {
-            var data = S7CommSetupDatagram.TranslateFromMemory(buffer);
-            using (var dg = S7CommSetupAckDataDatagram
-                                                    .TranslateToMemory(
-                                                        S7CommSetupAckDataDatagram
-                                                        .BuildFrom(_s7Context, data, GetNextReferenceId()), out var memoryLength))
-            {
-                using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
-                {
-                    var result = await _transport.Connection.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false);
-                    if (result == SocketError.Success)
-                    {
-                        var oldSemaCount = _s7Context.MaxAmQCalling;
-                        _s7Context.MaxAmQCalling = data.Parameter.MaxAmQCalling;
-                        _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalled;
-                        _s7Context.PduSize = data.Parameter.PduLength;
-                        UpdateJobsSemaphore(oldSemaCount, _s7Context.MaxAmQCalling);
-
-                        await UpdateConnectionState(ConnectionState.Opened).ConfigureAwait(false);
                     }
                 }
             }

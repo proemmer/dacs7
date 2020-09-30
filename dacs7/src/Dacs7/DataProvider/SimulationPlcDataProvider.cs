@@ -2,6 +2,7 @@
 using Dacs7.Helper;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Dacs7.DataProvider
@@ -53,6 +54,20 @@ namespace Dacs7.DataProvider
 
             dataEntry?.Dispose();
             return true;
+        }
+
+        public void ReleaseAll()
+        {
+            // create a copy and clear the list, so we ensure currently active read and write calls will work and all following will fail.
+            var copy = _plcData.Values.ToList();
+            _plcData.Clear();
+            foreach (var areaData in copy)
+            {
+                foreach (var dataEntry in areaData.Values)
+                {
+                    dataEntry?.Dispose();
+                }
+            }
         }
     
 

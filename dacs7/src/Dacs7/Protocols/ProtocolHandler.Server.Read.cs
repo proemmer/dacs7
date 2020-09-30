@@ -14,21 +14,26 @@ namespace Dacs7.Protocols
     internal sealed partial class ProtocolHandler
     {
         
-        private async Task ReceivedReadJob(Memory<byte> buffer)
+        private Task ReceivedReadJob(Memory<byte> buffer)
         {
             if (_provider != null)
             {
                 var data = S7ReadJobDatagram.TranslateFromMemory(buffer);
-                var readRequests = data.Items.Select(rq => new ReadRequestItem((PlcArea)rq.Area, rq.DbNumber, rq.ItemSpecLength, rq.Offset, (ItemDataTransportSize)rq.TransportSize, rq.Address)).ToList();
-                var results = await _provider.ReadAsync(readRequests).ConfigureAwait(false);
-                await SendReadJobAck(results).ConfigureAwait(false);
+                Task.Run(() => HandleReadJobAsync(data).ConfigureAwait(false)); // here we do not have to wayt because the receive buffer is fully converted and is not needed anymore
             }
+            return Task.CompletedTask;
         }
 
-
-        private async Task SendReadJobAck(List<ReadResultItem> readItems)
+        private async Task HandleReadJobAsync(S7ReadJobDatagram data)
         {
-            using (var dgmem = S7ReadJobAckDatagram.TranslateToMemory(S7ReadJobAckDatagram.Build(_s7Context, GetNextReferenceId(), readItems), out var commemLength))
+            var readRequests = data.Items.Select(rq => new ReadRequestItem((PlcArea)rq.Area, rq.DbNumber, rq.ItemSpecLength, rq.Offset, (ItemDataTransportSize)rq.TransportSize, rq.Address)).ToList();
+            var results = await _provider.ReadAsync(readRequests).ConfigureAwait(false);
+            await SendReadJobAck(results, data.Header.ProtocolDataUnitReference).ConfigureAwait(false);
+        }
+
+        private async Task SendReadJobAck(List<ReadResultItem> readItems, ushort id)
+        {
+            using (var dgmem = S7ReadJobAckDatagram.TranslateToMemory(S7ReadJobAckDatagram.Build(_s7Context, id, readItems), out var commemLength))
             {
                 using (var sendData = _transport.Build(dgmem.Memory.Slice(0, commemLength), out var sendLength))
                 {
