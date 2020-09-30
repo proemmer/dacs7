@@ -119,7 +119,7 @@ namespace Dacs7.DataProvider
                 {
                     var byteOffset = item.Offset / 8;
                     var bitNumber = item.Offset % 8;
-                    item.Data.Span[byteOffset] = Converter.SetBit(item.Data.Span[byteOffset], bitNumber, item.Data.Span[0] == 0x01);
+                    dataEntry.Data.Span[byteOffset] = Converter.SetBit(dataEntry.Data.Span[byteOffset], bitNumber, item.Data.Span[0] == 0x01);
                 }
                 else
                 {
