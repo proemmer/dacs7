@@ -8,5 +8,6 @@ namespace Dacs7Cli.Options
         public List<string> Tags { get; set; }
 
         public string DataProvider { get; set; }
+        public ushort MaxPduSize { get; set; }
     }
 }

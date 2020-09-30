@@ -23,6 +23,7 @@ namespace Dacs7Cli
                 var dataareas = cmd.Option("-t | --tags", "Tags used to register blocks for the simulation Provider (e.g. DB1.0,B,1000).", CommandOptionType.MultipleValue);
                 var addressOption = cmd.Option("-a | --address", "The IPAddress of the plc is used by the Relay provider to connect to a plc.", CommandOptionType.SingleValue);
                 var dataProvider = cmd.Option("-x | --provider", "Used data provider  (Simulation, Relay).", CommandOptionType.SingleValue);
+                var pduSize = cmd.Option("-s | --pdu", "MaxPdu Size.", CommandOptionType.SingleValue);
 
                 var tagsArguments = cmd.Argument("tags", "Tags to read.", true);
 
@@ -39,7 +40,8 @@ namespace Dacs7Cli
                             MaxJobs = maxJobsOption.HasValue() ? int.Parse(maxJobsOption.Value()) : 10,
                             Port = portOption.HasValue() ? int.Parse(portOption.Value()) : 102,
                             Tags = dataareas.HasValue() ? dataareas.Values : null,
-                            DataProvider = dataProvider.HasValue() ? dataProvider.Value() : null
+                            DataProvider = dataProvider.HasValue() ? dataProvider.Value() : null,
+                            MaxPduSize = pduSize.HasValue() ? ushort.Parse(pduSize.Value()) : 960
                         }.Configure();
                         var result = await Serve(options, options.LoggerFactory);
 
@@ -81,7 +83,8 @@ namespace Dacs7Cli
                 client = new Dacs7Client(options.Address, PlcConnectionType.Pg, 5000, loggerFactory)
                 {
                     MaxAmQCalled = (ushort)options.MaxJobs,
-                    MaxAmQCalling = (ushort)options.MaxJobs
+                    MaxAmQCalling = (ushort)options.MaxJobs,
+                    PduSize = options.MaxPduSize
                 };
                 RelayPlcDataProvider.Instance.UseClient(client);
                 Console.WriteLine("Using Relay Provider!");
