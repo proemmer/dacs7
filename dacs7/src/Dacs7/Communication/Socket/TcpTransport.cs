@@ -76,7 +76,7 @@ namespace Dacs7.Communication.Socket
         {
             if (buffer.Length > Rfc1006ProtocolContext.MinimumBufferSize)
             {
-                if (_context.TryDetectDatagramType(buffer, out var type))
+                if (Rfc1006ProtocolContext.TryDetectDatagramType(buffer, out var type))
                 {
                     return Rfc1006DatagramReceived(type, buffer);
                 }

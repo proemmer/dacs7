@@ -1,4 +1,7 @@
-﻿using Dacs7.Communication;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using Dacs7.Communication;
 using Dacs7.Communication.Socket;
 using Dacs7.DataProvider;
 using Dacs7.Protocols;

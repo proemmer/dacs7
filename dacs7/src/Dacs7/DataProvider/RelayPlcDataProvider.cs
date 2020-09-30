@@ -1,4 +1,7 @@
-﻿using Dacs7.ReadWrite;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using Dacs7.ReadWrite;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,4 +1,7 @@
-﻿using Dacs7.Domain;
+﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
+// See License in the project root for license information.
+
+using Dacs7.Domain;
 using Dacs7.Helper;
 using System;
 using System.Collections.Generic;

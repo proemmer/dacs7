@@ -55,7 +55,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         #region datagram detection
 
-        public bool TryDetectDatagramType(Memory<byte> memory, out Type datagramType)
+        public static bool TryDetectDatagramType(Memory<byte> memory, out Type datagramType)
         {
             if (memory.Length >= _minimumDataSize &&
                memory.Span[0] == _prefix)

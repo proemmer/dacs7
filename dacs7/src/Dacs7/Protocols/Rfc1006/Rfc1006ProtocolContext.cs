@@ -90,7 +90,7 @@ namespace Dacs7.Protocols.Rfc1006
             return mem;
         }
 
-        public bool TryDetectDatagramType(Memory<byte> memory, out Type datagramType)
+        public static bool TryDetectDatagramType(Memory<byte> memory, out Type datagramType)
         {
 
             var span = memory.Span;

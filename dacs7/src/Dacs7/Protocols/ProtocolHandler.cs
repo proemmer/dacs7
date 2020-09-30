@@ -191,7 +191,7 @@ namespace Dacs7.Protocols
 
         private Task<bool> DetectAndReceive(Memory<byte> payload)
         {
-            if (_s7Context.TryDetectDatagramType(payload, out var s7DatagramType))
+            if (SiemensPlcProtocolContext.TryDetectDatagramType(payload, out var s7DatagramType))
             {
                 return S7DatagramReceived(s7DatagramType, payload);
             }
