@@ -149,6 +149,11 @@ namespace Dacs7Cli
             {
                 return new string(c);
             }
+
+            if (v is byte[] b)
+            {
+                return BitConverter.ToString(b);
+            }
             if (v != null)
                 return v.ToString();
             return "[null]";

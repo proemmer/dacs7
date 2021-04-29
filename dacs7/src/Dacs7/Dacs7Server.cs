@@ -134,8 +134,11 @@ namespace Dacs7
 
             foreach (var item in _handler)
             {
-                await item.CloseAsync().ConfigureAwait(false);
-                item.Dispose();
+                if (item != null)
+                {
+                    await item.CloseAsync().ConfigureAwait(false);
+                    item.Dispose();
+                }
             }
             _handler.Clear();
         }
