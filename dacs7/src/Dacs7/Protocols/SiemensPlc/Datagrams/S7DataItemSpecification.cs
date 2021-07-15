@@ -194,15 +194,16 @@ namespace Dacs7.Protocols.SiemensPlc
         }
 
 
-        private static ushort TransportSizeToElementSize(DataTransportSize t) => t switch {
-                   DataTransportSize.Bit => 1,
-                   DataTransportSize.Byte => 1,
-                   DataTransportSize.Int => 2,
-                   DataTransportSize.Dint => 3,
-                   DataTransportSize.Real => 4,
-                   DataTransportSize.OctetString => 2,
-                   _ => 1
-               };
+        private static ushort TransportSizeToElementSize(DataTransportSize t) => t switch
+        {
+            //DataTransportSize.Bit => 1,
+            //DataTransportSize.Byte => 1,
+            //DataTransportSize.Int => 2,
+            //DataTransportSize.Dint => 3,
+            //DataTransportSize.Real => 4,
+            //DataTransportSize.OctetString => 2,
+            _ => 1
+        };
 
     }
 }

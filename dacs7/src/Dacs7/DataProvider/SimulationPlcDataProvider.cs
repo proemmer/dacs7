@@ -103,7 +103,7 @@ namespace Dacs7.DataProvider
                 {
                     var byteOffset = item.Offset / 8;
                     var bitNumber = item.Offset % 8;
-                    Memory<byte> data = new byte[] { Converter.GetBit(dataEntry.Data.Span[byteOffset], bitNumber) ? 0x01 : 0x00};
+                    Memory<byte> data = new byte[] { Converter.GetBit(dataEntry.Data.Span[byteOffset], bitNumber) ? (byte)0x01 : (byte)0x00};
                     result.Add(new ReadResultItem(item, ItemResponseRetValue.Success, data));
                 }
                 else
