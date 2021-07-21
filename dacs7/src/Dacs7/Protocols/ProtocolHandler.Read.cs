@@ -9,14 +9,13 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dacs7.Protocols
 {
     internal sealed partial class ProtocolHandler
     {
-        private static readonly List<S7DataItemSpecification> _defaultReadJobResult = new List<S7DataItemSpecification>();
+        private static readonly List<S7DataItemSpecification> _defaultReadJobResult = new();
         private readonly ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
 
 
@@ -47,12 +46,17 @@ namespace Dacs7.Protocols
         public async Task<Dictionary<ReadItem, S7DataItemSpecification>> ReadAsync(IEnumerable<ReadItem> vars)
         {
             if (_closeCalled || ConnectionState != ConnectionState.Opened)
+            {
                 ThrowHelper.ThrowNotConnectedException();
+            }
 
             var result = vars.ToDictionary(x => x, x => null as S7DataItemSpecification);
             foreach (var normalized in CreateReadPackages(_s7Context, vars))
             {
-                if (!await ReadPackage(result, normalized).ConfigureAwait(false)) return new Dictionary<ReadItem, S7DataItemSpecification>();
+                if (!await ReadPackage(result, normalized).ConfigureAwait(false))
+                {
+                    return new Dictionary<ReadItem, S7DataItemSpecification>();
+                }
             }
             return result;
         }
@@ -70,7 +74,11 @@ namespace Dacs7.Protocols
                         CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh = null;
                         try
                         {
-                            if (_concurrentJobs == null) return false;
+                            if (_concurrentJobs == null)
+                            {
+                                return false;
+                            }
+
                             using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                             {
                                 cbh = new CallbackHandler<IEnumerable<S7DataItemSpecification>>(id);
@@ -91,7 +99,7 @@ namespace Dacs7.Protocols
                                     {
                                         _readHandler.TryRemove(id, out _);
                                         _logger?.LogTrace("Read handler with id {id} was removed.", id);
-                                        
+
                                     }
                                 }
                                 else
@@ -102,7 +110,10 @@ namespace Dacs7.Protocols
                         }
                         catch (ObjectDisposedException)
                         {
-                            if (cbh == null) return false;
+                            if (cbh == null)
+                            {
+                                return false;
+                            }
                         }
 
                         HandlerErrorResult(id, readResults, cbh);
@@ -188,7 +199,7 @@ namespace Dacs7.Protocols
                     _logger?.LogWarning("No data from read ack received for reference {0}", data.Header.Header.ProtocolDataUnitReference);
                 }
 
-                if(cbh.Event != null)
+                if (cbh.Event != null)
                 {
                     cbh.Event.Set(data.Data);
                 }

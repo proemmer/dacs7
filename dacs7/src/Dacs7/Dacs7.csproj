@@ -6,16 +6,12 @@
     <Copyright>Copyright © Benjamin Proemmer 2016-2020</Copyright>
     <AssemblyTitle>dacs7</AssemblyTitle>
     <Authors>Benjamin Proemmer</Authors>
-    <TargetFrameworks>netstandard2.0;netcoreapp2.1;netcoreapp2.2</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp2.1;netcoreapp3.1;net5.0</TargetFrameworks>
     <AssemblyName>Dacs7</AssemblyName>
     <PackageId>Dacs7</PackageId>
     <PackageTags>siemens plc S7 PC-S7-Connection TCP/IP-S7 communication .netcore Automation HMI C# VB.Net RFC-1006 IsoOnTcp-S7 SIMATIC</PackageTags>
     <PackageReleaseNotes>
-      * worked on semaphore disposing to avoid objectdisposed and nullrefere exceptions when connection is shutting down
-      * optimized semaphore guard
-      * added more logging
-      * optimized GetNextReferenceId
-      * filed alarm events (also handle ack event)
+      * read item size calculation bug fixed
 </PackageReleaseNotes>
     <PackageProjectUrl>http://proemmer.github.io/dacs7</PackageProjectUrl>
     <PackageLicenseUrl>https://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
@@ -28,7 +24,7 @@
 
 
 
-    <Version>2.2.3</Version>
+    <Version>2.2.4</Version>
     <SignAssembly>true</SignAssembly>
     
     
@@ -37,7 +33,7 @@
 
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.6.3">
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="3.3.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

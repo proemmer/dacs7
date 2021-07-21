@@ -337,9 +337,9 @@ namespace Dacs7.Tests
                 };
 
                 var writeResults = (await client.WriteAsync(originWriteTags)).ToArray();
-                Assert.Equal(ItemResponseRetValue.DataError, writeResults[0]);
+                Assert.Equal(ItemResponseRetValue.Success, writeResults[0]);
                 var results = (await client.ReadAsync(originWriteTags.Keys)).ToArray();
-                Assert.Equal(ItemResponseRetValue.DataError, results[0].ReturnCode);
+                Assert.Equal(ItemResponseRetValue.Success, results[0].ReturnCode);
 
             });
         }

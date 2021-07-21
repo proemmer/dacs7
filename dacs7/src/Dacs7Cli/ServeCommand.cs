@@ -41,7 +41,7 @@ namespace Dacs7Cli
                             Port = portOption.HasValue() ? int.Parse(portOption.Value()) : 102,
                             Tags = dataareas.HasValue() ? dataareas.Values : null,
                             DataProvider = dataProvider.HasValue() ? dataProvider.Value() : null,
-                            MaxPduSize = pduSize.HasValue() ? ushort.Parse(pduSize.Value()) : 960
+                            MaxPduSize = pduSize.HasValue() ? ushort.Parse(pduSize.Value()) : (ushort)960
                         }.Configure();
                         var result = await Serve(options, options.LoggerFactory);
 

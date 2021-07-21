@@ -168,7 +168,7 @@ namespace Dacs7.Papper.Tests
                     return true;
                 }).ToList();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 reads.AsParallel().Select((item, index) =>
                 {
@@ -202,7 +202,7 @@ namespace Dacs7.Papper.Tests
                     return true;
                 }).ToList();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 writes.AsParallel().Select((item, index) =>
                 {
