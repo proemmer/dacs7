@@ -129,10 +129,11 @@ namespace Dacs7.Domain
         private static TagParserResult ParseTag(string tag, bool throwException)
         {
             var result = new TagParserResult();
-            using (var buffer = MemoryPool<char>.Shared.Rent(tag.Length))
+            var span = tag.AsSpan().Trim();
+            using (var buffer = MemoryPool<char>.Shared.Rent(span.Length))
             {
-                var input = buffer.Memory.Slice(0, tag.Length).Span;
-                tag.AsSpan().ToLowerInvariant(input);
+                var input = buffer.Memory.Slice(0, span.Length).Span;
+                span.ToLowerInvariant(input);
                 var indexStart = 0;
                 var state = TagParserState.Area;
                 ReadOnlySpan<char> type = null;
@@ -159,10 +160,13 @@ namespace Dacs7.Domain
 
         private static void Parse(string tag, ref TagParserResult result, ref int indexStart, ref TagParserState state, ref ReadOnlySpan<char> type, ReadOnlySpan<char> data, int index, bool throwException = false)
         {
-            if (!TryExtractData(ref result, data, ref indexStart, ref state, ref type, index) && throwException)
+            if (!TryExtractData(ref result, data, ref indexStart, ref state, ref type, index))
             {
                 result.ErrorState = state;
-                ThrowHelper.ThrowTagParseException(TagParserState.Area, data.ToString(), tag);
+                if (throwException)
+                {
+                    ThrowHelper.ThrowTagParseException(TagParserState.Area, data.ToString(), tag);
+                }
             }
         }
 

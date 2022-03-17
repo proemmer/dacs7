@@ -1,4 +1,4 @@
-﻿#define REALPLC
+﻿//#define REALPLC
 using Dacs7;
 using Snap7;
 using System;
@@ -41,9 +41,9 @@ namespace Dacs7Tests.ServerHelper
     {
 
 
-        private static readonly object _lock = new object();
-        private static readonly S7Server _server = new S7Server();
-        private static readonly Dictionary<int, byte[]> _dbAreas = new Dictionary<int, byte[]>
+        private static readonly object _lock = new();
+        private static readonly S7Server _server = new();
+        private static readonly Dictionary<int, byte[]> _dbAreas = new()
         {
             {1, new byte[20000] },
             {2, new byte[20000] },
@@ -66,7 +66,7 @@ namespace Dacs7Tests.ServerHelper
         public static readonly string Address = "127.0.0.1";
         public static readonly PlcConnectionType ConnectionType = PlcConnectionType.Pg;
         public static readonly int Timeout = 15000;
-        private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+        private static readonly SemaphoreSlim _semaphore = new(1);
 #endif
 
 
