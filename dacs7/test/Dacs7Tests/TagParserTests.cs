@@ -8,6 +8,7 @@ namespace Dacs7.Tests
     public class TagParserTests
     {
         [Theory()]
+        [InlineData("DB1403.88,C,8    ", PlcArea.DB, 88, 8, typeof(char[]), typeof(char))]
         [InlineData("DB1.10000,x0,1", PlcArea.DB, 80000, 1, typeof(bool))]
         [InlineData("DB1.10000,x0", PlcArea.DB, 80000, 1, typeof(bool))]
         [InlineData("DB1.10000,b,1", PlcArea.DB, 10000, 1, typeof(byte))]
