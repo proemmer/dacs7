@@ -25,7 +25,7 @@ namespace Dacs7.Protocols
         private bool _disposed;
         private readonly Transport _transport;
         private readonly SiemensPlcProtocolContext _s7Context;
-        private readonly AsyncAutoResetEvent<bool> _connectEvent = new AsyncAutoResetEvent<bool>();
+        private readonly AsyncAutoResetEvent<bool> _connectEvent = new();
         private readonly ILogger _logger;
         private readonly Action<ProtocolHandler, ConnectionState> _connectionStateChanged;
         private readonly ILoggerFactory _loggerFactory;
@@ -33,7 +33,7 @@ namespace Dacs7.Protocols
         private readonly IPlcDataProvider _provider;
         private volatile bool _closeCalled;
         private SemaphoreSlim _concurrentJobs;
-        private readonly SemaphoreSlim _connectSema = new SemaphoreSlim(1);
+        private readonly SemaphoreSlim _connectSema = new(1);
         private int _referenceId;
         private bool _isServerConnection;
 
@@ -41,7 +41,7 @@ namespace Dacs7.Protocols
 
         internal ushort GetNextReferenceId()
         {
-            var id = unchecked((ushort)Interlocked.Increment(ref _referenceId));
+            ushort id = unchecked((ushort)Interlocked.Increment(ref _referenceId));
             if (id <= ushort.MinValue)
             {
                 return GetNextReferenceId();
@@ -81,7 +81,7 @@ namespace Dacs7.Protocols
                 return; // if connection is already open do nothing
             }
 
-            using (await SemaphoreGuard.Async(_connectSema))
+            using (await SemaphoreGuard.Async(_connectSema).ConfigureAwait(false))
             {
                 if (_transport.Connection.IsConnected)
                 {
@@ -113,7 +113,7 @@ namespace Dacs7.Protocols
                         ThrowHelper.ThrowNotConnectedException();
                     }
 
-                    
+
                     // tcp and rfc1006 connection is open, so enable auto reconnect
                     _transport.Connection.EnableAutoReconnectReconnect();
                 }
@@ -135,7 +135,7 @@ namespace Dacs7.Protocols
         /// <returns></returns>
         public async Task CloseAsync()
         {
-            using (await SemaphoreGuard.Async(_connectSema))
+            using (await SemaphoreGuard.Async(_connectSema).ConfigureAwait(false))
             {
                 await InternalCloseAsync().ConfigureAwait(false);
             }
@@ -184,6 +184,12 @@ namespace Dacs7.Protocols
                     _concurrentJobs?.Dispose();
                     _concurrentJobs = null;
                 }
+
+                if(_connectSema != null)
+                {
+                    _logger?.LogDebug("Calling dispose for connec semaphore.");
+                    _connectSema?.Dispose();
+                }
             }
 
             _disposed = true;
@@ -191,7 +197,7 @@ namespace Dacs7.Protocols
 
         private Task<bool> DetectAndReceive(Memory<byte> payload)
         {
-            if (SiemensPlcProtocolContext.TryDetectDatagramType(payload, out var s7DatagramType))
+            if (SiemensPlcProtocolContext.TryDetectDatagramType(payload, out Type s7DatagramType))
             {
                 return S7DatagramReceived(s7DatagramType, payload);
             }
@@ -258,11 +264,11 @@ namespace Dacs7.Protocols
 
         private async Task StartS7CommunicationSetup()
         {
-            using (var dgmem = S7CommSetupDatagram.TranslateToMemory(S7CommSetupDatagram.Build(_s7Context, GetNextReferenceId()), out var commemLength))
+            using (System.Buffers.IMemoryOwner<byte> dgmem = S7CommSetupDatagram.TranslateToMemory(S7CommSetupDatagram.Build(_s7Context, GetNextReferenceId()), out int commemLength))
             {
-                using (var sendData = _transport.Build(dgmem.Memory.Slice(0, commemLength), out var sendLength))
+                using (System.Buffers.IMemoryOwner<byte> sendData = _transport.Build(dgmem.Memory.Slice(0, commemLength), out int sendLength))
                 {
-                    var result = await _transport.Connection.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false);
+                    SocketError result = await _transport.Connection.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false);
                     if (result == SocketError.Success)
                     {
                         await UpdateConnectionState(ConnectionState.PendingOpenPlc).ConfigureAwait(false);
@@ -273,9 +279,9 @@ namespace Dacs7.Protocols
 
         private void ReceivedCommunicationSetupAck(Memory<byte> buffer)
         {
-            var data = S7CommSetupAckDataDatagram.TranslateFromMemory(buffer);
+            S7CommSetupAckDataDatagram data = S7CommSetupAckDataDatagram.TranslateFromMemory(buffer);
 
-            var oldSemaCount = _s7Context.MaxAmQCalling;
+            ushort oldSemaCount = _s7Context.MaxAmQCalling;
             _s7Context.MaxAmQCalling = data.Parameter.MaxAmQCalling;
             _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalled;
             _s7Context.PduSize = data.Parameter.PduLength;
@@ -288,7 +294,7 @@ namespace Dacs7.Protocols
 
         private void UpdateJobsSemaphore(ushort oldSemaCount, ushort newSemaCount)
         {
-            var oldSema = _concurrentJobs;
+            SemaphoreSlim oldSema = _concurrentJobs;
             if (oldSema == null || oldSemaCount != newSemaCount)
             {
                 _concurrentJobs = new SemaphoreSlim(newSemaCount);
@@ -300,7 +306,7 @@ namespace Dacs7.Protocols
         {
             if (ConnectionState != state)
             {
-                if((state == ConnectionState.TransportOpened && ConnectionState != ConnectionState.PendingOpenTransport) ||
+                if ((state == ConnectionState.TransportOpened && ConnectionState != ConnectionState.PendingOpenTransport) ||
                     state == ConnectionState.PendingOpenPlc && ConnectionState != ConnectionState.TransportOpened)
                 {
                     // ignore state change
@@ -321,7 +327,7 @@ namespace Dacs7.Protocols
                 {
                     await CancelPendingEvents().ConfigureAwait(false);
                 }
-                
+
             }
         }
 
@@ -343,7 +349,7 @@ namespace Dacs7.Protocols
                 transport.ConfigureClient(loggerFactory);
                 _isServerConnection = false;
             }
-            else if(transport.Configuration is ServerSocketConfiguration)
+            else if (transport.Configuration is ServerSocketConfiguration)
             {
                 transport.OnNewSocketConnected = OnNewSocketConnected;
                 transport.ConfigureServer(loggerFactory);

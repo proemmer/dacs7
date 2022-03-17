@@ -68,7 +68,7 @@ namespace Dacs7.Communication
             }
             catch (Exception)
             {
-                await DisposeSocketAsync();
+                await DisposeSocketAsync().ConfigureAwait(false);
                 await HandleSocketDown().ConfigureAwait(false);
             }
         }
@@ -111,7 +111,7 @@ namespace Dacs7.Communication
             }
             catch (Exception)
             {
-                await DisposeSocketAsync();
+                await DisposeSocketAsync().ConfigureAwait(false);
                 await HandleSocketDown().ConfigureAwait(false);
                 if (!internalCall) throw;
             }
@@ -151,7 +151,7 @@ namespace Dacs7.Communication
         public sealed override async Task CloseAsync()
         {
             await base.CloseAsync().ConfigureAwait(false);
-            await DisposeSocketAsync();
+            await DisposeSocketAsync().ConfigureAwait(false);
         }
 
         private async ValueTask DisposeSocketAsync()

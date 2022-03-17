@@ -11,7 +11,7 @@ namespace Dacs7
     public class AsyncAutoResetEvent<T>
     {
         private static readonly Task<T> _completed = Task.FromResult<T>(default);
-        private readonly Queue<TaskCompletionSource<T>> _waits = new Queue<TaskCompletionSource<T>>();
+        private readonly Queue<TaskCompletionSource<T>> _waits = new();
         private bool _signaled;
         private T _lastValue = default;
 

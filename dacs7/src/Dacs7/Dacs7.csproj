@@ -3,10 +3,10 @@
   <PropertyGroup>
     <Description>Dacs7 (Data Access S7) is a library to communicate with a Siemens S7 and TIA PLC.</Description>
     <LangVersion>latest</LangVersion>
-    <Copyright>Copyright © Benjamin Proemmer 2016-2020</Copyright>
+    <Copyright>Copyright © Benjamin Proemmer 2016-2022</Copyright>
     <AssemblyTitle>dacs7</AssemblyTitle>
     <Authors>Benjamin Proemmer</Authors>
-    <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp2.1;netcoreapp3.1;net5.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;netcoreapp2.0;netcoreapp2.1;netcoreapp2.2;netcoreapp3.0;netcoreapp3.1;net5.0;net5.0-windows;net6.0;net6.0-windows</TargetFrameworks>
     <AssemblyName>Dacs7</AssemblyName>
     <PackageId>Dacs7</PackageId>
     <PackageTags>siemens plc S7 PC-S7-Connection TCP/IP-S7 communication .netcore Automation HMI C# VB.Net RFC-1006 IsoOnTcp-S7 SIMATIC</PackageTags>
