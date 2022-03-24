@@ -21,7 +21,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
             //TODO we need a parameter for the UnitId
-            var result = new S7CommSetupAckDataDatagram
+            S7CommSetupAckDataDatagram result = new()
             {
                 Parameter = new S7CommSetupParameterDatagram
                 {
@@ -37,15 +37,15 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static IMemoryOwner<byte> TranslateToMemory(S7CommSetupAckDataDatagram datagram, out int memoryLength)
         {
-            var result = S7AckDataDatagram.TranslateToMemory(datagram.Header, out memoryLength);
-            var take = memoryLength - datagram.Header.GetParameterOffset();
+            IMemoryOwner<byte> result = S7AckDataDatagram.TranslateToMemory(datagram.Header, out memoryLength);
+            int take = memoryLength - datagram.Header.GetParameterOffset();
             S7CommSetupParameterDatagram.TranslateToMemory(datagram.Parameter, result.Memory.Slice(datagram.Header.GetParameterOffset(), take));
             return result;
         }
 
         public static S7CommSetupAckDataDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var result = new S7CommSetupAckDataDatagram
+            S7CommSetupAckDataDatagram result = new()
             {
                 Header = S7AckDataDatagram.TranslateFromMemory(data),
             };

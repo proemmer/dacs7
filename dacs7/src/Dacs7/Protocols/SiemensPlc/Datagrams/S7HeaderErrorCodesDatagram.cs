@@ -15,12 +15,15 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public byte ErrorCode { get; set; }
 
-        public int GetSize() => _size;
+        public int GetSize()
+        {
+            return _size;
+        }
 
         public static Memory<byte> TranslateToMemory(S7HeaderErrorCodesDatagram datagram, Memory<byte> memory)
         {
-            var result = memory.IsEmpty ? new Memory<byte>(new byte[2]) : memory;  // check if we could use ArrayBuffer
-            var span = result.Span;
+            Memory<byte> result = memory.IsEmpty ? new Memory<byte>(new byte[2]) : memory;  // check if we could use ArrayBuffer
+            Span<byte> span = result.Span;
 
             span[0] = datagram.ErrorClass;
             span[1] = datagram.ErrorCode;
@@ -30,8 +33,8 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7HeaderErrorCodesDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var span = data.Span;
-            var result = new S7HeaderErrorCodesDatagram
+            Span<byte> span = data.Span;
+            S7HeaderErrorCodesDatagram result = new()
             {
                 ErrorClass = span[0],
                 ErrorCode = span[1]

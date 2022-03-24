@@ -9,6 +9,7 @@ using Dacs7.Protocols.SiemensPlc;
 using Dacs7.Protocols.SiemensPlc.Datagrams;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -185,7 +186,7 @@ namespace Dacs7.Protocols
                     _concurrentJobs = null;
                 }
 
-                if(_connectSema != null)
+                if (_connectSema != null)
                 {
                     _logger?.LogDebug("Calling dispose for connec semaphore.");
                     _connectSema?.Dispose();
@@ -213,6 +214,10 @@ namespace Dacs7.Protocols
             else if (datagramType == typeof(S7WriteJobAckDatagram))
             {
                 ReceivedWriteJobAck(buffer);
+            }
+            else if (datagramType == typeof(S7AckDataDatagram))
+            {
+                ReceivedAck(buffer);
             }
             else if (datagramType == typeof(S7PlcBlockInfoAckDatagram))
             {
@@ -254,12 +259,64 @@ namespace Dacs7.Protocols
             {
                 await ReceivedWriteJob(buffer).ConfigureAwait(false);
             }
-
             else
             {
                 return false;
             }
             return true;
+        }
+
+
+        private void ReceivedAck(Memory<byte> buffer)
+        {
+            S7AckDataDatagram data = S7AckDataDatagram.TranslateFromMemory(buffer);
+            if (_readHandler.TryGetValue(data.Header.ProtocolDataUnitReference, out CallbackHandler<IEnumerable<S7DataItemSpecification>> cbhr))
+            {
+                ReceivedAckDatagram(data, cbhr, "reading");
+            }
+            else if (_writeHandler.TryGetValue(data.Header.ProtocolDataUnitReference, out CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbhw))
+            {
+                ReceivedAckDatagram(data, cbhw, "writing");
+            }
+            else if (_blockInfoHandler.TryGetValue(data.Header.ProtocolDataUnitReference, out CallbackHandler<S7PlcBlockInfoAckDatagram> cbhbi))
+            {
+                ReceivedAckDatagram(data, cbhbi, "determine blockinfo");
+            }
+            else if (_blocksCountHandler.TryGetValue(data.Header.ProtocolDataUnitReference, out CallbackHandler<S7PlcBlocksCountAckDatagram> cbhbc))
+            {
+                ReceivedAckDatagram(data, cbhbc, "determine blocks count");
+            }
+            else if (_blocksOfTypeHandler.TryGetValue(data.Header.ProtocolDataUnitReference, out CallbackHandler<S7PlcBlocksOfTypeAckDatagram> cbhbot))
+            {
+                ReceivedAckDatagram(data, cbhbot, "determine blocks of type");
+            }
+            else if (_alarmHandler.TryGetValue(data.Header.ProtocolDataUnitReference, out CallbackHandler<S7PendingAlarmAckDatagram> cbha))
+            {
+                ReceivedAckDatagram(data, cbha, "handling alarm");
+            }
+            else if (_alarmIndicationHandler.TryGetValue(data.Header.ProtocolDataUnitReference, out CallbackHandler<S7AlarmIndicationDatagram> cbhai))
+            {
+                ReceivedAckDatagram(data, cbha, "handling alarmindication");
+            }
+        }
+
+
+        private void ReceivedAckDatagram<T>(S7AckDataDatagram data, CallbackHandler<T> cbh, string action)
+        {
+            if (data.Error.ErrorClass != 0)
+            {
+                _logger?.LogError("Error while {action} data for reference {reference}. ErrorClass: {eclass}  ErrorCode:{ecode}", action, data.Header.ProtocolDataUnitReference, data.Error.ErrorClass, data.Error.ErrorCode);
+                cbh.Exception = new Dacs7Exception(data.Error.ErrorClass, data.Error.ErrorCode);
+            }
+
+            if (cbh.Event != null)
+            {
+                cbh.Event.Set(default);
+            }
+            else
+            {
+                _logger?.LogWarning("No event for read handler found for received read ack reference {reference}", data.Header.ProtocolDataUnitReference);
+            }
         }
 
         private async Task StartS7CommunicationSetup()

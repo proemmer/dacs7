@@ -18,10 +18,10 @@ namespace Dacs7Cli
             {
                 cmd.Description = "Read alarms from the plc.";
 
-                var addressOption = cmd.Option("-a | --address", "The IPAddress of the plc", CommandOptionType.SingleValue);
-                var debugOption = cmd.Option("-d | --debug", "Activate debug output", CommandOptionType.NoValue);
-                var traceOption = cmd.Option("-t | --trace", "Trace also dacs7 internals", CommandOptionType.NoValue);
-                var maxJobsOption = cmd.Option("-j | --jobs", "Maximum number of concurrent jobs.", CommandOptionType.SingleValue);
+                CommandOption addressOption = cmd.Option("-a | --address", "The IPAddress of the plc", CommandOptionType.SingleValue);
+                CommandOption debugOption = cmd.Option("-d | --debug", "Activate debug output", CommandOptionType.NoValue);
+                CommandOption traceOption = cmd.Option("-t | --trace", "Trace also dacs7 internals", CommandOptionType.NoValue);
+                CommandOption maxJobsOption = cmd.Option("-j | --jobs", "Maximum number of concurrent jobs.", CommandOptionType.SingleValue);
 
                 cmd.OnExecute(async () =>
                 {
@@ -35,7 +35,7 @@ namespace Dacs7Cli
                             Address = addressOption.HasValue() ? addressOption.Value() : "localhost",
                             MaxJobs = maxJobsOption.HasValue() ? int.Parse(maxJobsOption.Value()) : 10,
                         }.Configure();
-                        var result = await ReadAlarms(readOptions, readOptions.LoggerFactory);
+                        int result = await ReadAlarms(readOptions, readOptions.LoggerFactory);
 
                         await Task.Delay(500);
 
@@ -53,12 +53,12 @@ namespace Dacs7Cli
 
         private static async Task<int> ReadAlarms(ReadAlarmsOptions readOptions, ILoggerFactory loggerFactory)
         {
-            var client = new Dacs7Client(readOptions.Address, PlcConnectionType.Pg, 5000, loggerFactory)
+            Dacs7Client client = new(readOptions.Address, PlcConnectionType.Pg, 5000, loggerFactory)
             {
                 MaxAmQCalled = (ushort)readOptions.MaxJobs,
                 MaxAmQCalling = (ushort)readOptions.MaxJobs
             };
-            var logger = loggerFactory?.CreateLogger("Dacs7Cli.ReadAlarms");
+            ILogger logger = loggerFactory?.CreateLogger("Dacs7Cli.ReadAlarms");
 
             try
             {
@@ -67,9 +67,9 @@ namespace Dacs7Cli
 
                 try
                 {
-                    var sw = new Stopwatch();
+                    Stopwatch sw = new();
                     sw.Start();
-                    var c = new CancellationTokenSource();
+                    CancellationTokenSource c = new();
                     _ = Task.Factory.StartNew(() =>
                     {
                         Console.ReadKey();
@@ -78,19 +78,19 @@ namespace Dacs7Cli
 
 
 
-                    using (var subscription = client.CreateAlarmSubscription())
+                    using (AlarmSubscription subscription = client.CreateAlarmSubscription())
                     {
-                        var pendingResults = await client.ReadPendingAlarmsAsync();
-                        foreach (var alarm in pendingResults)
+                        System.Collections.Generic.IEnumerable<IPlcAlarm> pendingResults = await client.ReadPendingAlarmsAsync();
+                        foreach (IPlcAlarm alarm in pendingResults)
                         {
                             Console.WriteLine($"Pending Alarm: ID: {alarm.Id}   MsgNumber: {alarm.MsgNumber} Id: {alarm.Id} IsAck: {alarm.IsAck} IsComing: {alarm.IsComing} IsGoing: {alarm.IsGoing} State: {alarm.State} EventState: {alarm.EventState} AckStateComing: {alarm.AckStateComing}  AckStateGoing: {alarm.AckStateGoing} ", alarm);
                         }
                         while (true)
                         {
-                            var results = await subscription.ReceiveAlarmUpdatesAsync(c.Token);
+                            AlarmUpdateResult results = await subscription.ReceiveAlarmUpdatesAsync(c.Token);
                             if (results.HasAlarms)
                             {
-                                foreach (var alarm in results.Alarms)
+                                foreach (IPlcAlarm alarm in results.Alarms)
                                 {
                                     Console.WriteLine($"Alarm update: ID: {alarm.Id}   MsgNumber: {alarm.MsgNumber} Id: {alarm.Id} IsAck: {alarm.IsAck} IsComing: {alarm.IsComing} IsGoing: {alarm.IsGoing} State: {alarm.State} EventState: {alarm.EventState} AckStateComing: {alarm.AckStateComing}  AckStateGoing: {alarm.AckStateGoing} ", alarm);
                                 }

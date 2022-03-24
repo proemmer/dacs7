@@ -2,7 +2,6 @@
 // See License in the project root for license information.
 
 using System;
-using System.Text;
 
 namespace Dacs7.Metadata
 {
@@ -70,7 +69,7 @@ namespace Dacs7.Metadata
                 case 0x1a:
                     return "S7-Pdiag";
                 case 0x1d:
-                    return "SFM";                     
+                    return "SFM";
             }
             return string.Empty;
         }

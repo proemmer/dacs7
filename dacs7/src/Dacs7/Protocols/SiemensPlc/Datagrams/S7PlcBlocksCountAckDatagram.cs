@@ -17,7 +17,7 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
 
         public static S7PlcBlocksCountAckDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var result = new S7PlcBlocksCountAckDatagram
+            S7PlcBlocksCountAckDatagram result = new()
             {
                 UserData = S7UserDataDatagram.TranslateFromMemory(data),
                 Counts = new PlcBlocksCount()
@@ -27,15 +27,15 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
             {
                 if (result.UserData.Data.ReturnCode == 0xff)
                 {
-                    var offset = 0;
-                    var span = result.UserData.Data.Data.Span;
+                    int offset = 0;
+                    Span<byte> span = result.UserData.Data.Data.Span;
 
                     while ((offset + 4) < result.UserData.Data.Data.Length)
                     {
                         if (result.UserData.Data.Data.Span[offset++] == 0x30)
                         {
-                            var type = (PlcBlockType)result.UserData.Data.Data.Span[offset++];
-                            var value = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
+                            PlcBlockType type = (PlcBlockType)result.UserData.Data.Data.Span[offset++];
+                            ushort value = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
 
                             switch (type)
                             {

@@ -17,10 +17,10 @@ namespace Dacs7Cli
             {
                 cmd.Description = "Read alarms from the plc.";
 
-                var addressOption = cmd.Option("-a | --address", "The IPAddress of the plc", CommandOptionType.SingleValue);
-                var debugOption = cmd.Option("-d | --debug", "Activate debug output", CommandOptionType.NoValue);
-                var traceOption = cmd.Option("-t | --trace", "Trace also dacs7 internals", CommandOptionType.NoValue);
-                var maxJobsOption = cmd.Option("-j | --jobs", "Maximum number of concurrent jobs.", CommandOptionType.SingleValue);
+                CommandOption addressOption = cmd.Option("-a | --address", "The IPAddress of the plc", CommandOptionType.SingleValue);
+                CommandOption debugOption = cmd.Option("-d | --debug", "Activate debug output", CommandOptionType.NoValue);
+                CommandOption traceOption = cmd.Option("-t | --trace", "Trace also dacs7 internals", CommandOptionType.NoValue);
+                CommandOption maxJobsOption = cmd.Option("-j | --jobs", "Maximum number of concurrent jobs.", CommandOptionType.SingleValue);
 
                 cmd.OnExecute(async () =>
                 {
@@ -34,7 +34,7 @@ namespace Dacs7Cli
                             Address = addressOption.HasValue() ? addressOption.Value() : "localhost",
                             MaxJobs = maxJobsOption.HasValue() ? int.Parse(maxJobsOption.Value()) : 10,
                         }.Configure();
-                        var result = await ReadAlarms(readOptions, readOptions.LoggerFactory);
+                        int result = await ReadAlarms(readOptions, readOptions.LoggerFactory);
 
                         await Task.Delay(500);
 
@@ -52,12 +52,12 @@ namespace Dacs7Cli
 
         private static async Task<int> ReadAlarms(ReadAlarmsOptions readOptions, ILoggerFactory loggerFactory)
         {
-            var client = new Dacs7Client(readOptions.Address, PlcConnectionType.Pg, 5000, loggerFactory)
+            Dacs7Client client = new(readOptions.Address, PlcConnectionType.Pg, 5000, loggerFactory)
             {
                 MaxAmQCalled = (ushort)readOptions.MaxJobs,
                 MaxAmQCalling = (ushort)readOptions.MaxJobs
             };
-            var logger = loggerFactory?.CreateLogger("Dacs7Cli.ReadAlarms");
+            ILogger logger = loggerFactory?.CreateLogger("Dacs7Cli.ReadAlarms");
 
             try
             {
@@ -66,10 +66,10 @@ namespace Dacs7Cli
 
                 try
                 {
-                    var sw = new Stopwatch();
+                    Stopwatch sw = new();
                     sw.Start();
-                    var results = await client.ReadPendingAlarmsAsync();
-                    foreach (var alarm in results)
+                    System.Collections.Generic.IEnumerable<IPlcAlarm> results = await client.ReadPendingAlarmsAsync();
+                    foreach (IPlcAlarm alarm in results)
                     {
                         Console.WriteLine($"Alarm update: ID: {alarm.Id}   MsgNumber: {alarm.MsgNumber}  IsAck: {alarm.IsAck} ", alarm);
                     }

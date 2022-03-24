@@ -11,7 +11,7 @@ namespace Dacs7Cli
         {
             try
             {
-                var app = new CommandLineApplication
+                CommandLineApplication app = new()
                 {
                     FullName = "DacS7Cli",
                     Description = "DacS7 Commandline Interface"
@@ -31,7 +31,7 @@ namespace Dacs7Cli
                 {
                     cmd.Description = "Get help for the application, or a specific command";
 
-                    var commandArgument = cmd.Argument("<COMMAND>", "The command to get help for");
+                    CommandArgument commandArgument = cmd.Argument("<COMMAND>", "The command to get help for");
                     cmd.OnExecute(() =>
                     {
                         app.ShowHelp(commandArgument.Value);

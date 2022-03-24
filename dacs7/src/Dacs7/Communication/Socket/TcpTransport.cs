@@ -22,17 +22,20 @@ namespace Dacs7.Communication.Socket
             _context = context;
             _socket = usedSocket;
         }
-        public TcpTransport(Rfc1006ProtocolContext context, ServerSocketConfiguration config) : base(context, config) => _context = context;
+        public TcpTransport(Rfc1006ProtocolContext context, ServerSocketConfiguration config) : base(context, config)
+        {
+            _context = context;
+        }
 
         public sealed override void ConfigureClient(ILoggerFactory loggerFactory)
         {
-            var clientSocket = new ClientSocket(Configuration as ClientSocketConfiguration, loggerFactory)
+            ClientSocket clientSocket = new(Configuration as ClientSocketConfiguration, loggerFactory)
             {
                 OnRawDataReceived = OnTcpSocketRawDataReceived,
                 OnConnectionStateChanged = OnTcpSocketConnectionStateChanged
             };
-            
-            if(_socket != null)
+
+            if (_socket != null)
             {
                 _ = clientSocket.UseSocketAsync(_socket);
             }
@@ -41,7 +44,7 @@ namespace Dacs7.Communication.Socket
         }
 
         public sealed override void ConfigureServer(ILoggerFactory loggerFactory)
-        { 
+        {
             Connection = new ServerSocket(Configuration as ServerSocketConfiguration, loggerFactory)
             {
                 OnRawDataReceived = OnTcpSocketRawDataReceived,
@@ -53,10 +56,10 @@ namespace Dacs7.Communication.Socket
 
         public sealed override IMemoryOwner<byte> Build(Memory<byte> buffer, out int length)
         {
-            using (var dg = DataTransferDatagram.Build(_context, buffer).FirstOrDefault())
+            using (DataTransferDatagram dg = DataTransferDatagram.Build(_context, buffer).FirstOrDefault())
             {
                 length = DataTransferDatagram.GetRawDataLength(dg);
-                var resultBuffer = MemoryPool<byte>.Shared.Rent(length);
+                IMemoryOwner<byte> resultBuffer = MemoryPool<byte>.Shared.Rent(length);
                 try
                 {
                     DataTransferDatagram.TranslateToMemory(dg, resultBuffer.Memory.Slice(0, length));
@@ -76,7 +79,7 @@ namespace Dacs7.Communication.Socket
         {
             if (buffer.Length > Rfc1006ProtocolContext.MinimumBufferSize)
             {
-                if (Rfc1006ProtocolContext.TryDetectDatagramType(buffer, out var type))
+                if (Rfc1006ProtocolContext.TryDetectDatagramType(buffer, out Type type))
                 {
                     return Rfc1006DatagramReceived(type, buffer);
                 }
@@ -91,20 +94,28 @@ namespace Dacs7.Communication.Socket
 
         private Task OnTcpSocketConnectionStateChanged(string socketHandle, bool connected)
         {
-            var state = OnGetConnectionState?.Invoke();
-            if (state == ConnectionState.Closed && connected && _socket == null) return SendTcpConnectionRequest();
-            if (state != ConnectionState.Closed && !connected) return OnUpdateConnectionState?.Invoke(ConnectionState.Closed); // close in any case
+            ConnectionState? state = OnGetConnectionState?.Invoke();
+            if (state == ConnectionState.Closed && connected && _socket == null)
+            {
+                return SendTcpConnectionRequest();
+            }
+
+            if (state != ConnectionState.Closed && !connected)
+            {
+                return OnUpdateConnectionState?.Invoke(ConnectionState.Closed); // close in any case
+            }
+
             return Task.CompletedTask;
         }
 
 
         private async Task<int> Rfc1006DatagramReceived(Type datagramType, Memory<byte> buffer)
         {
-            var processed = 0;
-            var context = _context;
+            int processed = 0;
+            Rfc1006ProtocolContext context = _context;
             if (datagramType == typeof(ConnectionConfirmedDatagram))
             {
-                using (var res = ConnectionConfirmedDatagram.TranslateFromMemory(buffer, out processed))
+                using (ConnectionConfirmedDatagram res = ConnectionConfirmedDatagram.TranslateFromMemory(buffer, out processed))
                 {
                     context.UpdateFrameSize(res);
                     await (OnUpdateConnectionState?.Invoke(ConnectionState.TransportOpened)).ConfigureAwait(false);
@@ -112,7 +123,7 @@ namespace Dacs7.Communication.Socket
             }
             else if (datagramType == typeof(ConnectionRequestDatagram))
             {
-                using (var res = ConnectionRequestDatagram.TranslateFromMemory(buffer, out processed))
+                using (ConnectionRequestDatagram res = ConnectionRequestDatagram.TranslateFromMemory(buffer, out processed))
                 {
                     context.UpdateFrameSize(res);
                     await SendTcpConnectionConfirmed(res).ConfigureAwait(false);
@@ -120,7 +131,7 @@ namespace Dacs7.Communication.Socket
             }
             else if (datagramType == typeof(DataTransferDatagram))
             {
-                using (var datagram = DataTransferDatagram.TranslateFromMemory(buffer, context, out var needMoreData, out processed))
+                using (DataTransferDatagram datagram = DataTransferDatagram.TranslateFromMemory(buffer, context, out bool needMoreData, out processed))
                 {
                     if (!needMoreData)
                     {
@@ -134,9 +145,9 @@ namespace Dacs7.Communication.Socket
 
         private async Task SendTcpConnectionConfirmed(ConnectionRequestDatagram cr)
         {
-            using (var datagram = ConnectionConfirmedDatagram.TranslateToMemory(ConnectionConfirmedDatagram.BuildCc(_context, cr), out var memoryLegth))
+            using (IMemoryOwner<byte> datagram = ConnectionConfirmedDatagram.TranslateToMemory(ConnectionConfirmedDatagram.BuildCc(_context, cr), out int memoryLegth))
             {
-                var result = await Connection.SendAsync(datagram.Memory.Slice(0, memoryLegth)).ConfigureAwait(false);
+                SocketError result = await Connection.SendAsync(datagram.Memory.Slice(0, memoryLegth)).ConfigureAwait(false);
                 if (result == SocketError.Success)
                 {
                     OnUpdateConnectionState?.Invoke(ConnectionState.TransportOpened);
@@ -146,9 +157,9 @@ namespace Dacs7.Communication.Socket
 
         private async Task SendTcpConnectionRequest()
         {
-            using (var datagram = ConnectionRequestDatagram.TranslateToMemory(ConnectionRequestDatagram.BuildCr(_context), out var memoryLegth))
+            using (IMemoryOwner<byte> datagram = ConnectionRequestDatagram.TranslateToMemory(ConnectionRequestDatagram.BuildCr(_context), out int memoryLegth))
             {
-                var result = await Connection.SendAsync(datagram.Memory.Slice(0, memoryLegth)).ConfigureAwait(false);
+                SocketError result = await Connection.SendAsync(datagram.Memory.Slice(0, memoryLegth)).ConfigureAwait(false);
                 if (result == SocketError.Success)
                 {
                     OnUpdateConnectionState?.Invoke(ConnectionState.PendingOpenTransport);

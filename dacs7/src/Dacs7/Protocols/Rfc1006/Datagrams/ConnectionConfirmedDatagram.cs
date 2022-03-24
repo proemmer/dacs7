@@ -22,7 +22,7 @@ namespace Dacs7.Protocols.Rfc1006
 
         public byte Li { get; set; }
 
-        public byte PduType { get; set; }  = 0xd0;
+        public byte PduType { get; set; } = 0xd0;
 
         public short DstRef { get; set; } //  = 0x0001;                     // TPDU Destination Reference
 
@@ -62,9 +62,9 @@ namespace Dacs7.Protocols.Rfc1006
         public static ConnectionConfirmedDatagram BuildCc(Rfc1006ProtocolContext context, ConnectionRequestDatagram req)
         {
             context.DestTsap = req.DestTsap;
-            context.CalcLength(context, out var li, out var length);
+            context.CalcLength(context, out byte li, out ushort length);
             req.SizeTpduReceiving.Span.CopyTo(context.SizeTpduSending.Span);
-            var result = new ConnectionConfirmedDatagram
+            ConnectionConfirmedDatagram result = new()
             {
                 Li = li,
                 SizeTpduReceiving = context.SizeTpduReceiving,
@@ -81,10 +81,10 @@ namespace Dacs7.Protocols.Rfc1006
 
         public static IMemoryOwner<byte> TranslateToMemory(ConnectionConfirmedDatagram datagram, out int memoryLength)
         {
-            var length = memoryLength = datagram.Tkpt.Length;
-            var result = MemoryPool<byte>.Shared.Rent(length);  // TODO: use MemorBUffer and return check if we could use ArrayBuffer
-            var mem = result.Memory;
-            var span = mem.Span;
+            int length = memoryLength = datagram.Tkpt.Length;
+            IMemoryOwner<byte> result = MemoryPool<byte>.Shared.Rent(length);  // TODO: use MemorBUffer and return check if we could use ArrayBuffer
+            Memory<byte> mem = result.Memory;
+            Span<byte> span = mem.Span;
 
             span[0] = datagram.Tkpt.Sync1;
             span[1] = datagram.Tkpt.Sync2;
@@ -96,7 +96,7 @@ namespace Dacs7.Protocols.Rfc1006
             span[10] = datagram.ClassOption;
             span[11] = datagram.ParmCodeTpduSize;
 
-            var offset = 11;
+            int offset = 11;
             span[offset++] = datagram.ParmCodeTpduSize;
             span[offset++] = datagram.SizeTpduReceivingLength;
             datagram.SizeTpduReceiving.CopyTo(mem.Slice(offset));
@@ -117,8 +117,8 @@ namespace Dacs7.Protocols.Rfc1006
 
         public static ConnectionConfirmedDatagram TranslateFromMemory(Memory<byte> data, out int processed)
         {
-            var span = data.Span;
-            var result = new ConnectionConfirmedDatagram
+            Span<byte> span = data.Span;
+            ConnectionConfirmedDatagram result = new()
             {
                 Tkpt = new TpktDatagram
                 {

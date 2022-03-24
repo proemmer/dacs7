@@ -27,13 +27,13 @@ namespace Dacs7.Communication
 
                 if (_identity == null)
                 {
-                    var socket = _socket;
+                    System.Net.Sockets.Socket socket = _socket;
                     if (socket != null)
                     {
-                        var epLocal = socket.LocalEndPoint as IPEndPoint;
+                        IPEndPoint epLocal = socket.LocalEndPoint as IPEndPoint;
                         try
                         {
-                            var epRemote = socket.RemoteEndPoint as IPEndPoint;
+                            IPEndPoint epRemote = socket.RemoteEndPoint as IPEndPoint;
                             _identity = $"{epLocal.Address}:{epLocal.Port}-{(epRemote != null ? epRemote.Address.ToString() : _config.Hostname)}:{(epRemote != null ? epRemote.Port : _config.ServiceName)}";
                         }
                         catch (Exception)
@@ -88,7 +88,11 @@ namespace Dacs7.Communication
         {
             try
             {
-                if (_shutdown || IsConnected) return;
+                if (_shutdown || IsConnected)
+                {
+                    return;
+                }
+
                 await DisposeSocketAsync().ConfigureAwait(false);
                 _identity = null;
                 _socket = new System.Net.Sockets.Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
@@ -101,19 +105,27 @@ namespace Dacs7.Communication
                 EnsureConnected();
                 _logger?.LogDebug("Socket connected. ({0}:{1})", _config.Hostname, _config.ServiceName);
                 if (_config.KeepAlive)
+                {
                     _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, 1);
+                }
 
-                if (internalCall) EnableAutoReconnectReconnect();
+                if (internalCall)
+                {
+                    EnableAutoReconnectReconnect();
+                }
 
                 _tokenSource = new CancellationTokenSource();
-                _receivingTask = Task.Factory.StartNew(() => StartReceive(), _tokenSource.Token,TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                _receivingTask = Task.Factory.StartNew(() => StartReceive(), _tokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
                 await PublishConnectionStateChanged(true).ConfigureAwait(false);
             }
             catch (Exception)
             {
                 await DisposeSocketAsync().ConfigureAwait(false);
                 await HandleSocketDown().ConfigureAwait(false);
-                if (!internalCall) throw;
+                if (!internalCall)
+                {
+                    throw;
+                }
             }
         }
 
@@ -124,8 +136,8 @@ namespace Dacs7.Communication
             {
                 if (_socket != null)
                 {
-                    var result = await _socket.SendAsync(new ArraySegment<byte>(data.ToArray()), SocketFlags.None).ConfigureAwait(false);
-                    if(result != data.Length)
+                    int result = await _socket.SendAsync(new ArraySegment<byte>(data.ToArray()), SocketFlags.None).ConfigureAwait(false);
+                    if (result != data.Length)
                     {
                         return SocketError.Fault;
                     }
@@ -188,32 +200,35 @@ namespace Dacs7.Communication
 
         private async Task StartReceive()
         {
-            var connectionInfo = _socket.RemoteEndPoint.ToString();
+            string connectionInfo = _socket.RemoteEndPoint.ToString();
             _logger?.LogDebug("Socket connection receive loop started. ({0})", connectionInfo);
-            var receiveBuffer = ArrayPool<byte>.Shared.Rent(_socket.ReceiveBufferSize);
-            var receiveOffset = 0;
-            var bufferOffset = 0;
-            var span = new Memory<byte>(receiveBuffer);
+            byte[] receiveBuffer = ArrayPool<byte>.Shared.Rent(_socket.ReceiveBufferSize);
+            int receiveOffset = 0;
+            int bufferOffset = 0;
+            Memory<byte> span = new(receiveBuffer);
             try
             {
                 while (_socket != null && _socket.Connected && _tokenSource != null && !_tokenSource.IsCancellationRequested)
                 {
                     try
                     {
-                        var maximumReceiveDataSize = _socket.ReceiveBufferSize - receiveOffset;
-                        var buffer = new ArraySegment<byte>(receiveBuffer, receiveOffset, maximumReceiveDataSize);
-                        var received = await _socket.ReceiveAsync(buffer, SocketFlags.Partial).ConfigureAwait(false);
+                        int maximumReceiveDataSize = _socket.ReceiveBufferSize - receiveOffset;
+                        ArraySegment<byte> buffer = new(receiveBuffer, receiveOffset, maximumReceiveDataSize);
+                        int received = await _socket.ReceiveAsync(buffer, SocketFlags.Partial).ConfigureAwait(false);
 
-                        if (received == 0) return;
+                        if (received == 0)
+                        {
+                            return;
+                        }
 
-                        var toProcess = received + (receiveOffset - bufferOffset);
-                        var processed = 0;
+                        int toProcess = received + (receiveOffset - bufferOffset);
+                        int processed = 0;
                         do
                         {
-                            var off = bufferOffset + processed;
-                            var length = toProcess - processed;
-                            var slice = span.Slice(off, length);
-                            var proc = await ProcessData(slice).ConfigureAwait(false);
+                            int off = bufferOffset + processed;
+                            int length = toProcess - processed;
+                            Memory<byte> slice = span.Slice(off, length);
+                            int proc = await ProcessData(slice).ConfigureAwait(false);
                             if (proc == 0)
                             {
                                 if (length > 0)
@@ -264,7 +279,7 @@ namespace Dacs7.Communication
 
         private void EnsureConnected()
         {
-            var blocking = true;
+            bool blocking = true;
 
             try
             {
@@ -285,6 +300,9 @@ namespace Dacs7.Communication
             _socket.Blocking = blocking;
         }
 
-        public void Dispose() => DisposeSocketAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        public void Dispose()
+        {
+            DisposeSocketAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        }
     }
 }

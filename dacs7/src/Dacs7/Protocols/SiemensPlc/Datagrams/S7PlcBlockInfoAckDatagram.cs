@@ -61,11 +61,14 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
 
-        public static string GetCheckSum(int offset, byte[] b) => $"0x{b[offset + 1]:X2}{b[offset]:X2}";
+        public static string GetCheckSum(int offset, byte[] b)
+        {
+            return $"0x{b[offset + 1]:X2}{b[offset]:X2}";
+        }
 
         public static string GetCheckSum(int checksum)
         {
-            var b = BitConverter.GetBytes(checksum);
+            byte[] b = BitConverter.GetBytes(checksum);
             return $"0x{b[1]:X2}{b[0]:X2}";
         }
 
@@ -87,7 +90,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7PlcBlockInfoAckDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var result = new S7PlcBlockInfoAckDatagram
+            S7PlcBlockInfoAckDatagram result = new()
             {
                 UserData = S7UserDataDatagram.TranslateFromMemory(data)
             };
@@ -96,8 +99,8 @@ namespace Dacs7.Protocols.SiemensPlc
             {
                 if (result.UserData.Data.ReturnCode == 0xff)
                 {
-                    var offset = 0;
-                    var span = result.UserData.Data.Data.Span;
+                    int offset = 0;
+                    Span<byte> span = result.UserData.Data.Data.Span;
                     result.BlockType = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
                     result.LengthOfInfo = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
                     result.Unknown1 = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
@@ -119,7 +122,7 @@ namespace Dacs7.Protocols.SiemensPlc
                     result.Author = Encoding.ASCII.GetString(span.Slice(offset, 8).ToArray()); offset += 8;
                     result.Family = Encoding.ASCII.GetString(span.Slice(offset, 8).ToArray()); offset += 8;
                     result.Name = Encoding.ASCII.GetString(span.Slice(offset, 8).ToArray()); offset += 8;
-                    var version = span[offset++];
+                    byte version = span[offset++];
                     result.VersionHeaderMajor = (version & 0xF0) >> 4;
                     result.VersionHeaderMinor = (version & 0x0F);
                     result.Unknown2 = span[offset++];
@@ -134,7 +137,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static DateTime GetDt(Span<byte> b)
         {
-            var dt = new DateTime(1984, 1, 1, 0, 0, 0, 0);
+            DateTime dt = new(1984, 1, 1, 0, 0, 0, 0);
             dt = dt.AddMilliseconds(BinaryPrimitives.ReadUInt32BigEndian(b));
             dt = dt.AddDays(BinaryPrimitives.ReadUInt16BigEndian(b.Slice(4)));
             return dt;

@@ -2,7 +2,6 @@
 // See License in the project root for license information.
 
 using Dacs7.Domain;
-using Dacs7.Protocols.Rfc1006;
 using Dacs7.Protocols.SiemensPlc.Datagrams;
 using System;
 
@@ -65,6 +64,8 @@ namespace Dacs7.Protocols.SiemensPlc
                 {
                     case PduType.Job:  // JOB
                         return TryDetectJobType(memory, out datagramType);
+                    case PduType.Ack: // ACK
+                        return TryDetectAckType(memory, out datagramType);
                     case PduType.AckData: // ACKData
                         return TryDetectAckDataType(memory, out datagramType);
                     case PduType.UserData: // ACKData
@@ -98,6 +99,17 @@ namespace Dacs7.Protocols.SiemensPlc
             return false;
         }
 
+        private static bool TryDetectAckType(Memory<byte> memory, out Type datagramType)
+        {
+            if (memory.Length == _minimumAckDetectionSize)
+            {
+                datagramType = typeof(S7AckDataDatagram);
+                return true;
+            }
+            datagramType = null;
+            return false;
+        }
+
         private static bool TryDetectAckDataType(Memory<byte> memory, out Type datagramType)
         {
             if (memory.Length > _minimumAckDetectionSize)
@@ -119,6 +131,8 @@ namespace Dacs7.Protocols.SiemensPlc
             datagramType = null;
             return false;
         }
+
+
 
         private static bool TryDetectUserDataDataType(Memory<byte> memory, out Type datagramType)
         {
@@ -166,7 +180,7 @@ namespace Dacs7.Protocols.SiemensPlc
                                 case UserDataSubFunctionCpu.AlarmAck2:  // Alarm Received
                                     datagramType = typeof(S7AlarmIndicationDatagram);
                                     return true;
-                                    
+
                             }
                         }
                         break;

@@ -27,25 +27,37 @@ namespace Dacs7.Helper
                 ThrowArgumnetNullException(nameof(semaphore));
                 return null!;
             }
-            var guard = new SemaphoreGuard(semaphore, false);
+            SemaphoreGuard guard = new(semaphore, false);
 
             // try to grab it sync because it's faster
-            if(!semaphore.Wait(0))
+            if (!semaphore.Wait(0))
+            {
                 await semaphore.WaitAsync().ConfigureAwait(false);
+            }
+
             return guard;
         }
 
         public void Dispose()
         {
             if (IsDisposed)
+            {
                 ThrowObjectDisposedException(this);
+            }
 
             _semaphore.Release();
             _semaphore = null;
         }
 
-        private static void ThrowObjectDisposedException(SemaphoreGuard guard) => throw new ObjectDisposedException(guard.ToString());
-        private static void ThrowArgumnetNullException(string parameterName) => throw new ArgumentNullException(parameterName);
+        private static void ThrowObjectDisposedException(SemaphoreGuard guard)
+        {
+            throw new ObjectDisposedException(guard.ToString());
+        }
+
+        private static void ThrowArgumnetNullException(string parameterName)
+        {
+            throw new ArgumentNullException(parameterName);
+        }
     }
 
 

@@ -29,16 +29,16 @@ namespace Dacs7.Papper.Tests
 
             if (_client.IsConnected && (_mapper == null || _mapper.PduSize > _client.PduSize))
             {
-                var pduSize = _client.PduSize;
-                    _mapper = new PlcDataMapper(pduSize, Papper_OnRead,
-                                                         Papper_OnWrite,
-                                                         OptimizerType.Items);
+                ushort pduSize = _client.PduSize;
+                _mapper = new PlcDataMapper(pduSize, Papper_OnRead,
+                                                     Papper_OnWrite,
+                                                     OptimizerType.Items);
 
                 _mapper.AddMapping(type);
             }
 
 
-            var data = await _mapper.ReadAsync(PlcReadReference.FromAddress($"{mapping}.This"));
+            PlcReadResult[] data = await _mapper.ReadAsync(PlcReadReference.FromAddress($"{mapping}.This"));
             await _mapper.WriteAsync(PlcWriteReference.FromAddress($"{mapping}.This", data));
 
 
@@ -61,15 +61,18 @@ namespace Dacs7.Papper.Tests
 
 
 
-        private static void SetPropertyInExpandoObject(dynamic parent, string address, object value) => SetPropertyInExpandoObject(parent, address.Replace("[", ".[").Split('.'), value);
+        private static void SetPropertyInExpandoObject(dynamic parent, string address, object value)
+        {
+            SetPropertyInExpandoObject(parent, address.Replace("[", ".[").Split('.'), value);
+        }
 
         private static void SetPropertyInExpandoObject(dynamic parent, IEnumerable<string> parts, object value)
         {
-            var key = parts.First();
+            string key = parts.First();
             parts = parts.Skip(1);
             if (parent is IList<object> list)
             {
-                var index = int.Parse(key.TrimStart('[').TrimEnd(']'), CultureInfo.InvariantCulture);
+                int index = int.Parse(key.TrimStart('[').TrimEnd(']'), CultureInfo.InvariantCulture);
                 if (parts.Any())
                 {
                     SetPropertyInExpandoObject(list.ElementAt(index), parts, value);
@@ -96,15 +99,18 @@ namespace Dacs7.Papper.Tests
         }
 
 
-        private static object GetPropertyInExpandoObject(dynamic parent, string address) => GetPropertyInExpandoObject(parent, address.Replace("[", ".[").Split('.'));
+        private static object GetPropertyInExpandoObject(dynamic parent, string address)
+        {
+            return GetPropertyInExpandoObject(parent, address.Replace("[", ".[").Split('.'));
+        }
 
         private static object GetPropertyInExpandoObject(dynamic parent, IEnumerable<string> parts)
         {
-            var key = parts.First();
+            string key = parts.First();
             parts = parts.Skip(1);
             if (parent is IList<object> list)
             {
-                var index = int.Parse(key.TrimStart('[').TrimEnd(']'), CultureInfo.InvariantCulture);
+                int index = int.Parse(key.TrimStart('[').TrimEnd(']'), CultureInfo.InvariantCulture);
                 if (parts.Any())
                 {
                     return GetPropertyInExpandoObject(list.ElementAt(index), parts); // TODO
@@ -149,15 +155,15 @@ namespace Dacs7.Papper.Tests
                 }
 
 
-                var readAddresses = reads.Select(w => ReadItem.Create<byte[]>(w.Selector, (ushort)w.Offset, (ushort)w.Length)).ToList();
-                var results = await _client.ReadAsync(readAddresses).ConfigureAwait(false);
+                List<ReadItem> readAddresses = reads.Select(w => ReadItem.Create<byte[]>(w.Selector, (ushort)w.Offset, (ushort)w.Length)).ToList();
+                IEnumerable<DataValue> results = await _client.ReadAsync(readAddresses).ConfigureAwait(false);
 
 
                 reads.AsParallel().Select((item, index) =>
                 {
                     if (results != null)
                     {
-                        var result = results.ElementAt(index);
+                        DataValue result = results.ElementAt(index);
                         item.ApplyData(result.Data);
                         item.ExecutionResult = result.ReturnCode == ItemResponseRetValue.Success ? ExecutionResult.Ok : ExecutionResult.Error;
                     }
@@ -184,8 +190,8 @@ namespace Dacs7.Papper.Tests
             try
             {
 
-                var result = writes.ToList();
-                var results = await _client.WriteAsync(writes.SelectMany(BuildWritePackages)).ConfigureAwait(false);
+                List<DataPack> result = writes.ToList();
+                IEnumerable<ItemResponseRetValue> results = await _client.WriteAsync(writes.SelectMany(BuildWritePackages)).ConfigureAwait(false);
 
 
 
@@ -215,7 +221,7 @@ namespace Dacs7.Papper.Tests
 
         private static IEnumerable<WriteItem> BuildWritePackages(DataPack w)
         {
-            var result = new List<WriteItem>();
+            List<WriteItem> result = new();
             if (!w.HasBitMask)
             {
                 result.Add(WriteItem.Create(w.Selector, (ushort)w.Offset, w.Data));
@@ -242,15 +248,15 @@ namespace Dacs7.Papper.Tests
 
         private static void SetupBitMask(DataPack w, List<WriteItem> result, bool end = false)
         {
-            var bytePos = end ? w.Data.Length - 1 : 0;
-            var bm = end ? w.BitMaskEnd : w.BitMaskBegin;
-            var currentByte = w.Data.Span[bytePos];
-            var currentOffset = (w.Offset + bytePos) * 8;
-            for (var j = 0; j < 8; j++)
+            int bytePos = end ? w.Data.Length - 1 : 0;
+            byte bm = end ? w.BitMaskEnd : w.BitMaskBegin;
+            byte currentByte = w.Data.Span[bytePos];
+            int currentOffset = (w.Offset + bytePos) * 8;
+            for (int j = 0; j < 8; j++)
             {
                 if (bm.GetBit(j))
                 {
-                    var bitOffset = (currentOffset + j);
+                    int bitOffset = (currentOffset + j);
                     result.Add(WriteItem.Create(w.Selector, bitOffset, currentByte.GetBit(j)));
                     bm = bm.SetBit(j, false);
                     if (bm == 0)

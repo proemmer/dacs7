@@ -12,7 +12,10 @@ namespace Dacs7.Alarms
         private readonly Func<Task> _closeAction;
         private bool _disposed;
 
-        public AlarmUpdateResult(bool channelCompleted, Func<Task> closeAction) : this(channelCompleted, null, closeAction) => ChannelClosed = channelCompleted;
+        public AlarmUpdateResult(bool channelCompleted, Func<Task> closeAction) : this(channelCompleted, null, closeAction)
+        {
+            ChannelClosed = channelCompleted;
+        }
 
         public AlarmUpdateResult(bool channelCompleted, IEnumerable<IPlcAlarm> alarms, Func<Task> closeAction)
         {
@@ -26,7 +29,10 @@ namespace Dacs7.Alarms
         public bool ChannelClosed { get; }
 
         [Obsolete("This method is obsolet if you use the alarm subscription.")]
-        public Task CloseUpdateChannel() => _closeAction?.Invoke();
+        public Task CloseUpdateChannel()
+        {
+            return _closeAction?.Invoke();
+        }
 
         public void Dispose()
         {
@@ -37,7 +43,9 @@ namespace Dacs7.Alarms
         protected virtual void Dispose(bool disposing)
         {
             if (_disposed)
+            {
                 return;
+            }
 
             if (disposing)
             {

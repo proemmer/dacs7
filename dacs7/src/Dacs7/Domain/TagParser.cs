@@ -22,12 +22,19 @@ namespace Dacs7.Domain
 
             public TagParserState ErrorState { get; internal set; }
 
-            public override bool Equals(object obj) => obj is TagParserResult result && Equals(result);
-            public bool Equals(TagParserResult other) => Area == other.Area && DbNumber == other.DbNumber && Offset == other.Offset && Length == other.Length && EqualityComparer<Type>.Default.Equals(VarType, other.VarType) && EqualityComparer<Type>.Default.Equals(ResultType, other.ResultType) && Encoding == other.Encoding && ErrorState == other.ErrorState;
+            public override bool Equals(object obj)
+            {
+                return obj is TagParserResult result && Equals(result);
+            }
+
+            public bool Equals(TagParserResult other)
+            {
+                return Area == other.Area && DbNumber == other.DbNumber && Offset == other.Offset && Length == other.Length && EqualityComparer<Type>.Default.Equals(VarType, other.VarType) && EqualityComparer<Type>.Default.Equals(ResultType, other.ResultType) && Encoding == other.Encoding && ErrorState == other.ErrorState;
+            }
 
             public override int GetHashCode()
             {
-                var hashCode = 1919716321;
+                int hashCode = 1919716321;
                 hashCode = hashCode * -1521134295 + Area.GetHashCode();
                 hashCode = hashCode * -1521134295 + DbNumber.GetHashCode();
                 hashCode = hashCode * -1521134295 + Offset.GetHashCode();
@@ -39,11 +46,21 @@ namespace Dacs7.Domain
                 return hashCode;
             }
 
-            public static bool operator ==(TagParserResult left, TagParserResult right) => left.Equals(right);
-            public static bool operator !=(TagParserResult left, TagParserResult right) => !(left == right);
+            public static bool operator ==(TagParserResult left, TagParserResult right)
+            {
+                return left.Equals(right);
+            }
+
+            public static bool operator !=(TagParserResult left, TagParserResult right)
+            {
+                return !(left == right);
+            }
         }
 
-        public static TagParserResult ParseTag(string tag) => ParseTag(tag, true);
+        public static TagParserResult ParseTag(string tag)
+        {
+            return ParseTag(tag, true);
+        }
 
 
         // DB1.80000,x,1
@@ -56,7 +73,7 @@ namespace Dacs7.Domain
         public static bool TryDetectArea(ReadOnlySpan<char> area, out PlcArea selector, out ushort db)
         {
             db = 0;
-            var singleElement = area.Length == 1;
+            bool singleElement = area.Length == 1;
             switch (area[0])
             {
                 // Inputs
@@ -110,7 +127,10 @@ namespace Dacs7.Domain
                             db = SpanToUShort(area.Slice(2));
 #endif
 
-                            if (db <= 0) break;
+                            if (db <= 0)
+                            {
+                                break;
+                            }
 
                             return true;
                         }
@@ -128,19 +148,23 @@ namespace Dacs7.Domain
 
         private static TagParserResult ParseTag(string tag, bool throwException)
         {
-            var result = new TagParserResult();
-            var span = tag.AsSpan().Trim();
-            using (var buffer = MemoryPool<char>.Shared.Rent(span.Length))
+            TagParserResult result = new();
+            ReadOnlySpan<char> span = tag.AsSpan().Trim();
+            using (IMemoryOwner<char> buffer = MemoryPool<char>.Shared.Rent(span.Length))
             {
-                var input = buffer.Memory.Slice(0, span.Length).Span;
+                Span<char> input = buffer.Memory.Slice(0, span.Length).Span;
                 span.ToLowerInvariant(input);
-                var indexStart = 0;
-                var state = TagParserState.Area;
+                int indexStart = 0;
+                TagParserState state = TagParserState.Area;
                 ReadOnlySpan<char> type = null;
 
-                for (var i = 0; i < input.Length; i++)
+                for (int i = 0; i < input.Length; i++)
                 {
-                    if (input[i] != '.' && input[i] != ',') continue;
+                    if (input[i] != '.' && input[i] != ',')
+                    {
+                        continue;
+                    }
+
                     Parse(tag, ref result, ref indexStart, ref state, ref type, input.Slice(indexStart, i - indexStart), i, throwException);
                 }
                 Parse(tag, ref result, ref indexStart, ref state, ref type, input.Slice(indexStart), input.Length - 1, throwException);
@@ -176,7 +200,7 @@ namespace Dacs7.Domain
             {
                 case TagParserState.Area:
                     {
-                        if (TryDetectArea(input, out var selector, out var db))
+                        if (TryDetectArea(input, out PlcArea selector, out ushort db))
                         {
                             result.Area = selector;
                             result.DbNumber = db;
@@ -190,9 +214,9 @@ namespace Dacs7.Domain
                     {
                         // TODO:  !!!!!!!
 #if SPANSUPPORT
-                        if (int.TryParse(input, out var offset))
+                        if (int.TryParse(input, out int offset))
 #else
-                        if (TryConvertSpanToInt32(input, out var offset))
+                        if (TryConvertSpanToInt32(input, out int offset))
 #endif
 
                         {
@@ -212,12 +236,15 @@ namespace Dacs7.Domain
                     }
                 case TagParserState.NumberOfItems:
                     {
-                        if (input.IsEmpty) return true;
+                        if (input.IsEmpty)
+                        {
+                            return true;
+                        }
                         // TODO:  !!!!!!!
 #if SPANSUPPORT
-                        if (ushort.TryParse(input, out var length))
+                        if (ushort.TryParse(input, out ushort length))
 #else
-                        if (TryConvertSpanToUShort(input, out var length))
+                        if (TryConvertSpanToUShort(input, out ushort length))
 #endif
                         {
                             result.Length = length;
@@ -229,11 +256,15 @@ namespace Dacs7.Domain
                     break;
                 case TagParserState.TypeValidation:
                     {
-                        if (result.Length <= 0) result.Length = 1;
-                        var offset = result.Offset;
-                        var length = result.Length;
+                        if (result.Length <= 0)
+                        {
+                            result.Length = 1;
+                        }
 
-                        if (!type.IsEmpty && TryDetectTypes(type, ref length, ref offset, out var vtype, out var rType, out var unicode))
+                        int offset = result.Offset;
+                        ushort length = result.Length;
+
+                        if (!type.IsEmpty && TryDetectTypes(type, ref length, ref offset, out Type vtype, out Type rType, out PlcEncoding unicode))
                         {
                             result.Length = length;
                             result.Offset = offset;
@@ -343,13 +374,19 @@ namespace Dacs7.Domain
         /// <param name="data"></param>
         /// <param name="offset"></param>
         /// <returns></returns>
-        private static ushort SpanToUShort(ReadOnlySpan<char> data) => TryParseSpanToNumber(data, out var result) ? Convert.ToUInt16(result) : (ushort)0;
+        private static ushort SpanToUShort(ReadOnlySpan<char> data)
+        {
+            return TryParseSpanToNumber(data, out int result) ? Convert.ToUInt16(result) : (ushort)0;
+        }
 
-        private static int SpanToInt(ReadOnlySpan<char> data) => TryParseSpanToNumber(data, out var result) ? result : 0;
+        private static int SpanToInt(ReadOnlySpan<char> data)
+        {
+            return TryParseSpanToNumber(data, out int result) ? result : 0;
+        }
 
         private static bool TryConvertSpanToUShort(ReadOnlySpan<char> data, out ushort result)
         {
-            if (TryParseSpanToNumber(data, out var iresult))
+            if (TryParseSpanToNumber(data, out int iresult))
             {
                 result = Convert.ToUInt16(iresult);
                 return true;
@@ -358,15 +395,18 @@ namespace Dacs7.Domain
             return false;
         }
 
-        private static bool TryConvertSpanToInt32(ReadOnlySpan<char> data, out int result) => TryParseSpanToNumber(data, out result);
+        private static bool TryConvertSpanToInt32(ReadOnlySpan<char> data, out int result)
+        {
+            return TryParseSpanToNumber(data, out result);
+        }
 
         private static bool TryParseSpanToNumber(ReadOnlySpan<char> data, out int result)
         {
-            var multip = 1;
+            int multip = 1;
             result = 0;
-            for (var i = data.Length - 1; i >= 0; i--)
+            for (int i = data.Length - 1; i >= 0; i--)
             {
-                var ch = data[i];
+                char ch = data[i];
                 if (ch >= '0' && ch <= '9')
                 {
                     result += (ch - '0') * multip;

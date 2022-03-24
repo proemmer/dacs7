@@ -26,7 +26,7 @@ namespace Dacs7.Protocols.SiemensPlc
         public static S7CommSetupDatagram Build(SiemensPlcProtocolContext context, int id)
         {
             //TODO we need a parameter for the UnitId
-            var result = new S7CommSetupDatagram
+            S7CommSetupDatagram result = new()
             {
                 Parameter = new S7CommSetupParameterDatagram
                 {
@@ -43,22 +43,24 @@ namespace Dacs7.Protocols.SiemensPlc
         {
             //Test ack
             if (o1.Header.RedundancyIdentification == o2.Header.Header.RedundancyIdentification)
+            {
                 return true;
+            }
 
             return false;
         }
 
         public static IMemoryOwner<byte> TranslateToMemory(S7CommSetupDatagram datagram, out int memoryLength)
         {
-            var result = S7HeaderDatagram.TranslateToMemory(datagram.Header, out memoryLength);
-            var take = memoryLength - datagram.Header.GetHeaderSize();
+            IMemoryOwner<byte> result = S7HeaderDatagram.TranslateToMemory(datagram.Header, out memoryLength);
+            int take = memoryLength - datagram.Header.GetHeaderSize();
             S7CommSetupParameterDatagram.TranslateToMemory(datagram.Parameter, result.Memory.Slice(datagram.Header.GetHeaderSize(), take));
             return result;
         }
 
         public static S7CommSetupDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var result = new S7CommSetupDatagram
+            S7CommSetupDatagram result = new()
             {
                 Header = S7HeaderDatagram.TranslateFromMemory(data)
             };

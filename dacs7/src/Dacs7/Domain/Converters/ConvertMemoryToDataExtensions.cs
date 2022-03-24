@@ -33,9 +33,9 @@ namespace Dacs7.Domain
             }
             else if (item.ResultType == typeof(bool[]))
             {
-                var result = new bool[item.NumberOfItems];
-                var index = 0;
-                foreach (var aa in data.Span.Slice(0, item.NumberOfItems))
+                bool[] result = new bool[item.NumberOfItems];
+                int index = 0;
+                foreach (byte aa in data.Span.Slice(0, item.NumberOfItems))
                 {
                     result[index++] = aa == 0x01;
                 }
@@ -47,9 +47,9 @@ namespace Dacs7.Domain
             }
             else if (item.ResultType == typeof(char[]) || item.ResultType == typeof(Memory<char>))
             {
-                var result = new char[item.NumberOfItems];
-                var index = 0;
-                foreach (var aa in data.Span.Slice(0, item.NumberOfItems))
+                char[] result = new char[item.NumberOfItems];
+                int index = 0;
+                foreach (byte aa in data.Span.Slice(0, item.NumberOfItems))
                 {
                     result[index++] = Convert.ToChar(aa);
                 }
@@ -59,10 +59,10 @@ namespace Dacs7.Domain
             {
                 if (item.Encoding == PlcEncoding.Unicode)
                 {
-                    var max = BinaryPrimitives.ReadUInt16BigEndian(data.Span);
-                    var length = BinaryPrimitives.ReadUInt16BigEndian(data.Span.Slice(2));
-                    var dataLength = (data.Span.Length - ReadItem.UnicodeStringHeaderSize);
-                    var current = (short)(dataLength / 2);
+                    ushort max = BinaryPrimitives.ReadUInt16BigEndian(data.Span);
+                    ushort length = BinaryPrimitives.ReadUInt16BigEndian(data.Span.Slice(2));
+                    int dataLength = (data.Span.Length - ReadItem.UnicodeStringHeaderSize);
+                    short current = (short)(dataLength / 2);
 
                     length = (ushort)Math.Min(Math.Min(max, length), current);
 #if SPANSUPPORT
@@ -75,12 +75,12 @@ namespace Dacs7.Domain
                 else
                 {
 
-                    var max = data.Span[0];
-                    var length = data.Span[1];
-                    var current = data.Span.Length - ReadItem.StringHeaderSize;
+                    byte max = data.Span[0];
+                    byte length = data.Span[1];
+                    int current = data.Span.Length - ReadItem.StringHeaderSize;
 
                     length = (byte)Math.Min(Math.Min(max, (int)length), current);
-                    var usedEncoding = Encoding.UTF7;
+                    Encoding usedEncoding = Encoding.UTF7;
                     switch (item.Encoding)
                     {
                         case PlcEncoding.Windows1252:
@@ -191,11 +191,11 @@ namespace Dacs7.Domain
         private static float[] ConvertMemoryToSingle(ReadItem item, Memory<byte> data)
         {
             // TODO: Find a Span method to do this
-            var result = new float[item.NumberOfItems];
-            var buffer = data.Span.ToArray();
-            for (var i = 0; i < item.NumberOfItems; i++)
+            float[] result = new float[item.NumberOfItems];
+            byte[] buffer = data.Span.ToArray();
+            for (int i = 0; i < item.NumberOfItems; i++)
             {
-                var offset = i * 4;
+                int offset = i * 4;
                 // we need the offset twice because SwapBuffer returns the whole buffer it only swaps the bytes beginning of the given context
                 result[i] = BitConverter.ToSingle(Swap4BytesInBuffer(buffer, i * 4), offset);
             }
@@ -204,8 +204,8 @@ namespace Dacs7.Domain
 
         private static ulong[] ConvertMemoryToUInt64(ReadItem item, Memory<byte> data)
         {
-            var result = new ulong[item.NumberOfItems];
-            for (var i = 0; i < item.NumberOfItems; i++)
+            ulong[] result = new ulong[item.NumberOfItems];
+            for (int i = 0; i < item.NumberOfItems; i++)
             {
                 result[i] = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(i * 8).Span);
             }
@@ -214,8 +214,8 @@ namespace Dacs7.Domain
 
         private static long[] ConvertMemoryToInt64(ReadItem item, Memory<byte> data)
         {
-            var result = new long[item.NumberOfItems];
-            for (var i = 0; i < item.NumberOfItems; i++)
+            long[] result = new long[item.NumberOfItems];
+            for (int i = 0; i < item.NumberOfItems; i++)
             {
                 result[i] = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(i * 8).Span);
             }
@@ -224,8 +224,8 @@ namespace Dacs7.Domain
 
         private static uint[] ConvertMemoryToUInt32(ReadItem item, Memory<byte> data)
         {
-            var result = new uint[item.NumberOfItems];
-            for (var i = 0; i < item.NumberOfItems; i++)
+            uint[] result = new uint[item.NumberOfItems];
+            for (int i = 0; i < item.NumberOfItems; i++)
             {
                 result[i] = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(i * 4).Span);
             }
@@ -234,8 +234,8 @@ namespace Dacs7.Domain
 
         private static int[] ConvertMemoryToInt32(ReadItem item, Memory<byte> data)
         {
-            var result = new int[item.NumberOfItems];
-            for (var i = 0; i < item.NumberOfItems; i++)
+            int[] result = new int[item.NumberOfItems];
+            for (int i = 0; i < item.NumberOfItems; i++)
             {
                 result[i] = BinaryPrimitives.ReadInt32BigEndian(data.Slice(i * 4).Span);
             }
@@ -244,8 +244,8 @@ namespace Dacs7.Domain
 
         private static ushort[] ConvertMemoryToUInt16(ReadItem item, Memory<byte> data)
         {
-            var result = new ushort[item.NumberOfItems];
-            for (var i = 0; i < item.NumberOfItems; i++)
+            ushort[] result = new ushort[item.NumberOfItems];
+            for (int i = 0; i < item.NumberOfItems; i++)
             {
                 result[i] = BinaryPrimitives.ReadUInt16BigEndian(data.Slice(i * 2).Span);
             }
@@ -254,8 +254,8 @@ namespace Dacs7.Domain
 
         private static short[] ConvertMemoryToInt16(ReadItem item, Memory<byte> data)
         {
-            var result = new short[item.NumberOfItems];
-            for (var i = 0; i < item.NumberOfItems; i++)
+            short[] result = new short[item.NumberOfItems];
+            for (int i = 0; i < item.NumberOfItems; i++)
             {
                 result[i] = BinaryPrimitives.ReadInt16BigEndian(data.Slice(i * 2).Span);
             }

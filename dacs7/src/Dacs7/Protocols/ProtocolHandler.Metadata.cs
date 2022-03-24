@@ -18,19 +18,19 @@ namespace Dacs7.Protocols
 {
     internal sealed partial class ProtocolHandler
     {
-        private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>> _blockInfoHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>>();
-        private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlocksCountAckDatagram>> _blocksCountHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlocksCountAckDatagram>>();
-        private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlocksOfTypeAckDatagram>> _blocksOfTypeHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlocksOfTypeAckDatagram>>();
+        private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>> _blockInfoHandler = new();
+        private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlocksCountAckDatagram>> _blocksCountHandler = new();
+        private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PlcBlocksOfTypeAckDatagram>> _blocksOfTypeHandler = new();
 
         public Task CancelMetaDataHandlingAsync()
         {
             try
             {
-                foreach (var item in _blockInfoHandler.ToList())
+                foreach (KeyValuePair<ushort, CallbackHandler<S7PlcBlockInfoAckDatagram>> item in _blockInfoHandler.ToList())
                 {
                     item.Value?.Event?.Set(null);
                 }
-                foreach (var item in _blocksCountHandler.ToList())
+                foreach (KeyValuePair<ushort, CallbackHandler<S7PlcBlocksCountAckDatagram>> item in _blocksCountHandler.ToList())
                 {
                     item.Value?.Event?.Set(null);
                 }
@@ -56,10 +56,10 @@ namespace Dacs7.Protocols
                 ThrowHelper.ThrowNotConnectedException();
             }
 
-            var id = GetNextReferenceId();
-            using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlockInfoRequest(_s7Context, id, type, blocknumber), out var memoryLength))
+            ushort id = GetNextReferenceId();
+            using (IMemoryOwner<byte> dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlockInfoRequest(_s7Context, id, type, blocknumber), out int memoryLength))
             {
-                using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
+                using (IMemoryOwner<byte> sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out int sendLength))
                 {
                     try
                     {
@@ -130,10 +130,10 @@ namespace Dacs7.Protocols
                 ThrowHelper.ThrowNotConnectedException();
             }
 
-            var id = GetNextReferenceId();
-            using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlocksCountRequest(_s7Context, id), out var memoryLength))
+            ushort id = GetNextReferenceId();
+            using (IMemoryOwner<byte> dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlocksCountRequest(_s7Context, id), out int memoryLength))
             {
-                using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
+                using (IMemoryOwner<byte> sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out int sendLength))
                 {
                     try
                     {
@@ -179,21 +179,21 @@ namespace Dacs7.Protocols
                 ThrowHelper.ThrowNotConnectedException();
             }
 
-            var id = GetNextReferenceId();
-            var sequenceNumber = (byte)0x00;
-            var blocks = new List<IPlcBlock>();
+            ushort id = GetNextReferenceId();
+            byte sequenceNumber = 0x00;
+            List<IPlcBlock> blocks = new();
             IMemoryOwner<byte> memoryOwner = null;
-            var currentPosition = 0;
-            var totalLength = 0;
+            int currentPosition = 0;
+            int totalLength = 0;
             try
             {
 
                 S7PlcBlocksOfTypeAckDatagram blocksOfTypeResults = null;
                 do
                 {
-                    using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlocksOfTypeRequest(_s7Context, id, type, sequenceNumber), out var memoryLength))
+                    using (IMemoryOwner<byte> dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildBlocksOfTypeRequest(_s7Context, id, type, sequenceNumber), out int memoryLength))
                     {
-                        using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
+                        using (IMemoryOwner<byte> sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out int sendLength))
                         {
 
                             CallbackHandler<S7PlcBlocksOfTypeAckDatagram> cbh;
@@ -228,7 +228,7 @@ namespace Dacs7.Protocols
                                 }
                                 else
                                 {
-                                    var newMem = MemoryPool<byte>.Shared.Rent(totalLength);
+                                    IMemoryOwner<byte> newMem = MemoryPool<byte>.Shared.Rent(totalLength);
                                     memoryOwner.Memory.CopyTo(newMem.Memory);
                                     memoryOwner?.Dispose();
                                     memoryOwner = newMem;
@@ -286,9 +286,9 @@ namespace Dacs7.Protocols
 
         private void ReceivedS7PlcBlockInfoAckDatagram(Memory<byte> buffer)
         {
-            var data = S7PlcBlockInfoAckDatagram.TranslateFromMemory(buffer);
+            S7PlcBlockInfoAckDatagram data = S7PlcBlockInfoAckDatagram.TranslateFromMemory(buffer);
 
-            if (_blockInfoHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out var cbh))
+            if (_blockInfoHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out CallbackHandler<S7PlcBlockInfoAckDatagram> cbh))
             {
                 if (data.UserData.Parameter.ParamErrorCode != (int)ErrorParameter.AtLeatOneOfTheGivenBlocksNotFound)
                 {
@@ -313,9 +313,9 @@ namespace Dacs7.Protocols
 
         private void ReceivedS7PlcBlocksCountAckDatagram(Memory<byte> buffer)
         {
-            var data = S7PlcBlocksCountAckDatagram.TranslateFromMemory(buffer);
+            S7PlcBlocksCountAckDatagram data = S7PlcBlocksCountAckDatagram.TranslateFromMemory(buffer);
 
-            if (_blocksCountHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out var cbh))
+            if (_blocksCountHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out CallbackHandler<S7PlcBlocksCountAckDatagram> cbh))
             {
                 if (data.UserData.Parameter.ParamErrorCode != 0)
                 {
@@ -337,9 +337,9 @@ namespace Dacs7.Protocols
 
         private void ReceivedS7PlcBlocksOfTypeAckDatagram(Memory<byte> buffer)
         {
-            var data = S7PlcBlocksOfTypeAckDatagram.TranslateFromMemory(buffer);
+            S7PlcBlocksOfTypeAckDatagram data = S7PlcBlocksOfTypeAckDatagram.TranslateFromMemory(buffer);
 
-            if (_blocksOfTypeHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out var cbh))
+            if (_blocksOfTypeHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out CallbackHandler<S7PlcBlocksOfTypeAckDatagram> cbh))
             {
                 if (data.UserData.Parameter.ParamErrorCode != 0)
                 {

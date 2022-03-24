@@ -16,6 +16,9 @@ namespace Dacs7.Communication.Socket
         {
         }
 
-        public sealed override string ToString() => $"Socket: Hostname={Hostname}; ServiceName={ServiceName}; ReceiveBufferSize={ReceiveBufferSize}; KeepAlive={KeepAlive}";
+        public sealed override string ToString()
+        {
+            return $"Socket: Hostname={Hostname}; ServiceName={ServiceName}; ReceiveBufferSize={ReceiveBufferSize}; KeepAlive={KeepAlive}";
+        }
     }
 }

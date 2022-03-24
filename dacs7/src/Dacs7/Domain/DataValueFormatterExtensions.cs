@@ -13,11 +13,14 @@ namespace Dacs7
     public static class DataValueFormatterExtensions
     {
 
-        public static string GetValueAsString(this DataValue dataValue, string separator = " ") => GetValueAsString(dataValue, null, separator);
+        public static string GetValueAsString(this DataValue dataValue, string separator = " ")
+        {
+            return GetValueAsString(dataValue, null, separator);
+        }
 
         public static string GetValueAsString(this DataValue dataValue, DataValueFormatter formatter, string separator = " ")
         {
-            var result = FormattedResult(dataValue, separator);
+            string result = FormattedResult(dataValue, separator);
             return formatter != null ? formatter(dataValue.Value, result) : result;
         }
 
@@ -25,10 +28,14 @@ namespace Dacs7
         {
             if (dataValue.Type.IsArray)
             {
-                if (seperator == null) seperator = string.Empty;
-                var result = new StringBuilder();
-                var enumerable = dataValue.Value as IEnumerable;
-                foreach (var item in enumerable)
+                if (seperator == null)
+                {
+                    seperator = string.Empty;
+                }
+
+                StringBuilder result = new();
+                IEnumerable enumerable = dataValue.Value as IEnumerable;
+                foreach (object item in enumerable)
                 {
                     result.Append(item.ToString());
                     result.Append(seperator);

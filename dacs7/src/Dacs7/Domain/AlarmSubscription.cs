@@ -9,7 +9,7 @@ namespace Dacs7.Alarms
     public class AlarmSubscription : IDisposable
     {
         private bool _disposedValue;
-        private readonly ConcurrentQueue<S7AlarmIndicationDatagram> _alarms = new ConcurrentQueue<S7AlarmIndicationDatagram>();
+        private readonly ConcurrentQueue<S7AlarmIndicationDatagram> _alarms = new();
         internal ProtocolHandler ProtocolHandler { get; private set; }
         internal CallbackHandler<S7AlarmIndicationDatagram> CallbackHandler { get; private set; }
 
@@ -19,7 +19,10 @@ namespace Dacs7.Alarms
             CallbackHandler = cbh;
         }
 
-        internal bool TryGetDatagram(out S7AlarmIndicationDatagram datagram) => _alarms.TryDequeue(out datagram);
+        internal bool TryGetDatagram(out S7AlarmIndicationDatagram datagram)
+        {
+            return _alarms.TryDequeue(out datagram);
+        }
 
         internal void AddDatagram(S7AlarmIndicationDatagram datagram)
         {

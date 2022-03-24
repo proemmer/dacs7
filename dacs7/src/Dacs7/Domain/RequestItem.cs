@@ -88,12 +88,12 @@ namespace Dacs7
                 return;
             }
 
-            switch(t)
+            switch (t)
             {
                 case ItemDataTransportSize.Bit:
                     {
-                    TransportSize = DataTransportSize.Bit;
-                    ElementSize = 1;
+                        TransportSize = DataTransportSize.Bit;
+                        ElementSize = 1;
                     }
                     break;
                 case ItemDataTransportSize.Byte:

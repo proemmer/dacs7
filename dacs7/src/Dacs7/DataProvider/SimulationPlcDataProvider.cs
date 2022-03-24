@@ -12,23 +12,26 @@ namespace Dacs7.DataProvider
 {
     public class SimulationPlcDataProvider : IPlcDataProvider
     {
-        private static readonly Lazy<SimulationPlcDataProvider> _default = new Lazy<SimulationPlcDataProvider>(() => new SimulationPlcDataProvider());
-        private readonly Dictionary<PlcArea, Dictionary<ushort, PlcDataEntry>> _plcData = new Dictionary<PlcArea, Dictionary<ushort, PlcDataEntry>>();
+        private static readonly Lazy<SimulationPlcDataProvider> _default = new(() => new SimulationPlcDataProvider());
+        private readonly Dictionary<PlcArea, Dictionary<ushort, PlcDataEntry>> _plcData = new();
 
 
         public static SimulationPlcDataProvider Instance => _default.Value;
 
-        public bool Register(PlcArea area, ushort dataLength, ushort dbNumber = 0) => Register(area, dataLength, default, dbNumber);
+        public bool Register(PlcArea area, ushort dataLength, ushort dbNumber = 0)
+        {
+            return Register(area, dataLength, default, dbNumber);
+        }
 
         public bool Register(PlcArea area, ushort dataLength, Memory<byte> data, ushort dbNumber = 0)
         {
-            if (!_plcData.TryGetValue(area, out var areaData))
+            if (!_plcData.TryGetValue(area, out Dictionary<ushort, PlcDataEntry> areaData))
             {
                 areaData = new Dictionary<ushort, PlcDataEntry>();
                 _plcData.Add(area, areaData);
             }
 
-            if (!areaData.TryGetValue(dbNumber, out var dataEntry))
+            if (!areaData.TryGetValue(dbNumber, out PlcDataEntry dataEntry))
             {
                 dataEntry = new PlcDataEntry
                 (
@@ -42,15 +45,15 @@ namespace Dacs7.DataProvider
             }
             return false;
         }
-    
+
         public bool Release(PlcArea area, ushort dbNumber = 0)
         {
-            if (!_plcData.TryGetValue(area, out var areaData))
+            if (!_plcData.TryGetValue(area, out Dictionary<ushort, PlcDataEntry> areaData))
             {
                 return false;
             }
 
-            if (!areaData.TryGetValue(dbNumber, out var dataEntry))
+            if (!areaData.TryGetValue(dbNumber, out PlcDataEntry dataEntry))
             {
                 return false;
             }
@@ -62,52 +65,59 @@ namespace Dacs7.DataProvider
         public void ReleaseAll()
         {
             // create a copy and clear the list, so we ensure currently active read and write calls will work and all following will fail.
-            var copy = _plcData.Values.ToList();
+            List<Dictionary<ushort, PlcDataEntry>> copy = _plcData.Values.ToList();
             _plcData.Clear();
-            foreach (var areaData in copy)
+            foreach (Dictionary<ushort, PlcDataEntry> areaData in copy)
             {
-                foreach (var dataEntry in areaData.Values)
+                foreach (PlcDataEntry dataEntry in areaData.Values)
                 {
                     dataEntry?.Dispose();
                 }
             }
         }
-    
+
 
         public Task<List<ReadResultItem>> ReadAsync(List<ReadRequestItem> readItems)
         {
-            var result = new List<ReadResultItem>();
-            foreach (var item in readItems)
+            List<ReadResultItem> result = new();
+            foreach (ReadRequestItem item in readItems)
             {
 
-                if (!_plcData.TryGetValue(item.Area, out var areaData))
+                if (!_plcData.TryGetValue(item.Area, out Dictionary<ushort, PlcDataEntry> areaData))
                 {
                     result.Add(new ReadResultItem(item, ItemResponseRetValue.DataError));
                     continue;
                 }
 
-                if (!areaData.TryGetValue(item.DbNumber, out var dataEntry))
+                if (!areaData.TryGetValue(item.DbNumber, out PlcDataEntry dataEntry))
                 {
                     result.Add(new ReadResultItem(item, ItemResponseRetValue.DataError));
                     continue;
                 }
 
-                var size = item.NumberOfItems * item.ElementSize;
-                if ((item.Offset + size) > dataEntry.Length)
-                {
-                    result.Add(new ReadResultItem(item, ItemResponseRetValue.OutOfRange));
-                    continue;
-                }
 
+                int size = item.NumberOfItems * item.ElementSize;
                 if (item.TransportSize == DataTransportSize.Bit)
                 {
-                    var byteOffset = item.Offset / 8;
-                    var bitNumber = item.Offset % 8;
-                    Memory<byte> data = new byte[] { Converter.GetBit(dataEntry.Data.Span[byteOffset], bitNumber) ? (byte)0x01 : (byte)0x00};
+                    int byteOffset = item.Offset / 8;
+                    int bitNumber = item.Offset % 8;
+                    if ((byteOffset + size) > dataEntry.Length)
+                    {
+                        result.Add(new ReadResultItem(item, ItemResponseRetValue.OutOfRange));
+                        continue;
+                    }
+
+                    Memory<byte> data = new byte[] { Converter.GetBit(dataEntry.Data.Span[byteOffset], bitNumber) ? (byte)0x01 : (byte)0x00 };
                     result.Add(new ReadResultItem(item, ItemResponseRetValue.Success, data));
                 }
                 else
-                { 
+                {
+                    if ((item.Offset + size) > dataEntry.Length)
+                    {
+                        result.Add(new ReadResultItem(item, ItemResponseRetValue.OutOfRange));
+                        continue;
+                    }
+
                     Memory<byte> data = new byte[size];
                     dataEntry.Data.Slice(item.Offset, size).CopyTo(data);
                     result.Add(new ReadResultItem(item, ItemResponseRetValue.Success, data));
@@ -118,31 +128,37 @@ namespace Dacs7.DataProvider
 
         public Task<List<WriteResultItem>> WriteAsync(List<WriteRequestItem> writeItems)
         {
-            var result = new List<WriteResultItem>();
-            foreach (var item in writeItems)
+            List<WriteResultItem> result = new();
+            foreach (WriteRequestItem item in writeItems)
             {
-                if (!_plcData.TryGetValue(item.Area, out var areaData))
+                if (!_plcData.TryGetValue(item.Area, out Dictionary<ushort, PlcDataEntry> areaData))
                 {
                     result.Add(new WriteResultItem(item, ItemResponseRetValue.DataError));
                     continue;
                 }
 
-                if (!areaData.TryGetValue(item.DbNumber, out var dataEntry))
+                if (!areaData.TryGetValue(item.DbNumber, out PlcDataEntry dataEntry))
                 {
                     result.Add(new WriteResultItem(item, ItemResponseRetValue.DataError));
                     continue;
                 }
 
+                int size = item.NumberOfItems * item.ElementSize;
                 if (item.TransportSize == DataTransportSize.Bit)
                 {
-                    var byteOffset = item.Offset / 8;
-                    var bitNumber = item.Offset % 8;
+                    int byteOffset = item.Offset / 8;
+                    int bitNumber = item.Offset % 8;
+                    if ((byteOffset + size) > dataEntry.Length)
+                    {
+                        result.Add(new WriteResultItem(item, ItemResponseRetValue.OutOfRange));
+                        continue;
+                    }
+
                     dataEntry.Data.Span[byteOffset] = Converter.SetBit(dataEntry.Data.Span[byteOffset], bitNumber, item.Data.Span[0] == 0x01);
                 }
                 else
                 {
-                    var size = item.NumberOfItems * item.ElementSize;
-                    if (size > dataEntry.Length)
+                    if ((item.Offset + size) > dataEntry.Length)
                     {
                         result.Add(new WriteResultItem(item, ItemResponseRetValue.OutOfRange));
                         continue;

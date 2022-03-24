@@ -9,7 +9,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dacs7.Protocols
@@ -24,13 +23,13 @@ namespace Dacs7.Protocols
 
     internal sealed partial class ProtocolHandler
     {
-        private readonly ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>> _writeHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>>();
+        private readonly ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>> _writeHandler = new();
 
         public Task CancelWriteHandlingAsync()
         {
             try
             {
-                foreach (var item in _writeHandler.ToList())
+                foreach (KeyValuePair<ushort, CallbackHandler<IEnumerable<S7DataItemWriteResult>>> item in _writeHandler.ToList())
                 {
                     item.Value?.Event?.Set(null);
                 }
@@ -53,13 +52,17 @@ namespace Dacs7.Protocols
         public async Task<IEnumerable<ItemResponseRetValue>> WriteAsync(IEnumerable<WriteItem> vars)
         {
             if (_closeCalled || ConnectionState != ConnectionState.Opened)
-                ThrowHelper.ThrowNotConnectedException();
-
-
-            var result = vars.ToDictionary(x => x, x => ItemResponseRetValue.Success);
-            foreach (var normalized in CreateWritePackages(_s7Context, vars))
             {
-                if (!await WritePackage(result, normalized).ConfigureAwait(false)) return new List<ItemResponseRetValue>();
+                ThrowHelper.ThrowNotConnectedException();
+            }
+
+            Dictionary<WriteItem, ItemResponseRetValue> result = vars.ToDictionary(x => x, x => ItemResponseRetValue.Success);
+            foreach (WritePackage normalized in CreateWritePackages(_s7Context, vars))
+            {
+                if (!await WritePackage(result, normalized).ConfigureAwait(false))
+                {
+                    return new List<ItemResponseRetValue>();
+                }
             }
             return result.Values;
         }
@@ -67,18 +70,22 @@ namespace Dacs7.Protocols
 
         private async Task<bool> WritePackage(Dictionary<WriteItem, ItemResponseRetValue> result, WritePackage normalized)
         {
-            var id = GetNextReferenceId();
+            ushort id = GetNextReferenceId();
             CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh = null;
-            using (var dg = S7WriteJobDatagram.TranslateToMemory(S7WriteJobDatagram.BuildWrite(_s7Context, id, normalized.Items), out var memoryLegth))
+            using (System.Buffers.IMemoryOwner<byte> dg = S7WriteJobDatagram.TranslateToMemory(S7WriteJobDatagram.BuildWrite(_s7Context, id, normalized.Items), out int memoryLegth))
             {
-                using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLegth), out var sendLength))
+                using (System.Buffers.IMemoryOwner<byte> sendData = _transport.Build(dg.Memory.Slice(0, memoryLegth), out int sendLength))
                 {
                     try
                     {
                         IEnumerable<S7DataItemWriteResult> writeResults = null;
                         try
                         {
-                            if (_concurrentJobs == null) return false;
+                            if (_concurrentJobs == null)
+                            {
+                                return false;
+                            }
+
                             using (await SemaphoreGuard.Async(_concurrentJobs).ConfigureAwait(false))
                             {
                                 cbh = new CallbackHandler<IEnumerable<S7DataItemWriteResult>>(id);
@@ -109,7 +116,10 @@ namespace Dacs7.Protocols
                         }
                         catch (ObjectDisposedException)
                         {
-                            if (cbh == null) return false;
+                            if (cbh == null)
+                            {
+                                return false;
+                            }
                         }
 
                         HandlerErrorResult(id, cbh, writeResults);
@@ -147,15 +157,15 @@ namespace Dacs7.Protocols
 
         private static void BildResults(Dictionary<WriteItem, ItemResponseRetValue> result, WritePackage normalized, IEnumerable<S7DataItemWriteResult> writeResults)
         {
-            var items = normalized.Items.GetEnumerator();
-            foreach (var item in writeResults)
+            IEnumerator<WriteItem> items = normalized.Items.GetEnumerator();
+            foreach (S7DataItemWriteResult item in writeResults)
             {
                 if (items.MoveNext())
                 {
-                    var current = items.Current;
+                    WriteItem current = items.Current;
                     if (current.IsPart)
                     {
-                        if (result.TryGetValue(current.Parent, out var retCode) && retCode == ItemResponseRetValue.Success)
+                        if (result.TryGetValue(current.Parent, out ItemResponseRetValue retCode) && retCode == ItemResponseRetValue.Success)
                         {
                             result[current.Parent] = (ItemResponseRetValue)item.ReturnCode;
                         }
@@ -170,9 +180,9 @@ namespace Dacs7.Protocols
 
         private void ReceivedWriteJobAck(Memory<byte> buffer)
         {
-            var data = S7WriteJobAckDatagram.TranslateFromMemory(buffer);
+            S7WriteJobAckDatagram data = S7WriteJobAckDatagram.TranslateFromMemory(buffer);
 
-            if (_writeHandler.TryGetValue(data.Header.Header.ProtocolDataUnitReference, out var cbh))
+            if (_writeHandler.TryGetValue(data.Header.Header.ProtocolDataUnitReference, out CallbackHandler<IEnumerable<S7DataItemWriteResult>> cbh))
             {
                 if (data.Header.Error.ErrorClass != 0)
                 {
@@ -194,20 +204,20 @@ namespace Dacs7.Protocols
 
         private static IEnumerable<WritePackage> CreateWritePackages(SiemensPlcProtocolContext s7Context, IEnumerable<WriteItem> vars)
         {
-            var result = new List<WritePackage>();
-            foreach (var item in vars.OrderByDescending(x => x.NumberOfItems).ToList())
+            List<WritePackage> result = new();
+            foreach (WriteItem item in vars.OrderByDescending(x => x.NumberOfItems).ToList())
             {
-                var currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
+                WritePackage currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
                 if (currentPackage == null)
                 {
                     if (item.NumberOfItems > s7Context.WriteItemMaxLength)
                     {
-                        var bytesToWrite = item.NumberOfItems;
+                        ushort bytesToWrite = item.NumberOfItems;
                         ushort processed = 0;
                         while (bytesToWrite > 0)
                         {
-                            var slice = Math.Min(s7Context.WriteItemMaxLength, bytesToWrite);
-                            var child = WriteItem.CreateChild(item, (ushort)(item.Offset + processed), slice);
+                            ushort slice = Math.Min(s7Context.WriteItemMaxLength, bytesToWrite);
+                            WriteItem child = WriteItem.CreateChild(item, (ushort)(item.Offset + processed), slice);
                             if (slice < s7Context.WriteItemMaxLength)
                             {
                                 currentPackage = result.FirstOrDefault(package => package.TryAdd(child));
@@ -264,7 +274,7 @@ namespace Dacs7.Protocols
                     }
                 }
             }
-            foreach (var package in result)
+            foreach (WritePackage package in result)
             {
                 yield return package.Return();
             }

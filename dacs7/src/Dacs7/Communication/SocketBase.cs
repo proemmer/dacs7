@@ -5,9 +5,7 @@
 using Dacs7.Protocols;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Net.Http.Headers;
 using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Dacs7.Communication
@@ -20,8 +18,138 @@ namespace Dacs7.Communication
         public delegate Task<int> OnDataReceivedHandler(string socketHandle, Memory<byte> aBuffer);
         public delegate Task OnSocketShutdownHandler(string socketHandle);
         protected readonly IConfiguration _configuration;
+
+        /* Unmerged change from project 'Dacs7 (netcoreapp2.0)'
+        Before:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        After:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        */
+
+        /* Unmerged change from project 'Dacs7 (netstandard2.1)'
+        Before:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        After:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        */
+
+        /* Unmerged change from project 'Dacs7 (net5.0)'
+        Before:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        After:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        */
+
+        /* Unmerged change from project 'Dacs7 (netcoreapp2.2)'
+        Before:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        After:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        */
+
+        /* Unmerged change from project 'Dacs7 (netcoreapp3.0)'
+        Before:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        After:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        */
+
+        /* Unmerged change from project 'Dacs7 (netcoreapp2.1)'
+        Before:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        After:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        */
+
+        /* Unmerged change from project 'Dacs7 (netcoreapp3.1)'
+        Before:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        After:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        */
+
+        /* Unmerged change from project 'Dacs7 (net5.0-windows)'
+        Before:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        After:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        */
+
+        /* Unmerged change from project 'Dacs7 (net6.0)'
+        Before:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        After:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        */
+
+        /* Unmerged change from project 'Dacs7 (net6.0-windows)'
+        Before:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        After:
+                protected readonly ILogger _logger;
+
+
+                protected bool _disableReconnect;
+        */
         protected readonly ILogger _logger;
-        
+
 
         protected bool _disableReconnect;
         protected bool _shutdown;
@@ -69,7 +197,100 @@ namespace Dacs7.Communication
 
         public abstract Task<SocketError> SendAsync(Memory<byte> data);
 
-        protected virtual Task HandleSocketDown() => PublishConnectionStateChanged(false);
+
+        /* Unmerged change from project 'Dacs7 (netcoreapp2.0)'
+        Before:
+                protected virtual Task HandleSocketDown() => PublishConnectionStateChanged(false);
+        After:
+                protected virtual Task HandleSocketDown()
+                {
+                    return PublishConnectionStateChanged(false);
+        */
+
+        /* Unmerged change from project 'Dacs7 (netstandard2.1)'
+        Before:
+                protected virtual Task HandleSocketDown() => PublishConnectionStateChanged(false);
+        After:
+                protected virtual Task HandleSocketDown()
+                {
+                    return PublishConnectionStateChanged(false);
+        */
+
+        /* Unmerged change from project 'Dacs7 (net5.0)'
+        Before:
+                protected virtual Task HandleSocketDown() => PublishConnectionStateChanged(false);
+        After:
+                protected virtual Task HandleSocketDown()
+                {
+                    return PublishConnectionStateChanged(false);
+        */
+
+        /* Unmerged change from project 'Dacs7 (netcoreapp2.2)'
+        Before:
+                protected virtual Task HandleSocketDown() => PublishConnectionStateChanged(false);
+        After:
+                protected virtual Task HandleSocketDown()
+                {
+                    return PublishConnectionStateChanged(false);
+        */
+
+        /* Unmerged change from project 'Dacs7 (netcoreapp3.0)'
+        Before:
+                protected virtual Task HandleSocketDown() => PublishConnectionStateChanged(false);
+        After:
+                protected virtual Task HandleSocketDown()
+                {
+                    return PublishConnectionStateChanged(false);
+        */
+
+        /* Unmerged change from project 'Dacs7 (netcoreapp2.1)'
+        Before:
+                protected virtual Task HandleSocketDown() => PublishConnectionStateChanged(false);
+        After:
+                protected virtual Task HandleSocketDown()
+                {
+                    return PublishConnectionStateChanged(false);
+        */
+
+        /* Unmerged change from project 'Dacs7 (netcoreapp3.1)'
+        Before:
+                protected virtual Task HandleSocketDown() => PublishConnectionStateChanged(false);
+        After:
+                protected virtual Task HandleSocketDown()
+                {
+                    return PublishConnectionStateChanged(false);
+        */
+
+        /* Unmerged change from project 'Dacs7 (net5.0-windows)'
+        Before:
+                protected virtual Task HandleSocketDown() => PublishConnectionStateChanged(false);
+        After:
+                protected virtual Task HandleSocketDown()
+                {
+                    return PublishConnectionStateChanged(false);
+        */
+
+        /* Unmerged change from project 'Dacs7 (net6.0)'
+        Before:
+                protected virtual Task HandleSocketDown() => PublishConnectionStateChanged(false);
+        After:
+                protected virtual Task HandleSocketDown()
+                {
+                    return PublishConnectionStateChanged(false);
+        */
+
+        /* Unmerged change from project 'Dacs7 (net6.0-windows)'
+        Before:
+                protected virtual Task HandleSocketDown() => PublishConnectionStateChanged(false);
+        After:
+                protected virtual Task HandleSocketDown()
+                {
+                    return PublishConnectionStateChanged(false);
+        */
+        protected virtual Task HandleSocketDown()
+        {
+            return PublishConnectionStateChanged(false);
+        }
 
         protected Task PublishConnectionStateChanged(bool state, string identity = null)
         {
@@ -91,7 +312,9 @@ namespace Dacs7.Communication
         /// <param name="identity"></param>
         /// <returns>the processed number of bytes</returns>
         protected Task<int> ProcessData(Memory<byte> receivedData, string identity = null)
-            => OnRawDataReceived?.Invoke(identity ?? Identity, receivedData);
+        {
+            return OnRawDataReceived?.Invoke(identity ?? Identity, receivedData);
+        }
 
         protected virtual async Task HandleReconnectAsync()
         {

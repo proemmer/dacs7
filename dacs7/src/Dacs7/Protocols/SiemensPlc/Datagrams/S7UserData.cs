@@ -15,6 +15,9 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
 
 
 
-        public int GetUserDataLength() => 4 + UserDataLength;
+        public int GetUserDataLength()
+        {
+            return 4 + UserDataLength;
+        }
     }
 }

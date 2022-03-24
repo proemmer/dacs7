@@ -34,7 +34,7 @@ namespace Dacs7
         /// <returns></returns>
         public T GetValue<T>()
         {
-            var expected = typeof(T);
+            Type expected = typeof(T);
             if (expected != _meta.ResultType)
             {
                 ThrowHelper.ThrowTypesNotMatching(expected, _meta.ResultType);

@@ -31,6 +31,9 @@ namespace Dacs7.Domain
 
         public Memory<byte> Data => _owner == null ? _externalData : _owner.Memory;
 
-        public void Dispose() => _owner?.Dispose();
+        public void Dispose()
+        {
+            _owner?.Dispose();
+        }
     }
 }

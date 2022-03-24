@@ -23,7 +23,7 @@ namespace Dacs7
 
     public sealed partial class Dacs7Client : IDisposable
     {
-        private Dictionary<string, ReadItem> _registeredTags = new Dictionary<string, ReadItem>();
+        private Dictionary<string, ReadItem> _registeredTags = new();
         private Dacs7ConnectionState _state = Dacs7ConnectionState.Closed;
         private readonly ILogger _logger;
 
@@ -116,18 +116,27 @@ namespace Dacs7
         /// Connect to the plc
         /// </summary>
         /// <returns></returns>
-        public Task ConnectAsync() => ProtocolHandler?.OpenAsync();
+        public Task ConnectAsync()
+        {
+            return ProtocolHandler?.OpenAsync();
+        }
 
         /// <summary>
         /// Disconnect from the plc
         /// </summary>
         /// <returns></returns>
-        public Task DisconnectAsync() => ProtocolHandler?.CloseAsync();
+        public Task DisconnectAsync()
+        {
+            return ProtocolHandler?.CloseAsync();
+        }
 
         /// <summary>
         /// Dispose the ressources
         /// </summary>
-        public void Dispose() => ProtocolHandler?.Dispose();
+        public void Dispose()
+        {
+            ProtocolHandler?.Dispose();
+        }
 
         /// <summary>
         /// Create a readitem for the given tag or reuse an existing one for this tag.
@@ -135,7 +144,9 @@ namespace Dacs7
         /// <param name="tag">the absolute adress</param>
         /// <returns></returns>
         internal ReadItem RegisteredOrGiven(string tag)
-            => _registeredTags.TryGetValue(tag, out var nodeId) ? nodeId : ReadItem.CreateFromTag(tag);
+        {
+            return _registeredTags.TryGetValue(tag, out ReadItem nodeId) ? nodeId : ReadItem.CreateFromTag(tag);
+        }
 
         /// <summary>
         /// Updates the ReadItem registration (add and/or remove items)
@@ -149,9 +160,17 @@ namespace Dacs7
             do
             {
                 origin = _registeredTags;
-                var tmp = origin as IEnumerable<KeyValuePair<string, ReadItem>>;
-                if (toAdd != null) tmp = tmp.Union(toAdd);
-                if (toRemove != null) tmp = tmp.Except(toRemove);
+                IEnumerable<KeyValuePair<string, ReadItem>> tmp = origin;
+                if (toAdd != null)
+                {
+                    tmp = tmp.Union(toAdd);
+                }
+
+                if (toRemove != null)
+                {
+                    tmp = tmp.Except(toRemove);
+                }
+
                 newDict = tmp.ToDictionary(pair => pair.Key, pair => pair.Value);
             } while (Interlocked.CompareExchange(ref _registeredTags, newDict, origin) != origin);
         }
@@ -162,7 +181,7 @@ namespace Dacs7
         /// <param name="state">The new connection state</param>
         private void UpdateConnectionState(ProtocolHandler handler, ConnectionState state)
         {
-            var dacs7State = Dacs7ConnectionState.Closed;
+            Dacs7ConnectionState dacs7State = Dacs7ConnectionState.Closed;
             switch (state)
             {
                 case ConnectionState.Closed: dacs7State = Dacs7ConnectionState.Closed; break;
@@ -181,8 +200,8 @@ namespace Dacs7
         private TcpTransport InitializeTransport(string address, PlcConnectionType connectionType, int autoReconnectTime)
         {
             _logger?.LogDebug("Start configuring dacs7 with Socket interface");
-            ParseParametersFromAddress(address, out var host, out var port, out var rack, out var slot);
-            var transport = new TcpTransport(
+            ParseParametersFromAddress(address, out string host, out int port, out int rack, out int slot);
+            TcpTransport transport = new(
                 new Rfc1006ProtocolContext
                 {
                     DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType, rack, slot),
@@ -201,8 +220,8 @@ namespace Dacs7
 
         private static void ParseParametersFromAddress(string address, out string host, out int port, out int rack, out int slot)
         {
-            var addressPort = address.Split(':');
-            var portRackSlot = addressPort.Length > 1 ?
+            string[] addressPort = address.Split(':');
+            int[] portRackSlot = addressPort.Length > 1 ?
                                         addressPort[1].Split(',').Select(x => int.Parse(x, NumberStyles.Integer, CultureInfo.InvariantCulture)).ToArray() :
                                         new int[] { 102, 0, 2 };
             host = addressPort[0];

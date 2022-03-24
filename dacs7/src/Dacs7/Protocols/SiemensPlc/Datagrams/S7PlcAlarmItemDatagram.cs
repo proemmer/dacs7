@@ -47,7 +47,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         internal static IPlcAlarmDetails ExtractDetails(ref Span<byte> span, ref int itemOffset)
         {
-            var item = new S7PlcAlarmDetails
+            S7PlcAlarmDetails item = new()
             {
                 Timestamp = GetDt(span.Slice(itemOffset))
             };
@@ -58,13 +58,13 @@ namespace Dacs7.Protocols.SiemensPlc
 
         internal static void ExtractAssotiatedValue(ref Span<byte> span, ref int itemOffset, S7PlcAlarmDetails item)
         {
-            var assotiatedValue = new S7PlcAlarmAssotiatedValue
+            S7PlcAlarmAssotiatedValue assotiatedValue = new()
             {
                 ReturnCode = span[itemOffset++],
                 TransportSize = (DataTransportSize)span[itemOffset++]
             };
-            var length = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(itemOffset, 2)); itemOffset += 2;
-            var lengthInByte = assotiatedValue.TransportSize <= DataTransportSize.Int ? length / 8 : length;
+            ushort length = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(itemOffset, 2)); itemOffset += 2;
+            int lengthInByte = assotiatedValue.TransportSize <= DataTransportSize.Int ? length / 8 : length;
             assotiatedValue.Length = lengthInByte;
             assotiatedValue.Data = new byte[lengthInByte];
             span.Slice(itemOffset, lengthInByte).CopyTo(assotiatedValue.Data.Span);
@@ -74,9 +74,12 @@ namespace Dacs7.Protocols.SiemensPlc
 
         internal static DateTime GetDt(Span<byte> b)
         {
-            var str = string.Format(CultureInfo.InvariantCulture, "{2:X2}/{1:X2}/{0:X2} {3:X2}:{4:X2}:{5:X2}.{6:X2}{7:X2}", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
-            if (DateTime.TryParseExact(str, "dd/MM/yy HH:mm:ss.ffff", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+            string str = string.Format(CultureInfo.InvariantCulture, "{2:X2}/{1:X2}/{0:X2} {3:X2}:{4:X2}:{5:X2}.{6:X2}{7:X2}", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
+            if (DateTime.TryParseExact(str, "dd/MM/yy HH:mm:ss.ffff", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+            {
                 return parsedDate;
+            }
+
             return DateTime.MinValue;
         }
     }

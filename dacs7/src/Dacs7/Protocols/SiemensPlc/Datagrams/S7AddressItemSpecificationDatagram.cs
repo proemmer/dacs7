@@ -34,35 +34,54 @@ namespace Dacs7.Protocols.SiemensPlc
         public static byte GetTransportSize(PlcArea area, Type t)
         {
             if (area == PlcArea.CT || area == PlcArea.TM)
+            {
                 return 0x01;
+            }
 
             if (t.IsArray)
+            {
                 t = t.GetElementType();
-
+            }
 
             if (t == typeof(bool))
+            {
                 return (byte)ItemDataTransportSize.Bit;
+            }
 
             if (t == typeof(byte) || t == typeof(string) || t == typeof(Memory<byte>))
+            {
                 return (byte)ItemDataTransportSize.Byte;
+            }
 
             if (t == typeof(char))
+            {
                 return (byte)ItemDataTransportSize.Char;
+            }
 
             if (t == typeof(ushort))
+            {
                 return (byte)ItemDataTransportSize.Word;
+            }
 
             if (t == typeof(short))
+            {
                 return (byte)ItemDataTransportSize.Int;
+            }
 
             if (t == typeof(uint))
+            {
                 return (byte)ItemDataTransportSize.Dword;
+            }
 
             if (t == typeof(int))
+            {
                 return (byte)ItemDataTransportSize.Dint;
+            }
 
             if (t == typeof(float))
+            {
                 return (byte)ItemDataTransportSize.Real;
+            }
 
             return 0;
         }
@@ -70,7 +89,7 @@ namespace Dacs7.Protocols.SiemensPlc
         public static byte[] GetAddress(int offset, Type t)
         {
             offset = t == typeof(bool) ? offset : (offset * 8);
-            var address = new byte[3];
+            byte[] address = new byte[3];
             address[2] = (byte)(offset & 0x000000FF);
             offset >>= 8;
             address[1] = (byte)(offset & 0x000000FF);
@@ -83,7 +102,7 @@ namespace Dacs7.Protocols.SiemensPlc
         {
             Memory<byte> mem = new byte[4];
             address.CopyTo(mem.Slice(1));
-            var offset = BinaryPrimitives.ReadInt32BigEndian(mem.Span);
+            int offset = BinaryPrimitives.ReadInt32BigEndian(mem.Span);
 
             if (t != typeof(bool))
             {
@@ -93,14 +112,15 @@ namespace Dacs7.Protocols.SiemensPlc
         }
 
 
-        public int GetSpecificationLength() => 12;
-
-
+        public int GetSpecificationLength()
+        {
+            return 12;
+        }
 
         public static Memory<byte> TranslateToMemory(S7AddressItemSpecificationDatagram datagram, Memory<byte> memory)
         {
-            var result = memory.IsEmpty ? new Memory<byte>(new byte[12]) : memory;  // check if we could use ArrayBuffer
-            var span = result.Span;
+            Memory<byte> result = memory.IsEmpty ? new Memory<byte>(new byte[12]) : memory;  // check if we could use ArrayBuffer
+            Span<byte> span = result.Span;
 
             span[0] = datagram.VariableSpecification;
             span[1] = datagram.LengthOfAddressSpecification;
@@ -110,15 +130,17 @@ namespace Dacs7.Protocols.SiemensPlc
             BinaryPrimitives.WriteUInt16BigEndian(span.Slice(6, 2), datagram.DbNumber);
             span[8] = datagram.Area;
             if (!datagram.Address.IsEmpty)
+            {
                 datagram.Address.CopyTo(result.Slice(9));
+            }
 
             return result;
         }
 
         public static S7AddressItemSpecificationDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var span = data.Span;
-            var result = new S7AddressItemSpecificationDatagram
+            Span<byte> span = data.Span;
+            S7AddressItemSpecificationDatagram result = new()
             {
                 VariableSpecification = span[0],
                 LengthOfAddressSpecification = span[1],

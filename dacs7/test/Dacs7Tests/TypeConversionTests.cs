@@ -23,6 +23,9 @@ namespace Dacs7.Tests
 
 
 
-        private T GetValue<T>(string s) => (T)Convert.ChangeType(s, typeof(T), CultureInfo.InvariantCulture);
+        private T GetValue<T>(string s)
+        {
+            return (T)Convert.ChangeType(s, typeof(T), CultureInfo.InvariantCulture);
+        }
     }
 }

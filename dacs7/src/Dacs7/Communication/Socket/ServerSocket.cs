@@ -21,7 +21,7 @@ namespace Dacs7.Communication
         private Task _receivingTask;
         private volatile bool _unbinding;
 
-        private readonly List<System.Net.Sockets.Socket> _clients = new List<System.Net.Sockets.Socket>();
+        private readonly List<System.Net.Sockets.Socket> _clients = new();
 
 
         public sealed override string Identity
@@ -31,19 +31,19 @@ namespace Dacs7.Communication
 
                 if (_identity == null)
                 {
-                    var socket = _socket;
+                    System.Net.Sockets.Socket socket = _socket;
                     if (socket != null)
                     {
-                        var epLocal = socket.LocalEndPoint as IPEndPoint;
+                        IPEndPoint epLocal = socket.LocalEndPoint as IPEndPoint;
                         try
                         {
-                            var epRemote = socket.RemoteEndPoint as IPEndPoint;
+                            IPEndPoint epRemote = socket.RemoteEndPoint as IPEndPoint;
                             _identity = $"{epLocal.Address}:{epLocal.Port}-{(epRemote != null ? epRemote.Address.ToString() : _config.Hostname)}:{(epRemote != null ? epRemote.Port : _config.ServiceName)}";
                         }
                         catch (Exception)
                         {
                             return string.Empty;
-                        };
+                        }
                     }
                     else
                     {
@@ -54,7 +54,10 @@ namespace Dacs7.Communication
             }
         }
 
-        public ServerSocket(ServerSocketConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration, loggerFactory?.CreateLogger<ServerSocket>()) => _config = configuration;
+        public ServerSocket(ServerSocketConfiguration configuration, ILoggerFactory loggerFactory) : base(configuration, loggerFactory?.CreateLogger<ServerSocket>())
+        {
+            _config = configuration;
+        }
 
 
 
@@ -88,7 +91,7 @@ namespace Dacs7.Communication
 
                 try
                 {
-                    var epEndpoint = new IPEndPoint(IPAddress.Parse(_config.Hostname), _config.ServiceName);
+                    IPEndPoint epEndpoint = new(IPAddress.Parse(_config.Hostname), _config.ServiceName);
                     _socket.Bind(epEndpoint);
                 }
                 catch (SocketException e) when (e.SocketErrorCode == SocketError.AddressAlreadyInUse)
@@ -100,7 +103,7 @@ namespace Dacs7.Communication
                 _socket.Listen(512);
 
                 _tokenSource = new CancellationTokenSource();
-                _receivingTask = Task.Factory.StartNew(() => RunAcceptLoopAsync(), _tokenSource.Token,TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                _receivingTask = Task.Factory.StartNew(() => RunAcceptLoopAsync(), _tokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
                 await PublishConnectionStateChanged(true).ConfigureAwait(false);
             }
             catch (Exception)
@@ -121,8 +124,8 @@ namespace Dacs7.Communication
             {
                 if (_socket != null)
                 {
-                    var result = await _socket.SendAsync(new ArraySegment<byte>(data.ToArray()), SocketFlags.None).ConfigureAwait(false);
-                    if(result != data.Length)
+                    int result = await _socket.SendAsync(new ArraySegment<byte>(data.ToArray()), SocketFlags.None).ConfigureAwait(false);
+                    if (result != data.Length)
                     {
                         return SocketError.Fault;
                     }
@@ -179,7 +182,7 @@ namespace Dacs7.Communication
                 await _receivingTask.ConfigureAwait(false);
             }
 
-            foreach (var client in _clients)
+            foreach (System.Net.Sockets.Socket client in _clients)
             {
                 client.Close();
                 client.Dispose();
@@ -208,11 +211,15 @@ namespace Dacs7.Communication
 
                     try
                     {
-                        if (_unbinding || _socket == null) break;
-                        var acceptSocket = await _socket.AcceptAsync().ConfigureAwait(false);
+                        if (_unbinding || _socket == null)
+                        {
+                            break;
+                        }
+
+                        System.Net.Sockets.Socket acceptSocket = await _socket.AcceptAsync().ConfigureAwait(false);
                         acceptSocket.NoDelay = true;
                         _clients.Add(acceptSocket);
-                        if(OnNewSocketConnected != null)
+                        if (OnNewSocketConnected != null)
                         {
                             await OnNewSocketConnected.Invoke(acceptSocket).ConfigureAwait(false);
                         }
@@ -243,6 +250,9 @@ namespace Dacs7.Communication
         }
 
 
-        public void Dispose() => DisposeSocketAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        public void Dispose()
+        {
+            DisposeSocketAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        }
     }
 }

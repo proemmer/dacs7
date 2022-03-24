@@ -25,18 +25,26 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
 
-        public int GetMemorySize() => GetHeaderSize() + ParamLength + DataLength;
+        public int GetMemorySize()
+        {
+            return GetHeaderSize() + ParamLength + DataLength;
+        }
 
-        public int GetHeaderSize() => 10;
+        public int GetHeaderSize()
+        {
+            return 10;
+        }
 
         public static IMemoryOwner<byte> TranslateToMemory(S7HeaderDatagram datagram, out int memoryLength)
-            => TranslateToMemory(datagram, -1, out memoryLength);
+        {
+            return TranslateToMemory(datagram, -1, out memoryLength);
+        }
 
         public static IMemoryOwner<byte> TranslateToMemory(S7HeaderDatagram datagram, int length, out int memoryLength)
         {
             memoryLength = length == -1 ? datagram.GetMemorySize() : length;
-            var result = MemoryPool<byte>.Shared.Rent(memoryLength);
-            var span = result.Memory.Slice(0, memoryLength).Span;
+            IMemoryOwner<byte> result = MemoryPool<byte>.Shared.Rent(memoryLength);
+            Span<byte> span = result.Memory.Slice(0, memoryLength).Span;
 
             span[0] = datagram.ProtocolId;
             span[1] = datagram.PduType;
@@ -50,8 +58,8 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7HeaderDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var span = data.Span;
-            var result = new S7HeaderDatagram
+            Span<byte> span = data.Span;
+            S7HeaderDatagram result = new()
             {
                 ProtocolId = span[0],
                 PduType = span[1],

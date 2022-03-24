@@ -33,7 +33,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7UserDataDatagram BuildBlockInfoRequest(SiemensPlcProtocolContext context, int id, PlcBlockType blockType, int blockNumber)
         {
-            var result = new S7UserDataDatagram
+            S7UserDataDatagram result = new()
             {
                 Parameter = new S7UserDataParameter
                 {
@@ -64,7 +64,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7UserDataDatagram BuildBlocksCountRequest(SiemensPlcProtocolContext context, int id)
         {
-            var result = new S7UserDataDatagram
+            S7UserDataDatagram result = new()
             {
                 Parameter = new S7UserDataParameter
                 {
@@ -93,7 +93,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7UserDataDatagram BuildBlocksOfTypeRequest(SiemensPlcProtocolContext context, int id, PlcBlockType type, byte sequenceNumber)
         {
-            var result = new S7UserDataDatagram
+            S7UserDataDatagram result = new()
             {
                 Parameter = new S7UserDataParameter
                 {
@@ -123,8 +123,8 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7UserDataDatagram BuildPendingAlarmRequest(SiemensPlcProtocolContext context, ushort id, byte sequenceNumber)
         {
-            var data = sequenceNumber == 0 ? new byte[] { 0x00, 0x01, 0x12, 0x08, 0x1a, 0x00, 0x01, 0x34, 0x00, 0x00, 0x00, 0x04 } : Array.Empty<byte>(); ;
-            var result = new S7UserDataDatagram
+            byte[] data = sequenceNumber == 0 ? new byte[] { 0x00, 0x01, 0x12, 0x08, 0x1a, 0x00, 0x01, 0x34, 0x00, 0x00, 0x00, 0x04 } : Array.Empty<byte>(); ;
+            S7UserDataDatagram result = new()
             {
                 Parameter = new S7UserDataParameter
                 {
@@ -152,8 +152,8 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7UserDataDatagram BuildAlarmUpdateRequest(SiemensPlcProtocolContext context, ushort id, bool activate = true)
         {
-            var data = new byte[] { 0x86, 0x00, 0x61, 0x73, 0x6d, 0x65, 0x73, 0x73, 0x00, 0x00, activate ? (byte)0x09 : (byte)0x08, 0x00 };
-            var result = new S7UserDataDatagram
+            byte[] data = new byte[] { 0x86, 0x00, 0x61, 0x73, 0x6d, 0x65, 0x73, 0x73, 0x00, 0x00, activate ? (byte)0x09 : (byte)0x08, 0x00 };
+            S7UserDataDatagram result = new()
             {
                 Parameter = new S7UserDataParameter
                 {
@@ -183,10 +183,10 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static IMemoryOwner<byte> TranslateToMemory(S7UserDataDatagram datagram, out int memoryLength)
         {
-            var offset = datagram.Header.GetHeaderSize() + datagram.Parameter.GetParamSize();
-            var dataSize = offset + datagram.Data.GetUserDataLength();
-            var result = S7HeaderDatagram.TranslateToMemory(datagram.Header, dataSize, out memoryLength);
-            var mem = result.Memory.Slice(0, memoryLength);
+            int offset = datagram.Header.GetHeaderSize() + datagram.Parameter.GetParamSize();
+            int dataSize = offset + datagram.Data.GetUserDataLength();
+            IMemoryOwner<byte> result = S7HeaderDatagram.TranslateToMemory(datagram.Header, dataSize, out memoryLength);
+            Memory<byte> mem = result.Memory.Slice(0, memoryLength);
             S7UserDataParameter.TranslateToMemory(datagram.Parameter, mem.Slice(datagram.Header.GetHeaderSize()));
             mem.Span[offset++] = datagram.Data.ReturnCode;
             mem.Span[offset++] = datagram.Data.TransportSize;
@@ -197,15 +197,15 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7UserDataDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var span = data.Span;
-            var result = new S7UserDataDatagram
+            Span<byte> span = data.Span;
+            S7UserDataDatagram result = new()
             {
                 Header = S7HeaderDatagram.TranslateFromMemory(data),
                 Data = new S7UserData()
             };
 
             result.Parameter = S7UserDataParameter.TranslateFromMemory(data.Slice(result.Header.GetHeaderSize()));
-            var offset = result.Header.GetHeaderSize() + result.Parameter.GetParamSize();
+            int offset = result.Header.GetHeaderSize() + result.Parameter.GetParamSize();
             result.Data.ReturnCode = span[offset++];
             result.Data.TransportSize = span[offset++];
             result.Data.UserDataLength = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2));

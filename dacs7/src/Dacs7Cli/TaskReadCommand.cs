@@ -18,15 +18,15 @@ namespace Dacs7Cli
             {
                 cmd.Description = "Read tags from the plc.";
 
-                var addressOption = cmd.Option("-a | --address", "The IPAddress of the plc", CommandOptionType.SingleValue);
-                var debugOption = cmd.Option("-d | --debug", "Activate debug output", CommandOptionType.NoValue);
-                var traceOption = cmd.Option("-t | --trace", "Trace also dacs7 internals", CommandOptionType.NoValue);
-                var registerOption = cmd.Option("-r | --register", "Register items for fast performing.", CommandOptionType.NoValue);
-                var loopsOption = cmd.Option("-l | --loops", "Specify the number of read loops.", CommandOptionType.SingleValue);
-                var waitOption = cmd.Option("-s | --wait", "Wait time between loops in ms.", CommandOptionType.SingleValue);
-                var maxJobsOption = cmd.Option("-j | --jobs", "Maximum number of concurrent jobs.", CommandOptionType.SingleValue);
+                CommandOption addressOption = cmd.Option("-a | --address", "The IPAddress of the plc", CommandOptionType.SingleValue);
+                CommandOption debugOption = cmd.Option("-d | --debug", "Activate debug output", CommandOptionType.NoValue);
+                CommandOption traceOption = cmd.Option("-t | --trace", "Trace also dacs7 internals", CommandOptionType.NoValue);
+                CommandOption registerOption = cmd.Option("-r | --register", "Register items for fast performing.", CommandOptionType.NoValue);
+                CommandOption loopsOption = cmd.Option("-l | --loops", "Specify the number of read loops.", CommandOptionType.SingleValue);
+                CommandOption waitOption = cmd.Option("-s | --wait", "Wait time between loops in ms.", CommandOptionType.SingleValue);
+                CommandOption maxJobsOption = cmd.Option("-j | --jobs", "Maximum number of concurrent jobs.", CommandOptionType.SingleValue);
 
-                var tagsArguments = cmd.Argument("tags", "Tags to read.", true);
+                CommandArgument tagsArguments = cmd.Argument("tags", "Tags to read.", true);
 
                 cmd.OnExecute(async () =>
                 {
@@ -44,7 +44,7 @@ namespace Dacs7Cli
                             Tags = tagsArguments.Values,
                             MaxJobs = maxJobsOption.HasValue() ? int.Parse(maxJobsOption.Value()) : 10,
                         }.Configure();
-                        var result = await Read(readOptions, readOptions.LoggerFactory);
+                        int result = await Read(readOptions, readOptions.LoggerFactory);
 
                         await Task.Delay(500);
 
@@ -62,12 +62,12 @@ namespace Dacs7Cli
 
         private static async Task<int> Read(ReadOptions readOptions, ILoggerFactory loggerFactory)
         {
-            var client = new Dacs7Client(readOptions.Address, PlcConnectionType.Pg, 5000, loggerFactory)
+            Dacs7Client client = new(readOptions.Address, PlcConnectionType.Pg, 5000, loggerFactory)
             {
                 MaxAmQCalled = (ushort)readOptions.MaxJobs,
                 MaxAmQCalling = (ushort)readOptions.MaxJobs
             };
-            var logger = loggerFactory?.CreateLogger("Dacs7Cli.Read");
+            ILogger logger = loggerFactory?.CreateLogger("Dacs7Cli.Read");
 
             try
             {
@@ -78,9 +78,9 @@ namespace Dacs7Cli
                     await client.RegisterAsync(readOptions.Tags);
                 }
 
-                var swTotal = new Stopwatch();
-                var tasks = new List<Task<IEnumerable<DataValue>>>();
-                for (var i = 0; i < readOptions.Loops; i++)
+                Stopwatch swTotal = new();
+                List<Task<IEnumerable<DataValue>>> tasks = new();
+                for (int i = 0; i < readOptions.Loops; i++)
                 {
                     try
                     {
@@ -113,7 +113,10 @@ namespace Dacs7Cli
             return 0;
         }
 
-        public static long ElapsedNanoSeconds(long ticks) => ticks * 1000000000 / Stopwatch.Frequency;
+        public static long ElapsedNanoSeconds(long ticks)
+        {
+            return ticks * 1000000000 / Stopwatch.Frequency;
+        }
 
         private static string GetValue(object v)
         {
@@ -126,7 +129,10 @@ namespace Dacs7Cli
                 return new string(c);
             }
             if (v != null)
+            {
                 return v.ToString();
+            }
+
             return "[null]";
         }
 

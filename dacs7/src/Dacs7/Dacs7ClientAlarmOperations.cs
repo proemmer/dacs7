@@ -17,7 +17,9 @@ namespace Dacs7.Alarms
         /// <param name="client"></param>
         /// <returns>A list of <see cref="IPlcAlarm"/></returns>
         public static Task<IEnumerable<IPlcAlarm>> ReadPendingAlarmsAsync(this Dacs7Client client)
-            => client.ProtocolHandler.ReadPendingAlarmsAsync();
+        {
+            return client.ProtocolHandler.ReadPendingAlarmsAsync();
+        }
 
         /// <summary>
         /// This method returns if the plcalarms get updated.
@@ -27,7 +29,9 @@ namespace Dacs7.Alarms
         /// <returns><see cref="AlarmUpdateResult"/></returns>
         [Obsolete("ReceiveAlarmUpdatesAsync is deprecated, please use AlarmSubscription class instead.")]
         public static Task<AlarmUpdateResult> ReceiveAlarmUpdatesAsync(this Dacs7Client client, CancellationToken ct)
-            => client.ProtocolHandler.ReceiveAlarmUpdatesAsync(ct);
+        {
+            return client.ProtocolHandler.ReceiveAlarmUpdatesAsync(ct);
+        }
 
 
         /// <summary>
@@ -36,7 +40,9 @@ namespace Dacs7.Alarms
         /// <param name="client"></param>
         /// <returns></returns>
         public static AlarmSubscription CreateAlarmSubscription(this Dacs7Client client)
-            => client.ProtocolHandler.CreateAlarmSubscription();
+        {
+            return client.ProtocolHandler.CreateAlarmSubscription();
+        }
 
         /// <summary>
         /// Wait for a alarm event
@@ -45,6 +51,8 @@ namespace Dacs7.Alarms
         /// <param name="ct"></param>
         /// <returns></returns>
         public static Task<AlarmUpdateResult> ReceiveAlarmUpdatesAsync(this AlarmSubscription subscription, CancellationToken ct)
-            => subscription.ProtocolHandler.ReceiveAlarmUpdatesAsync(subscription, ct);
+        {
+            return subscription.ProtocolHandler.ReceiveAlarmUpdatesAsync(subscription, ct);
+        }
     }
 }

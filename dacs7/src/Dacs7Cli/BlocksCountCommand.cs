@@ -17,10 +17,10 @@ namespace Dacs7Cli
             {
                 cmd.Description = "determine blockinfo from the plc.";
 
-                var addressOption = cmd.Option("-a | --address", "The IPAddress of the plc", CommandOptionType.SingleValue);
-                var debugOption = cmd.Option("-d | --debug", "Activate debug output", CommandOptionType.NoValue);
-                var traceOption = cmd.Option("-t | --trace", "Trace also dacs7 internals", CommandOptionType.NoValue);
-                var maxJobsOption = cmd.Option("-j | --jobs", "Maximum number of concurrent jobs.", CommandOptionType.SingleValue);
+                CommandOption addressOption = cmd.Option("-a | --address", "The IPAddress of the plc", CommandOptionType.SingleValue);
+                CommandOption debugOption = cmd.Option("-d | --debug", "Activate debug output", CommandOptionType.NoValue);
+                CommandOption traceOption = cmd.Option("-t | --trace", "Trace also dacs7 internals", CommandOptionType.NoValue);
+                CommandOption maxJobsOption = cmd.Option("-j | --jobs", "Maximum number of concurrent jobs.", CommandOptionType.SingleValue);
 
                 cmd.OnExecute(async () =>
                 {
@@ -32,7 +32,7 @@ namespace Dacs7Cli
                             Debug = debugOption.HasValue(),
                             Trace = traceOption.HasValue()
                         }.Configure();
-                        var result = await Read(addressOption.HasValue() ? addressOption.Value() : "localhost",
+                        int result = await Read(addressOption.HasValue() ? addressOption.Value() : "localhost",
                                                 maxJobsOption.HasValue() ? ushort.Parse(maxJobsOption.Value()) : (ushort)10,
                                                 options.LoggerFactory);
 
@@ -52,19 +52,19 @@ namespace Dacs7Cli
 
         private static async Task<int> Read(string address, ushort maxJobs, ILoggerFactory loggerFactory)
         {
-            var client = new Dacs7Client(address, PlcConnectionType.Pg, 5000, loggerFactory)
+            Dacs7Client client = new(address, PlcConnectionType.Pg, 5000, loggerFactory)
             {
                 MaxAmQCalled = maxJobs,
                 MaxAmQCalling = maxJobs
             };
-            var logger = loggerFactory?.CreateLogger("Dacs7Cli.BlokcsCount");
+            ILogger logger = loggerFactory?.CreateLogger("Dacs7Cli.BlokcsCount");
 
             try
             {
 
                 await client.ConnectAsync();
 
-                var result = await client.ReadBlocksCountAsync();
+                IPlcBlocksCount result = await client.ReadBlocksCountAsync();
 
                 if (result != null)
                 {
@@ -94,9 +94,9 @@ namespace Dacs7Cli
 
         private static (PlcBlockType blockType, int number) TranslateFromInput(string input)
         {
-            var type = input.Substring(0, input.Count(x => x >= 'A' && x <= 'Z' || x >= 'a' && x <= 'z')).ToUpper();
-            var number = input.Substring(type.Length).Trim();
-            if (int.TryParse(number, out var blockNumber))
+            string type = input.Substring(0, input.Count(x => x >= 'A' && x <= 'Z' || x >= 'a' && x <= 'z')).ToUpper();
+            string number = input.Substring(type.Length).Trim();
+            if (int.TryParse(number, out int blockNumber))
             {
                 return (Enum.Parse<PlcBlockType>(type, true), blockNumber);
             }

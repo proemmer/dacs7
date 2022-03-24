@@ -12,7 +12,7 @@ namespace Dacs7.Protocols
         private readonly int _maxSize;
         private int _sizeRequest = SiemensPlcProtocolContext.ReadHeader + SiemensPlcProtocolContext.ReadParameter;
         private int _sizeResponse = SiemensPlcProtocolContext.ReadAckHeader + SiemensPlcProtocolContext.ReadAckParameter;
-        private readonly List<ReadItem> _items = new List<ReadItem>();
+        private readonly List<ReadItem> _items = new();
 
 
         public bool Handled { get; private set; }
@@ -25,8 +25,10 @@ namespace Dacs7.Protocols
 
         public IEnumerable<ReadItem> Items => _items;
 
-        public ReadPackage(int pduSize) => _maxSize = pduSize; // minimum header = 12 read   14 readack
-
+        public ReadPackage(int pduSize)
+        {
+            _maxSize = pduSize; // minimum header = 12 read   14 readack
+        }
 
         public ReadPackage Return()
         {
@@ -36,10 +38,10 @@ namespace Dacs7.Protocols
 
         public bool TryAdd(ReadItem item)
         {
-            var size = item.NumberOfItems;
-            var newReqSize = _sizeRequest + SiemensPlcProtocolContext.ReadItemSize;
-            var newRespSize = _sizeResponse + size + SiemensPlcProtocolContext.ReadItemAckHeader;
-            var readItemSize = Math.Max(newReqSize, newRespSize);
+            ushort size = item.NumberOfItems;
+            int newReqSize = _sizeRequest + SiemensPlcProtocolContext.ReadItemSize;
+            int newRespSize = _sizeResponse + size + SiemensPlcProtocolContext.ReadItemAckHeader;
+            int readItemSize = Math.Max(newReqSize, newRespSize);
             if (Free >= readItemSize)
             {
                 _items.Add(item);

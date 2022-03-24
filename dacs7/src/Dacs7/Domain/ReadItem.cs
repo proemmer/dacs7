@@ -56,15 +56,15 @@ namespace Dacs7
         /// <returns></returns>
         public static ReadItem CreateFromTag(string tag)
         {
-            var tr = TagParser.ParseTag(tag);
-            var readItem = BuildReadItemFromTagResult(ref tr);
+            TagParser.TagParserResult tr = TagParser.ParseTag(tag);
+            ReadItem readItem = BuildReadItemFromTagResult(ref tr);
             EnsureSupportedType(readItem);
             return readItem;
         }
 
         private static ReadItem BuildReadItemFromTagResult(ref TagParser.TagParserResult result)
         {
-            var numberOfItems = result.VarType == typeof(string) ? (ushort)(result.Length + (result.Encoding == PlcEncoding.Unicode ? UnicodeStringHeaderSize : StringHeaderSize)) : result.Length;
+            ushort numberOfItems = result.VarType == typeof(string) ? (ushort)(result.Length + (result.Encoding == PlcEncoding.Unicode ? UnicodeStringHeaderSize : StringHeaderSize)) : result.Length;
             return new ReadItem
             {
                 Area = result.Area,
@@ -80,7 +80,9 @@ namespace Dacs7
 
 
         public static ReadItem Create<T>(string area, int offset, PlcEncoding encoding = PlcEncoding.Windows1252)
-            => Create<T>(area, offset, 1, encoding);
+        {
+            return Create<T>(area, offset, 1, encoding);
+        }
 
         /// <summary>
         /// Create a read item
@@ -93,7 +95,7 @@ namespace Dacs7
         /// <returns></returns>
         public static ReadItem Create<T>(string area, int offset, ushort length, PlcEncoding encoding = PlcEncoding.Windows1252)
         {
-            if (!TagParser.TryDetectArea(area.AsSpan(), out var selector, out var db))
+            if (!TagParser.TryDetectArea(area.AsSpan(), out PlcArea selector, out ushort db))
             {
                 ThrowHelper.ThrowInvalidAreaException(area);
             }
@@ -135,7 +137,7 @@ namespace Dacs7
 
         private static ReadItem SetupTypes<T>(ReadItem result)
         {
-            var t = typeof(T);
+            Type t = typeof(T);
             if (t.IsArray)
             {
                 result.VarType = t.GetElementType();
@@ -171,18 +173,55 @@ namespace Dacs7
 
         public static ushort GetElementSize(PlcArea area, Type t, PlcEncoding encoding)
         {
-            if (area == PlcArea.CT || area == PlcArea.TM) return 2;
+            if (area == PlcArea.CT || area == PlcArea.TM)
+            {
+                return 2;
+            }
 
-            if (t.IsArray) t = t.GetElementType();
+            if (t.IsArray)
+            {
+                t = t.GetElementType();
+            }
 
-            if (t == typeof(byte) || t == typeof(Memory<byte>)) return 1;
-            if (t == typeof(bool)) return 1;
-            if (t == typeof(char) || t == typeof(string)) return (ushort)(encoding == PlcEncoding.Unicode ? 2 : 1);
-            if (t == typeof(short) || t == typeof(ushort)) return 2;
-            if (t == typeof(int) || t == typeof(uint)) return 4;
-            if (t == typeof(ulong) || t == typeof(long)) return 8;
-            if (t == typeof(float)) return 4;
-            if (t == typeof(sbyte)) return 1;
+            if (t == typeof(byte) || t == typeof(Memory<byte>))
+            {
+                return 1;
+            }
+
+            if (t == typeof(bool))
+            {
+                return 1;
+            }
+
+            if (t == typeof(char) || t == typeof(string))
+            {
+                return (ushort)(encoding == PlcEncoding.Unicode ? 2 : 1);
+            }
+
+            if (t == typeof(short) || t == typeof(ushort))
+            {
+                return 2;
+            }
+
+            if (t == typeof(int) || t == typeof(uint))
+            {
+                return 4;
+            }
+
+            if (t == typeof(ulong) || t == typeof(long))
+            {
+                return 8;
+            }
+
+            if (t == typeof(float))
+            {
+                return 4;
+            }
+
+            if (t == typeof(sbyte))
+            {
+                return 1;
+            }
 
             return 1;
         }

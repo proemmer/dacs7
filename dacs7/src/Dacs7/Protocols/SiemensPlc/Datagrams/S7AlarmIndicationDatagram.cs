@@ -14,7 +14,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7AlarmIndicationDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var current = new S7AlarmIndicationDatagram
+            S7AlarmIndicationDatagram current = new()
             {
                 UserData = S7UserDataDatagram.TranslateFromMemory(data),
             };

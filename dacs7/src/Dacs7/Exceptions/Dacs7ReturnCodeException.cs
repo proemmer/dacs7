@@ -14,7 +14,10 @@ namespace Dacs7
         public int ItemNumber { get; set; }
 
         public Dacs7ReturnCodeException(byte returnCode, int itemNumber = -1) :
-            base($"No success return code {returnCode}: <{(itemNumber != -1 ? ($" for item {itemNumber}") : "")}>") => ReturnCode = returnCode;
+            base($"No success return code {returnCode}: <{(itemNumber != -1 ? ($" for item {itemNumber}") : "")}>")
+        {
+            ReturnCode = returnCode;
+        }
 
         public Dacs7ReturnCodeException()
         {

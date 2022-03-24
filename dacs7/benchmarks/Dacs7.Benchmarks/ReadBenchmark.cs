@@ -40,17 +40,18 @@ namespace Dacs7.Benchmarks
         }
 
         [GlobalCleanup]
-        public void GlobalCleanup() => _client?.DisconnectAsync();
-
-
+        public void GlobalCleanup()
+        {
+            _client?.DisconnectAsync();
+        }
 
         [Benchmark]
         public async Task ReadAsync()
         {
-            var results = new List<Task<IEnumerable<DataValue>>>();
+            List<Task<IEnumerable<DataValue>>> results = new();
             for (int i = 0; i < Loops; i++)
             {
-                results.Add(_client.ReadAsync(_item)); 
+                results.Add(_client.ReadAsync(_item));
             }
             await Task.WhenAll(results.ToArray()).ConfigureAwait(false);
         }

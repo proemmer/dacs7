@@ -22,8 +22,8 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static Memory<byte> TranslateToMemory(S7CommSetupParameterDatagram datagram, Memory<byte> memory)
         {
-            var result = memory.IsEmpty ? new Memory<byte>(new byte[2]) : memory;  // check if we could use ArrayBuffer
-            var span = result.Span;
+            Memory<byte> result = memory.IsEmpty ? new Memory<byte>(new byte[2]) : memory;  // check if we could use ArrayBuffer
+            Span<byte> span = result.Span;
 
             span[0] = datagram.Function;
             span[1] = datagram.Reserved;
@@ -36,8 +36,8 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7CommSetupParameterDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var span = data.Span;
-            var result = new S7CommSetupParameterDatagram
+            Span<byte> span = data.Span;
+            S7CommSetupParameterDatagram result = new()
             {
                 Function = span[0],
                 Reserved = span[1],

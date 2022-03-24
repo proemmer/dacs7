@@ -19,7 +19,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public byte Function { get; set; } = 0x04; //Read Var
 
-        public byte ItemCount { get; set; } = 0x00;
+        public byte ItemCount { get; set; } //= 0x00;
 
         public List<S7AddressItemSpecificationDatagram> Items { get; set; } = new List<S7AddressItemSpecificationDatagram>();
 
@@ -27,11 +27,11 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7ReadJobDatagram BuildRead(SiemensPlcProtocolContext context, int id, IEnumerable<ReadItem> vars)
         {
-            var result = new S7ReadJobDatagram();
+            S7ReadJobDatagram result = new();
             result.Header.ProtocolDataUnitReference = (ushort)id;
             if (vars != null)
             {
-                foreach (var item in vars)
+                foreach (ReadItem item in vars)
                 {
                     result.Items.Add(new S7AddressItemSpecificationDatagram
                     {
@@ -55,14 +55,14 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static IMemoryOwner<byte> TranslateToMemory(S7ReadJobDatagram datagram, out int memoryLength)
         {
-            var result = S7HeaderDatagram.TranslateToMemory(datagram.Header, out memoryLength);
-            var mem = result.Memory.Slice(0, memoryLength);
-            var span = mem.Span;
-            var offset = datagram.Header.GetHeaderSize();
+            IMemoryOwner<byte> result = S7HeaderDatagram.TranslateToMemory(datagram.Header, out memoryLength);
+            Memory<byte> mem = result.Memory.Slice(0, memoryLength);
+            Span<byte> span = mem.Span;
+            int offset = datagram.Header.GetHeaderSize();
             span[offset++] = datagram.Function;
             span[offset++] = datagram.ItemCount;
 
-            foreach (var item in datagram.Items)
+            foreach (S7AddressItemSpecificationDatagram item in datagram.Items)
             {
                 S7AddressItemSpecificationDatagram.TranslateToMemory(item, mem.Slice(offset));
                 offset += item.GetSpecificationLength();
@@ -73,18 +73,18 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7ReadJobDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var span = data.Span;
-            var result = new S7ReadJobDatagram
+            Span<byte> span = data.Span;
+            S7ReadJobDatagram result = new()
             {
                 Header = S7HeaderDatagram.TranslateFromMemory(data),
             };
-            var offset = result.Header.GetHeaderSize();
+            int offset = result.Header.GetHeaderSize();
             result.Function = span[offset++];
             result.ItemCount = span[offset++];
 
-            for (var i = 0; i < result.ItemCount; i++)
+            for (int i = 0; i < result.ItemCount; i++)
             {
-                var res = S7AddressItemSpecificationDatagram.TranslateFromMemory(data.Slice(offset));
+                S7AddressItemSpecificationDatagram res = S7AddressItemSpecificationDatagram.TranslateFromMemory(data.Slice(offset));
                 result.Items.Add(res);
                 offset += res.GetSpecificationLength();
             }

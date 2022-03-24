@@ -20,12 +20,12 @@ namespace Dacs7
 
     public sealed partial class Dacs7Server
     {
-        private Dictionary<string, ReadItem> _registeredTags = new Dictionary<string, ReadItem>();
+        private Dictionary<string, ReadItem> _registeredTags = new();
         private Dacs7ConnectionState _state = Dacs7ConnectionState.Closed;
-        private readonly ILogger _logger;
+        private readonly ILogger? _logger;
         private readonly ILoggerFactory _loggerFactory;
         private readonly IPlcDataProvider _provider;
-        private readonly List<ProtocolHandler> _handler = new List<ProtocolHandler>();
+        private readonly List<ProtocolHandler> _handler = new();
 
         internal ProtocolHandler ProtocolHandler { get; private set; }
         internal Dictionary<string, ReadItem> RegisteredTags => _registeredTags;
@@ -118,7 +118,10 @@ namespace Dacs7
         /// Connect to the plc
         /// </summary>
         /// <returns></returns>
-        public Task ConnectAsync() => ProtocolHandler?.OpenAsync();
+        public Task ConnectAsync()
+        {
+            return ProtocolHandler?.OpenAsync();
+        }
 
         /// <summary>
         /// Disconnect from the plc
@@ -126,13 +129,13 @@ namespace Dacs7
         /// <returns></returns>
         public async Task DisconnectAsync()
         {
-            if (ProtocolHandler != null) 
+            if (ProtocolHandler != null)
             {
                 await ProtocolHandler.CloseAsync().ConfigureAwait(false);
             }
 
 
-            foreach (var item in _handler)
+            foreach (ProtocolHandler item in _handler)
             {
                 if (item != null)
                 {
@@ -150,7 +153,7 @@ namespace Dacs7
         {
             ProtocolHandler?.Dispose();
 
-            foreach (var item in _handler)
+            foreach (ProtocolHandler item in _handler)
             {
                 item.Dispose();
             }
@@ -163,7 +166,9 @@ namespace Dacs7
         /// <param name="tag">the absolute adress</param>
         /// <returns></returns>
         internal ReadItem RegisteredOrGiven(string tag)
-            => _registeredTags.TryGetValue(tag, out var nodeId) ? nodeId : ReadItem.CreateFromTag(tag);
+        {
+            return _registeredTags.TryGetValue(tag, out ReadItem nodeId) ? nodeId : ReadItem.CreateFromTag(tag);
+        }
 
         /// <summary>
         /// Updates the ReadItem registration (add and/or remove items)
@@ -177,7 +182,7 @@ namespace Dacs7
             do
             {
                 origin = _registeredTags;
-                var tmp = origin as IEnumerable<KeyValuePair<string, ReadItem>>;
+                IEnumerable<KeyValuePair<string, ReadItem>> tmp = origin;
                 if (toAdd != null)
                 {
                     tmp = tmp.Union(toAdd);
@@ -198,7 +203,7 @@ namespace Dacs7
         /// <param name="state">The new connection state</param>
         private void UpdateConnectionState(ProtocolHandler handler, ConnectionState state)
         {
-            var dacs7State = Dacs7ConnectionState.Closed;
+            Dacs7ConnectionState dacs7State = Dacs7ConnectionState.Closed;
             switch (state)
             {
                 case ConnectionState.Closed: dacs7State = Dacs7ConnectionState.Closed; break;
@@ -217,34 +222,34 @@ namespace Dacs7
 
         private void NewSocketConnected(Socket clientSocket)
         {
-            var config = ClientSocketConfiguration.FromSocket(clientSocket);
-            var s7Context = new SiemensPlcProtocolContext 
-            {   
-                    Timeout = S7Context.Timeout, 
-                    PduSize = S7Context.PduSize, 
-                    MaxAmQCalling = S7Context.MaxAmQCalling,
-                    MaxAmQCalled = S7Context.MaxAmQCalled
+            ClientSocketConfiguration config = ClientSocketConfiguration.FromSocket(clientSocket);
+            SiemensPlcProtocolContext s7Context = new()
+            {
+                Timeout = S7Context.Timeout,
+                PduSize = S7Context.PduSize,
+                MaxAmQCalling = S7Context.MaxAmQCalling,
+                MaxAmQCalled = S7Context.MaxAmQCalled
             };
-            var transport = new TcpTransport(
+            TcpTransport transport = new(
                             new Rfc1006ProtocolContext
                             {
                             },
                             config,
                             clientSocket
                         );
-            var handler = new ProtocolHandler(transport, s7Context, ClientConnectionStateChanged, _loggerFactory, null, _provider);
+            ProtocolHandler handler = new(transport, s7Context, ClientConnectionStateChanged, _loggerFactory, null, _provider);
             _handler.Add(handler);
-            _logger.LogInformation("New client was connected to server, total connection is {connections}", _handler.Count);
+            _logger?.LogInformation("New client was connected to server, total connection is {connections}", _handler.Count);
         }
 
         private void ClientConnectionStateChanged(ProtocolHandler handler, ConnectionState state)
         {
-            if(state == ConnectionState.Closed)
+            if (state == ConnectionState.Closed)
             {
                 if (_handler.Remove(handler))
                 {
                     handler.Dispose();
-                    _logger.LogInformation("Client was disconnected from server, total connection is {connections}", _handler.Count);
+                    _logger?.LogInformation("Client was disconnected from server, total connection is {connections}", _handler.Count);
                 }
             }
         }
@@ -252,7 +257,7 @@ namespace Dacs7
         private TcpTransport InitializeTransport(int port)
         {
             _logger?.LogDebug("Start configuring dacs7 with Socket interface");
-            var transport = new TcpTransport(
+            TcpTransport transport = new(
                 new Rfc1006ProtocolContext
                 {
                     //DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType, rack, slot),

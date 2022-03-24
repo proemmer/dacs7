@@ -12,14 +12,14 @@ namespace Dacs7.Tests
         [Fact()]
         public async Task ExecuteClientAsync()
         {
-            var client = new Dacs7Client(PlcTestServer.Address, PlcTestServer.ConnectionType, PlcTestServer.Timeout);
+            Dacs7Client client = new(PlcTestServer.Address, PlcTestServer.ConnectionType, PlcTestServer.Timeout);
 
-            for (var i = 0; i < 5; i++)
+            for (int i = 0; i < 5; i++)
             {
                 try
                 {
                     await client.ConnectAsync();
-                    var results = (await client.ReadAsync(ReadItem.Create<bool>("DB3", 0))).ToArray();
+                    DataValue[] results = (await client.ReadAsync(ReadItem.Create<bool>("DB3", 0))).ToArray();
 
                     Assert.Single(results);
                     Assert.True(results[0].IsSuccessReturnCode);

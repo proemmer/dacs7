@@ -40,7 +40,9 @@ namespace Dacs7.Protocols.Rfc1006
             {
                 FrameSizeSending = value;
                 if (_frameSize != value)
+                {
                     CalculateTpduSize(value);
+                }
             }
         }
 
@@ -61,12 +63,19 @@ namespace Dacs7.Protocols.Rfc1006
         /// </summary>
         public static int DataHeaderSize => _tpktHeaderSize + 3;
 
-        public Rfc1006ProtocolContext() => FrameSize = _defaultFrameSize;
+        public Rfc1006ProtocolContext()
+        {
+            FrameSize = _defaultFrameSize;
+        }
 
         public void CalculateTpduSize(int frameSize = _defaultFrameSize)
         {
-            var b = -1;
-            for (var i = frameSize; i > 0; i >>= 1, ++b) ;
+            int b = -1;
+            for (int i = frameSize; i > 0; i >>= 1, ++b)
+            {
+                ;
+            }
+
             b = Math.Max(_tpduSizeMin, Math.Min(_tpduSizeMax, b));
             SizeTpduReceiving = new byte[] { (byte)b };
             SizeTpduSending = new byte[] { (byte)b };
@@ -77,15 +86,15 @@ namespace Dacs7.Protocols.Rfc1006
         {
             const int optionsMinLength = 7;
             const int TpduCrWithoutProperties = 6;
-            var tmp = Convert.ToUInt16(optionsMinLength + context.SourceTsap.Length + context.DestTsap.Length + TpduCrWithoutProperties);
+            ushort tmp = Convert.ToUInt16(optionsMinLength + context.SourceTsap.Length + context.DestTsap.Length + TpduCrWithoutProperties);
             length = (ushort)(tmp + _tpktHeaderSize + 1); // add 1 because li is without li
             li = Convert.ToByte(tmp);
         }
 
         public static Memory<byte> CalcRemoteTsap(ushort connectionType, int rack, int slot)
         {
-            var mem = new Memory<byte>(new byte[2]);
-            var value = (ushort)((connectionType << 8) + (rack * 0x20) + slot);
+            Memory<byte> mem = new(new byte[2]);
+            ushort value = (ushort)((connectionType << 8) + (rack * 0x20) + slot);
             BinaryPrimitives.TryWriteUInt16BigEndian(mem.Span, value);
             return mem;
         }
@@ -93,7 +102,7 @@ namespace Dacs7.Protocols.Rfc1006
         public static bool TryDetectDatagramType(Memory<byte> memory, out Type datagramType)
         {
 
-            var span = memory.Span;
+            Span<byte> span = memory.Span;
             if (span[0] == _prefix0 && span[1] == _prefix1)
             {
                 switch (span[_datagramTypeOffset])
@@ -114,7 +123,14 @@ namespace Dacs7.Protocols.Rfc1006
             return false;
         }
 
-        public void UpdateFrameSize(ConnectionConfirmedDatagram res) => FrameSizeSending = 1 << res.SizeTpduReceiving.Span[0];
-        public void UpdateFrameSize(ConnectionRequestDatagram res) => FrameSizeSending = 1 << res.SizeTpduReceiving.Span[0];
+        public void UpdateFrameSize(ConnectionConfirmedDatagram res)
+        {
+            FrameSizeSending = 1 << res.SizeTpduReceiving.Span[0];
+        }
+
+        public void UpdateFrameSize(ConnectionRequestDatagram res)
+        {
+            FrameSizeSending = 1 << res.SizeTpduReceiving.Span[0];
+        }
     }
 }

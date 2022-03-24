@@ -22,12 +22,15 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
         public byte LastDataUnit { get; set; }
         public ushort ParamErrorCode { get; set; }  // present if plen=0x08 (S7 manager online functions)  -> we do not need this at the moment
 
-        internal int GetParamSize() => 4 + ParamDataLength;
+        internal int GetParamSize()
+        {
+            return 4 + ParamDataLength;
+        }
 
         public static Memory<byte> TranslateToMemory(S7UserDataParameter datagram, Memory<byte> memory)
         {
-            var result = memory.IsEmpty ? new Memory<byte>(new byte[datagram.ParamDataLength]) : memory;  // check if we could use ArrayBuffer
-            var span = result.Span;
+            Memory<byte> result = memory.IsEmpty ? new Memory<byte>(new byte[datagram.ParamDataLength]) : memory;  // check if we could use ArrayBuffer
+            Span<byte> span = result.Span;
 
             datagram.ParamHeader.CopyTo(span.Slice(0, 3));
             span[3] = datagram.ParamDataLength;
@@ -48,8 +51,8 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
 
         public static S7UserDataParameter TranslateFromMemory(Memory<byte> data)
         {
-            var span = data.Span;
-            var result = new S7UserDataParameter();
+            Span<byte> span = data.Span;
+            S7UserDataParameter result = new();
             span.Slice(0, 3).CopyTo(result.ParamHeader);
             result.ParamDataLength = span[3];
             result.ParameterType = span[4];

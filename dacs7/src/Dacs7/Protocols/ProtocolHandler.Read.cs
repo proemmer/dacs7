@@ -16,14 +16,14 @@ namespace Dacs7.Protocols
     internal sealed partial class ProtocolHandler
     {
         private static readonly List<S7DataItemSpecification> _defaultReadJobResult = new();
-        private readonly ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>>();
+        private readonly ConcurrentDictionary<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> _readHandler = new();
 
 
         public Task CancelReadHandlingAsync()
         {
             try
             {
-                foreach (var item in _readHandler.ToList())
+                foreach (KeyValuePair<ushort, CallbackHandler<IEnumerable<S7DataItemSpecification>>> item in _readHandler.ToList())
                 {
                     item.Value?.Event?.Set(null);
                 }
@@ -50,8 +50,8 @@ namespace Dacs7.Protocols
                 ThrowHelper.ThrowNotConnectedException();
             }
 
-            var result = vars.ToDictionary(x => x, x => null as S7DataItemSpecification);
-            foreach (var normalized in CreateReadPackages(_s7Context, vars))
+            Dictionary<ReadItem, S7DataItemSpecification> result = vars.ToDictionary(x => x, x => null as S7DataItemSpecification);
+            foreach (ReadPackage normalized in CreateReadPackages(_s7Context, vars))
             {
                 if (!await ReadPackage(result, normalized).ConfigureAwait(false))
                 {
@@ -63,10 +63,10 @@ namespace Dacs7.Protocols
 
         private async Task<bool> ReadPackage(Dictionary<ReadItem, S7DataItemSpecification> result, ReadPackage normalized)
         {
-            var id = GetNextReferenceId();
-            using (var dgmem = S7ReadJobDatagram.TranslateToMemory(S7ReadJobDatagram.BuildRead(_s7Context, id, normalized.Items), out var dgmemLength))
+            ushort id = GetNextReferenceId();
+            using (System.Buffers.IMemoryOwner<byte> dgmem = S7ReadJobDatagram.TranslateToMemory(S7ReadJobDatagram.BuildRead(_s7Context, id, normalized.Items), out int dgmemLength))
             {
-                using (var sendData = _transport.Build(dgmem.Memory.Slice(0, dgmemLength), out var sendLength))
+                using (System.Buffers.IMemoryOwner<byte> sendData = _transport.Build(dgmem.Memory.Slice(0, dgmemLength), out int sendLength))
                 {
                     try
                     {
@@ -151,15 +151,15 @@ namespace Dacs7.Protocols
 
         private static void BildResults(Dictionary<ReadItem, S7DataItemSpecification> result, ReadPackage normalized, IEnumerable<S7DataItemSpecification> readResults)
         {
-            var items = normalized.Items.GetEnumerator();
-            foreach (var item in readResults)
+            IEnumerator<ReadItem> items = normalized.Items.GetEnumerator();
+            foreach (S7DataItemSpecification item in readResults)
             {
                 if (items.MoveNext())
                 {
-                    var current = items.Current;
+                    ReadItem current = items.Current;
                     if (current.IsPart)
                     {
-                        if (!result.TryGetValue(current.Parent, out var parent) || parent == null)
+                        if (!result.TryGetValue(current.Parent, out S7DataItemSpecification parent) || parent == null)
                         {
                             parent = new S7DataItemSpecification
                             {
@@ -178,16 +178,17 @@ namespace Dacs7.Protocols
                     {
                         result[current] = item;
                     }
-
                 }
             }
         }
 
+
+
         private void ReceivedReadJobAck(Memory<byte> buffer)
         {
-            var data = S7ReadJobAckDatagram.TranslateFromMemory(buffer);
+            S7ReadJobAckDatagram data = S7ReadJobAckDatagram.TranslateFromMemory(buffer);
 
-            if (_readHandler.TryGetValue(data.Header.Header.ProtocolDataUnitReference, out var cbh))
+            if (_readHandler.TryGetValue(data.Header.Header.ProtocolDataUnitReference, out CallbackHandler<IEnumerable<S7DataItemSpecification>> cbh))
             {
                 if (data.Header.Error.ErrorClass != 0)
                 {
@@ -230,20 +231,20 @@ namespace Dacs7.Protocols
 
         private static IEnumerable<ReadPackage> CreateReadPackages(SiemensPlcProtocolContext s7Context, IEnumerable<ReadItem> vars)
         {
-            var result = new List<ReadPackage>();
-            foreach (var item in vars.OrderByDescending(x => x.NumberOfItems).ToList())
+            List<ReadPackage> result = new();
+            foreach (ReadItem item in vars.OrderByDescending(x => x.NumberOfItems).ToList())
             {
-                var currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
+                ReadPackage currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
                 if (currentPackage == null)
                 {
                     if (item.NumberOfItems > s7Context.ReadItemMaxLength)
                     {
-                        var bytesToRead = item.NumberOfItems;
+                        ushort bytesToRead = item.NumberOfItems;
                         ushort processed = 0;
                         while (bytesToRead > 0)
                         {
-                            var slice = Math.Min(s7Context.ReadItemMaxLength, bytesToRead);
-                            var child = ReadItem.CreateChild(item, (item.Offset + processed), slice);
+                            ushort slice = Math.Min(s7Context.ReadItemMaxLength, bytesToRead);
+                            ReadItem child = ReadItem.CreateChild(item, (item.Offset + processed), slice);
                             if (slice < s7Context.ReadItemMaxLength)
                             {
                                 currentPackage = result.FirstOrDefault(package => package.TryAdd(child));
@@ -300,7 +301,7 @@ namespace Dacs7.Protocols
                     }
                 }
             }
-            foreach (var package in result)
+            foreach (ReadPackage package in result)
             {
                 yield return package.Return();
             }

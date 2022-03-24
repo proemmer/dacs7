@@ -21,8 +21,8 @@ namespace Dacs7.Communication
 
         public static ClientSocketConfiguration FromSocket(System.Net.Sockets.Socket socket)
         {
-            var ep = socket.RemoteEndPoint as IPEndPoint;
-            var keepAlive = socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.KeepAlive);
+            IPEndPoint ep = socket.RemoteEndPoint as IPEndPoint;
+            object keepAlive = socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.KeepAlive);
             return new ClientSocketConfiguration
             {
                 Hostname = ep.Address.ToString(),
@@ -32,6 +32,9 @@ namespace Dacs7.Communication
             };
         }
 
-        public sealed override string ToString() => $"Socket: Hostname={Hostname}; ServiceName={ServiceName}; ReceiveBufferSize={ReceiveBufferSize}; KeepAlive={KeepAlive}";
+        public sealed override string ToString()
+        {
+            return $"Socket: Hostname={Hostname}; ServiceName={ServiceName}; ReceiveBufferSize={ReceiveBufferSize}; KeepAlive={KeepAlive}";
+        }
     }
 }

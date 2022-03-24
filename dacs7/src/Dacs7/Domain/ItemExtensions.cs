@@ -10,7 +10,7 @@ namespace Dacs7
 
         public static WriteItem From(this ReadItem ri, Memory<byte> data)
         {
-            var result = ri.Clone();
+            WriteItem result = ri.Clone();
             result.Data = data;
             return result;
         }

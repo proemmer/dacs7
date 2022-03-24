@@ -8,6 +8,9 @@ namespace Dacs7
     {
         public ItemResponseRetValue ReturnCode { get; private set; }
 
-        public WriteResultItem(WriteRequestItem req, ItemResponseRetValue returnCode) : base(req.Area, req.DbNumber, req.NumberOfItems, req.Offset, req.TransportSize, req.ElementSize, req.Address, req.Data) => ReturnCode = returnCode;
+        public WriteResultItem(WriteRequestItem req, ItemResponseRetValue returnCode) : base(req.Area, req.DbNumber, req.NumberOfItems, req.Offset, req.TransportSize, req.ElementSize, req.Address, req.Data)
+        {
+            ReturnCode = returnCode;
+        }
     }
 }

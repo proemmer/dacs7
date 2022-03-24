@@ -23,7 +23,7 @@ namespace Dacs7.Helper
         /// <returns>The value as <see cref="byte[]"/></returns>
         public static byte[] SetSwap<T>(this T value, IFormatProvider formatProvider = null)
         {
-            if(formatProvider == null)
+            if (formatProvider == null)
             {
                 formatProvider = CultureInfo.InvariantCulture;
             }
@@ -104,7 +104,10 @@ namespace Dacs7.Helper
         /// <param name="buffer">buffer to extract the value</param>
         /// <param name="offset">offset to the first byte if the value</param>
         /// <returns>The value of type T</returns>
-        public static T GetSwap<T>(this IEnumerable<byte> buffer, int offset = 0) => buffer.Skip(offset).Take(sizeof(float)).ToArray().GetSwap<T>();
+        public static T GetSwap<T>(this IEnumerable<byte> buffer, int offset = 0)
+        {
+            return buffer.Skip(offset).Take(sizeof(float)).ToArray().GetSwap<T>();
+        }
 
         /// <summary>
         /// Converts a give <see cref="byte[]"/> to T- with swapped bytes
@@ -152,7 +155,10 @@ namespace Dacs7.Helper
         /// <param name="buffer">buffer to extract the value</param>
         /// <param name="offset">offset to the first byte if the value</param>
         /// <returns>The value  of type T</returns>
-        public static T GetNoSwap<T>(this IEnumerable<byte> buffer, int offset = 0) => buffer.Skip(offset).Take(sizeof(float)).ToArray().GetNoSwap<T>();
+        public static T GetNoSwap<T>(this IEnumerable<byte> buffer, int offset = 0)
+        {
+            return buffer.Skip(offset).Take(sizeof(float)).ToArray().GetNoSwap<T>();
+        }
 
 
         /// <summary>
@@ -228,8 +234,8 @@ namespace Dacs7.Helper
         /// <returns>swapped shortint</returns>
         public static short SwapInt(this short intVal)
         {
-            var buffer = new byte[2];
-            var array = intVal.ToByteArray(2);
+            byte[] buffer = new byte[2];
+            byte[] array = intVal.ToByteArray(2);
             buffer[0] = array[1];
             buffer[1] = array[0];
             return BitConverter.ToInt16(buffer, 0);
@@ -242,8 +248,8 @@ namespace Dacs7.Helper
         /// <returns>swapped int</returns>
         public static int SwapDInt(this int intVal)
         {
-            var buffer = new byte[4];
-            var array = intVal.ToByteArray(4);
+            byte[] buffer = new byte[4];
+            byte[] array = intVal.ToByteArray(4);
             buffer[0] = array[3];
             buffer[1] = array[2];
             buffer[2] = array[1];
@@ -258,8 +264,8 @@ namespace Dacs7.Helper
         /// <returns>swapped int</returns>
         public static float SwapSingle(this float intVal)
         {
-            var buffer = new byte[4];
-            var array = intVal.ToByteArray(4);
+            byte[] buffer = new byte[4];
+            byte[] array = intVal.ToByteArray(4);
             buffer[0] = array[3];
             buffer[1] = array[2];
             buffer[2] = array[1];
@@ -275,10 +281,10 @@ namespace Dacs7.Helper
         /// <returns>the state of the bit</returns>
         public static bool GetBit(this byte[] data, int bit)
         {
-            var byteOffset = bit / 8;
-            var bitOffset = bit - (byteOffset * 8);
+            int byteOffset = bit / 8;
+            int bitOffset = bit - (byteOffset * 8);
             // Shift the bit to the first location
-            var d = (byte)(data[byteOffset] >> bitOffset);
+            byte d = (byte)(data[byteOffset] >> bitOffset);
 
             // Isolate the value
             return (d & 1) == 1;
@@ -309,7 +315,10 @@ namespace Dacs7.Helper
         public static byte SetBit(this byte data, int bit, bool value)
         {
             if (value)
+            {
                 return (byte)(data | (1U << bit));
+            }
+
             return (byte)(data & (~(1U << bit)));
         }
 
@@ -324,12 +333,18 @@ namespace Dacs7.Helper
         /// <returns>a copy of this sub array</returns>
         public static T[] SubArray<T>(this T[] data, int skip, int length = -1, bool realloc = false)
         {
-            var dataLength = data.Length;
+            int dataLength = data.Length;
             if (length == -1)
+            {
                 length = dataLength - skip;
+            }
+
             if (skip == 0 && length == dataLength && !realloc) //No manipulation and no copying
+            {
                 return data;
-            var result = new T[length];
+            }
+
+            T[] result = new T[length];
             Array.Copy(data, skip, result, 0, length);
             return result;
         }
@@ -343,7 +358,7 @@ namespace Dacs7.Helper
         /// <returns></returns>
         public static T[] Concat<T>(this T[] data1, T[] data2)
         {
-            var result = new T[data1.Length + data2.Length];
+            T[] result = new T[data1.Length + data2.Length];
             data1.CopyTo(result, 0);
             data2.CopyTo(result, data1.Length);
             return result;
@@ -352,22 +367,24 @@ namespace Dacs7.Helper
 
         public static byte[] ToByteArray<T>(this T value, int maxLength)
         {
-            var rawdata = new byte[Marshal.SizeOf(value)];
-            var handle = GCHandle.Alloc(rawdata, GCHandleType.Pinned);
+            byte[] rawdata = new byte[Marshal.SizeOf(value)];
+            GCHandle handle = GCHandle.Alloc(rawdata, GCHandleType.Pinned);
             Marshal.StructureToPtr(value, handle.AddrOfPinnedObject(), false);
             handle.Free();
             if (maxLength >= rawdata.Length)
+            {
                 return rawdata;
+            }
 
-            var temp = new byte[maxLength];
+            byte[] temp = new byte[maxLength];
             Array.Copy(rawdata, temp, maxLength);
             return temp;
         }
 
         public static T FromByteArray<T>(this byte[] rawValue)
         {
-            var handle = GCHandle.Alloc(rawValue, GCHandleType.Pinned);
-            var structure = Marshal.PtrToStructure<T>(handle.AddrOfPinnedObject());
+            GCHandle handle = GCHandle.Alloc(rawValue, GCHandleType.Pinned);
+            T structure = Marshal.PtrToStructure<T>(handle.AddrOfPinnedObject());
             handle.Free();
             return structure;
         }
@@ -376,11 +393,16 @@ namespace Dacs7.Helper
         {
             //Acepted Values 00 to 99
             int bt1 = b;
-            var neg = (bt1 & 0xf0) == 0xf0;
+            bool neg = (bt1 & 0xf0) == 0xf0;
             if (neg)
+            {
                 bt1 = -1 * (bt1 & 0x0f);
+            }
             else
+            {
                 bt1 = (bt1 >> 4) * 10 + (bt1 & 0x0f);
+            }
+
             return bt1;
         }
 
@@ -390,7 +412,10 @@ namespace Dacs7.Helper
 
             //setze höchstes bit == negativer wert!
             if (value < 0)
+            {
                 return (byte)((b1 << 4) + b0);
+            }
+
             b1 = (value % 100 / 10);
             b0 = value % 10;
             return (byte)((b1 << 4) + b0);
@@ -400,7 +425,7 @@ namespace Dacs7.Helper
         {
             int bt1 = b[offset];
             int bt2 = b[offset + 1];
-            var neg = (bt1 & 0xf0) == 0xf0;
+            bool neg = (bt1 & 0xf0) == 0xf0;
 
             bt1 &= 0x0f;
             bt2 = (bt2 / 0x10) * 10 + (bt2 & 0x0f % 0x10);
@@ -411,7 +436,7 @@ namespace Dacs7.Helper
         public static byte[] SetBcdWord(this int value, int offset = 0)
         {
             //Acepted Values -999 to +999
-            var b = new byte[2];
+            byte[] b = new byte[2];
             int b3;
 
             if (value < 0)
@@ -424,9 +449,9 @@ namespace Dacs7.Helper
                 b3 = 0x00;
             }
 
-            var b2 = (value % 1000 / 100);
-            var b1 = (value % 100 / 10);
-            var b0 = (value % 10);
+            int b2 = (value % 1000 / 100);
+            int b1 = (value % 100 / 10);
+            int b0 = (value % 10);
 
             b[offset] = (byte)((b3 << 4) + b2);
             b[offset + 1] = (byte)((b1 << 4) + b0);
@@ -439,7 +464,7 @@ namespace Dacs7.Helper
             int bt2 = b[offset + 1];
             int bt3 = b[offset + 2];
             int bt4 = b[offset + 3];
-            var neg = (bt1 & 0xf0) == 0xf0;
+            bool neg = (bt1 & 0xf0) == 0xf0;
 
             bt1 &= 0x0f;
             bt2 = (bt2 / 0x10) * 10 + (bt2 % 0x10);
@@ -451,7 +476,7 @@ namespace Dacs7.Helper
         public static byte[] SetBcdDWord(this int value, int offset = 0)
         {
             //Acepted Values -9999999 to +9999999
-            var b = new byte[4];
+            byte[] b = new byte[4];
             int b7;
 
             if (value < 0)
@@ -464,13 +489,13 @@ namespace Dacs7.Helper
                 b7 = 0x00;
             }
 
-            var b6 = (value % 10000000 / 1000000);
-            var b5 = (value % 1000000 / 100000);
-            var b4 = (value % 100000 / 10000);
-            var b3 = (value % 10000 / 1000);
-            var b2 = (value % 1000 / 100);
-            var b1 = (value % 100 / 10);
-            var b0 = (value % 10);
+            int b6 = (value % 10000000 / 1000000);
+            int b5 = (value % 1000000 / 100000);
+            int b4 = (value % 100000 / 10000);
+            int b3 = (value % 10000 / 1000);
+            int b2 = (value % 1000 / 100);
+            int b1 = (value % 100 / 10);
+            int b0 = (value % 10);
 
             b[offset] = (byte)((b7 << 4) + b6);
             b[offset + 1] = (byte)((b5 << 4) + b4);
@@ -481,36 +506,49 @@ namespace Dacs7.Helper
 
         public static string ToBinString(this byte b)
         {
-            var binString = new StringBuilder(8);
-            for (var bitno = 1; bitno < 0x0100; bitno <<= 2)
+            StringBuilder binString = new(8);
+            for (int bitno = 1; bitno < 0x0100; bitno <<= 2)
+            {
                 binString.Append((b & bitno) != 0 ? "1" : "0");
+            }
+
             return binString.ToString();
         }
 
         public static string ToBinString(this IEnumerable<byte> bytes, string separator = "", int offset = 0, int length = int.MaxValue)
         {
-            var arr = bytes.Skip(offset).Take(length).ToArray();
-            var binString = new StringBuilder(arr.Length * 8);
+            byte[] arr = bytes.Skip(offset).Take(length).ToArray();
+            StringBuilder binString = new(arr.Length * 8);
 
-            foreach (var b in arr.Reverse())
+            foreach (byte b in arr.Reverse())
             {
                 if (binString.Length > 0)
+                {
                     binString.Append(separator);
+                }
 
-                for (var bitno = 7; bitno >= 0; bitno--)
+                for (int bitno = 7; bitno >= 0; bitno--)
+                {
                     binString.Append(((b >> bitno) & 1) != 0 ? "1" : "0");
+                }
             }
             return binString.ToString();
         }
 
         public static string ToHexString(this IEnumerable<byte> bytes, string separator = "", int offset = 0, int length = int.MaxValue, bool reverse = true)
         {
-            var arr = bytes.Skip(offset).Take(length).ToArray();
+            byte[] arr = bytes.Skip(offset).Take(length).ToArray();
             if (!arr.Any())
+            {
                 return string.Empty;
-            var sb = new StringBuilder(arr.Count() * (2 + separator.Length));
-            foreach (var b in reverse ? arr.Reverse() : arr)
-                sb.AppendFormat(CultureInfo.InvariantCulture,"{0:X2}{1}", b, separator);
+            }
+
+            StringBuilder sb = new(arr.Count() * (2 + separator.Length));
+            foreach (byte b in reverse ? arr.Reverse() : arr)
+            {
+                sb.AppendFormat(CultureInfo.InvariantCulture, "{0:X2}{1}", b, separator);
+            }
+
             return sb.ToString(0, sb.Length - separator.Length);
         }
 
@@ -519,7 +557,10 @@ namespace Dacs7.Helper
         /// </summary>
         /// <param name="hexString"></param>
         /// <returns></returns>
-        public static byte[] HexGetBytes(this string hexString) => (HexGetBytes(hexString, out _));
+        public static byte[] HexGetBytes(this string hexString)
+        {
+            return (HexGetBytes(hexString, out _));
+        }
 
         /// <summary>
         /// Extract a value from the hex string
@@ -534,7 +575,7 @@ namespace Dacs7.Helper
             try
             {
                 long val = 0;
-                foreach (var b in hexString.Replace("0x", ""))
+                foreach (char b in hexString.Replace("0x", ""))
                 {
                     val *= 16;
                     switch (b)
@@ -582,7 +623,10 @@ namespace Dacs7.Helper
         /// </summary>
         /// <param name="binString"></param>
         /// <returns></returns>
-        public static byte[] BinGetBytes(this string binString) => (BinGetBytes(binString, out _));
+        public static byte[] BinGetBytes(this string binString)
+        {
+            return (BinGetBytes(binString, out _));
+        }
 
         /// <summary>
         /// Converts a binary string to a value of T
@@ -597,7 +641,7 @@ namespace Dacs7.Helper
             try
             {
                 long val = 0;
-                foreach (var b in binString)
+                foreach (char b in binString)
                 {
                     switch (b)
                     {
@@ -625,7 +669,7 @@ namespace Dacs7.Helper
         /// <returns>DateTime</returns>
         public static DateTime ToDateTime(this byte[] data, int offset = 0)
         {
-            var str = string.Format(CultureInfo.InvariantCulture, "{2}/{1}/{0} {3}:{4}:{5}.{6}{7}",
+            string str = string.Format(CultureInfo.InvariantCulture, "{2}/{1}/{0} {3}:{4}:{5}.{6}{7}",
                 data.ToHexString("", offset, 1),
                 data.ToHexString("", offset + 1, 1),
                 data.ToHexString("", offset + 2, 1),
@@ -635,8 +679,11 @@ namespace Dacs7.Helper
                 data.ToHexString("", offset + 6, 1),
                 data.ToHexString("", offset + 7, 1));
 
-            if (DateTime.TryParseExact(str, "dd/MM/yy HH:mm:ss.ffff", null, DateTimeStyles.None, out var parsedDate))
+            if (DateTime.TryParseExact(str, "dd/MM/yy HH:mm:ss.ffff", null, DateTimeStyles.None, out DateTime parsedDate))
+            {
                 return parsedDate;
+            }
+
             return DateTime.MinValue;
         }
 
@@ -645,9 +692,15 @@ namespace Dacs7.Helper
         /// </summary>
         /// <param name="hexString"></param>
         /// <returns></returns>
-        public static bool IsInHexFormat(this string hexString) => hexString.All(IsHexDigit);
+        public static bool IsInHexFormat(this string hexString)
+        {
+            return hexString.All(IsHexDigit);
+        }
 
-        private static bool IsHexDigit(char c) => _hexDigits.IndexOf(c) >= 0;
+        private static bool IsHexDigit(char c)
+        {
+            return _hexDigits.IndexOf(c) >= 0;
+        }
 
         /// <summary>
         /// Creates a byte array from the hexadecimal string. Each two characters are combined
@@ -660,14 +713,18 @@ namespace Dacs7.Helper
         private static byte[] HexGetBytes(string hexString, out int discarded)
         {
             discarded = 0;
-            var newString = new StringBuilder();
+            StringBuilder newString = new();
             // remove all none A-F, 0-9, characters
-            foreach (var c in hexString)
+            foreach (char c in hexString)
             {
                 if (IsHexDigit(c))
+                {
                     newString.Append(c);
+                }
                 else
+                {
                     discarded++;
+                }
             }
             // if odd number of characters, discard last character
             if (newString.Length % 2 != 0)
@@ -676,17 +733,23 @@ namespace Dacs7.Helper
                 newString = new StringBuilder(newString.ToString().Substring(0, newString.Length - 1));
             }
 
-            var byteLength = newString.Length / 2;
-            var bytes = new byte[byteLength];
-            var j = 0;
-            for (var i = 0; i < bytes.Length; i++)
+            int byteLength = newString.Length / 2;
+            byte[] bytes = new byte[byteLength];
+            int j = 0;
+            for (int i = 0; i < bytes.Length; i++)
             {
-                var b1 = newString[j] - 48;
-                var b2 = newString[j + 1] - 48;
+                int b1 = newString[j] - 48;
+                int b2 = newString[j + 1] - 48;
                 if (b1 > 9)
+                {
                     b1 -= 7;
+                }
+
                 if (b2 > 9)
+                {
                     b2 -= 7;
+                }
+
                 bytes[i] = (byte)(b1 * 16 + b2);
                 j += 2;
             }
@@ -704,15 +767,19 @@ namespace Dacs7.Helper
         private static byte[] BinGetBytes(string binString, out int discarded)
         {
             discarded = 0;
-            var newString = new StringBuilder();
+            StringBuilder newString = new();
 
             // remove all none 0-1,characters
-            foreach (var c in binString)
+            foreach (char c in binString)
             {
                 if (c == '0' || c == '1')
+                {
                     newString.Append(c);
+                }
                 else
+                {
                     discarded++;
+                }
             }
             // if odd number of characters, discard last character
             if (newString.Length % 2 != 0)
@@ -721,21 +788,35 @@ namespace Dacs7.Helper
                 newString = new StringBuilder(newString.ToString().Substring(0, newString.Length - 1));
             }
 
-            var byteLength = newString.Length / 8;
-            var bytes = new byte[byteLength];
-            for (var i = 0; i < byteLength; ++i)
+            int byteLength = newString.Length / 8;
+            byte[] bytes = new byte[byteLength];
+            for (int i = 0; i < byteLength; ++i)
+            {
                 bytes[i] = Convert.ToByte(newString.ToString().Substring(8 * i, 8), 2);
+            }
 
             return bytes;
         }
 
-        private static int ToBcd(this byte value) => ((int)value).ToBcd();
+        private static int ToBcd(this byte value)
+        {
+            return ((int)value).ToBcd();
+        }
 
-        private static int ToBcd(this int value) => ((value / 10) << 4) + (value % 10);
+        private static int ToBcd(this int value)
+        {
+            return ((value / 10) << 4) + (value % 10);
+        }
 
-        private static int FromBcd(this byte value) => ((int)value).FromBcd();
+        private static int FromBcd(this byte value)
+        {
+            return ((int)value).FromBcd();
+        }
 
-        private static int FromBcd(this int value) => (((value >> 4)) * 10) + ((value & 0x0f));
+        private static int FromBcd(this int value)
+        {
+            return (((value >> 4)) * 10) + ((value & 0x0f));
+        }
 
         /// <summary>
         /// Convert a byte list to a Datetime 
@@ -748,23 +829,25 @@ namespace Dacs7.Helper
         public static DateTime ConvertToDateTime(this IList<byte> data, int offset = 0)
         {
             if (data == null || !data.Any())
+            {
                 return new DateTime(1900, 01, 01, 00, 00, 00);
+            }
 
             //BCD
-            var bt = data[offset].FromBcd();
-            var year = bt < 90 ? 2000 : 1900;
+            int bt = data[offset].FromBcd();
+            int year = bt < 90 ? 2000 : 1900;
             year += bt;
 
-            var month = data[offset + 1].FromBcd();
-            var day = data[offset + 2].FromBcd();
-            var hour = data[offset + 3].FromBcd();
-            var minute = data[offset + 4].FromBcd();
-            var second = data[offset + 5].FromBcd();
+            int month = data[offset + 1].FromBcd();
+            int day = data[offset + 2].FromBcd();
+            int hour = data[offset + 3].FromBcd();
+            int minute = data[offset + 4].FromBcd();
+            int second = data[offset + 5].FromBcd();
 
             //millisecond
             //Byte 6 BCD + MSB (Byte 7)
-            var milli = data[offset + 6].FromBcd();
-            var bt1 = data[offset + 7];
+            int milli = data[offset + 6].FromBcd();
+            byte bt1 = data[offset + 7];
             milli = milli * 10 + (bt1 >> 4);
 
             //week day
@@ -787,7 +870,7 @@ namespace Dacs7.Helper
 
         public static IList<byte> ConvertFromDateTime(this DateTime dateTime)
         {
-            var res = new List<byte>
+            List<byte> res = new()
             {
                 0,
                 (byte)(dateTime.Year - 2000).ToBcd(),
@@ -804,7 +887,7 @@ namespace Dacs7.Helper
 
         internal static object ConvertTo<T>(this byte[] data, int offset = 0)
         {
-            var t = typeof(T);
+            Type t = typeof(T);
             if (t == typeof(bool))
             {
                 return data[offset] != 0x00;
@@ -868,7 +951,7 @@ namespace Dacs7.Helper
             }
             else if (t == typeof(float))
             {
-                var tmp = new byte[4];
+                byte[] tmp = new byte[4];
                 tmp[0] = data[offset + 3];
                 tmp[1] = data[offset + 2];
                 tmp[2] = data[offset + 1];

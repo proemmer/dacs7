@@ -1,9 +1,7 @@
 ﻿using Dacs7.Metadata;
 using Dacs7.ReadWrite;
 using Dacs7Tests.ServerHelper;
-using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -16,7 +14,7 @@ namespace Dacs7.Tests
         {
             await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
-                var x = await client.ReadBlockInfoAsync(PlcBlockType.Db, 66);
+                IPlcBlockInfo x = await client.ReadBlockInfoAsync(PlcBlockType.Db, 66);
                 Assert.Equal(0, x.CodeSize);
             });
         }
@@ -26,7 +24,7 @@ namespace Dacs7.Tests
         {
             await PlcTestServer.ExecuteClientAsync(async (client) =>
             {
-                var x = await client.ReadAsync("DB66.0,B");
+                IEnumerable<DataValue> x = await client.ReadAsync("DB66.0,B");
             });
         }
     }

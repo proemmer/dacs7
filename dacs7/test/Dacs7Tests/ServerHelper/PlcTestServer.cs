@@ -1,6 +1,7 @@
-﻿//#define REALPLC
+﻿// #define REALPLC
 using Dacs7;
-using Snap7;
+using Dacs7.DataProvider;
+using Dacs7.Helper;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -22,12 +23,17 @@ namespace Dacs7Tests.ServerHelper
 
     public class PlcServerFixture : IDisposable
     {
-        public PlcServerFixture() => PlcTestServer.Start();
+        public PlcServerFixture()
+        {
+            PlcTestServer.StartAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        }
 
-        public void Dispose() => PlcTestServer.Stop();
-
+        public void Dispose()
+        {
+            PlcTestServer.StopAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        }
     }
-   
+
     [CollectionDefinition("PlcServer collection")]
     public class PlcServerCollection : ICollectionFixture<PlcServerFixture>
     {
@@ -40,17 +46,18 @@ namespace Dacs7Tests.ServerHelper
     internal static class PlcTestServer
     {
 
-
-        private static readonly object _lock = new();
-        private static readonly S7Server _server = new();
-        private static readonly Dictionary<int, byte[]> _dbAreas = new()
+        private static readonly SemaphoreSlim _sema = new(1);
+        private static readonly Dacs7Server _server = new(5021, SimulationPlcDataProvider.Instance);
+        private static readonly Dictionary<ushort, ushort> _dbAreas = new()
         {
-            {1, new byte[20000] },
-            {2, new byte[20000] },
-            {3, new byte[10] },
-            {141, new byte[20000] },
-            {962, new byte[1000] },
-            {4, new byte[10000] },
+            { 1, 20000 },
+            { 2, 20000 },
+            { 3, 10 },
+            { 141, 20000 },
+            { 962, 1000 },
+            { 4, 10000 },
+            { 1993, 10000 },
+            { 2241 , 15450 }
         };
 
 
@@ -63,7 +70,7 @@ namespace Dacs7Tests.ServerHelper
         private static readonly SemaphoreSlim _semaphore = null;
 
 #else
-        public static readonly string Address = "127.0.0.1";
+        public static readonly string Address = "127.0.0.1:5021,0,1";
         public static readonly PlcConnectionType ConnectionType = PlcConnectionType.Pg;
         public static readonly int Timeout = 15000;
         private static readonly SemaphoreSlim _semaphore = new(1);
@@ -71,46 +78,62 @@ namespace Dacs7Tests.ServerHelper
 
 
 
-        public static int Start()
+        public static async Task StartAsync()
         {
-            if (_server.ServerStatus == 1)
+            if (_server.IsConnected)
             {
-                return 0;
+                return;
             }
 
-            lock (_lock)
+            using (await SemaphoreGuard.Async(_sema))
             {
-                if (_server.ServerStatus == 1)
+                if (_server.IsConnected)
                 {
-                    return 0;
+                    return;
                 }
 
-                foreach (var item in _dbAreas)
+                foreach (KeyValuePair<ushort, ushort> item in _dbAreas)
                 {
-                    var data = item.Value;
-                    _server.RegisterArea(S7Server.srvAreaDB, item.Key, ref data, data.Length);
+                    SimulationPlcDataProvider.Instance.Register(PlcArea.DB, item.Value, item.Key);
                 }
 
-                return _server.Start();
+                await _server.ConnectAsync();
             }
         }
 
-        public static int Stop() => _server.Stop();
+        public static async Task StopAsync()
+        {
+            if (!_server.IsConnected)
+            {
+                return;
+            }
+            using (await SemaphoreGuard.Async(_sema))
+            {
+                if (!_server.IsConnected)
+                {
+                    return;
+                }
+                await _server.DisconnectAsync();
+            }
+        }
 
 
 
         public static async Task ExecuteClientAsync(Func<Dacs7Client, Task> execution, ushort pduSize = 960)
         {
-            var client = new Dacs7Client(Address, ConnectionType, Timeout)
+            Dacs7Client client = new(Address, ConnectionType, Timeout)
             {
                 PduSize = pduSize
             };
-            var retries = 3;
+            int retries = 3;
 
             do
             {
-                if (_semaphore != null && !_semaphore.Wait(0)) 
+                if (_semaphore != null && !_semaphore.Wait(0))
+                {
                     await _semaphore.WaitAsync();
+                }
+
                 try
                 {
                     await client.ConnectAsync();
@@ -122,13 +145,18 @@ namespace Dacs7Tests.ServerHelper
                     await Task.Delay(1000);
                     retries--;
                     if (retries <= 0)
+                    {
                         throw;
+                    }
                 }
                 finally
                 {
                     await client.DisconnectAsync();
                     await Task.Delay(10);
-                    if (_semaphore != null) _semaphore.Release();
+                    if (_semaphore != null)
+                    {
+                        _semaphore.Release();
+                    }
                 }
             }
             while (retries > 0);

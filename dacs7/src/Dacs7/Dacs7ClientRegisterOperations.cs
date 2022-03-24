@@ -16,7 +16,10 @@ namespace Dacs7
         /// </summary>
         /// <param name="values"></param>
         /// <returns>Returns the registered shortcuts</returns>
-        public static Task<IEnumerable<string>> RegisterAsync(this Dacs7Client client, params string[] values) => client.RegisterAsync(values as IEnumerable<string>);
+        public static Task<IEnumerable<string>> RegisterAsync(this Dacs7Client client, params string[] values)
+        {
+            return client.RegisterAsync(values as IEnumerable<string>);
+        }
 
         /// <summary>
         /// Register shortcuts
@@ -25,9 +28,9 @@ namespace Dacs7
         /// <returns></returns>
         public static Task<IEnumerable<string>> RegisterAsync(this Dacs7Client client, IEnumerable<string> values)
         {
-            var added = new List<KeyValuePair<string, ReadItem>>();
-            var enumerator = values.GetEnumerator();
-            var resList = client.CreateNodeIdCollection(values).Select(x =>
+            List<KeyValuePair<string, ReadItem>> added = new();
+            IEnumerator<string> enumerator = values.GetEnumerator();
+            List<string> resList = client.CreateNodeIdCollection(values).Select(x =>
             {
                 enumerator.MoveNext();
                 added.Add(new KeyValuePair<string, ReadItem>(enumerator.Current, x));
@@ -45,7 +48,10 @@ namespace Dacs7
         /// </summary>
         /// <param name="values"></param>
         /// <returns></returns>
-        public static Task<IEnumerable<string>> UnregisterAsync(this Dacs7Client client, params string[] values) => client.UnregisterAsync(values as IEnumerable<string>);
+        public static Task<IEnumerable<string>> UnregisterAsync(this Dacs7Client client, params string[] values)
+        {
+            return client.UnregisterAsync(values as IEnumerable<string>);
+        }
 
         /// <summary>
         /// Remove shortcuts
@@ -54,11 +60,13 @@ namespace Dacs7
         /// <returns></returns>
         public static Task<IEnumerable<string>> UnregisterAsync(this Dacs7Client client, IEnumerable<string> values)
         {
-            var removed = new List<KeyValuePair<string, ReadItem>>();
-            foreach (var item in values)
+            List<KeyValuePair<string, ReadItem>> removed = new();
+            foreach (string item in values)
             {
-                if (client.RegisteredTags.TryGetValue(item, out var obj))
+                if (client.RegisteredTags.TryGetValue(item, out ReadItem obj))
+                {
                     removed.Add(new KeyValuePair<string, ReadItem>(item, obj));
+                }
             }
 
             client.UpdateRegistration(null, removed);
@@ -70,9 +78,9 @@ namespace Dacs7
         /// </summary>
         /// <param name="tag"></param>
         /// <returns></returns>
-        public static bool IsTagRegistered(this Dacs7Client client, string tag) => client.RegisteredTags.ContainsKey(tag);
-
-
-
+        public static bool IsTagRegistered(this Dacs7Client client, string tag)
+        {
+            return client.RegisteredTags.ContainsKey(tag);
+        }
     }
 }

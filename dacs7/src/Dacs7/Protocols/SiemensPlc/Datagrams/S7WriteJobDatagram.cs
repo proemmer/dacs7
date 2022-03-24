@@ -28,12 +28,12 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7WriteJobDatagram BuildWrite(SiemensPlcProtocolContext context, int id, IEnumerable<WriteItem> vars)
         {
-            var numberOfItems = 0;
-            var result = new S7WriteJobDatagram();
+            int numberOfItems = 0;
+            S7WriteJobDatagram result = new();
             result.Header.ProtocolDataUnitReference = (ushort)id;
             if (vars != null)
             {
-                foreach (var item in vars)
+                foreach (WriteItem item in vars)
                 {
                     numberOfItems++;
                     result.Items.Add(new S7AddressItemSpecificationDatagram
@@ -46,7 +46,7 @@ namespace Dacs7.Protocols.SiemensPlc
                     });
                 }
 
-                foreach (var item in vars)
+                foreach (WriteItem item in vars)
                 {
                     numberOfItems--;
                     result.Data.Add(new S7DataItemSpecification
@@ -70,24 +70,27 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static IMemoryOwner<byte> TranslateToMemory(S7WriteJobDatagram datagram, out int memoryLength)
         {
-            var result = S7HeaderDatagram.TranslateToMemory(datagram.Header, out memoryLength);
-            var mem = result.Memory.Slice(0, memoryLength);
-            var span = mem.Span;
-            var offset = datagram.Header.GetHeaderSize();
+            IMemoryOwner<byte> result = S7HeaderDatagram.TranslateToMemory(datagram.Header, out memoryLength);
+            Memory<byte> mem = result.Memory.Slice(0, memoryLength);
+            Span<byte> span = mem.Span;
+            int offset = datagram.Header.GetHeaderSize();
             span[offset++] = datagram.Function;
             span[offset++] = datagram.ItemCount;
 
-            foreach (var item in datagram.Items)
+            foreach (S7AddressItemSpecificationDatagram item in datagram.Items)
             {
                 S7AddressItemSpecificationDatagram.TranslateToMemory(item, mem.Slice(offset));
                 offset += item.GetSpecificationLength();
             }
 
-            foreach (var item in datagram.Data)
+            foreach (S7DataItemSpecification item in datagram.Data)
             {
                 S7DataItemSpecification.TranslateToMemory(item, mem.Slice(offset));
                 offset += item.GetSpecificationLength();
-                if (offset % 2 != 0) offset++;
+                if (offset % 2 != 0)
+                {
+                    offset++;
+                }
             }
 
             return result;
@@ -95,28 +98,31 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7WriteJobDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var span = data.Span;
-            var result = new S7WriteJobDatagram
+            Span<byte> span = data.Span;
+            S7WriteJobDatagram result = new()
             {
                 Header = S7HeaderDatagram.TranslateFromMemory(data),
             };
-            var offset = result.Header.GetHeaderSize();
+            int offset = result.Header.GetHeaderSize();
             result.Function = span[offset++];
             result.ItemCount = span[offset++];
 
-            for (var i = 0; i < result.ItemCount; i++)
+            for (int i = 0; i < result.ItemCount; i++)
             {
-                var res = S7AddressItemSpecificationDatagram.TranslateFromMemory(data.Slice(offset));
+                S7AddressItemSpecificationDatagram res = S7AddressItemSpecificationDatagram.TranslateFromMemory(data.Slice(offset));
                 result.Items.Add(res);
                 offset += res.GetSpecificationLength();
             }
 
-            for (var i = 0; i < result.ItemCount; i++)
+            for (int i = 0; i < result.ItemCount; i++)
             {
-                var res = S7DataItemSpecification.TranslateFromMemory(data.Slice(offset));
+                S7DataItemSpecification res = S7DataItemSpecification.TranslateFromMemory(data.Slice(offset));
                 result.Data.Add(res);
                 offset += res.GetSpecificationLength();
-                if (offset % 2 != 0) offset++;
+                if (offset % 2 != 0)
+                {
+                    offset++;
+                }
             }
 
             return result;

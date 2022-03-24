@@ -11,7 +11,7 @@ namespace Dacs7.Protocols
         private const int _writeItemHeaderSize = SiemensPlcProtocolContext.WriteParameterItem + SiemensPlcProtocolContext.WriteDataItem;
         private const int _minimumSize = _writeItemHeaderSize + 1;
         private readonly int _maxSize;
-        private readonly List<WriteItem> _items = new List<WriteItem>();
+        private readonly List<WriteItem> _items = new();
 
 
 
@@ -26,7 +26,10 @@ namespace Dacs7.Protocols
         public IEnumerable<WriteItem> Items => _items;
 
 
-        public WritePackage(int pduSize) => _maxSize = pduSize; // minimum header = 12 read   14 readack
+        public WritePackage(int pduSize)
+        {
+            _maxSize = pduSize; // minimum header = 12 read   14 readack
+        }
 
         public WritePackage Return()
         {
@@ -36,8 +39,8 @@ namespace Dacs7.Protocols
 
         public bool TryAdd(WriteItem item)
         {
-            var size = item.NumberOfItems;
-            var itemSize = _writeItemHeaderSize + size;
+            ushort size = item.NumberOfItems;
+            int itemSize = _writeItemHeaderSize + size;
 
             if (Free >= itemSize)
             {

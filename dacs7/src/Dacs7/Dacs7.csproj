@@ -12,6 +12,9 @@
     <PackageTags>siemens plc S7 PC-S7-Connection TCP/IP-S7 communication .netcore Automation HMI C# VB.Net RFC-1006 IsoOnTcp-S7 SIMATIC</PackageTags>
     <PackageReleaseNotes>
       * read item size calculation bug fixed
+	  * Server bithandling fixed
+	  * Added Handling of ACKDatagram (e.g. in case of Putget deactivated)
+	  * removed snap7 testserver
 </PackageReleaseNotes>
     <PackageProjectUrl>http://proemmer.github.io/dacs7</PackageProjectUrl>
     <PackageLicenseUrl>https://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
@@ -24,7 +27,7 @@
 
 
 
-    <Version>2.2.5</Version>
+    <Version>2.2.6</Version>
     <SignAssembly>true</SignAssembly>
     
     

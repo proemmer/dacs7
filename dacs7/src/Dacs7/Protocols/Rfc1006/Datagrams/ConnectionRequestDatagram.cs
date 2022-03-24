@@ -69,8 +69,8 @@ namespace Dacs7.Protocols.Rfc1006
 
         public static ConnectionRequestDatagram BuildCr(Rfc1006ProtocolContext context)
         {
-            context.CalcLength(context, out var li, out var length);
-            var result = new ConnectionRequestDatagram
+            context.CalcLength(context, out byte li, out ushort length);
+            ConnectionRequestDatagram result = new()
             {
                 Li = li,
                 SizeTpduReceiving = context.SizeTpduReceiving,
@@ -87,17 +87,19 @@ namespace Dacs7.Protocols.Rfc1006
         {
             //Test ack
             if (o1.SourceTsap.Span.SequenceEqual(o2.SourceTsap.Span) && o1.DestTsap.Span.SequenceEqual(o2.DestTsap.Span))
+            {
                 return true;
+            }
 
             return false;
         }
 
         public static IMemoryOwner<byte> TranslateToMemory(ConnectionRequestDatagram datagram, out int memoryLength)
         {
-            var length = memoryLength = datagram.Tkpt.Length;
-            var result = MemoryPool<byte>.Shared.Rent(length);  // check if we could use ArrayBuffer
-            var mem = result.Memory;
-            var span = mem.Span;
+            int length = memoryLength = datagram.Tkpt.Length;
+            IMemoryOwner<byte> result = MemoryPool<byte>.Shared.Rent(length);  // check if we could use ArrayBuffer
+            Memory<byte> mem = result.Memory;
+            Span<byte> span = mem.Span;
 
             span[0] = datagram.Tkpt.Sync1;
             span[1] = datagram.Tkpt.Sync2;
@@ -109,7 +111,7 @@ namespace Dacs7.Protocols.Rfc1006
             span[10] = datagram.ClassOption;
 
 
-            var offset = 11;
+            int offset = 11;
             span[offset++] = datagram.ParmCodeTpduSize;
             span[offset++] = datagram.SizeTpduReceivingLength;
             datagram.SizeTpduReceiving.CopyTo(mem.Slice(offset));
@@ -131,8 +133,8 @@ namespace Dacs7.Protocols.Rfc1006
 
         public static ConnectionRequestDatagram TranslateFromMemory(Memory<byte> data, out int processed)
         {
-            var span = data.Span;
-            var result = new ConnectionRequestDatagram
+            Span<byte> span = data.Span;
+            ConnectionRequestDatagram result = new()
             {
                 Tkpt = new TpktDatagram
                 {

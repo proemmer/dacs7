@@ -13,7 +13,10 @@ namespace Dacs7
         public ErrorParameter ErrorCode { get; private set; }
 
         public Dacs7ParameterException(ushort errorCode) :
-            base($"No success error code: <{Dacs7Exception.ResolveErrorCode<ErrorParameter>(errorCode)}>") => ErrorCode = (ErrorParameter)errorCode;
+            base($"No success error code: <{Dacs7Exception.ResolveErrorCode<ErrorParameter>(errorCode)}>")
+        {
+            ErrorCode = (ErrorParameter)errorCode;
+        }
 
         public Dacs7ParameterException()
         {

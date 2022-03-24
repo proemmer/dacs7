@@ -12,7 +12,10 @@ namespace Dacs7
     {
         public Type NotSupportedType { get; private set; }
 
-        public Dacs7TypeNotSupportedException(Type notSupportedType) : base($"The Type {notSupportedType.Name} is not supported for read or write operations!") => NotSupportedType = notSupportedType;
+        public Dacs7TypeNotSupportedException(Type notSupportedType) : base($"The Type {notSupportedType.Name} is not supported for read or write operations!")
+        {
+            NotSupportedType = notSupportedType;
+        }
 
         public Dacs7TypeNotSupportedException()
         {

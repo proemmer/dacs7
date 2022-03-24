@@ -18,7 +18,7 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7PendingAlarmAckDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var current = new S7PendingAlarmAckDatagram
+            S7PendingAlarmAckDatagram current = new()
             {
                 UserData = S7UserDataDatagram.TranslateFromMemory(data),
             };
@@ -30,12 +30,12 @@ namespace Dacs7.Protocols.SiemensPlc
         public static List<IPlcAlarm> TranslateFromSslData(Memory<byte> memory, int size)
         {
             // We do not need the header
-            var result = new List<IPlcAlarm>();
-            var offset = 6;
-            var span = memory.Span;
+            List<IPlcAlarm> result = new();
+            int offset = 6;
+            Span<byte> span = memory.Span;
             while (offset < size)
             {
-                var item = new S7PlcAlarmItemDatagram
+                S7PlcAlarmItemDatagram item = new()
                 {
                     Length = span[offset++],
                     TransportSize = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2))

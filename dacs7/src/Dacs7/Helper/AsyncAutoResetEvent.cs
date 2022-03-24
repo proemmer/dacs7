@@ -29,10 +29,14 @@ namespace Dacs7
             }
             else if (timeout > -1)
             {
-                var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(timeout));
+                CancellationTokenSource cts = new(TimeSpan.FromMilliseconds(timeout));
                 return WaitAsync(cts.Token).ContinueWith<T>(t =>
                 {
-                    if (cts != null) cts.Dispose();
+                    if (cts != null)
+                    {
+                        cts.Dispose();
+                    }
+
                     return t.Result;
                 }, TaskScheduler.Default);
             }
@@ -51,7 +55,7 @@ namespace Dacs7
             {
                 if (_signaled)
                 {
-                    var result = Task.FromResult(_lastValue);
+                    Task<T> result = Task.FromResult(_lastValue);
                     _lastValue = default;
                     _signaled = false;
                     return result;
@@ -63,7 +67,7 @@ namespace Dacs7
                 else
                 {
                     CancellationTokenRegistration registration = default;
-                    var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+                    TaskCompletionSource<T> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
                     if (token != CancellationToken.None)
                     {
                         registration = token.Register(() =>

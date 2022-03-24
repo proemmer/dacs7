@@ -17,12 +17,12 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7AlarmUpdateAckDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var span = data.Span;
-            var current = new S7AlarmUpdateAckDatagram
+            Span<byte> span = data.Span;
+            S7AlarmUpdateAckDatagram current = new()
             {
                 UserData = S7UserDataDatagram.TranslateFromMemory(data),
             };
-            var offset = 0;
+            int offset = 0;
             current.SubscribedEvents = span[offset++];
             current.Unknown = span[offset++];
             data.Slice(offset, current.Username.Length).CopyTo(current.Username);

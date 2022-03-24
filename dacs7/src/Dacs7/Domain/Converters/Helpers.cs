@@ -10,8 +10,8 @@ namespace Dacs7.Domain
     {
         public static Memory<byte> WriteSingleBigEndian(float value, byte[] buffer = null, int offset = 0)
         {
-            var rawdata = buffer ?? new byte[Marshal.SizeOf(value)];
-            var handle = GCHandle.Alloc(rawdata, GCHandleType.Pinned);
+            byte[] rawdata = buffer ?? new byte[Marshal.SizeOf(value)];
+            GCHandle handle = GCHandle.Alloc(rawdata, GCHandleType.Pinned);
             Marshal.StructureToPtr(value, handle.AddrOfPinnedObject() + offset, false);
             handle.Free();
             Swap4BytesInBuffer(rawdata, offset);
@@ -20,7 +20,7 @@ namespace Dacs7.Domain
 
         public static byte[] Swap4BytesInBuffer(byte[] rawdata, int offset = 0)
         {
-            var b = rawdata[offset];
+            byte b = rawdata[offset];
             rawdata[offset] = rawdata[offset + 3];
             rawdata[offset + 3] = b;
             b = rawdata[offset + 1];

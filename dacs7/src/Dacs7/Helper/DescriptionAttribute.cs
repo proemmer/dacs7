@@ -23,7 +23,7 @@ namespace Dacs7.Helper
         /// <para>Specifies the default value for the <see cref='System.ComponentModel.DescriptionAttribute'/> , which is an
         ///    empty string (""). This <see langword='static'/> field is read-only.</para>
         /// </devdoc>
-        public static readonly DescriptionAttribute Default = new DescriptionAttribute();
+        public static readonly DescriptionAttribute Default = new();
         private string _description;
 
         /// <devdoc>
@@ -36,7 +36,10 @@ namespace Dacs7.Helper
         /// <devdoc>
         ///    <para>Initializes a new instance of the <see cref='System.ComponentModel.DescriptionAttribute'/> class.</para>
         /// </devdoc>
-        public DescriptionAttribute(string description) => _description = description;
+        public DescriptionAttribute(string description)
+        {
+            _description = description;
+        }
 
         /// <devdoc>
         ///    <para>Gets the description stored in this attribute.</para>
@@ -55,8 +58,13 @@ namespace Dacs7.Helper
         }
 
         public override bool Equals(object obj)
-            => obj == this || (obj is DescriptionAttribute other) && other.Description == Description;
+        {
+            return obj == this || (obj is DescriptionAttribute other) && other.Description == Description;
+        }
 
-        public override int GetHashCode() => Description.GetHashCode();
+        public override int GetHashCode()
+        {
+            return Description.GetHashCode();
+        }
     }
 }

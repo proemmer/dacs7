@@ -91,8 +91,12 @@ namespace Dacs7.Tests
         [InlineData("Q.10000,di,10", PlcArea.QB, 10000, 10, typeof(int[]), typeof(int))]
         public void TryParseTagTests(string tag, PlcArea resultArea, int offset, int length, Type resultType, Type vartype = null)
         {
-            if (vartype == null) vartype = resultType;
-            Assert.True(TagParser.TryParseTag(tag, out var result));
+            if (vartype == null)
+            {
+                vartype = resultType;
+            }
+
+            Assert.True(TagParser.TryParseTag(tag, out TagParser.TagParserResult result));
             Assert.Equal(resultArea, result.Area);
             Assert.Equal(offset, result.Offset);
             Assert.Equal(length, result.Length);
@@ -106,7 +110,7 @@ namespace Dacs7.Tests
         [Fact]
         public void TryParseInputBitWithLength()
         {
-            Assert.True(TagParser.TryParseTag("I.1910,x3,1", out var result));
+            Assert.True(TagParser.TryParseTag("I.1910,x3,1", out TagParser.TagParserResult result));
             Assert.Equal(PlcArea.IB, result.Area);
             Assert.Equal(15283, result.Offset);
             Assert.Equal(1, result.Length);
@@ -117,7 +121,7 @@ namespace Dacs7.Tests
         [Fact]
         public void TryParseInputBitWithoutLength()
         {
-            Assert.True(TagParser.TryParseTag("I.1910,x3", out var result));
+            Assert.True(TagParser.TryParseTag("I.1910,x3", out TagParser.TagParserResult result));
             Assert.Equal(PlcArea.IB, result.Area);
             Assert.Equal(15283, result.Offset);
             Assert.Equal(1, result.Length);

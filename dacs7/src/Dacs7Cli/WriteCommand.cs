@@ -18,15 +18,15 @@ namespace Dacs7Cli
             {
                 cmd.Description = "Write tags to the plc.";
 
-                var addressOption = cmd.Option("-a | --address", "The IPAddress of the plc", CommandOptionType.SingleValue);
-                var debugOption = cmd.Option("-d | --debug", "Activate debug output", CommandOptionType.NoValue);
-                var traceOption = cmd.Option("-t | --trace", "Trace also dacs7 internals", CommandOptionType.NoValue);
-                var registerOption = cmd.Option("-r | --register", "Register items for fast performing.", CommandOptionType.NoValue);
-                var loopsOption = cmd.Option("-l | --loops", "Specify the number of read loops.", CommandOptionType.SingleValue);
-                var waitOption = cmd.Option("-s | --wait", "Wait time between loops in ms.", CommandOptionType.SingleValue);
-                var maxJobsOption = cmd.Option("-j | --jobs", "Maximum number of concurrent jobs.", CommandOptionType.SingleValue);
+                CommandOption addressOption = cmd.Option("-a | --address", "The IPAddress of the plc", CommandOptionType.SingleValue);
+                CommandOption debugOption = cmd.Option("-d | --debug", "Activate debug output", CommandOptionType.NoValue);
+                CommandOption traceOption = cmd.Option("-t | --trace", "Trace also dacs7 internals", CommandOptionType.NoValue);
+                CommandOption registerOption = cmd.Option("-r | --register", "Register items for fast performing.", CommandOptionType.NoValue);
+                CommandOption loopsOption = cmd.Option("-l | --loops", "Specify the number of read loops.", CommandOptionType.SingleValue);
+                CommandOption waitOption = cmd.Option("-s | --wait", "Wait time between loops in ms.", CommandOptionType.SingleValue);
+                CommandOption maxJobsOption = cmd.Option("-j | --jobs", "Maximum number of concurrent jobs.", CommandOptionType.SingleValue);
 
-                var tagsArguments = cmd.Argument("tags", "Tags to read.", true);
+                CommandArgument tagsArguments = cmd.Argument("tags", "Tags to read.", true);
 
                 cmd.OnExecute(async () =>
                 {
@@ -45,7 +45,7 @@ namespace Dacs7Cli
                             MaxJobs = maxJobsOption.HasValue() ? int.Parse(maxJobsOption.Value()) : 10,
                         }.Configure();
 
-                        var result = await Write(writeOptions, writeOptions.LoggerFactory);
+                        int result = await Write(writeOptions, writeOptions.LoggerFactory);
                         await Task.Delay(500);
 
                         return result;
@@ -61,26 +61,26 @@ namespace Dacs7Cli
 
         internal static async Task<int> Write(WriteOptions writeOptions, ILoggerFactory loggerFactory)
         {
-            var client = new Dacs7Client(writeOptions.Address, PlcConnectionType.Pg, 5000, loggerFactory)
+            Dacs7Client client = new(writeOptions.Address, PlcConnectionType.Pg, 5000, loggerFactory)
             {
                 MaxAmQCalled = (ushort)writeOptions.MaxJobs,
                 MaxAmQCalling = (ushort)writeOptions.MaxJobs
             };
-            var logger = loggerFactory?.CreateLogger("Dacs7Cli.Write");
+            ILogger logger = loggerFactory?.CreateLogger("Dacs7Cli.Write");
             try
             {
                 await client.ConnectAsync();
 
-                var write = writeOptions.Tags.Select(x =>
+                List<KeyValuePair<string, object>> write = writeOptions.Tags.Select(x =>
                 {
-                    var s = x.Split('=');
+                    string[] s = x.Split('=');
                     return KeyValuePair.Create<string, object>(s[0], s[1]);
                 }
                 ).ToList();
 
-                var results = await client.WriteAsync(write);
-                var resultEnumerator = results.GetEnumerator();
-                foreach (var item in write)
+                IEnumerable<ItemResponseRetValue> results = await client.WriteAsync(write);
+                IEnumerator<ItemResponseRetValue> resultEnumerator = results.GetEnumerator();
+                foreach (KeyValuePair<string, object> item in write)
                 {
                     if (resultEnumerator.MoveNext())
                     {

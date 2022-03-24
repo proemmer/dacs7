@@ -17,7 +17,7 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
 
         public static S7PlcBlocksOfTypeAckDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var result = new S7PlcBlocksOfTypeAckDatagram
+            S7PlcBlocksOfTypeAckDatagram result = new()
             {
                 UserData = S7UserDataDatagram.TranslateFromMemory(data),
             };
@@ -29,14 +29,14 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
         public static List<IPlcBlock> TranslateFromSslData(Memory<byte> memory, int size)
         {
             // We do not need the header
-            var result = new List<IPlcBlock>();
-            var offset = 0;
-            var span = memory.Span;
+            List<IPlcBlock> result = new();
+            int offset = 0;
+            Span<byte> span = memory.Span;
             while ((offset + 4) < size)
             {
-                var number = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
-                var flags = span[offset++];
-                var lng = PlcBlockInfo.GetLanguage(span[offset++]);
+                ushort number = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
+                byte flags = span[offset++];
+                string lng = PlcBlockInfo.GetLanguage(span[offset++]);
 
                 result.Add(new PlcBlock
                 {

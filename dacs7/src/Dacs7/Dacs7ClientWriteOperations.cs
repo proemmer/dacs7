@@ -14,7 +14,10 @@ namespace Dacs7.ReadWrite
         /// <summary>
         /// The maximum write item length of a single telegram.
         /// </summary>
-        public static ushort GetWriteItemMaxLength(this Dacs7Client client) => client.S7Context != null ? client.S7Context.WriteItemMaxLength : (ushort)0;
+        public static ushort GetWriteItemMaxLength(this Dacs7Client client)
+        {
+            return client.S7Context != null ? client.S7Context.WriteItemMaxLength : (ushort)0;
+        }
 
         /// <summary>
         /// Takes a list of <see cref="KeyValuePair{string, object}"/> an tries to write them to the plc.
@@ -22,14 +25,20 @@ namespace Dacs7.ReadWrite
         /// </summary>
         /// <param name="values">a list of tags with the following syntax Area.Offset,DataType[,length]</param>
         /// <returns>returns a enumerable with the write result, 0xFF = Success</returns>
-        public static Task<IEnumerable<ItemResponseRetValue>> WriteAsync(this Dacs7Client client, params KeyValuePair<string, object>[] values) => client.WriteAsync(values as IEnumerable<KeyValuePair<string, object>>);
+        public static Task<IEnumerable<ItemResponseRetValue>> WriteAsync(this Dacs7Client client, params KeyValuePair<string, object>[] values)
+        {
+            return client.WriteAsync(values as IEnumerable<KeyValuePair<string, object>>);
+        }
 
         /// <summary>
         /// Takes a list of <see cref="WriteItem"/> an tries to write them to the plc.
         /// </summary>
         /// <param name="values">a list of <see cref="WriteItem"/>.</param>
         /// <returns>returns a enumerable with the write result, 0xFF = Success</returns>
-        public static Task<IEnumerable<ItemResponseRetValue>> WriteAsync(this Dacs7Client client, params WriteItem[] values) => client.WriteAsync(values as IEnumerable<WriteItem>);
+        public static Task<IEnumerable<ItemResponseRetValue>> WriteAsync(this Dacs7Client client, params WriteItem[] values)
+        {
+            return client.WriteAsync(values as IEnumerable<WriteItem>);
+        }
 
         /// <summary>
         /// Takes a list of <see cref="KeyValuePair{string, object}"/> an tries to write them to the plc.
@@ -37,7 +46,10 @@ namespace Dacs7.ReadWrite
         /// </summary>
         /// <param name="values">a list of tags with the following syntax Area.Offset,DataType[,length]</param>
         /// <returns>returns a enumerable with the write result, 0xFF = Success</returns>
-        public static Task<IEnumerable<ItemResponseRetValue>> WriteAsync(this Dacs7Client client, IEnumerable<KeyValuePair<string, object>> values) => client.WriteAsync(client.CreateWriteNodeIdCollection(values));
+        public static Task<IEnumerable<ItemResponseRetValue>> WriteAsync(this Dacs7Client client, IEnumerable<KeyValuePair<string, object>> values)
+        {
+            return client.WriteAsync(client.CreateWriteNodeIdCollection(values));
+        }
 
         /// <summary>
         /// Takes a list of <see cref="WriteItem"/> an tries to write them to the plc.
@@ -46,7 +58,7 @@ namespace Dacs7.ReadWrite
         /// <returns>returns an enumerable of <see cref="ItemResponseRetValue"/>, which containing the write results.</returns>
         public static Task<IEnumerable<ItemResponseRetValue>> WriteAsync(this Dacs7Client client, IEnumerable<WriteItem> values)
         {
-            var writeItems = values as IList<WriteItem> ?? new List<WriteItem>(values);
+            IList<WriteItem> writeItems = values as IList<WriteItem> ?? new List<WriteItem>(values);
             return client.ProtocolHandler.WriteAsync(writeItems);
         }
 
@@ -58,7 +70,7 @@ namespace Dacs7.ReadWrite
         {
             return new List<WriteItem>(values.Select(item =>
             {
-                var result = client.RegisteredOrGiven(item.Key).Clone();
+                WriteItem result = client.RegisteredOrGiven(item.Key).Clone();
                 result.Data = result.ConvertDataToMemory(item.Value);
                 return WriteItem.NormalizeAndValidate(result);
             }));

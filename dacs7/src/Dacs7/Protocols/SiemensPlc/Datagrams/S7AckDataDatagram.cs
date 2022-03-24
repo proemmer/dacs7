@@ -19,20 +19,22 @@ namespace Dacs7.Protocols.SiemensPlc
 
 
 
-        public int GetParameterOffset() => Header.GetHeaderSize() + Error.GetSize();
-
+        public int GetParameterOffset()
+        {
+            return Header.GetHeaderSize() + Error.GetSize();
+        }
 
         public static IMemoryOwner<byte> TranslateToMemory(S7AckDataDatagram datagram, out int memoryLength)
         {
-            var result = S7HeaderDatagram.TranslateToMemory(datagram.Header, datagram.Header.GetHeaderSize() + datagram.Error.GetSize() + datagram.Header.ParamLength + datagram.Header.DataLength, out memoryLength);
-            var take = memoryLength - datagram.Header.GetHeaderSize();
+            IMemoryOwner<byte> result = S7HeaderDatagram.TranslateToMemory(datagram.Header, datagram.Header.GetHeaderSize() + datagram.Error.GetSize() + datagram.Header.ParamLength + datagram.Header.DataLength, out memoryLength);
+            int take = memoryLength - datagram.Header.GetHeaderSize();
             S7HeaderErrorCodesDatagram.TranslateToMemory(datagram.Error, result.Memory.Slice(datagram.Header.GetHeaderSize(), take));
             return result;
         }
 
         public static S7AckDataDatagram TranslateFromMemory(Memory<byte> data)
         {
-            var result = new S7AckDataDatagram
+            S7AckDataDatagram result = new()
             {
                 Header = S7HeaderDatagram.TranslateFromMemory(data)
             };

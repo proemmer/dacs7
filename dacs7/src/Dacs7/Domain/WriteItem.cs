@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace Dacs7
-{ 
+{
     public class WriteItem : ReadItem
     {
         internal Memory<byte> Data { get; set; }
@@ -22,14 +22,14 @@ namespace Dacs7
 
         internal sealed override WriteItem Clone()
         {
-            var clone = base.Clone();
+            WriteItem clone = base.Clone();
             clone.Data = Data;
             return NormalizeAndValidate(clone);
         }
 
         internal WriteItem Clone(Memory<byte> data)
         {
-            var clone = base.Clone();
+            WriteItem clone = base.Clone();
             clone.Data = data;
             return NormalizeAndValidate(clone);
         }
@@ -44,7 +44,7 @@ namespace Dacs7
         /// <returns><see cref="WriteItem"/></returns>
         public static WriteItem CreateFromTag(string tag, object data)
         {
-            var result = CreateFromTag(tag).Clone();
+            WriteItem result = CreateFromTag(tag).Clone();
             result.Data = result.ConvertDataToMemory(data);
             return NormalizeAndValidate(result);
         }
@@ -61,7 +61,7 @@ namespace Dacs7
         /// <returns><see cref="WriteItem"/></returns>
         public static WriteItem Create<T>(string area, int offset, ushort length, T data, PlcEncoding encoding = PlcEncoding.Windows1252)
         {
-            var result = Create<T>(area, offset, length, encoding).Clone();
+            WriteItem result = Create<T>(area, offset, length, encoding).Clone();
             result.Data = result.ConvertDataToMemory(data);
             return NormalizeAndValidate(result);
         }
@@ -76,7 +76,9 @@ namespace Dacs7
         /// <param name="encoding">write unicode data (only TIA  WString and WChar</param>
         /// <returns><see cref="WriteItem"/></returns>
         public static WriteItem Create<T>(string area, int offset, T data, PlcEncoding encoding = PlcEncoding.Windows1252)
-            => Create(area, offset, GetDataItemCount(data), data, encoding);
+        {
+            return Create(area, offset, GetDataItemCount(data), data, encoding);
+        }
 
 
         /// <summary>
@@ -89,7 +91,7 @@ namespace Dacs7
         /// <returns></returns>
         public static WriteItem CreateChild(WriteItem item, int offset, ushort length)
         {
-            var result = ReadItem.CreateChild(item, offset, length).Clone();
+            WriteItem result = ReadItem.CreateChild(item, offset, length).Clone();
             result.Parent = item;
             result.Data = item.Data.Slice(offset - item.Offset, length);
             return result;
@@ -122,8 +124,11 @@ namespace Dacs7
         {
             if (result.VarType == typeof(string))
             {
-                var length = (ushort)result.Data.Length;
-                if (length > result.NumberOfItems) ThrowHelper.ThrowStringToLongException(nameof(result.Data));
+                ushort length = (ushort)result.Data.Length;
+                if (length > result.NumberOfItems)
+                {
+                    ThrowHelper.ThrowStringToLongException(nameof(result.Data));
+                }
                 // special handling of string because we want to write only the given string, not the whole on.
                 result.NumberOfItems = (ushort)result.Data.Length;
             }
@@ -139,7 +144,7 @@ namespace Dacs7
             }
             else
             {
-                var expectedSize = result.NumberOfItems * result.ElementSize;
+                int expectedSize = result.NumberOfItems * result.ElementSize;
                 if (result.Data.Length != expectedSize)
                 {
                     ThrowHelper.ThrowInvalidWriteResult(result);

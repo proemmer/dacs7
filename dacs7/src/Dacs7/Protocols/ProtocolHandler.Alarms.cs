@@ -21,22 +21,22 @@ namespace Dacs7.Protocols
 
     internal sealed partial class ProtocolHandler
     {
-        private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>> _alarmHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>>();
-        private CallbackHandler<S7AlarmUpdateAckDatagram> _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
-        private readonly ConcurrentDictionary<ushort, CallbackHandler<S7AlarmIndicationDatagram>> _alarmIndicationHandler = new ConcurrentDictionary<ushort, CallbackHandler<S7AlarmIndicationDatagram>>();
-        private readonly ConcurrentDictionary<ushort, AlarmSubscription> _subscriptions = new ConcurrentDictionary<ushort, AlarmSubscription>();
+        private readonly ConcurrentDictionary<ushort, CallbackHandler<S7PendingAlarmAckDatagram>> _alarmHandler = new();
+        private CallbackHandler<S7AlarmUpdateAckDatagram> _alarmUpdateHandler = new();
+        private readonly ConcurrentDictionary<ushort, CallbackHandler<S7AlarmIndicationDatagram>> _alarmIndicationHandler = new();
+        private readonly ConcurrentDictionary<ushort, AlarmSubscription> _subscriptions = new();
 
 
         public async Task CancelAlarmHandlingAsync()
         {
             try
             {
-                foreach (var item in _alarmHandler.ToList())
+                foreach (KeyValuePair<ushort, CallbackHandler<S7PendingAlarmAckDatagram>> item in _alarmHandler.ToList())
                 {
                     item.Value?.Event?.Set(null);
                 }
 
-                foreach (var item in _alarmIndicationHandler.ToList())
+                foreach (KeyValuePair<ushort, CallbackHandler<S7AlarmIndicationDatagram>> item in _alarmIndicationHandler.ToList())
                 {
                     item.Value?.Event?.Set(null);
                 }
@@ -67,21 +67,21 @@ namespace Dacs7.Protocols
                 ThrowHelper.ThrowNotConnectedException();
             }
 
-            var id = GetNextReferenceId();
-            var sequenceNumber = (byte)0x00;
-            var alarms = new List<IPlcAlarm>();
+            ushort id = GetNextReferenceId();
+            byte sequenceNumber = 0x00;
+            List<IPlcAlarm> alarms = new();
             IMemoryOwner<byte> memoryOwner = null;
-            var currentPosition = 0;
-            var totalLength = 0;
+            int currentPosition = 0;
+            int totalLength = 0;
             try
             {
 
                 S7PendingAlarmAckDatagram alarmResults = null;
                 do
                 {
-                    using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildPendingAlarmRequest(_s7Context, id, sequenceNumber), out var memoryLength))
+                    using (IMemoryOwner<byte> dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildPendingAlarmRequest(_s7Context, id, sequenceNumber), out int memoryLength))
                     {
-                        using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
+                        using (IMemoryOwner<byte> sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out int sendLength))
                         {
 
                             CallbackHandler<S7PendingAlarmAckDatagram> cbh = null;
@@ -184,9 +184,9 @@ namespace Dacs7.Protocols
 
         public AlarmSubscription CreateAlarmSubscription()
         {
-            var userId = GetNextReferenceId();
-            var waitHandler = new CallbackHandler<S7AlarmIndicationDatagram>(userId);
-            var subscription = new AlarmSubscription(this, waitHandler);
+            ushort userId = GetNextReferenceId();
+            CallbackHandler<S7AlarmIndicationDatagram> waitHandler = new(userId);
+            AlarmSubscription subscription = new(this, waitHandler);
             if (_alarmIndicationHandler.TryAdd(waitHandler.Id, waitHandler))
             {
                 if (_subscriptions.TryAdd(waitHandler.Id, subscription))
@@ -212,15 +212,15 @@ namespace Dacs7.Protocols
                 ThrowHelper.ThrowNotConnectedException();
             }
 
-            var userId = GetNextReferenceId();
+            ushort userId = GetNextReferenceId();
             try
             {
-                var waitHandler = new CallbackHandler<S7AlarmIndicationDatagram>(userId);
+                CallbackHandler<S7AlarmIndicationDatagram> waitHandler = new(userId);
                 if (_alarmIndicationHandler.TryAdd(waitHandler.Id, waitHandler))
                 {
                     if (waitHandler.Event != null)
                     {
-                        var result = await waitHandler.Event.WaitAsync(ct).ConfigureAwait(false);
+                        S7AlarmIndicationDatagram result = await waitHandler.Event.WaitAsync(ct).ConfigureAwait(false);
                         if (result != null)
                         {
                             return new AlarmUpdateResult(_alarmUpdateHandler?.Id == 0, result.AlarmMessage.Alarms.ToList(), () => DisableAlarmUpdatesAsync());
@@ -252,7 +252,7 @@ namespace Dacs7.Protocols
 
         internal async Task RemoveAlarmSubscriptionAsync(AlarmSubscription subscription)
         {
-            var userId = subscription.CallbackHandler.Id;
+            ushort userId = subscription.CallbackHandler.Id;
             if (_subscriptions.TryRemove(userId, out _))
             {
                 if (_alarmIndicationHandler.TryRemove(userId, out _))
@@ -282,7 +282,7 @@ namespace Dacs7.Protocols
                 if (subscription.CallbackHandler.Event != null)
                 {
                     subscription.CallbackHandler.Event.Reset();
-                    if (!subscription.TryGetDatagram(out var result))
+                    if (!subscription.TryGetDatagram(out S7AlarmIndicationDatagram result))
                     {
                         await subscription.CallbackHandler.Event.WaitAsync(ct).ConfigureAwait(false);
 
@@ -319,10 +319,10 @@ namespace Dacs7.Protocols
             CallbackHandler<S7AlarmUpdateAckDatagram> cbh = null;
             if (_alarmUpdateHandler?.Id == 0)
             {
-                var id = GetNextReferenceId();
-                using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildAlarmUpdateRequest(_s7Context, id), out var memoryLength))
+                ushort id = GetNextReferenceId();
+                using (IMemoryOwner<byte> dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildAlarmUpdateRequest(_s7Context, id), out int memoryLength))
                 {
-                    using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
+                    using (IMemoryOwner<byte> sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out int sendLength))
                     {
                         if (_concurrentJobs == null)
                         {
@@ -374,9 +374,9 @@ namespace Dacs7.Protocols
                     return false;
                 }
 
-                using (var dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildAlarmUpdateRequest(_s7Context, _alarmUpdateHandler.Id, false), out var memoryLength))
+                using (IMemoryOwner<byte> dg = S7UserDataDatagram.TranslateToMemory(S7UserDataDatagram.BuildAlarmUpdateRequest(_s7Context, _alarmUpdateHandler.Id, false), out int memoryLength))
                 {
-                    using (var sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out var sendLength))
+                    using (IMemoryOwner<byte> sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out int sendLength))
                     {
                         if (_concurrentJobs == null)
                         {
@@ -421,9 +421,9 @@ namespace Dacs7.Protocols
 
         private void ReceivedS7PendingAlarmsAckDatagram(Memory<byte> buffer)
         {
-            var data = S7PendingAlarmAckDatagram.TranslateFromMemory(buffer);
+            S7PendingAlarmAckDatagram data = S7PendingAlarmAckDatagram.TranslateFromMemory(buffer);
 
-            if (_alarmHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out var cbh))
+            if (_alarmHandler.TryGetValue(data.UserData.Header.ProtocolDataUnitReference, out CallbackHandler<S7PendingAlarmAckDatagram> cbh))
             {
                 if (data.UserData.Parameter.ParamErrorCode != 0)
                 {
@@ -446,7 +446,7 @@ namespace Dacs7.Protocols
 
         private void ReceivedS7AlarmUpdateAckDatagram(Memory<byte> buffer)
         {
-            var data = S7AlarmUpdateAckDatagram.TranslateFromMemory(buffer);
+            S7AlarmUpdateAckDatagram data = S7AlarmUpdateAckDatagram.TranslateFromMemory(buffer);
 
             if (_alarmUpdateHandler.Id != 0)
             {
@@ -464,18 +464,18 @@ namespace Dacs7.Protocols
 
         private void ReceivedS7AlarmIndicationDatagram(Memory<byte> buffer)
         {
-            var data = S7AlarmIndicationDatagram.TranslateFromMemory(buffer);
+            S7AlarmIndicationDatagram data = S7AlarmIndicationDatagram.TranslateFromMemory(buffer);
             if (data.UserData.Data == null)
             {
                 _logger?.LogWarning("No data from alarm update ack received for reference {0}", data.UserData.Header.ProtocolDataUnitReference);
             }
 
-            foreach (var subscription in _subscriptions.Values)
+            foreach (AlarmSubscription subscription in _subscriptions.Values)
             {
                 subscription.AddDatagram(data);
             }
 
-            foreach (var handler in _alarmIndicationHandler.Where(x => !_subscriptions.ContainsKey(x.Key)).Select(x => x.Value))
+            foreach (CallbackHandler<S7AlarmIndicationDatagram> handler in _alarmIndicationHandler.Where(x => !_subscriptions.ContainsKey(x.Key)).Select(x => x.Value))
             {
                 handler.Event.Set(data);
             }

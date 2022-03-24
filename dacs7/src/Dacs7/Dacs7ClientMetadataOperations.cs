@@ -17,7 +17,7 @@ namespace Dacs7.Metadata
         /// <returns><see cref="IPlcBlockInfo"/> where you have access tho the detailed meta data of the block.</returns>
         public static async Task<IPlcBlockInfo> ReadBlockInfoAsync(this Dacs7Client client, PlcBlockType type, int blocknumber)
         {
-            var result = await client.ProtocolHandler.ReadBlockInfoAsync(type, blocknumber).ConfigureAwait(false);
+            Protocols.SiemensPlc.S7PlcBlockInfoAckDatagram result = await client.ProtocolHandler.ReadBlockInfoAsync(type, blocknumber).ConfigureAwait(false);
             if (result != null)
             {
                 return new PlcBlockInfo
@@ -53,7 +53,7 @@ namespace Dacs7.Metadata
         /// <returns></returns>
         public static async Task<IPlcBlocksCount> ReadBlocksCountAsync(this Dacs7Client client)
         {
-            var result = await client.ProtocolHandler.ReadBocksCountInfoAsync().ConfigureAwait(false);
+            Protocols.SiemensPlc.Datagrams.S7PlcBlocksCountAckDatagram result = await client.ProtocolHandler.ReadBocksCountInfoAsync().ConfigureAwait(false);
             if (result != null)
             {
                 return result.Counts;
@@ -62,7 +62,8 @@ namespace Dacs7.Metadata
         }
 
         public static Task<IEnumerable<IPlcBlock>> ReadBlocksOfTypeAsync(this Dacs7Client client, PlcBlockType type)
-            => client.ProtocolHandler.ReadBlocksOfTypesAsync(type);
-
+        {
+            return client.ProtocolHandler.ReadBlocksOfTypesAsync(type);
+        }
     }
 }

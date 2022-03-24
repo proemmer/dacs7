@@ -27,7 +27,9 @@ namespace Dacs7.Domain
                     data = item.Encoding == PlcEncoding.Unicode ? Encoding.BigEndianUnicode.GetBytes(dataS) : Encoding.ASCII.GetBytes(dataS);
                 }
                 else
+                {
                     data = Convert.ChangeType(data, item.ResultType, CultureInfo.InvariantCulture);
+                }
             }
 
             switch (data)
@@ -72,7 +74,7 @@ namespace Dacs7.Domain
 
 
                                 Encoding usedEncoding = Encoding.UTF7;
-                                switch(item.Encoding)
+                                switch (item.Encoding)
                                 {
                                     case PlcEncoding.Windows1252:
                                         {
@@ -202,8 +204,8 @@ namespace Dacs7.Domain
         private static Memory<byte> ConvertSingleToMemory(IList<float> single)
         {
             // TODO: Find a Span method to do this
-            var buffer = new byte[4 * single.Count];
-            for (var i = 0; i < single.Count; i++)
+            byte[] buffer = new byte[4 * single.Count];
+            for (int i = 0; i < single.Count; i++)
             {
                 WriteSingleBigEndian(single[i], buffer, i * 4);
             }
@@ -213,7 +215,7 @@ namespace Dacs7.Domain
         private static Memory<byte> ConvertUInt64ToMemory(IList<ulong> ui64)
         {
             Memory<byte> result = new byte[8 * ui64.Count];
-            for (var i = 0; i < ui64.Count; i++)
+            for (int i = 0; i < ui64.Count; i++)
             {
                 BinaryPrimitives.WriteUInt64BigEndian(result.Span.Slice(i * 8), ui64[i]);
             }
@@ -224,7 +226,7 @@ namespace Dacs7.Domain
         private static Memory<byte> ConvertInt64ToMemory(IList<long> i64)
         {
             Memory<byte> result = new byte[8 * i64.Count];
-            for (var i = 0; i < i64.Count; i++)
+            for (int i = 0; i < i64.Count; i++)
             {
                 BinaryPrimitives.WriteInt64BigEndian(result.Span.Slice(i * 8), i64[i]);
             }
@@ -234,7 +236,7 @@ namespace Dacs7.Domain
         private static Memory<byte> ConvertUInt32ToMemory(IList<uint> ui32)
         {
             Memory<byte> result = new byte[4 * ui32.Count];
-            for (var i = 0; i < ui32.Count; i++)
+            for (int i = 0; i < ui32.Count; i++)
             {
                 BinaryPrimitives.WriteUInt32BigEndian(result.Span.Slice(i * 4), ui32[i]);
             }
@@ -244,7 +246,7 @@ namespace Dacs7.Domain
         private static Memory<byte> ConvertIn32ToMemory(IList<int> i32)
         {
             Memory<byte> result = new byte[4 * i32.Count];
-            for (var i = 0; i < i32.Count; i++)
+            for (int i = 0; i < i32.Count; i++)
             {
                 BinaryPrimitives.WriteInt32BigEndian(result.Span.Slice(i * 4), i32[i]);
             }
@@ -254,7 +256,7 @@ namespace Dacs7.Domain
         private static Memory<byte> ConvertUInt16ToMemory(IList<ushort> ui16)
         {
             Memory<byte> result = new byte[2 * ui16.Count];
-            for (var i = 0; i < ui16.Count; i++)
+            for (int i = 0; i < ui16.Count; i++)
             {
                 BinaryPrimitives.WriteUInt16BigEndian(result.Span.Slice(i * 2), ui16[i]);
             }
@@ -264,7 +266,7 @@ namespace Dacs7.Domain
         private static Memory<byte> ConvertInt16ToMemory(IList<short> i16)
         {
             Memory<byte> result = new byte[2 * i16.Count];
-            for (var i = 0; i < i16.Count; i++)
+            for (int i = 0; i < i16.Count; i++)
             {
                 BinaryPrimitives.WriteInt16BigEndian(result.Span.Slice(i * 2), i16[i]);
             }

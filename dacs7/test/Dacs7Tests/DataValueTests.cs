@@ -13,8 +13,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestBitFalseDataValue()
         {
-            var value = false;
-            var testValue = CreateTestValue(value);
+            bool value = false;
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<bool>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -22,8 +22,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestBitTrueDataValue()
         {
-            var value = true;
-            var testValue = CreateTestValue(value);
+            bool value = true;
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<bool>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -31,8 +31,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestByteDataValue()
         {
-            var value = (byte)0x01;
-            var testValue = CreateTestValue(value);
+            byte value = 0x01;
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<byte>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -40,8 +40,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestCharDataValue()
         {
-            var value = 'x';
-            var testValue = CreateTestValue(value);
+            char value = 'x';
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<char>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -49,8 +49,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestUShortDataValue()
         {
-            var value = (ushort)5;
-            var testValue = CreateTestValue(value);
+            ushort value = 5;
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<ushort>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -58,8 +58,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestShortDataValue()
         {
-            var value = (short)5;
-            var testValue = CreateTestValue(value);
+            short value = 5;
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<short>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -68,8 +68,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestUIntDataValue()
         {
-            var value = (uint)5;
-            var testValue = CreateTestValue(value);
+            uint value = 5;
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<uint>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -77,8 +77,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestIntDataValue()
         {
-            var value = 5;
-            var testValue = CreateTestValue(value);
+            int value = 5;
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<int>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -86,8 +86,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestSingleDataValue()
         {
-            var value = (float)1.5;
-            var testValue = CreateTestValue(value);
+            float value = (float)1.5;
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<float>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -96,8 +96,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestStringDataValue()
         {
-            var value = "MyString";
-            var testValue = CreateTestValue(value);
+            string value = "MyString";
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<string>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -105,8 +105,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestCharArrayDataValue()
         {
-            var value = new char[] { 'H', 'e', 'l', 'l', 'o' };
-            var testValue = CreateTestValue(value);
+            char[] value = new char[] { 'H', 'e', 'l', 'l', 'o' };
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<char[]>());
             Assert.Equal("H e l l o", testValue.GetValueAsString());
             Assert.Equal("Hello", testValue.GetValueAsString(""));
@@ -116,11 +116,11 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestByteArrayDataValue()
         {
-            var value = new byte[] { 0x01, 0x02, 0x55 };
-            var testValue = CreateTestValue(value);
+            byte[] value = new byte[] { 0x01, 0x02, 0x55 };
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<byte[]>());
 
-            var result = testValue.GetValueAsString();
+            string result = testValue.GetValueAsString();
         }
 
 
@@ -130,8 +130,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestUShortsDataValue()
         {
-            var value = new List<ushort> { 5, 10 };
-            var testValue = CreateTestValue(value);
+            List<ushort> value = new() { 5, 10 };
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<List<ushort>>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -139,8 +139,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestShortsDataValue()
         {
-            var value = new List<short> { 5, 10 };
-            var testValue = CreateTestValue(value);
+            List<short> value = new() { 5, 10 };
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<List<short>>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -149,8 +149,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestUIntsDataValue()
         {
-            var value = new List<uint> { 5, 10 };
-            var testValue = CreateTestValue(value);
+            List<uint> value = new() { 5, 10 };
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<List<uint>>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -158,8 +158,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestIntsDataValue()
         {
-            var value = new List<int> { 5, 10 };
-            var testValue = CreateTestValue(value);
+            List<int> value = new() { 5, 10 };
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<List<int>>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -167,8 +167,8 @@ namespace Dacs7.Tests
         [Fact()]
         public void TestSinglesDataValue()
         {
-            var value = new List<float> { (float)5.5, (float)10.1 };
-            var testValue = CreateTestValue(value);
+            List<float> value = new() { (float)5.5, (float)10.1 };
+            DataValue testValue = CreateTestValue(value);
             Assert.Equal(value, testValue.GetValue<List<float>>());
             Assert.Equal(value.ToString(), testValue.GetValueAsString());
         }
@@ -188,8 +188,8 @@ namespace Dacs7.Tests
             }
 
 
-            var ri = ReadItem.Create<T>("DB1", 0, countItems);
-            var itemData = ri.ConvertDataToMemory(value);
+            ReadItem ri = ReadItem.Create<T>("DB1", 0, countItems);
+            Memory<byte> itemData = ri.ConvertDataToMemory(value);
 
             Memory<byte> buffer = new byte[4 + itemData.Length];
             buffer.Span[0] = 255;

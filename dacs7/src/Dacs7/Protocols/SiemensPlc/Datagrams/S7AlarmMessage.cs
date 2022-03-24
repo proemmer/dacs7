@@ -26,19 +26,19 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static S7AlarmMessage TranslateFromMemory(Memory<byte> data, AlarmMessageType subfunction)
         {
-            var span = data.Span;
-            var current = new S7AlarmMessage();
-            var offset = 0;
+            Span<byte> span = data.Span;
+            S7AlarmMessage current = new();
+            int offset = 0;
 
             current.Timestamp = GetDt(span.Slice(offset)); offset += 8;
             current.FunctionIdentifier = span[offset++];
             current.NumberOfMessages = span[offset++];
 
-            var alarms = new List<S7PlcAlarmItemDatagram>();
+            List<S7PlcAlarmItemDatagram> alarms = new();
 
-            for (var i = 0; i < current.NumberOfMessages; i++)
+            for (int i = 0; i < current.NumberOfMessages; i++)
             {
-                var alarm = new S7PlcAlarmItemDatagram
+                S7PlcAlarmItemDatagram alarm = new()
                 {
                     AlarmType = subfunction
                 };
@@ -50,7 +50,7 @@ namespace Dacs7.Protocols.SiemensPlc
                 if (alarm.Length > 0)
                 {
 
-                    var syntaxId = span[offset++];
+                    byte syntaxId = span[offset++];
 
                     switch (syntaxId)
                     {
@@ -76,7 +76,7 @@ namespace Dacs7.Protocols.SiemensPlc
                                             alarm.AckStateGoing = span[offset++];
                                             alarm.AckStateComing = span[offset++]; // 0x00 == no ack  0x01  == ack
 
-                                            var details = new S7PlcAlarmDetails { Timestamp = current.Timestamp };
+                                            S7PlcAlarmDetails details = new() { Timestamp = current.Timestamp };
                                             S7PlcAlarmDetails.ExtractAssotiatedValue(ref span, ref offset, details);
 
                                             if (alarm.EventState == 0x00)
@@ -122,9 +122,12 @@ namespace Dacs7.Protocols.SiemensPlc
 
         public static DateTime GetDt(Span<byte> b)
         {
-            var str = string.Format(CultureInfo.InvariantCulture, "{2:X2}/{1:X2}/{0:X2} {3:X2}:{4:X2}:{5:X2}.{6:X2}{7:X2}", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
-            if (DateTime.TryParseExact(str, "dd/MM/yy HH:mm:ss.ffff", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+            string str = string.Format(CultureInfo.InvariantCulture, "{2:X2}/{1:X2}/{0:X2} {3:X2}:{4:X2}:{5:X2}.{6:X2}{7:X2}", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
+            if (DateTime.TryParseExact(str, "dd/MM/yy HH:mm:ss.ffff", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+            {
                 return parsedDate;
+            }
+
             return DateTime.MinValue;
         }
     }
