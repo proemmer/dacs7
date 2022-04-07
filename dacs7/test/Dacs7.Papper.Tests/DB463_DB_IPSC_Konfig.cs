@@ -72,20 +72,6 @@ namespace Insite.Customer.Data.DB_IPSC_Konfig
         [ArrayBounds(1, 4, 0)]
         public char[] ID { get; set; }  //Wenn keine Motornummer, dann ID für Komponente (z.B. ZKCD) mitsenden
 
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-
-            public class DB_IPSC_Konfig_ZP_ZielAusw
-        After:
-            }
-
-
-
-            public class DB_IPSC_Konfig_ZP_ZielAusw
-        */
     }
 
 
@@ -97,20 +83,6 @@ namespace Insite.Customer.Data.DB_IPSC_Konfig
         public short von { get; set; }
         public short bis { get; set; }
 
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-
-            public class DB_IPSC_Konfig_ZP_Ausw
-        After:
-            }
-
-
-
-            public class DB_IPSC_Konfig_ZP_Ausw
-        */
     }
 
 
@@ -121,20 +93,6 @@ namespace Insite.Customer.Data.DB_IPSC_Konfig
 
         public UDT_DatenErgeb_Univ UNIV_Ergebnis { get; set; }
 
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-
-            public class DB_IPSC_Konfig_ZP_RFDaten
-        After:
-            }
-
-
-
-            public class DB_IPSC_Konfig_ZP_RFDaten
-        */
     }
 
 
@@ -144,22 +102,6 @@ namespace Insite.Customer.Data.DB_IPSC_Konfig
         public bool Aktiv { get; set; }
         public bool vorhanden { get; set; }
 
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-                public Int16 BtIntNr { get; set; }
-
-                [StringLength(4)]
-                public string Kbez { get; set; }	//Kurzbezeichnung
-
-                [StringLength(14)]
-        After:
-                public Int16 BtIntNr { get; set; }
-
-                [StringLength(4)]
-                public string Kbez { get; set; }	//Kurzbezeichnung
-
-                [StringLength(14)]
-        */
         public short BtIntNr { get; set; }
 
         [StringLength(4)]
@@ -168,32 +110,6 @@ namespace Insite.Customer.Data.DB_IPSC_Konfig
         [StringLength(14)]
         public string Daten { get; set; }   //Daten bis zu 14 Zeichen
 
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-
-            public class DB_IPSC_Konfig_ZP
-            {
-
-                [StringLength(40)]
-                public string InfoText { get; set; }	//Info für Winccflex
-
-                [StringLength(18)]
-        After:
-            }
-
-
-
-            public class DB_IPSC_Konfig_ZP
-            {
-
-                [StringLength(40)]
-                public string InfoText { get; set; }	//Info für Winccflex
-
-                [StringLength(18)]
-        */
     }
 
 
@@ -212,21 +128,6 @@ namespace Insite.Customer.Data.DB_IPSC_Konfig
         public DB_IPSC_Konfig_ZP_ZielAusw ZielAusw { get; set; }	//Zielauswertung von - bis Jis wird auch bei nicht Wt_mit_Bearb gesendet
         public DB_IPSC_Konfig_ZP_Ausw Ausw { get; set; }
         public DB_IPSC_Konfig_ZP_RFDaten RFDaten { get; set; }  //Daten die in den BtInternen Bereich geschrieben werden sollen
-
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-
-            public class DB_IPSC_Konfig_StatusAnzeige_ZP
-        After:
-            }
-
-
-
-            public class DB_IPSC_Konfig_StatusAnzeige_ZP
-        */
     }
 
 
@@ -234,36 +135,10 @@ namespace Insite.Customer.Data.DB_IPSC_Konfig
     public class DB_IPSC_Konfig_StatusAnzeige_ZP
     {
         public bool Fertig { get; set; }
-
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-                public bool Error { get; set; }
-
-                [StringLength(40)]
-        After:
-                public bool Error { get; set; }
-
-                [StringLength(40)]
-        */
         public bool Error { get; set; }
 
         [StringLength(40)]
         public string ErrText { get; set; }
-
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-
-            public class DB_IPSC_Konfig_ZP_HMI_manuell
-        After:
-            }
-
-
-
-            public class DB_IPSC_Konfig_ZP_HMI_manuell
-        */
     }
 
 
@@ -280,20 +155,6 @@ namespace Insite.Customer.Data.DB_IPSC_Konfig
     public class UDT_IPSC_DatKonfig
     {
         public UDT_IPSC_DatKonfig_D D { get; set; }
-
-
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-            public class UDT_DatenAusw_Univ
-        After:
-            }
-
-
-            public class UDT_DatenAusw_Univ
-        */
     }
 
 
@@ -302,20 +163,6 @@ namespace Insite.Customer.Data.DB_IPSC_Konfig
 
         [ArrayBounds(1, 24, 0)]
         public UDT_DatenAusw_Univ_Ausw[] Ausw { get; set; } //24 Auswertungen
-
-
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-            public class UDT_DatenErgeb_Univ
-        After:
-            }
-
-
-            public class UDT_DatenErgeb_Univ
-        */
     }
 
 
@@ -333,20 +180,6 @@ namespace Insite.Customer.Data.DB_IPSC_Konfig
         [ReadOnly(true)]
         [StringLength(80)]
         public string Fehler_Text { get; set; } //Fehler Text
-
-
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-            public class UDT_IPSC_ZP_DAT
-        After:
-            }
-
-
-            public class UDT_IPSC_ZP_DAT
-        */
     }
 
 

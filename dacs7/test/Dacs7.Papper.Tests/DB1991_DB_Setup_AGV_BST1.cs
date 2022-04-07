@@ -103,20 +103,6 @@ namespace Customer.Data.DB_Setup_AGV_BST1
         [ReadOnly(true)]
         public bool Reserve_3 { get; set; } //Reserve
 
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-
-            public class UDT_Status_Setup_AGV_Actual
-        After:
-            }
-
-
-
-            public class UDT_Status_Setup_AGV_Actual
-        */
     }
 
 
@@ -130,20 +116,6 @@ namespace Customer.Data.DB_Setup_AGV_BST1
         [ReadOnly(true)]
         public short Pos_Z { get; set; }    //Actual Position Z-Axis
 
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-
-            public class UDT_Status_Setup_AGV_Reserve
-        After:
-            }
-
-
-
-            public class UDT_Status_Setup_AGV_Reserve
-        */
     }
 
 
@@ -164,21 +136,6 @@ namespace Customer.Data.DB_Setup_AGV_BST1
         public bool Res_06 { get; set; }
         [ReadOnly(true)]
         public bool Res_07 { get; set; }
-
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-
-            public class UDT_Status_Setup_AGV_out_FB_Setup_AGV
-        After:
-            }
-
-
-
-            public class UDT_Status_Setup_AGV_out_FB_Setup_AGV
-        */
     }
 
 
@@ -196,26 +153,6 @@ namespace Customer.Data.DB_Setup_AGV_BST1
         [ReadOnly(true)]
         public short Error_status { get; set; } //Error status of FB991 (Error-Description in FB991)
 
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-
-            public class UDT_Setup_AGV_Types_Typ_step
-            {
-
-                [StringLength(14)]
-        After:
-            }
-
-
-
-            public class UDT_Setup_AGV_Types_Typ_step
-            {
-
-                [StringLength(14)]
-        */
     }
 
 
@@ -241,20 +178,6 @@ namespace Customer.Data.DB_Setup_AGV_BST1
         public bool Ignore_C_Axis { get; set; }	//TRUE = Position will not send to AGV-controller
         public bool Ignore_Z_Axis { get; set; } //TRUE = Position will not send to AGV-controller
 
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-
-            public class UDT_Setup_AGV_Types_Typ
-        After:
-            }
-
-
-
-            public class UDT_Setup_AGV_Types_Typ
-        */
     }
 
 
@@ -262,17 +185,6 @@ namespace Customer.Data.DB_Setup_AGV_BST1
     public class UDT_Setup_AGV_Types_Typ
     {
         [ReadOnly(true)]
-
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-                public bool active { get; set; }	//Type activated on HMI
-
-                [StringLength(8)]
-        After:
-                public bool active { get; set; }	//Type activated on HMI
-
-                [StringLength(8)]
-        */
         public bool active { get; set; }    //Type activated on HMI
 
         [StringLength(8)]
@@ -280,21 +192,6 @@ namespace Customer.Data.DB_Setup_AGV_BST1
 
         [ArrayBounds(1, 10, 0)]
         public UDT_Setup_AGV_Types_Typ_step[] step { get; set; }
-
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-
-            public class UDT_Lock_Unlock_Axis_PrePos
-        After:
-            }
-
-
-
-            public class UDT_Lock_Unlock_Axis_PrePos
-        */
     }
 
 
@@ -309,21 +206,6 @@ namespace Customer.Data.DB_Setup_AGV_BST1
         public bool Lock_Z_Axis { get; set; }	//Lock Z-Axis
         [ReadOnly(true)]
         public bool Unlock_Z_Axis { get; set; } //Unock Z-Axis
-
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-
-            public class UDT_Lock_Unlock_Axis_StopPos
-        After:
-            }
-
-
-
-            public class UDT_Lock_Unlock_Axis_StopPos
-        */
     }
 
 
@@ -351,42 +233,10 @@ namespace Customer.Data.DB_Setup_AGV_BST1
         [ReadOnly(true)]
         public short Fehler_Position { get; set; }  //Zeilen Position des Fehlers
 
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-                [ReadOnly(true)]
-
-                [StringLength(80)]
-        After:
-                [ReadOnly(true)]
-
-                [StringLength(80)]
-        */
         [ReadOnly(true)]
 
         [StringLength(80)]
         public string Fehler_Text { get; set; } //Fehler Text
-
-
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-            public class UDT_DatenAusw_Univ
-            {
-
-
-                [ArrayBounds(1,24,0)]
-        After:
-            }
-
-
-            public class UDT_DatenAusw_Univ
-            {
-
-
-                [ArrayBounds(1,24,0)]
-        */
     }
 
 
@@ -397,19 +247,6 @@ namespace Customer.Data.DB_Setup_AGV_BST1
         [ArrayBounds(1, 24, 0)]
         public UDT_DatenAusw_Univ_Ausw[] Ausw { get; set; } //24 Auswertungen
 
-
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-            public class UDT_Status_PC477
-        After:
-            }
-
-
-            public class UDT_Status_PC477
-        */
     }
 
 
@@ -459,20 +296,6 @@ namespace Customer.Data.DB_Setup_AGV_BST1
         public bool Res_Bool_6 { get; set; }
         [ReadOnly(true)]
         public bool Res_Bool_7 { get; set; }
-
-
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-            public class UDT_Check_Limits
-        After:
-            }
-
-
-            public class UDT_Check_Limits
-        */
     }
 
 
@@ -484,20 +307,6 @@ namespace Customer.Data.DB_Setup_AGV_BST1
         public UDT_Check_Limits_Z_Axis Z_Axis { get; set; }
         [ReadOnly(true)]
         public bool C_Axis_no_Pos { get; set; } //No Position configured
-
-
-        /* Unmerged change from project 'Dacs7.Papper.Tests (net461)'
-        Before:
-            }
-
-
-            public class UDT_HMI_Stat_Setup_AGV
-        After:
-            }
-
-
-            public class UDT_HMI_Stat_Setup_AGV
-        */
     }
 
 
