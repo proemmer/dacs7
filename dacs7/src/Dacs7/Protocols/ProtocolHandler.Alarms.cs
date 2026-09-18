@@ -45,10 +45,15 @@ namespace Dacs7.Protocols
                 {
                     _alarmUpdateHandler?.Event?.Set(null);
                     await DisableAlarmUpdatesAsync().ConfigureAwait(false);
+
+                    // The registration belongs to the connection. If the connection is already down, disabling fails,
+                    // so reset it anyway, otherwise the updates are not registered again after a reconnect.
+                    _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
                 }
             }
             catch (Exception ex)
             {
+                _alarmUpdateHandler = new CallbackHandler<S7AlarmUpdateAckDatagram>();
                 if (_logger?.IsEnabled(LogLevel.Debug) == true)
                 {
                     _logger?.LogWarning("Exception while canceling alarm handling. Exception was {0} - StackTrace: {1}", ex.Message, ex.StackTrace);

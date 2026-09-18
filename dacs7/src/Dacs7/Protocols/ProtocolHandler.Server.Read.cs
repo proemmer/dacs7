@@ -31,6 +31,14 @@ namespace Dacs7.Protocols
             try
             {
                 readRequests = data.Items.Select(rq => new ReadRequestItem((PlcArea)rq.Area, rq.DbNumber, rq.ItemSpecLength, rq.Offset, (ItemDataTransportSize)rq.TransportSize, rq.Address)).ToList();
+
+                if (data.Header.GetMemorySize() > _s7Context.PduSize || GetReadResponseSize(readRequests) > _s7Context.PduSize)
+                {
+                    // a plc rejects a job which does not fit into the negotiated pdu
+                    _logger?.LogWarning("Read job {reference} does not fit into the pdu size of {pduSize}.", data.Header.ProtocolDataUnitReference, _s7Context.PduSize);
+                    await SendErrorAckAsync(data.Header.ProtocolDataUnitReference, PduSizeErrorClass, PduSizeErrorCode).ConfigureAwait(false);
+                    return;
+                }
                 List<ReadResultItem> results = await _provider.ReadAsync(readRequests).ConfigureAwait(false);
                 if (results == null || results.Count != readRequests.Count)
                 {
@@ -56,6 +64,21 @@ namespace Dacs7.Protocols
             {
                 _logger?.LogError(ex, "Error while sending the error response for read job {reference}.", data.Header.ProtocolDataUnitReference);
             }
+        }
+
+        private static int GetReadResponseSize(List<ReadRequestItem> readRequests)
+        {
+            int size = SiemensPlcProtocolContext.ReadAckHeader + SiemensPlcProtocolContext.ReadAckParameter;
+            for (int i = 0; i < readRequests.Count; i++)
+            {
+                int length = readRequests[i].NumberOfItems * readRequests[i].ElementSize;
+                size += SiemensPlcProtocolContext.ReadItemAckHeader + length;
+                if (length % 2 != 0 && i < readRequests.Count - 1)
+                {
+                    size++; // fill byte
+                }
+            }
+            return size;
         }
 
         private async Task SendReadJobAck(List<ReadResultItem> readItems, ushort id)

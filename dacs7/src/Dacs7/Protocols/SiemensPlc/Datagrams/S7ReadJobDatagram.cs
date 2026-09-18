@@ -33,10 +33,11 @@ namespace Dacs7.Protocols.SiemensPlc
             {
                 foreach (ReadItem item in vars)
                 {
+                    byte transportSize = S7AddressItemSpecificationDatagram.GetTransportSize(item.Area, item.VarType, item.Encoding);
                     result.Items.Add(new S7AddressItemSpecificationDatagram
                     {
-                        TransportSize = S7AddressItemSpecificationDatagram.GetTransportSize(item.Area, item.VarType),
-                        ItemSpecLength = item.NumberOfItems,
+                        TransportSize = transportSize,
+                        ItemSpecLength = S7AddressItemSpecificationDatagram.GetItemSpecLength(item, transportSize),
                         DbNumber = item.DbNumber,
                         Area = (byte)item.Area,
                         Offset = item.Offset,

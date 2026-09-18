@@ -41,6 +41,33 @@ namespace Dacs7.Domain
                 }
                 return result;
             }
+            else if (item.VarType == typeof(char) && item.Encoding == PlcEncoding.Unicode)
+            {
+                // WChar: 2 bytes per char
+#if SPANSUPPORT
+                string chars = Encoding.BigEndianUnicode.GetString(data.Span.Slice(0, item.NumberOfItems * 2));
+#else
+                string chars = Encoding.BigEndianUnicode.GetString(data.Span.Slice(0, item.NumberOfItems * 2).ToArray());
+#endif
+                if (item.ResultType == typeof(char))
+                {
+                    return chars[0];
+                }
+                return item.ResultType == typeof(string) ? chars : (object)chars.ToCharArray();
+            }
+            else if (item.ResultType == typeof(sbyte))
+            {
+                return unchecked((sbyte)data.Span[0]);
+            }
+            else if (item.ResultType == typeof(sbyte[]))
+            {
+                sbyte[] result = new sbyte[item.NumberOfItems];
+                for (int i = 0; i < result.Length; i++)
+                {
+                    result[i] = unchecked((sbyte)data.Span[i]);
+                }
+                return result;
+            }
             else if (item.ResultType == typeof(char))
             {
                 return Convert.ToChar(data.Span[0]);
@@ -66,9 +93,9 @@ namespace Dacs7.Domain
 
                     length = (ushort)Math.Min(Math.Min(max, length), current);
 #if SPANSUPPORT
-                    return length > 0 ? Encoding.BigEndianUnicode.GetString(data.Slice(ReadItem.UnicodeStringHeaderSize, dataLength).Span) : string.Empty;
+                    return length > 0 ? Encoding.BigEndianUnicode.GetString(data.Slice(ReadItem.UnicodeStringHeaderSize, length * 2).Span) : string.Empty;
 #else
-                    return length > 0 ? Encoding.BigEndianUnicode.GetString(data.Span.Slice(ReadItem.UnicodeStringHeaderSize, dataLength).ToArray()) : string.Empty;
+                    return length > 0 ? Encoding.BigEndianUnicode.GetString(data.Span.Slice(ReadItem.UnicodeStringHeaderSize, length * 2).ToArray()) : string.Empty;
 #endif
 
                 }
@@ -207,7 +234,7 @@ namespace Dacs7.Domain
             ulong[] result = new ulong[item.NumberOfItems];
             for (int i = 0; i < item.NumberOfItems; i++)
             {
-                result[i] = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(i * 8).Span);
+                result[i] = BinaryPrimitives.ReadUInt64BigEndian(data.Slice(i * 8).Span);
             }
             return result;
         }
@@ -217,7 +244,7 @@ namespace Dacs7.Domain
             long[] result = new long[item.NumberOfItems];
             for (int i = 0; i < item.NumberOfItems; i++)
             {
-                result[i] = BinaryPrimitives.ReadUInt32BigEndian(data.Slice(i * 8).Span);
+                result[i] = BinaryPrimitives.ReadInt64BigEndian(data.Slice(i * 8).Span);
             }
             return result;
         }

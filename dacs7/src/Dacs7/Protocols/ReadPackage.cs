@@ -12,6 +12,8 @@ namespace Dacs7.Protocols
         private readonly int _maxSize;
         private int _sizeRequest = SiemensPlcProtocolContext.ReadHeader + SiemensPlcProtocolContext.ReadParameter;
         private int _sizeResponse = SiemensPlcProtocolContext.ReadAckHeader + SiemensPlcProtocolContext.ReadAckParameter;
+        private int _byteSizeResponse = SiemensPlcProtocolContext.ReadAckHeader + SiemensPlcProtocolContext.ReadAckParameter;
+        private bool _fillByteRequired;
         private readonly List<ReadItem> _items = new();
 
 
@@ -38,15 +40,22 @@ namespace Dacs7.Protocols
 
         public bool TryAdd(ReadItem item)
         {
+            // This rule counts the number of items instead of bytes. It is kept, so every package which fits into the pdu is built as before.
             ushort size = item.NumberOfItems;
             int newReqSize = _sizeRequest + SiemensPlcProtocolContext.ReadItemSize;
             int newRespSize = _sizeResponse + size + SiemensPlcProtocolContext.ReadItemAckHeader;
             int readItemSize = Math.Max(newReqSize, newRespSize);
-            if (Free >= readItemSize)
+
+            // The response in bytes has to fit into the pdu, items with an odd length are followed by a fill byte.
+            int newByteSizeResponse = _byteSizeResponse + (_fillByteRequired ? 1 : 0) + SiemensPlcProtocolContext.ReadItemAckHeader + item.ByteLength;
+
+            if (Free >= readItemSize && newByteSizeResponse <= _maxSize)
             {
                 _items.Add(item);
                 _sizeRequest = newReqSize;
                 _sizeResponse = newRespSize;
+                _byteSizeResponse = newByteSizeResponse;
+                _fillByteRequired = item.ByteLength % 2 != 0;
                 Size = readItemSize;
                 return true;
             }

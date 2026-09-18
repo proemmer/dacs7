@@ -165,14 +165,18 @@ namespace Dacs7.Protocols
                             {
                                 TransportSize = item.TransportSize,
                                 Length = current.Parent.NumberOfItems,
-                                Data = new byte[current.Parent.NumberOfItems]
+                                Data = new byte[current.Parent.ByteLength],
+                                ReturnCode = item.ReturnCode
                             };
                             result[current.Parent] = parent;
                         }
+                        else if (parent.ReturnCode == (byte)ItemResponseRetValue.Success)
+                        {
+                            // if one of the parts failed, the whole item failed
+                            parent.ReturnCode = item.ReturnCode;
+                        }
 
-                        parent.ReturnCode = item.ReturnCode;
-
-                        item.Data.CopyTo(parent.Data.Slice(current.Offset - current.Parent.Offset, current.NumberOfItems));
+                        item.Data.CopyTo(parent.Data.Slice(current.Offset - current.Parent.Offset, current.ByteLength));
                     }
                     else
                     {
@@ -237,15 +241,18 @@ namespace Dacs7.Protocols
                 ReadPackage currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
                 if (currentPackage == null)
                 {
-                    if (item.NumberOfItems > s7Context.ReadItemMaxLength)
+                    if (item.ByteLength > s7Context.ReadItemMaxLength)
                     {
-                        ushort bytesToRead = item.NumberOfItems;
-                        ushort processed = 0;
-                        while (bytesToRead > 0)
+                        // split the item into parts which fit into the pdu, each part contains only whole elements
+                        int maxItemsPerPart = s7Context.ReadItemMaxLength / item.ElementSize;
+                        int itemsToRead = item.NumberOfItems;
+                        int processed = 0;
+                        while (itemsToRead > 0)
                         {
-                            ushort slice = Math.Min(s7Context.ReadItemMaxLength, bytesToRead);
-                            ReadItem child = ReadItem.CreateChild(item, (item.Offset + processed), slice);
-                            if (slice < s7Context.ReadItemMaxLength)
+                            ushort slice = (ushort)Math.Min(maxItemsPerPart, itemsToRead);
+                            ReadItem child = ReadItem.CreateChild(item, item.Offset + (processed * item.ElementSize), slice);
+                            currentPackage = null;
+                            if (child.ByteLength < s7Context.ReadItemMaxLength)
                             {
                                 currentPackage = result.FirstOrDefault(package => package.TryAdd(child));
                             }
@@ -274,7 +281,7 @@ namespace Dacs7.Protocols
                                 }
                             }
                             processed += slice;
-                            bytesToRead -= slice;
+                            itemsToRead -= slice;
                         }
                     }
                     else

@@ -30,6 +30,14 @@ namespace Dacs7.Protocols
             List<WriteRequestItem> writeRequests = new();
             try
             {
+                if (data.Header.GetMemorySize() > _s7Context.PduSize)
+                {
+                    // a plc rejects a job which does not fit into the negotiated pdu
+                    _logger?.LogWarning("Write job {reference} does not fit into the pdu size of {pduSize}.", data.Header.ProtocolDataUnitReference, _s7Context.PduSize);
+                    await SendErrorAckAsync(data.Header.ProtocolDataUnitReference, PduSizeErrorClass, PduSizeErrorCode).ConfigureAwait(false);
+                    return;
+                }
+
                 List<S7DataItemSpecification>.Enumerator dataEnum = data.Data.GetEnumerator();
                 foreach (S7AddressItemSpecificationDatagram rq in data.Items)
                 {

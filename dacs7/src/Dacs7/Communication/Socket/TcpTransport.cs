@@ -6,6 +6,7 @@ using Dacs7.Protocols.Rfc1006;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -57,13 +58,21 @@ namespace Dacs7.Communication.Socket
 
         public sealed override IMemoryOwner<byte> Build(Memory<byte> buffer, out int length)
         {
-            using (DataTransferDatagram dg = DataTransferDatagram.Build(_context, buffer).FirstOrDefault())
+            // if the buffer is larger than the frame size, it is sent in several datagrams
+            List<DataTransferDatagram> datagrams = DataTransferDatagram.Build(_context, buffer).ToList();
+            try
             {
-                length = DataTransferDatagram.GetRawDataLength(dg);
+                length = datagrams.Sum(dg => (int)DataTransferDatagram.GetRawDataLength(dg));
                 IMemoryOwner<byte> resultBuffer = MemoryPool<byte>.Shared.Rent(length);
                 try
                 {
-                    DataTransferDatagram.TranslateToMemory(dg, resultBuffer.Memory.Slice(0, length));
+                    int offset = 0;
+                    foreach (DataTransferDatagram dg in datagrams)
+                    {
+                        int datagramLength = DataTransferDatagram.GetRawDataLength(dg);
+                        DataTransferDatagram.TranslateToMemory(dg, resultBuffer.Memory.Slice(offset, datagramLength));
+                        offset += datagramLength;
+                    }
                 }
                 catch (Exception)
                 {
@@ -72,6 +81,13 @@ namespace Dacs7.Communication.Socket
                     throw;
                 }
                 return resultBuffer;
+            }
+            finally
+            {
+                foreach (DataTransferDatagram dg in datagrams)
+                {
+                    dg.Dispose();
+                }
             }
         }
 
@@ -95,6 +111,9 @@ namespace Dacs7.Communication.Socket
 
         private Task OnTcpSocketConnectionStateChanged(string socketHandle, bool connected)
         {
+            // fragments of a datagram from a previous connection must not be combined with new data
+            DataTransferDatagram.ClearFrameBuffer(_context.FrameBuffer);
+
             ConnectionState? state = OnGetConnectionState?.Invoke();
             if (state == ConnectionState.Closed && connected && _socket == null)
             {

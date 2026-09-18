@@ -28,6 +28,11 @@ namespace Dacs7
         internal bool IsPart => Parent != null;
         internal ushort ElementSize { get; set; }
 
+        /// <summary>
+        /// The number of bytes of this item in the plc.
+        /// </summary>
+        internal int ByteLength => NumberOfItems * ElementSize;
+
         internal ReadItem()
         {
 
@@ -64,7 +69,7 @@ namespace Dacs7
 
         private static ReadItem BuildReadItemFromTagResult(ref TagParser.TagParserResult result)
         {
-            ushort numberOfItems = result.VarType == typeof(string) ? (ushort)(result.Length + (result.Encoding == PlcEncoding.Unicode ? UnicodeStringHeaderSize : StringHeaderSize)) : result.Length;
+            ushort numberOfItems = result.VarType == typeof(string) ? (ushort)(result.Length + GetStringHeaderItems(result.Encoding)) : result.Length;
             return new ReadItem
             {
                 Area = result.Area,
@@ -151,7 +156,7 @@ namespace Dacs7
             else if (t == typeof(string))
             {
                 result.VarType = result.ResultType = t;
-                result.NumberOfItems += result.Encoding == PlcEncoding.Unicode ? UnicodeStringHeaderSize : StringHeaderSize;
+                result.NumberOfItems += GetStringHeaderItems(result.Encoding);
             }
             else if (t == typeof(Memory<byte>))
             {
@@ -170,6 +175,14 @@ namespace Dacs7
         }
 
 
+
+        /// <summary>
+        /// The size of the string header in items. A unicode string (WString) has a header of 4 bytes and 2 bytes per item.
+        /// </summary>
+        private static ushort GetStringHeaderItems(PlcEncoding encoding)
+        {
+            return encoding == PlcEncoding.Unicode ? (ushort)(UnicodeStringHeaderSize / 2) : StringHeaderSize;
+        }
 
         public static ushort GetElementSize(PlcArea area, Type t, PlcEncoding encoding)
         {
@@ -239,7 +252,7 @@ namespace Dacs7
                 item.ResultType == typeof(ulong) || item.ResultType == typeof(ulong[]) || item.ResultType == typeof(List<ulong>) ||
                 item.ResultType == typeof(long) || item.ResultType == typeof(long[]) || item.ResultType == typeof(List<long>) ||
                 item.ResultType == typeof(float) || item.ResultType == typeof(float[]) || item.ResultType == typeof(List<float>) ||
-                item.ResultType == typeof(sbyte))
+                item.ResultType == typeof(sbyte) || item.ResultType == typeof(sbyte[]))
             {
                 return;
             }

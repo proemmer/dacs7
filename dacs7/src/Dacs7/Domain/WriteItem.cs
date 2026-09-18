@@ -93,7 +93,7 @@ namespace Dacs7
         {
             WriteItem result = ReadItem.CreateChild(item, offset, length).Clone();
             result.Parent = item;
-            result.Data = item.Data.Slice(offset - item.Offset, length);
+            result.Data = item.Data.Slice(offset - item.Offset, length * item.ElementSize);
             return result;
         }
 
@@ -124,13 +124,12 @@ namespace Dacs7
         {
             if (result.VarType == typeof(string))
             {
-                ushort length = (ushort)result.Data.Length;
-                if (length > result.NumberOfItems)
+                if (result.Data.Length > result.ByteLength)
                 {
                     ThrowHelper.ThrowStringToLongException(nameof(result.Data));
                 }
                 // special handling of string because we want to write only the given string, not the whole on.
-                result.NumberOfItems = (ushort)result.Data.Length;
+                result.NumberOfItems = (ushort)(result.Data.Length / result.ElementSize);
             }
             else if (result.VarType == typeof(bool))
             {

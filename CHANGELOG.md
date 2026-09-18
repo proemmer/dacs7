@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.3.0
+
+This release changes behaviour only where 2.2.7 failed or returned wrong data. Every read and write that worked with 2.2.7 sends exactly the same requests to the PLC as before.
+
+### Client
+
+- **Arrays of INT, WORD, DINT, DWORD, REAL, LINT and LWORD are sized in bytes.** The size of such an array was counted in elements instead of bytes. As a result:
+  - Reads and writes larger than a PDU were not split correctly and failed with an exception.
+  - Requests that exceeded the PDU were rejected by the PLC (error class 0x85). A write like that also made the PLC close the connection.
+  
+  Now these items are split into parts that fit into the PDU.
+- **If one part of a split item fails, the item reports the error.** Before, the return code of the last part was used.
+- **New tag types:** `li` (LINT), `si` (SINT), `ws` (WSTRING) and `wc` (WCHAR). Before, these tags could not be parsed.
+- **`lw` (LWORD) works.** Before, every LWORD access failed.
+- **LINT and LWORD arrays return all 8 bytes of each element.**
+- **WSTRING (`PlcEncoding.Unicode` strings) reads and writes work.**
+  - Reads return only the actual characters.
+  - Writes set the maximum length correctly.
+  - `ReadItem.NumberOfItems` of a WSTRING now counts its 4 header bytes as 2 items of 2 bytes, instead of 4 items.
+- **`WriteItem.CreateChild` takes the length in items, as documented.** It sliced the data in bytes before.
+- **Messages larger than the negotiated TPDU size are sent in several fragments, and fragmented messages are reassembled.** Before, only the first fragment was sent, and reassembling threw an exception.
+- **A connection that breaks while a fragmented message is received no longer blocks the client from reconnecting.** Before, every later connect of that client instance failed.
+- **Alarm updates are registered again after a reconnect.** Before, the client kept the registration of the old connection, and subscriptions waited forever.
+
+### Server (`Dacs7Server`)
+
+- **The negotiated PDU size and number of parallel jobs of the communication setup are used.** Before, the values the client requested were used.
+- **Read and write jobs which do not fit into the negotiated PDU are rejected like a PLC does**, with an ack with error class 0x85. Before, they were answered.
+
 ## 2.2.7
 
 Bugfix release. No public API was removed or renamed, and the client's behaviour is unchanged except for the bugs fixed below.
