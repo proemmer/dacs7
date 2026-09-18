@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
 // See License in the project root for license information.
 
+using Dacs7.Domain;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -36,10 +37,11 @@ namespace Dacs7.Protocols.SiemensPlc
                 foreach (WriteItem item in vars)
                 {
                     numberOfItems++;
+                    byte transportSize = S7AddressItemSpecificationDatagram.GetTransportSize(item.Area, item.VarType, item.Encoding);
                     result.Items.Add(new S7AddressItemSpecificationDatagram
                     {
-                        TransportSize = S7AddressItemSpecificationDatagram.GetTransportSize(item.Area, item.VarType),
-                        ItemSpecLength = item.NumberOfItems,
+                        TransportSize = transportSize,
+                        ItemSpecLength = S7AddressItemSpecificationDatagram.GetItemSpecLength(item, transportSize),
                         DbNumber = item.DbNumber,
                         Area = (byte)item.Area,
                         Address = S7AddressItemSpecificationDatagram.GetAddress(item.Offset, item.VarType)
@@ -52,7 +54,10 @@ namespace Dacs7.Protocols.SiemensPlc
                     result.Data.Add(new S7DataItemSpecification
                     {
                         ReturnCode = 0x00,
-                        TransportSize = S7DataItemSpecification.GetTransportSize(item.Area, item.VarType),
+                        // if the item is addressed as bytes, the data has to be transferred as bytes too
+                        TransportSize = S7AddressItemSpecificationDatagram.GetTransportSize(item.Area, item.VarType, item.Encoding) == (byte)ItemDataTransportSize.Byte
+                                            ? (byte)DataTransportSize.Byte
+                                            : S7DataItemSpecification.GetTransportSize(item.Area, item.VarType),
                         Length = item.NumberOfItems,
                         Data = item.Data,
                         FillByte = numberOfItems == 0 || item.NumberOfItems % 2 == 0 ? Array.Empty<byte>() : new byte[1],

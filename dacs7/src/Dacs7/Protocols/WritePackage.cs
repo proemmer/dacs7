@@ -21,6 +21,8 @@ namespace Dacs7.Protocols
 
         public int Size { get; private set; } = SiemensPlcProtocolContext.WriteHeader + SiemensPlcProtocolContext.WriteParameter;
 
+        private int _byteSize = SiemensPlcProtocolContext.WriteHeader + SiemensPlcProtocolContext.WriteParameter;
+
         public int Free => _maxSize - Size;
 
         public IEnumerable<WriteItem> Items => _items;
@@ -39,16 +41,26 @@ namespace Dacs7.Protocols
 
         public bool TryAdd(WriteItem item)
         {
+            // This rule counts the number of items instead of bytes. It is kept, so every package which fits into the pdu is built as before.
             ushort size = item.NumberOfItems;
             int itemSize = _writeItemHeaderSize + size;
 
-            if (Free >= itemSize)
+            // The request in bytes has to fit into the pdu.
+            int byteItemSize = _writeItemHeaderSize + item.ByteLength;
+
+            if (Free >= itemSize && _byteSize + byteItemSize <= _maxSize)
             {
                 _items.Add(item);
                 Size += itemSize;
                 if (Size % 2 != 0)
                 {
                     Size++; // set the next item to a even address
+                }
+
+                _byteSize += byteItemSize;
+                if (_byteSize % 2 != 0)
+                {
+                    _byteSize++; // set the next item to a even address
                 }
 
                 return true;

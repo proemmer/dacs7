@@ -11,16 +11,13 @@
     <PackageId>Dacs7</PackageId>
     <PackageTags>siemens plc S7 PC-S7-Connection TCP/IP-S7 communication .netcore Automation HMI C# VB.Net RFC-1006 IsoOnTcp-S7 SIMATIC</PackageTags>
     <PackageReleaseNotes>
-      * Client: replies split across TCP reads no longer corrupt the connection
-      * Client: fixed sporadic ConnectAsync timeout when the PLC answers very fast
-      * Client: unknown COTP parameters in the connection confirm are skipped (receive thread hung before)
-      * Client: ReadBlocksOfTypeAsync / ReadBlocksCountAsync returned one entry too few
-      * Client: fixed NullReferenceException on ack for alarm indication subscription
-      * Server: RequestItem.TransportSize is public, ToTag renders bit requests as bit tags (e.g. DB100.2,x3,1)
-      * Server: fixed dropped connections under load, "Collection was modified" on DisconnectAsync and Critical log on stop
-      * Server: no reconnect attempts to disconnected clients anymore, their connections are closed
-      * Server: always answers jobs (HardwareFault if the data provider fails)
-      * Server: unknown COTP parameters in the connection request are skipped
+      * Client: arrays of INT, WORD, DINT, DWORD, REAL, LINT and LWORD larger than the PDU are split correctly (failed before)
+      * Client: new tag types li (LINT), si (SINT), ws (WSTRING), wc (WCHAR); lw (LWORD) and WSTRING work
+      * Client: messages larger than the TPDU size are fragmented and reassembled
+      * Client: reconnect works after a connection broke during a fragmented message
+      * Client: alarm updates are registered again after a reconnect
+      * Server: uses the negotiated PDU size and rejects larger jobs with error class 0x85 like a PLC
+      * Every read and write that worked with 2.2.7 sends the same requests as before
       * see CHANGELOG.md for details
 </PackageReleaseNotes>
     <PackageProjectUrl>http://proemmer.github.io/dacs7</PackageProjectUrl>
@@ -34,7 +31,7 @@
 
 
 
-    <Version>2.2.7</Version>
+    <Version>2.3.0</Version>
     <SignAssembly>true</SignAssembly>
     
     

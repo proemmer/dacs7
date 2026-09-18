@@ -151,20 +151,32 @@ namespace Dacs7.Protocols.Rfc1006
 
         private static void ApplyPayloadFromFrameBuffer(IList<(IMemoryOwner<byte> MemoryOwner, int Length)> framebuffer, DataTransferDatagram datagram)
         {
-            framebuffer.Add(new ValueTuple<IMemoryOwner<byte>, int>(datagram._payload, datagram.Payload.Length));
-            int length = framebuffer.Sum(x => x.Length);
-            datagram._payload = MemoryPool<byte>.Shared.Rent(length);
+            // the payload of the last fragment is part of the receive buffer, so it is copied after the buffered fragments
+            int length = framebuffer.Sum(x => x.Length) + datagram.Payload.Length;
+            IMemoryOwner<byte> payload = MemoryPool<byte>.Shared.Rent(length);
             int index = 0;
             foreach ((IMemoryOwner<byte> MemoryOwner, int Length) in framebuffer)
             {
-                MemoryOwner.Memory.Slice(0, Length).CopyTo(datagram._payload.Memory.Slice(index));
-                if (!ReferenceEquals(datagram.Payload, MemoryOwner))
-                {
-                    MemoryOwner.Dispose();
-                }
+                MemoryOwner.Memory.Slice(0, Length).CopyTo(payload.Memory.Slice(index));
                 index += Length;
             }
-            datagram.Payload = datagram._payload.Memory.Slice(0, length);
+            datagram.Payload.CopyTo(payload.Memory.Slice(index));
+            ClearFrameBuffer(framebuffer);
+
+            datagram._payload?.Dispose();
+            datagram._payload = payload;
+            datagram.Payload = payload.Memory.Slice(0, length);
+        }
+
+        /// <summary>
+        /// Removes all buffered fragments, e.g. if the connection was closed while a fragmented datagram was received.
+        /// </summary>
+        public static void ClearFrameBuffer(IList<(IMemoryOwner<byte> MemoryOwner, int Length)> framebuffer)
+        {
+            foreach ((IMemoryOwner<byte> MemoryOwner, int _) in framebuffer)
+            {
+                MemoryOwner.Dispose();
+            }
             framebuffer.Clear();
         }
 

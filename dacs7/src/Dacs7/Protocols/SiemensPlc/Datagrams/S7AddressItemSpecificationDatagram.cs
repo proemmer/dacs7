@@ -31,6 +31,32 @@ namespace Dacs7.Protocols.SiemensPlc
         public int Offset { get; set; }
 
 
+        public static byte GetTransportSize(PlcArea area, Type t, PlcEncoding encoding)
+        {
+            if (area != PlcArea.CT && area != PlcArea.TM)
+            {
+                Type elementType = t.IsArray ? t.GetElementType() : t;
+
+                // There is no transport size for these types, so they are transferred as bytes.
+                if (elementType == typeof(long) || elementType == typeof(ulong) || elementType == typeof(sbyte) ||
+                    (encoding == PlcEncoding.Unicode && (elementType == typeof(char) || elementType == typeof(string))))
+                {
+                    return (byte)ItemDataTransportSize.Byte;
+                }
+            }
+
+            return GetTransportSize(area, t);
+        }
+
+        /// <summary>
+        /// The length of the item in the unit of the transport size.
+        /// </summary>
+        public static ushort GetItemSpecLength(ReadItem item, byte transportSize)
+        {
+            // for the transport size byte the length is the number of bytes
+            return transportSize == (byte)ItemDataTransportSize.Byte ? (ushort)item.ByteLength : item.NumberOfItems;
+        }
+
         public static byte GetTransportSize(PlcArea area, Type t)
         {
             if (area == PlcArea.CT || area == PlcArea.TM)

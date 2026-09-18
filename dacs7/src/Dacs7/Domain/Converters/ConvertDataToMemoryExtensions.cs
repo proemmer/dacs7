@@ -48,10 +48,18 @@ namespace Dacs7.Domain
                     {
                         return b.Select(x => x ? (byte)0x01 : (byte)0x00).ToArray();
                     }
+                case char c when item.Encoding == PlcEncoding.Unicode:
+                    return Encoding.BigEndianUnicode.GetBytes(new[] { c });
+                case char[] ca when item.Encoding == PlcEncoding.Unicode:
+                    return Encoding.BigEndianUnicode.GetBytes(ca);
                 case char c:
                     return new byte[] { Convert.ToByte(c) };
                 case char[] ca:
                     return ca.Select(x => Convert.ToByte(x)).ToArray();
+                case sbyte sb:
+                    return new byte[] { unchecked((byte)sb) };
+                case sbyte[] sba:
+                    return sba.Select(x => unchecked((byte)x)).ToArray();
                 case string s:
                     {
                         if (item.VarType == typeof(string))
@@ -60,7 +68,8 @@ namespace Dacs7.Domain
                             {
                                 Memory<byte> result = new byte[(s.Length * 2) + ReadItem.UnicodeStringHeaderSize];
 
-                                BinaryPrimitives.WriteUInt16BigEndian(result.Span, (ushort)((item.NumberOfItems - ReadItem.StringHeaderSize) / 2));
+                                // the number of items of a unicode string contains 2 items (4 bytes) for the header
+                                BinaryPrimitives.WriteUInt16BigEndian(result.Span, (ushort)(item.NumberOfItems - (ReadItem.UnicodeStringHeaderSize / 2)));
                                 BinaryPrimitives.WriteUInt16BigEndian(result.Span.Slice(2), (ushort)s.Length);
                                 Encoding.BigEndianUnicode.GetBytes(s).AsSpan().CopyTo(result.Span.Slice(ReadItem.UnicodeStringHeaderSize));
                                 return result;
@@ -90,9 +99,8 @@ namespace Dacs7.Domain
                         }
                         else if (item.VarType == typeof(char))
                         {
-                            Memory<byte> result = new byte[2];
-                            Encoding.BigEndianUnicode.GetBytes(s).AsSpan().CopyTo(result.Span);
-                            return result;
+                            // WChar, 2 bytes per char
+                            return Encoding.BigEndianUnicode.GetBytes(s);
                         }
                         ThrowHelper.ThrowInvalidCastException();
                         return null;

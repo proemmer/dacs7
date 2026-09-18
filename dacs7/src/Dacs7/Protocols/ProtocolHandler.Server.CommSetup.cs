@@ -28,6 +28,31 @@ namespace Dacs7.Protocols
             }
         }
 
+        /// <summary>
+        /// Error class and code a plc sends, if a job does not fit into the negotiated pdu size.
+        /// </summary>
+        private const byte PduSizeErrorClass = 0x85;
+        private const byte PduSizeErrorCode = 0x00;
+
+        /// <summary>
+        /// Sends an ack without data, like a plc does if it rejects a job.
+        /// </summary>
+        private async Task SendErrorAckAsync(ushort id, byte errorClass, byte errorCode)
+        {
+            S7AckDataDatagram ack = new();
+            ack.Header.PduType = 0x02; // Ack
+            ack.Header.ProtocolDataUnitReference = id;
+            ack.Error.ErrorClass = errorClass;
+            ack.Error.ErrorCode = errorCode;
+            using (System.Buffers.IMemoryOwner<byte> dg = S7AckDataDatagram.TranslateToMemory(ack, out int memoryLength))
+            {
+                using (System.Buffers.IMemoryOwner<byte> sendData = _transport.Build(dg.Memory.Slice(0, memoryLength), out int sendLength))
+                {
+                    await _transport.Connection.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false);
+                }
+            }
+        }
+
         private async Task SendCommSetupAckAsync(S7CommSetupDatagram data)
         {
             using (System.Buffers.IMemoryOwner<byte> dg = S7CommSetupAckDataDatagram
@@ -40,11 +65,8 @@ namespace Dacs7.Protocols
                     SocketError result = await _transport.Connection.SendAsync(sendData.Memory.Slice(0, sendLength)).ConfigureAwait(false);
                     if (result == SocketError.Success)
                     {
-                        ushort oldSemaCount = _s7Context.MaxAmQCalling;
-                        _s7Context.MaxAmQCalling = data.Parameter.MaxAmQCalling;
-                        _s7Context.MaxAmQCalled = data.Parameter.MaxAmQCalled;
-                        _s7Context.PduSize = data.Parameter.PduLength;
-                        UpdateJobsSemaphore(oldSemaCount, _s7Context.MaxAmQCalling);
+                        // the context already contains the negotiated values, which were sent to the client
+                        UpdateJobsSemaphore(_s7Context.MaxAmQCalling, _s7Context.MaxAmQCalling);
 
                         await UpdateConnectionState(ConnectionState.Opened).ConfigureAwait(false);
                     }

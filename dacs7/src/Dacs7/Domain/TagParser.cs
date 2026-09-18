@@ -306,12 +306,12 @@ namespace Dacs7.Domain
                             case 's':
                                 vtype = rType = typeof(string);
                                 encoding = PlcEncoding.Unicode;
-                                break;
+                                return true;
                             case 'c':
                                 vtype = typeof(char);
-                                rType = typeof(string);
+                                rType = length > 1 ? typeof(string) : vtype;
                                 encoding = PlcEncoding.Unicode;
-                                break;
+                                return true;
                         }
                         break;
                     }
@@ -322,7 +322,7 @@ namespace Dacs7.Domain
                 case 'l' when type.Length > 1 && type[1] == 'i':
                     vtype = typeof(long);
                     rType = length > 1 ? typeof(long[]) : vtype;
-                    break;
+                    return true;
                 case 'l' when type.Length > 1 && type[1] == 'w':
                     vtype = typeof(ulong);
                     rType = length > 1 ? typeof(ulong[]) : vtype;
@@ -346,7 +346,7 @@ namespace Dacs7.Domain
                 case 's' when type.Length > 1 && type[1] == 'i':
                     vtype = typeof(sbyte);
                     rType = length > 1 ? typeof(sbyte[]) : vtype;
-                    break;
+                    return true;
                 case 's':
                     vtype = rType = typeof(string);
                     return true;

@@ -210,15 +210,18 @@ namespace Dacs7.Protocols
                 WritePackage currentPackage = result.FirstOrDefault(package => package.TryAdd(item));
                 if (currentPackage == null)
                 {
-                    if (item.NumberOfItems > s7Context.WriteItemMaxLength)
+                    if (item.ByteLength > s7Context.WriteItemMaxLength)
                     {
-                        ushort bytesToWrite = item.NumberOfItems;
-                        ushort processed = 0;
-                        while (bytesToWrite > 0)
+                        // split the item into parts which fit into the pdu, each part contains only whole elements
+                        int maxItemsPerPart = s7Context.WriteItemMaxLength / item.ElementSize;
+                        int itemsToWrite = item.NumberOfItems;
+                        int processed = 0;
+                        while (itemsToWrite > 0)
                         {
-                            ushort slice = Math.Min(s7Context.WriteItemMaxLength, bytesToWrite);
-                            WriteItem child = WriteItem.CreateChild(item, (ushort)(item.Offset + processed), slice);
-                            if (slice < s7Context.WriteItemMaxLength)
+                            ushort slice = (ushort)Math.Min(maxItemsPerPart, itemsToWrite);
+                            WriteItem child = WriteItem.CreateChild(item, item.Offset + (processed * item.ElementSize), slice);
+                            currentPackage = null;
+                            if (child.ByteLength < s7Context.WriteItemMaxLength)
                             {
                                 currentPackage = result.FirstOrDefault(package => package.TryAdd(child));
                             }
@@ -247,7 +250,7 @@ namespace Dacs7.Protocols
                                 }
                             }
                             processed += slice;
-                            bytesToWrite -= slice;
+                            itemsToWrite -= slice;
                         }
                     }
                     else
