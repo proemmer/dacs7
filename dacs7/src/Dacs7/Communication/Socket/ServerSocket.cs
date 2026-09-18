@@ -225,6 +225,7 @@ namespace Dacs7.Communication
                         try
                         {
                             acceptSocket.NoDelay = true;
+                            _clients.RemoveAll(IsDisposed); // sockets of disconnected clients are already closed
                             _clients.Add(acceptSocket);
                             if (OnNewSocketConnected != null)
                             {
@@ -263,6 +264,23 @@ namespace Dacs7.Communication
             }
         }
 
+
+        private static bool IsDisposed(System.Net.Sockets.Socket socket)
+        {
+            try
+            {
+                _ = socket.Available;
+                return false;
+            }
+            catch (ObjectDisposedException)
+            {
+                return true;
+            }
+            catch (SocketException)
+            {
+                return false;
+            }
+        }
 
         public void Dispose()
         {

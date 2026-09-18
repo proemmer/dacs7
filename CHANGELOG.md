@@ -21,7 +21,7 @@ Bugfix release. No public API was removed or renamed, and the client's behaviour
 - **A connection that fails during setup is closed and logged as a warning.** It no longer stops the server from accepting further connections.
 - **`DisconnectAsync` no longer throws "Collection was modified".** The list of client connections is now synchronized. On stop, the client connections are closed before the listener.
 - **Stopping the server no longer logs `Critical` or `Error`.**
-- **The server no longer tries to reconnect to clients which disconnected.** Before, it kept dialing the client's old address and port every 5 seconds, even after the server was stopped.
+- **The server no longer tries to reconnect to clients which disconnected, and closes their connection.** Before, it kept dialing the client's old address and port every 5 seconds, even after the server was stopped.
 - **The server always answers read, write and communication setup jobs.** If the data provider throws, or returns a different number of results than requested, every item is answered with `HardwareFault` and the error is logged. Before, the client got no answer and ran into its timeout.
 - **A connection request with an unknown parameter is now accepted.** The unknown COTP parameter is skipped. Before, it hung the server's receive thread.
 

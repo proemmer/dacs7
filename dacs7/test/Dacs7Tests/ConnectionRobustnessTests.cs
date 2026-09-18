@@ -10,6 +10,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -133,6 +134,47 @@ namespace Dacs7.Tests
                 await Task.Delay(7000);
 
                 Assert.DoesNotContain(logs.Entries, e => e.Category.EndsWith("ClientSocket", StringComparison.Ordinal) && e.Message.StartsWith("Socket connecting", StringComparison.Ordinal));
+            }
+            finally
+            {
+                await server.DisconnectAsync();
+            }
+        }
+
+        [Fact]
+        public async Task ServerClosesSocketsOfDisconnectedClients()
+        {
+            const int port = 5043;
+            SimulationPlcDataProvider simulation = new();
+            simulation.Register(PlcArea.DB, 10, 1);
+            Dacs7Server server = new(port, simulation);
+            await server.ConnectAsync();
+            try
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    Dacs7Client client = new($"{Localhost}:{port},0,1", PlcConnectionType.Pg, 5000);
+                    await client.ConnectAsync();
+                    await client.ReadAsync("DB1.0,b");
+                    await client.DisconnectAsync();
+
+                    using TcpClient tcp = new();
+                    await tcp.ConnectAsync(Localhost, port);
+                }
+
+                // a server side connection which was not closed after the client left stays in CLOSE_WAIT
+                int notClosed = 0;
+                for (int attempt = 0; attempt < 30; attempt++)
+                {
+                    await Task.Delay(100);
+                    notClosed = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections()
+                                    .Count(c => c.LocalEndPoint.Port == port && c.State == TcpState.CloseWait);
+                    if (notClosed == 0)
+                    {
+                        break;
+                    }
+                }
+                Assert.Equal(0, notClosed);
             }
             finally
             {

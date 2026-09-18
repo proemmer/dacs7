@@ -18,6 +18,7 @@ namespace Dacs7.Communication
         private readonly ClientSocketConfiguration _config;
         private CancellationTokenSource _tokenSource;
         private Task _receivingTask;
+        private bool _isAcceptedSocket;
 
 
         public sealed override string Identity
@@ -63,6 +64,7 @@ namespace Dacs7.Communication
             {
                 // an accepted connection can not be reestablished from this side, so never try to reconnect it
                 _disableReconnect = true;
+                _isAcceptedSocket = true;
                 _socket = socket;
                 _tokenSource = new CancellationTokenSource();
                 _receivingTask = Task.Factory.StartNew(() => StartReceive(), _tokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
@@ -202,6 +204,7 @@ namespace Dacs7.Communication
 
         private async Task StartReceive()
         {
+            System.Net.Sockets.Socket socket = _socket;
             string connectionInfo = _socket.RemoteEndPoint.ToString();
             _logger?.LogDebug("Socket connection receive loop started. ({0})", connectionInfo);
             int bufferSize = _socket.ReceiveBufferSize;
@@ -270,6 +273,17 @@ namespace Dacs7.Communication
                 ArrayPool<byte>.Shared.Return(receiveBuffer);
                 _ = HandleSocketDown();
                 _logger?.LogDebug("Socket connection receive loop ended. ({0})", connectionInfo);
+
+                if (_isAcceptedSocket)
+                {
+                    // An accepted socket is never reconnected, so close it here. Otherwise it stays open until the server stops.
+                    _ = Identity; // the identity is determined from the socket, so ensure it is cached before
+                    try
+                    {
+                        socket.Dispose();
+                    }
+                    catch (ObjectDisposedException) { }
+                }
             }
 
         }

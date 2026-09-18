@@ -18,7 +18,7 @@
       * Client: fixed NullReferenceException on ack for alarm indication subscription
       * Server: RequestItem.TransportSize is public, ToTag renders bit requests as bit tags (e.g. DB100.2,x3,1)
       * Server: fixed dropped connections under load, "Collection was modified" on DisconnectAsync and Critical log on stop
-      * Server: no reconnect attempts to disconnected clients anymore
+      * Server: no reconnect attempts to disconnected clients anymore, their connections are closed
       * Server: always answers jobs (HardwareFault if the data provider fails)
       * Server: unknown COTP parameters in the connection request are skipped
       * see CHANGELOG.md for details
