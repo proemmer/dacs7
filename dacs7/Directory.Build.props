@@ -4,6 +4,19 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
+  <!--
+    Strong name: the assemblies keep the identity of the published packages (PublicKeyToken=3d20fc192b993b99).
+    If the private key is available, the assemblies are fully signed, otherwise they are public signed
+    with the public key of the same key pair, which gives the same identity.
+  -->
+  <PropertyGroup>
+    <Dacs7PrivateKeyFile Condition="'$(Dacs7PrivateKeyFile)' == ''">C:\Projects\Tools\signatures\dacs7\dacs7.snk</Dacs7PrivateKeyFile>
+    <Dacs7KeyFile Condition="Exists('$(Dacs7PrivateKeyFile)')">$(Dacs7PrivateKeyFile)</Dacs7KeyFile>
+    <Dacs7KeyFile Condition="!Exists('$(Dacs7PrivateKeyFile)')">$(MSBuildThisFileDirectory)dacs7.public.snk</Dacs7KeyFile>
+    <Dacs7PublicSign Condition="!Exists('$(Dacs7PrivateKeyFile)')">true</Dacs7PublicSign>
+    <Dacs7PublicSign Condition="Exists('$(Dacs7PrivateKeyFile)')">false</Dacs7PublicSign>
+  </PropertyGroup>
+
 
 
 </Project>

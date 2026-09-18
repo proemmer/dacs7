@@ -38,7 +38,8 @@
     <SignAssembly>true</SignAssembly>
     
     
-    <AssemblyOriginatorKeyFile>C:\Projects\Tools\signatures\dacs7\dacs7.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>$(Dacs7KeyFile)</AssemblyOriginatorKeyFile>
+    <PublicSign>$(Dacs7PublicSign)</PublicSign>
   </PropertyGroup>
 
 

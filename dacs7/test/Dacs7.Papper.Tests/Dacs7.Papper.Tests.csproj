@@ -5,7 +5,8 @@
     <LangVersion>latest</LangVersion>
     <!--<DefineConstants>REALPLC;$(AdditionalConstants)</DefineConstants>-->
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>C:\Projects\Tools\signatures\dacs7\dacs7.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>$(Dacs7KeyFile)</AssemblyOriginatorKeyFile>
+    <PublicSign>$(Dacs7PublicSign)</PublicSign>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -19,6 +20,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Dacs7\Dacs7.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- run the tests in the default app domain, because .NET Framework does not load public signed assemblies into a new app domain -->
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

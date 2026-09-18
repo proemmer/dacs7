@@ -4,6 +4,8 @@
 
 Bugfix release. No public API was removed or renamed, and the client's behaviour is unchanged except for the bugs fixed below.
 
+**Strong name:** the assemblies are public signed with the public key of the original key pair. They keep the identity of the previous packages (`PublicKeyToken=3d20fc192b993b99`), so references compiled against older versions still bind. .NET Core and .NET 5+ do not check strong name signatures. .NET Framework applications running in full trust load the assemblies as well, because they skip the verification by default (strong name bypass). Public signed assemblies cannot be installed into the GAC, and they do not load if strong name bypass is disabled on the machine.
+
 ### Client
 
 - **Replies split across TCP reads no longer corrupt the connection.** Before, after a reply arrived in more than one TCP read, the following replies on that connection were parsed from stale data and ran into timeouts until the connection was dropped. This mostly affected VPN/WAN links and many parallel jobs. On a LAN, where replies arrive complete, the receive loop behaves exactly as before.
