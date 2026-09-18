@@ -189,12 +189,17 @@ namespace Dacs7.Protocols.Rfc1006
                         break;
 
                     default:
+                        {
+                            // skip unknown parameter (code, length, value)
+                            offset++;
+                            offset += offset < data.Length ? span[offset] + 1 : 1;
+                        }
                         break;
                 }
 
             }
 
-            processed = offset;
+            processed = Math.Min(offset, data.Length);
             return result;
         }
     }

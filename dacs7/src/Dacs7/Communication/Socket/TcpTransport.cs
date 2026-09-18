@@ -35,12 +35,13 @@ namespace Dacs7.Communication.Socket
                 OnConnectionStateChanged = OnTcpSocketConnectionStateChanged
             };
 
+            // assign the connection before receiving starts, because the answer to a received request is sent using it
+            Connection = clientSocket;
+
             if (_socket != null)
             {
                 _ = clientSocket.UseSocketAsync(_socket);
             }
-
-            Connection = clientSocket;
         }
 
         public sealed override void ConfigureServer(ILoggerFactory loggerFactory)
@@ -159,11 +160,11 @@ namespace Dacs7.Communication.Socket
         {
             using (IMemoryOwner<byte> datagram = ConnectionRequestDatagram.TranslateToMemory(ConnectionRequestDatagram.BuildCr(_context), out int memoryLegth))
             {
-                SocketError result = await Connection.SendAsync(datagram.Memory.Slice(0, memoryLegth)).ConfigureAwait(false);
-                if (result == SocketError.Success)
-                {
-                    OnUpdateConnectionState?.Invoke(ConnectionState.PendingOpenTransport);
-                }
+                // Update the state before sending, because the connection confirmed can be received before
+                // the send call returns, and it is only accepted in the state PendingOpenTransport.
+                // If the send fails, the socket goes down and this sets the state back to closed.
+                await (OnUpdateConnectionState?.Invoke(ConnectionState.PendingOpenTransport) ?? Task.CompletedTask).ConfigureAwait(false);
+                await Connection.SendAsync(datagram.Memory.Slice(0, memoryLegth)).ConfigureAwait(false);
             }
         }
     }

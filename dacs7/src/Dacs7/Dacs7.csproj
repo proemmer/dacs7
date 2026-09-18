@@ -11,10 +11,17 @@
     <PackageId>Dacs7</PackageId>
     <PackageTags>siemens plc S7 PC-S7-Connection TCP/IP-S7 communication .netcore Automation HMI C# VB.Net RFC-1006 IsoOnTcp-S7 SIMATIC</PackageTags>
     <PackageReleaseNotes>
-      * read item size calculation bug fixed
-	  * Server bithandling fixed
-	  * Added Handling of ACKDatagram (e.g. in case of Putget deactivated)
-	  * removed snap7 testserver
+      * Client: replies split across TCP reads no longer corrupt the connection
+      * Client: fixed sporadic ConnectAsync timeout when the PLC answers very fast
+      * Client: unknown COTP parameters in the connection confirm are skipped (receive thread hung before)
+      * Client: ReadBlocksOfTypeAsync / ReadBlocksCountAsync returned one entry too few
+      * Client: fixed NullReferenceException on ack for alarm indication subscription
+      * Server: RequestItem.TransportSize is public, ToTag renders bit requests as bit tags (e.g. DB100.2,x3,1)
+      * Server: fixed dropped connections under load, "Collection was modified" on DisconnectAsync and Critical log on stop
+      * Server: no reconnect attempts to disconnected clients anymore
+      * Server: always answers jobs (HardwareFault if the data provider fails)
+      * Server: unknown COTP parameters in the connection request are skipped
+      * see CHANGELOG.md for details
 </PackageReleaseNotes>
     <PackageProjectUrl>http://proemmer.github.io/dacs7</PackageProjectUrl>
     <PackageLicenseUrl>https://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
@@ -27,7 +34,7 @@
 
 
 
-    <Version>2.2.6</Version>
+    <Version>2.2.7</Version>
     <SignAssembly>true</SignAssembly>
     
     

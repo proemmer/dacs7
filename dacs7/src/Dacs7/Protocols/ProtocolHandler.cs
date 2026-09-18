@@ -296,7 +296,7 @@ namespace Dacs7.Protocols
             }
             else if (_alarmIndicationHandler.TryGetValue(data.Header.ProtocolDataUnitReference, out CallbackHandler<S7AlarmIndicationDatagram> cbhai))
             {
-                ReceivedAckDatagram(data, cbha, "handling alarmindication");
+                ReceivedAckDatagram(data, cbhai, "handling alarmindication");
             }
         }
 
