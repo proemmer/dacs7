@@ -30,7 +30,7 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
                     int offset = 0;
                     Span<byte> span = result.UserData.Data.Data.Span;
 
-                    while ((offset + 4) < result.UserData.Data.Data.Length)
+                    while ((offset + 4) <= result.UserData.Data.Data.Length) // each entry has 4 bytes
                     {
                         if (result.UserData.Data.Data.Span[offset++] == 0x30)
                         {
@@ -61,8 +61,7 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
                                     result.Counts.Sfb = value;
                                     break;
                                 default:
-                                    offset++; // unknown
-                                    break;
+                                    break; // unknown block type, the entry is already consumed
                             }
                         }
                     }

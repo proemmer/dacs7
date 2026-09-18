@@ -3,8 +3,10 @@
 
 using Dacs7.Domain;
 using Dacs7.Protocols.SiemensPlc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -18,7 +20,7 @@ namespace Dacs7.Protocols
             if (_provider != null)
             {
                 S7WriteJobDatagram data = S7WriteJobDatagram.TranslateFromMemory(buffer);
-                Task.Run(() => HandleWriteJobAsync(data).ConfigureAwait(false));
+                _ = Task.Run(() => HandleWriteJobAsync(data));
             }
             return Task.CompletedTask;
         }
@@ -26,15 +28,40 @@ namespace Dacs7.Protocols
         private async Task HandleWriteJobAsync(S7WriteJobDatagram data)
         {
             List<WriteRequestItem> writeRequests = new();
-            List<S7DataItemSpecification>.Enumerator dataEnum = data.Data.GetEnumerator();
-            foreach (S7AddressItemSpecificationDatagram rq in data.Items)
+            try
             {
-                dataEnum.MoveNext();
-                writeRequests.Add(new WriteRequestItem((PlcArea)rq.Area, rq.DbNumber, rq.ItemSpecLength, rq.Offset, (ItemDataTransportSize)rq.TransportSize, rq.Address, dataEnum.Current.Data));
+                List<S7DataItemSpecification>.Enumerator dataEnum = data.Data.GetEnumerator();
+                foreach (S7AddressItemSpecificationDatagram rq in data.Items)
+                {
+                    dataEnum.MoveNext();
+                    writeRequests.Add(new WriteRequestItem((PlcArea)rq.Area, rq.DbNumber, rq.ItemSpecLength, rq.Offset, (ItemDataTransportSize)rq.TransportSize, rq.Address, dataEnum.Current.Data));
+                }
+
+                List<WriteResultItem> results = await _provider.WriteAsync(writeRequests).ConfigureAwait(false);
+                if (results == null || results.Count != writeRequests.Count)
+                {
+                    throw new InvalidOperationException($"The data provider returned {results?.Count ?? 0} results for {writeRequests.Count} write items.");
+                }
+                await SendWriteJobAck(results, data.Header.ProtocolDataUnitReference).ConfigureAwait(false);
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error while handling write job {reference}.", data.Header.ProtocolDataUnitReference);
             }
 
-            List<WriteResultItem> results = await _provider.WriteAsync(writeRequests).ConfigureAwait(false);
-            await SendWriteJobAck(results, data.Header.ProtocolDataUnitReference).ConfigureAwait(false);
+            // the client always needs an answer, otherwise it runs into a timeout
+            try
+            {
+                if (writeRequests.Count == data.Items.Count)
+                {
+                    await SendWriteJobAck(writeRequests.Select(rq => new WriteResultItem(rq, ItemResponseRetValue.HardwareFault)).ToList(), data.Header.ProtocolDataUnitReference).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error while sending the error response for write job {reference}.", data.Header.ProtocolDataUnitReference);
+            }
         }
 
         private async Task SendWriteJobAck(List<WriteResultItem> writeItems, ushort id)

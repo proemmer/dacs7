@@ -1,4 +1,5 @@
 ﻿using Dacs7.Protocols.SiemensPlc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -11,11 +12,23 @@ namespace Dacs7.Protocols
         private Task ReceivedCommunicationSetupJob(Memory<byte> buffer)
         {
             S7CommSetupDatagram data = S7CommSetupDatagram.TranslateFromMemory(buffer);
-            Task.Run(() => HandleCommSetupAsync(data).ConfigureAwait(false));
+            _ = Task.Run(() => HandleCommSetupAsync(data));
             return Task.CompletedTask;
         }
 
         private async Task HandleCommSetupAsync(S7CommSetupDatagram data)
+        {
+            try
+            {
+                await SendCommSetupAckAsync(data).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error while handling communication setup {reference}.", data.Header.ProtocolDataUnitReference);
+            }
+        }
+
+        private async Task SendCommSetupAckAsync(S7CommSetupDatagram data)
         {
             using (System.Buffers.IMemoryOwner<byte> dg = S7CommSetupAckDataDatagram
                                                     .TranslateToMemory(

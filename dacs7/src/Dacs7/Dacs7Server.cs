@@ -26,6 +26,7 @@ namespace Dacs7
         private readonly ILoggerFactory _loggerFactory;
         private readonly IPlcDataProvider _provider;
         private readonly List<ProtocolHandler> _handler = new();
+        private readonly object _handlerLock = new();
 
         internal ProtocolHandler ProtocolHandler { get; private set; }
         internal Dictionary<string, ReadItem> RegisteredTags => _registeredTags;
@@ -129,13 +130,23 @@ namespace Dacs7
         /// <returns></returns>
         public async Task DisconnectAsync()
         {
+            // Close the client connections before the listener, because closing the listener
+            // closes the accepted sockets underneath the client connections.
+            await CloseClientHandlersAsync().ConfigureAwait(false);
+
             if (ProtocolHandler != null)
             {
                 await ProtocolHandler.CloseAsync().ConfigureAwait(false);
             }
 
+            // clients accepted while closing
+            await CloseClientHandlersAsync().ConfigureAwait(false);
+        }
 
-            foreach (ProtocolHandler item in _handler)
+        private async Task CloseClientHandlersAsync()
+        {
+            // CloseAsync removes the handler from _handler via ClientConnectionStateChanged, so work on a snapshot.
+            foreach (ProtocolHandler item in TakeAllHandlers())
             {
                 if (item != null)
                 {
@@ -143,7 +154,6 @@ namespace Dacs7
                     item.Dispose();
                 }
             }
-            _handler.Clear();
         }
 
         /// <summary>
@@ -153,11 +163,20 @@ namespace Dacs7
         {
             ProtocolHandler?.Dispose();
 
-            foreach (ProtocolHandler item in _handler)
+            foreach (ProtocolHandler item in TakeAllHandlers())
             {
                 item.Dispose();
             }
-            _handler.Clear();
+        }
+
+        private List<ProtocolHandler> TakeAllHandlers()
+        {
+            lock (_handlerLock)
+            {
+                List<ProtocolHandler> handlers = new(_handler);
+                _handler.Clear();
+                return handlers;
+            }
         }
 
         /// <summary>
@@ -238,18 +257,31 @@ namespace Dacs7
                             clientSocket
                         );
             ProtocolHandler handler = new(transport, s7Context, ClientConnectionStateChanged, _loggerFactory, null, _provider);
-            _handler.Add(handler);
-            _logger?.LogInformation("New client was connected to server, total connection is {connections}", _handler.Count);
+            int count;
+            lock (_handlerLock)
+            {
+                _handler.Add(handler);
+                count = _handler.Count;
+            }
+            _logger?.LogInformation("New client was connected to server, total connection is {connections}", count);
         }
 
         private void ClientConnectionStateChanged(ProtocolHandler handler, ConnectionState state)
         {
             if (state == ConnectionState.Closed)
             {
-                if (_handler.Remove(handler))
+                bool removed;
+                int count;
+                lock (_handlerLock)
+                {
+                    removed = _handler.Remove(handler);
+                    count = _handler.Count;
+                }
+
+                if (removed)
                 {
                     handler.Dispose();
-                    _logger?.LogInformation("Client was disconnected from server, total connection is {connections}", _handler.Count);
+                    _logger?.LogInformation("Client was disconnected from server, total connection is {connections}", count);
                 }
             }
         }

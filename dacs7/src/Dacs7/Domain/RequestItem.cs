@@ -14,7 +14,12 @@ namespace Dacs7
         public int Offset { get; protected set; }
         public ushort ElementSize { get; protected set; }
         internal Memory<byte> Address { get; set; }
-        internal DataTransportSize TransportSize { get; set; }
+
+        /// <summary>
+        /// The transport size of the request. If this is <see cref="DataTransportSize.Bit"/>,
+        /// <see cref="Offset"/> is the bit address (byte offset * 8 + bit number).
+        /// </summary>
+        public DataTransportSize TransportSize { get; internal set; }
 
 
         public RequestItem(PlcArea area, ushort dbNumber, ushort numberOfItems, int offset, ItemDataTransportSize transportSize, Memory<byte> address)
@@ -74,6 +79,12 @@ namespace Dacs7
                         break;
                     }
                 default: return string.Empty;
+            }
+
+            if (TransportSize == DataTransportSize.Bit)
+            {
+                // for bit access the offset is the bit address
+                return $"{area}.{Offset / 8},x{Offset % 8},{NumberOfItems}";
             }
 
             return $"{area}.{Offset},B,{NumberOfItems * ElementSize}";

@@ -103,7 +103,8 @@ namespace Dacs7.Communication
                 _socket.Listen(512);
 
                 _tokenSource = new CancellationTokenSource();
-                _receivingTask = Task.Factory.StartNew(() => RunAcceptLoopAsync(), _tokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                // Unwrap, so awaiting _receivingTask waits for the accept loop itself and not only for its start.
+                _receivingTask = Task.Factory.StartNew(() => RunAcceptLoopAsync(), _tokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
                 await PublishConnectionStateChanged(true).ConfigureAwait(false);
             }
             catch (Exception)
@@ -179,7 +180,11 @@ namespace Dacs7.Communication
 
             if (_receivingTask != null)
             {
-                await _receivingTask.ConfigureAwait(false);
+                try
+                {
+                    await _receivingTask.ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) { } // accept loop was cancelled before it started
             }
 
             foreach (System.Net.Sockets.Socket client in _clients)
@@ -217,13 +222,23 @@ namespace Dacs7.Communication
                         }
 
                         System.Net.Sockets.Socket acceptSocket = await _socket.AcceptAsync().ConfigureAwait(false);
-                        acceptSocket.NoDelay = true;
-                        _clients.Add(acceptSocket);
-                        if (OnNewSocketConnected != null)
+                        try
                         {
-                            await OnNewSocketConnected.Invoke(acceptSocket).ConfigureAwait(false);
+                            acceptSocket.NoDelay = true;
+                            _clients.RemoveAll(IsDisposed); // sockets of disconnected clients are already closed
+                            _clients.Add(acceptSocket);
+                            if (OnNewSocketConnected != null)
+                            {
+                                await OnNewSocketConnected.Invoke(acceptSocket).ConfigureAwait(false);
+                            }
                         }
-
+                        catch (Exception ex) when (!_unbinding)
+                        {
+                            // a failing connection must not stop the server from accepting further connections
+                            _logger?.LogWarning(ex, "Could not set up accepted connection, the connection will be closed.");
+                            _clients.Remove(acceptSocket);
+                            acceptSocket.Dispose();
+                        }
                     }
                     catch (SocketException) when (!_unbinding)
                     {
@@ -249,6 +264,23 @@ namespace Dacs7.Communication
             }
         }
 
+
+        private static bool IsDisposed(System.Net.Sockets.Socket socket)
+        {
+            try
+            {
+                _ = socket.Available;
+                return false;
+            }
+            catch (ObjectDisposedException)
+            {
+                return true;
+            }
+            catch (SocketException)
+            {
+                return false;
+            }
+        }
 
         public void Dispose()
         {

@@ -32,7 +32,7 @@ namespace Dacs7.Protocols.SiemensPlc.Datagrams
             List<IPlcBlock> result = new();
             int offset = 0;
             Span<byte> span = memory.Span;
-            while ((offset + 4) < size)
+            while ((offset + 4) <= size) // each entry has 4 bytes
             {
                 ushort number = BinaryPrimitives.ReadUInt16BigEndian(span.Slice(offset, 2)); offset += 2;
                 byte flags = span[offset++];

@@ -38,7 +38,7 @@ steps:
     artifactNamePrefix: 'dacs7'
     framework: 'netcoreapp2.2'
     runTests: 'false'
-    dotnetCoreSdk: '2.2.203'
+    dotnetCoreSdk: '6.0.x' # the library targets up to net6.0
     nugetConfig: './dacs7/nuget.config'
     nugetChannelName: $(nugetChannelName)
 

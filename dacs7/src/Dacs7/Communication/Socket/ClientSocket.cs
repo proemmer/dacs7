@@ -18,6 +18,7 @@ namespace Dacs7.Communication
         private readonly ClientSocketConfiguration _config;
         private CancellationTokenSource _tokenSource;
         private Task _receivingTask;
+        private bool _isAcceptedSocket;
 
 
         public sealed override string Identity
@@ -61,6 +62,9 @@ namespace Dacs7.Communication
 
             try
             {
+                // an accepted connection can not be reestablished from this side, so never try to reconnect it
+                _disableReconnect = true;
+                _isAcceptedSocket = true;
                 _socket = socket;
                 _tokenSource = new CancellationTokenSource();
                 _receivingTask = Task.Factory.StartNew(() => StartReceive(), _tokenSource.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
@@ -200,11 +204,12 @@ namespace Dacs7.Communication
 
         private async Task StartReceive()
         {
+            System.Net.Sockets.Socket socket = _socket;
             string connectionInfo = _socket.RemoteEndPoint.ToString();
             _logger?.LogDebug("Socket connection receive loop started. ({0})", connectionInfo);
-            byte[] receiveBuffer = ArrayPool<byte>.Shared.Rent(_socket.ReceiveBufferSize);
-            int receiveOffset = 0;
-            int bufferOffset = 0;
+            int bufferSize = _socket.ReceiveBufferSize;
+            byte[] receiveBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            int buffered = 0; // received but not yet processed bytes, always at the start of the receive buffer
             Memory<byte> span = new(receiveBuffer);
             try
             {
@@ -212,8 +217,13 @@ namespace Dacs7.Communication
                 {
                     try
                     {
-                        int maximumReceiveDataSize = _socket.ReceiveBufferSize - receiveOffset;
-                        ArraySegment<byte> buffer = new(receiveBuffer, receiveOffset, maximumReceiveDataSize);
+                        if (buffered >= bufferSize)
+                        {
+                            _logger?.LogError("Socket receive buffer ({0}): received datagram is larger than the receive buffer size of {1}.", connectionInfo, bufferSize);
+                            return;
+                        }
+
+                        ArraySegment<byte> buffer = new(receiveBuffer, buffered, bufferSize - buffered);
                         int received = await _socket.ReceiveAsync(buffer, SocketFlags.Partial).ConfigureAwait(false);
 
                         if (received == 0)
@@ -221,33 +231,29 @@ namespace Dacs7.Communication
                             return;
                         }
 
-                        int toProcess = received + (receiveOffset - bufferOffset);
+                        int available = buffered + received;
                         int processed = 0;
-                        do
+                        while (processed < available)
                         {
-                            int off = bufferOffset + processed;
-                            int length = toProcess - processed;
-                            Memory<byte> slice = span.Slice(off, length);
-                            int proc = await ProcessData(slice).ConfigureAwait(false);
+                            int proc = await ProcessData(span.Slice(processed, available - processed)).ConfigureAwait(false);
                             if (proc == 0)
                             {
-                                if (length > 0)
-                                {
-                                    receiveOffset += received;
-                                    bufferOffset = receiveOffset - (toProcess - processed);
-                                }
-                                else
-                                {
-                                    receiveOffset = 0;
-                                    bufferOffset = 0;
-                                }
-                                break;
+                                break; // incomplete datagram, wait for more data
                             }
                             processed += proc;
-                        } while (processed < toProcess);
+                        }
+
+                        processed = Math.Min(processed, available);
+                        buffered = available - processed;
+                        if (buffered > 0 && processed > 0)
+                        {
+                            // move the incomplete datagram to the start of the buffer, the next receive appends to it
+                            span.Slice(processed, buffered).CopyTo(span);
+                        }
                     }
                     catch (Exception ex)
                     {
+                        buffered = 0; // the buffered data can not be processed anymore
                         if (_socket != null && !_shutdown)
                         {
                             if (_logger?.IsEnabled(LogLevel.Debug) == true)
@@ -267,6 +273,17 @@ namespace Dacs7.Communication
                 ArrayPool<byte>.Shared.Return(receiveBuffer);
                 _ = HandleSocketDown();
                 _logger?.LogDebug("Socket connection receive loop ended. ({0})", connectionInfo);
+
+                if (_isAcceptedSocket)
+                {
+                    // An accepted socket is never reconnected, so close it here. Otherwise it stays open until the server stops.
+                    _ = Identity; // the identity is determined from the socket, so ensure it is cached before
+                    try
+                    {
+                        socket.Dispose();
+                    }
+                    catch (ObjectDisposedException) { }
+                }
             }
 
         }
