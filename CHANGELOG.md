@@ -1,4 +1,29 @@
-# Changelog
+﻿# Changelog
+
+## Unreleased
+
+### Server (`Dacs7Server`)
+
+- **The address the server listens on can be configured.** `new Dacs7Server(bindAddress, port, provider)` takes an ip address, a hostname, or the wildcards `*` and `any` to listen on every interface. Before, the server always listened on `127.0.0.1`, so only clients on the same machine could reach the simulated PLC and there was no way to change it.
+  The default is unchanged: `new Dacs7Server(port, provider)` still listens on `127.0.0.1` only. The server is not authenticated, everyone who can reach it can read and write the simulated data blocks, so leaving the loopback interface has to be an explicit decision.
+- **A server which listens on all interfaces serves IPv4 and IPv6 clients** (dual mode, where the platform supports it). An IPv6 address can also be given directly.
+- **Starting on a port which is already in use fails with `Dacs7NotConnectedException` and names the endpoint.** Before, the error was swallowed and the socket was put into listening state without a binding, which on unix silently binds a random port on every interface.
+- **A server can be started again after it was stopped.** Before, `ConnectAsync` after a `DisconnectAsync` returned without doing anything and the server was not listening, without any error.
+- **New `Dacs7Server.IsListening`, `BindAddress` and `Port`.** Use `IsListening` to check whether the server was started; `IsConnected` refers to the PLC connection of a client and is always false for a server. `IsConnected` itself is deliberately unchanged, because code which polls it (`while (!IsConnected)`) or guards a stop with it would change its behaviour.
+- **A listening server no longer sends an RFC1006 connection request into its own listening socket.** Every accepted client socket does its own handshake. The send could never be transmitted, it only produced a failed send on each start.
+- **New `Dacs7Server.MaxConnections`** (0, unlimited, by default), which is worth setting when the server does not listen on the loopback interface. Connections above the limit are closed directly after they were accepted.
+- **New `Dacs7Server.KeepAlive`** (off by default), which enables TCP keep alive on accepted connections, so clients which vanished without closing the connection are detected.
+- **The list of accepted client sockets is guarded by a lock.** It was written by the accept loop while it was read and cleared by the thread closing the server.
+- **The `serve` command of `Dacs7Cli` has a `-b | --bind` option**, and it prints "Started serving" after the server actually started, not before. Its `--tags` option is now `-g`, because `-t` was taken by `--trace`.
+
+### Client
+
+- **An IPv6 PLC or server can be reached.** The client created an IPv4 socket in every case, and the address of a PLC was split on the first colon, so an IPv6 address could not even be written down. An IPv6 address is now given in brackets (`[::1]:102,0,2`), a bare address without parameters is accepted as well, and the socket uses the address family of the target. For an IPv4 target, including a hostname which resolves to IPv4, nothing changes.
+- **`ClientSocketConfiguration.FromSocket` reports the keep alive state of the socket.** It read the option from the wrong socket level and reported `true` in every case, because it only checked the returned object for null.
+
+### Build
+
+- **The library compiles with C# 13 and later.** `Converter.ToBinString` and `Converter.ToHexString` called `Enumerable.Reverse` through a `byte[]`, which resolves to the (void returning) span overload since C# 13, so the build failed with the current SDKs.
 
 ## 2.3.0
 

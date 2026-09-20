@@ -520,7 +520,7 @@ namespace Dacs7.Helper
             byte[] arr = bytes.Skip(offset).Take(length).ToArray();
             StringBuilder binString = new(arr.Length * 8);
 
-            foreach (byte b in arr.Reverse())
+            foreach (byte b in Enumerable.Reverse(arr))
             {
                 if (binString.Length > 0)
                 {
@@ -544,7 +544,7 @@ namespace Dacs7.Helper
             }
 
             StringBuilder sb = new(arr.Count() * (2 + separator.Length));
-            foreach (byte b in reverse ? arr.Reverse() : arr)
+            foreach (byte b in reverse ? Enumerable.Reverse(arr) : arr)
             {
                 sb.AppendFormat(CultureInfo.InvariantCulture, "{0:X2}{1}", b, separator);
             }

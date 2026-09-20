@@ -14,6 +14,16 @@ namespace Dacs7
             throw new Dacs7NotConnectedException(ex);
         }
 
+        public static void ThrowAddressAlreadyInUseException(string address, int port, Exception ex)
+        {
+            throw new Dacs7NotConnectedException($"The endpoint {address}:{port} is already in use by another application, the server is not listening!", ex);
+        }
+
+        public static void ThrowCouldNotResolveHostname(string hostname)
+        {
+            throw new Dacs7NotConnectedException($"The hostname <{hostname}> could not be resolved to an ip address!");
+        }
+
         public static void ThrowCouldNotChangeValueWhileConnectionIsOpen(string variable)
         {
             throw new InvalidOperationException($"Value of {variable} can only be changed while connection is closed!");

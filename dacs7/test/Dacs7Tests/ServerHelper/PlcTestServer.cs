@@ -80,14 +80,16 @@ namespace Dacs7Tests.ServerHelper
 
         public static async Task StartAsync()
         {
-            if (_server.IsConnected)
+            // IsListening and not IsConnected: a listening server has no plc connection of its own,
+            // so IsConnected is always false and the areas would be registered (and reset) on every call.
+            if (_server.IsListening)
             {
                 return;
             }
 
             using (await SemaphoreGuard.Async(_sema))
             {
-                if (_server.IsConnected)
+                if (_server.IsListening)
                 {
                     return;
                 }
@@ -103,13 +105,13 @@ namespace Dacs7Tests.ServerHelper
 
         public static async Task StopAsync()
         {
-            if (!_server.IsConnected)
+            if (!_server.IsListening)
             {
                 return;
             }
             using (await SemaphoreGuard.Async(_sema))
             {
-                if (!_server.IsConnected)
+                if (!_server.IsListening)
                 {
                     return;
                 }
@@ -136,6 +138,10 @@ namespace Dacs7Tests.ServerHelper
 
                 try
                 {
+                    // Not every test class using this helper is part of the "PlcServer collection", and the
+                    // fixture of that collection stops the shared server when its tests are done. So make sure
+                    // the server runs instead of depending on the order the collections are executed in.
+                    await StartAsync();
                     await client.ConnectAsync();
                     await execution(client);
                     break;

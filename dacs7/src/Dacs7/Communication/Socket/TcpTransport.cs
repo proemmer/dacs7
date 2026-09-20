@@ -17,6 +17,7 @@ namespace Dacs7.Communication.Socket
     {
         private readonly Rfc1006ProtocolContext _context;
         private readonly System.Net.Sockets.Socket _socket;
+        private readonly bool _isServer;
 
         public TcpTransport(Rfc1006ProtocolContext context, ClientSocketConfiguration config, System.Net.Sockets.Socket usedSocket = null) : base(context, config)
         {
@@ -26,6 +27,7 @@ namespace Dacs7.Communication.Socket
         public TcpTransport(Rfc1006ProtocolContext context, ServerSocketConfiguration config) : base(context, config)
         {
             _context = context;
+            _isServer = true;
         }
 
         public sealed override void ConfigureClient(ILoggerFactory loggerFactory)
@@ -117,6 +119,14 @@ namespace Dacs7.Communication.Socket
             ConnectionState? state = OnGetConnectionState?.Invoke();
             if (state == ConnectionState.Closed && connected && _socket == null)
             {
+                if (_isServer)
+                {
+                    // A listening server has no rfc1006 connection of its own, every accepted client socket gets
+                    // its own transport which does the handshake. Sending a connection request here would push it
+                    // into the listening socket, where it can never be transmitted.
+                    return OnUpdateConnectionState?.Invoke(ConnectionState.PendingOpenTransport) ?? Task.CompletedTask;
+                }
+
                 return SendTcpConnectionRequest();
             }
 

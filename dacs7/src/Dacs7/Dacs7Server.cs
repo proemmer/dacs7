@@ -27,15 +27,78 @@ namespace Dacs7
         private readonly IPlcDataProvider _provider;
         private readonly List<ProtocolHandler> _handler = new();
         private readonly object _handlerLock = new();
+        private ServerSocketConfiguration _serverConfig;
 
         internal ProtocolHandler ProtocolHandler { get; private set; }
         internal Dictionary<string, ReadItem> RegisteredTags => _registeredTags;
         internal SiemensPlcProtocolContext S7Context { get; private set; }
 
         /// <summary>
+        /// The default address the server listens on, if no other address is given.
+        /// </summary>
+        public const string DefaultBindAddress = "127.0.0.1";
+
+        /// <summary>
+        /// The local address the server listens on.
+        /// </summary>
+        public string BindAddress { get; }
+
+        /// <summary>
+        /// The port the server listens on.
+        /// </summary>
+        public int Port { get; }
+
+        /// <summary>
         /// True if the connection is fully applied
         /// </summary>
         public bool IsConnected => ProtocolHandler != null && ProtocolHandler?.ConnectionState == ConnectionState.Opened;
+
+        /// <summary>
+        /// True while the server socket is bound and accepting clients.
+        /// Use this and not <see cref="IsConnected"/> to check if the server was started,
+        /// because a listening server has no plc connection of its own.
+        /// </summary>
+        public bool IsListening => ProtocolHandler?.IsTransportConnected == true;
+
+        /// <summary>
+        /// Maximum number of clients connected at the same time. 0 (the default) means unlimited.
+        /// Further connections are closed directly after they were accepted.
+        /// </summary>
+        public int MaxConnections
+        {
+            get => _serverConfig.MaxConnections;
+            set
+            {
+                if (_state == Dacs7ConnectionState.Closed)
+                {
+                    _serverConfig.MaxConnections = value;
+                }
+                else
+                {
+                    ThrowHelper.ThrowCouldNotChangeValueWhileConnectionIsOpen(nameof(MaxConnections));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Enables tcp keep alive on accepted connections, so connections of clients which vanished
+        /// without closing them (e.g. a broken network link) are detected. Disabled by default.
+        /// </summary>
+        public bool KeepAlive
+        {
+            get => _serverConfig.KeepAlive;
+            set
+            {
+                if (_state == Dacs7ConnectionState.Closed)
+                {
+                    _serverConfig.KeepAlive = value;
+                }
+                else
+                {
+                    ThrowHelper.ThrowCouldNotChangeValueWhileConnectionIsOpen(nameof(KeepAlive));
+                }
+            }
+        }
 
         /// <summary>
         /// Maximum Jobs calling
@@ -101,16 +164,38 @@ namespace Dacs7
 
 
         /// <summary>
-        /// Constructor of Dacs7Client
+        /// Constructor of Dacs7Server. The server only listens on the loopback interface (127.0.0.1),
+        /// so only clients on the same machine can connect.
+        /// Use <see cref="Dacs7Server(string, int, IPlcDataProvider, ILoggerFactory)"/> to listen on the network.
         /// </summary>
-        /// <param name="address">The address of the plc  [IP or Hostname]:[Rack],[Slot]  where as rack and slot ar optional  default is Rack = 0, Slot = 2</param>
-        /// <param name="connectionType">The <see cref="PlcConnectionType"/> for the connection.</param>
+        /// <param name="port">The port to listen on.</param>
+        /// <param name="provider">The <see cref="IPlcDataProvider"/> which provides the data of the simulated plc.</param>
+        /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used for logging.</param>
         public Dacs7Server(int port, IPlcDataProvider provider, ILoggerFactory loggerFactory = null)
+            : this(DefaultBindAddress, port, provider, loggerFactory)
+        {
+        }
+
+        /// <summary>
+        /// Constructor of Dacs7Server with a configurable bind address.
+        /// </summary>
+        /// <param name="bindAddress">
+        /// The local address to listen on. This is an ip address (e.g. 127.0.0.1, 192.168.0.10, ::1), a hostname,
+        /// or one of the wildcards "*" and "any" to listen on every interface of the machine.
+        /// The server is not authenticated, so everyone who can reach the given address can read and write
+        /// the simulated data blocks. Therefore only leave the loopback address if this is intended.
+        /// </param>
+        /// <param name="port">The port to listen on.</param>
+        /// <param name="provider">The <see cref="IPlcDataProvider"/> which provides the data of the simulated plc.</param>
+        /// <param name="loggerFactory">The <see cref="ILoggerFactory"/> used for logging.</param>
+        public Dacs7Server(string bindAddress, int port, IPlcDataProvider provider, ILoggerFactory loggerFactory = null)
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             _logger = loggerFactory?.CreateLogger<Dacs7Client>();
             S7Context = new SiemensPlcProtocolContext();
-            ProtocolHandler = new ProtocolHandler(InitializeTransport(port), S7Context, UpdateConnectionState, loggerFactory, NewSocketConnected);
+            BindAddress = string.IsNullOrWhiteSpace(bindAddress) ? DefaultBindAddress : bindAddress.Trim();
+            Port = port;
+            ProtocolHandler = new ProtocolHandler(InitializeTransport(BindAddress, port), S7Context, UpdateConnectionState, loggerFactory, NewSocketConnected);
             _loggerFactory = loggerFactory;
             _provider = provider;
         }
@@ -286,19 +371,20 @@ namespace Dacs7
             }
         }
 
-        private TcpTransport InitializeTransport(int port)
+        private TcpTransport InitializeTransport(string bindAddress, int port)
         {
             _logger?.LogDebug("Start configuring dacs7 with Socket interface");
+            _serverConfig = new ServerSocketConfiguration
+            {
+                Hostname = bindAddress,
+                ServiceName = port
+            };
             TcpTransport transport = new(
                 new Rfc1006ProtocolContext
                 {
                     //DestTsap = Rfc1006ProtocolContext.CalcRemoteTsap((ushort)connectionType, rack, slot),
                 },
-                new ServerSocketConfiguration
-                {
-                    Hostname = "127.0.0.1",
-                    ServiceName = port
-                }
+                _serverConfig
             );
             _logger?.LogDebug("Transport-Configuration: {0}.", transport.Configuration);
             return transport;

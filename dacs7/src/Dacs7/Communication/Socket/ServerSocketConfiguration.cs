@@ -12,13 +12,19 @@ namespace Dacs7.Communication.Socket
         public string NetworkAdapter { get; set; }
         public bool KeepAlive { get; set; } = false;
 
+        /// <summary>
+        /// Maximum number of clients connected at the same time. 0 (the default) means unlimited.
+        /// Further connections are closed directly after they were accepted.
+        /// </summary>
+        public int MaxConnections { get; set; }
+
         public ServerSocketConfiguration()
         {
         }
 
         public sealed override string ToString()
         {
-            return $"Socket: Hostname={Hostname}; ServiceName={ServiceName}; ReceiveBufferSize={ReceiveBufferSize}; KeepAlive={KeepAlive}";
+            return $"Socket: Hostname={Hostname}; ServiceName={ServiceName}; ReceiveBufferSize={ReceiveBufferSize}; KeepAlive={KeepAlive}; MaxConnections={MaxConnections}";
         }
     }
 }

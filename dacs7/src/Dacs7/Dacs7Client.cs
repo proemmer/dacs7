@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -220,14 +221,46 @@ namespace Dacs7
 
         private static void ParseParametersFromAddress(string address, out string host, out int port, out int rack, out int slot)
         {
-            string[] addressPort = address.Split(':');
-            int[] portRackSlot = addressPort.Length > 1 ?
-                                        addressPort[1].Split(',').Select(x => int.Parse(x, NumberStyles.Integer, CultureInfo.InvariantCulture)).ToArray() :
+            SplitHostAndParameters(address, out string hostPart, out string parameters);
+            int[] portRackSlot = parameters != null ?
+                                        parameters.Split(',').Select(x => int.Parse(x, NumberStyles.Integer, CultureInfo.InvariantCulture)).ToArray() :
                                         new int[] { 102, 0, 2 };
-            host = addressPort[0];
+            host = hostPart;
             port = portRackSlot.Length > 0 ? portRackSlot[0] : 102;
             rack = portRackSlot.Length > 1 ? portRackSlot[1] : 0;
             slot = portRackSlot.Length > 2 ? portRackSlot[2] : 2;
+        }
+
+        /// <summary>
+        /// Splits the address into the host and the optional [Port],[Rack],[Slot] part.
+        /// An IPv6 address is written in brackets ([::1]:102,0,2), a bare IPv6 address without
+        /// parameters is also accepted.
+        /// </summary>
+        private static void SplitHostAndParameters(string address, out string host, out string parameters)
+        {
+            if (address != null && address.StartsWith("[", StringComparison.Ordinal))
+            {
+                int end = address.IndexOf(']');
+                if (end > 0)
+                {
+                    host = address.Substring(1, end - 1);
+                    int separator = address.IndexOf(':', end);
+                    parameters = separator > 0 ? address.Substring(separator + 1) : null;
+                    return;
+                }
+            }
+
+            string[] addressPort = address.Split(':');
+            if (addressPort.Length > 2 && IPAddress.TryParse(address, out _))
+            {
+                // more than one colon and a valid ip address, so this is an ipv6 address without parameters
+                host = address;
+                parameters = null;
+                return;
+            }
+
+            host = addressPort[0];
+            parameters = addressPort.Length > 1 ? addressPort[1] : null;
         }
 
 

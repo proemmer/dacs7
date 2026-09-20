@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Benjamin Proemmer. All rights reserved.
 // See License in the project root for license information.
 
+using System;
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 
@@ -22,13 +24,13 @@ namespace Dacs7.Communication
         public static ClientSocketConfiguration FromSocket(System.Net.Sockets.Socket socket)
         {
             IPEndPoint ep = socket.RemoteEndPoint as IPEndPoint;
-            object keepAlive = socket.GetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.KeepAlive);
+            object keepAlive = socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive);
             return new ClientSocketConfiguration
             {
                 Hostname = ep.Address.ToString(),
                 ServiceName = ep.Port,
                 ReceiveBufferSize = socket.ReceiveBufferSize,  // buffer size to use for each socket I/O operation 
-                KeepAlive = keepAlive != null
+                KeepAlive = keepAlive != null && Convert.ToInt32(keepAlive, CultureInfo.InvariantCulture) != 0
             };
         }
 

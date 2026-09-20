@@ -22,6 +22,7 @@ namespace Dacs7.Communication
         private volatile bool _unbinding;
 
         private readonly List<System.Net.Sockets.Socket> _clients = new();
+        private readonly object _clientsLock = new();
 
 
         public sealed override string Identity
@@ -82,25 +83,42 @@ namespace Dacs7.Communication
 
                 await DisposeSocketAsync().ConfigureAwait(false);
                 _identity = null;
-                _socket = new System.Net.Sockets.Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+                IPAddress bindAddress = await ResolveBindAddressAsync(_config.Hostname).ConfigureAwait(false);
+                _socket = new System.Net.Sockets.Socket(bindAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
                 {
                     ReceiveBufferSize = _configuration.ReceiveBufferSize,
                     NoDelay = true
                 };
-                _logger?.LogDebug("Socket connecting. ({0}:{1})", _config.Hostname, _config.ServiceName);
+
+                if (bindAddress.Equals(IPAddress.IPv6Any) && !TryEnableDualMode(_socket))
+                {
+                    // accept IPv4 clients too, otherwise listening on all interfaces would exclude them
+                    _socket.Dispose();
+                    bindAddress = IPAddress.Any;
+                    _socket = new System.Net.Sockets.Socket(bindAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp)
+                    {
+                        ReceiveBufferSize = _configuration.ReceiveBufferSize,
+                        NoDelay = true
+                    };
+                }
+
+                _logger?.LogDebug("Socket binding. ({0}:{1})", bindAddress, _config.ServiceName);
 
                 try
                 {
-                    IPEndPoint epEndpoint = new(IPAddress.Parse(_config.Hostname), _config.ServiceName);
+                    IPEndPoint epEndpoint = new(bindAddress, _config.ServiceName);
                     _socket.Bind(epEndpoint);
                 }
                 catch (SocketException e) when (e.SocketErrorCode == SocketError.AddressAlreadyInUse)
                 {
-                    // TODO
-                    // throw new AddressInUseException(e.Message, e);
+                    // Never continue here: listening on an unbound socket silently binds a random port
+                    // on every interface on unix, so the server would report a successful start while
+                    // no client can reach it on the configured endpoint.
+                    ThrowHelper.ThrowAddressAlreadyInUseException(bindAddress.ToString(), _config.ServiceName, e);
                 }
 
                 _socket.Listen(512);
+                _logger?.LogDebug("Socket listening. ({0})", _socket.LocalEndPoint);
 
                 _tokenSource = new CancellationTokenSource();
                 // Unwrap, so awaiting _receivingTask waits for the accept loop itself and not only for its start.
@@ -187,17 +205,21 @@ namespace Dacs7.Communication
                 catch (OperationCanceledException) { } // accept loop was cancelled before it started
             }
 
-            foreach (System.Net.Sockets.Socket client in _clients)
+            foreach (System.Net.Sockets.Socket client in TakeAllClients())
             {
                 client.Close();
                 client.Dispose();
             }
 
-            _clients.Clear();
             _unbinding = false;
             _socket = null;
             _tokenSource = null;
             _receivingTask = null;
+
+            // The accept loop has no equivalent to the receive loop of a client socket, so the state has to be
+            // published here. Without it the socket stays "connected" after a close and starting the server
+            // again would silently do nothing.
+            await PublishConnectionStateChanged(false).ConfigureAwait(false);
         }
 
         protected sealed override Task HandleSocketDown()
@@ -206,6 +228,57 @@ namespace Dacs7.Communication
             return PublishConnectionStateChanged(false);
         }
 
+
+        /// <summary>
+        /// Resolves the configured hostname to the address to bind to.
+        /// Accepts an IPv4 or IPv6 address, a hostname, and the wildcards "*" and "any"
+        /// which bind every interface of the machine.
+        /// </summary>
+        private async Task<IPAddress> ResolveBindAddressAsync(string hostname)
+        {
+            if (string.IsNullOrWhiteSpace(hostname))
+            {
+                return IPAddress.Loopback;
+            }
+
+            string value = hostname.Trim();
+
+            if (value == "*" || value.Equals("any", StringComparison.OrdinalIgnoreCase))
+            {
+                return System.Net.Sockets.Socket.OSSupportsIPv6 ? IPAddress.IPv6Any : IPAddress.Any;
+            }
+
+            if (IPAddress.TryParse(value, out IPAddress parsed))
+            {
+                return parsed;
+            }
+
+            IPAddress[] addresses = await Dns.GetHostAddressesAsync(value).ConfigureAwait(false);
+            IPAddress resolved = Array.Find(addresses, a => a.AddressFamily == AddressFamily.InterNetwork)
+                                 ?? Array.Find(addresses, a => a.AddressFamily == AddressFamily.InterNetworkV6);
+
+            if (resolved == null)
+            {
+                ThrowHelper.ThrowCouldNotResolveHostname(value);
+            }
+
+            _logger?.LogDebug("Hostname {0} resolved to {1}.", value, resolved);
+            return resolved;
+        }
+
+        private bool TryEnableDualMode(System.Net.Sockets.Socket socket)
+        {
+            try
+            {
+                socket.DualMode = true;
+                return true;
+            }
+            catch (Exception ex) when (ex is NotSupportedException || ex is SocketException || ex is PlatformNotSupportedException)
+            {
+                _logger?.LogDebug(ex, "Dual mode is not supported on this platform, listening on IPv4 only.");
+                return false;
+            }
+        }
 
         private async Task RunAcceptLoopAsync()
         {
@@ -225,8 +298,18 @@ namespace Dacs7.Communication
                         try
                         {
                             acceptSocket.NoDelay = true;
-                            _clients.RemoveAll(IsDisposed); // sockets of disconnected clients are already closed
-                            _clients.Add(acceptSocket);
+                            if (_config.KeepAlive)
+                            {
+                                acceptSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, 1);
+                            }
+
+                            if (!TryAddClient(acceptSocket))
+                            {
+                                _logger?.LogWarning("The maximum of {0} connections is reached, a further connection was rejected.", _config.MaxConnections);
+                                acceptSocket.Dispose();
+                                continue;
+                            }
+
                             if (OnNewSocketConnected != null)
                             {
                                 await OnNewSocketConnected.Invoke(acceptSocket).ConfigureAwait(false);
@@ -236,7 +319,7 @@ namespace Dacs7.Communication
                         {
                             // a failing connection must not stop the server from accepting further connections
                             _logger?.LogWarning(ex, "Could not set up accepted connection, the connection will be closed.");
-                            _clients.Remove(acceptSocket);
+                            RemoveClient(acceptSocket);
                             acceptSocket.Dispose();
                         }
                     }
@@ -264,6 +347,42 @@ namespace Dacs7.Communication
             }
         }
 
+
+        /// <summary>
+        /// Adds the accepted socket to the connected clients, if the configured maximum is not reached.
+        /// </summary>
+        private bool TryAddClient(System.Net.Sockets.Socket client)
+        {
+            lock (_clientsLock)
+            {
+                _clients.RemoveAll(IsDisposed); // sockets of disconnected clients are already closed
+                if (_config.MaxConnections > 0 && _clients.Count >= _config.MaxConnections)
+                {
+                    return false;
+                }
+
+                _clients.Add(client);
+                return true;
+            }
+        }
+
+        private void RemoveClient(System.Net.Sockets.Socket client)
+        {
+            lock (_clientsLock)
+            {
+                _clients.Remove(client);
+            }
+        }
+
+        private List<System.Net.Sockets.Socket> TakeAllClients()
+        {
+            lock (_clientsLock)
+            {
+                List<System.Net.Sockets.Socket> clients = new(_clients);
+                _clients.Clear();
+                return clients;
+            }
+        }
 
         private static bool IsDisposed(System.Net.Sockets.Socket socket)
         {

@@ -20,7 +20,8 @@ namespace Dacs7Cli
                 CommandOption debugOption = cmd.Option("-d | --debug", "Activate debug output", CommandOptionType.NoValue);
                 CommandOption traceOption = cmd.Option("-t | --trace", "Trace also dacs7 internals", CommandOptionType.NoValue);
                 CommandOption maxJobsOption = cmd.Option("-j | --jobs", "Maximum number of concurrent jobs.", CommandOptionType.SingleValue);
-                CommandOption dataareas = cmd.Option("-t | --tags", "Tags used to register blocks for the simulation Provider (e.g. DB1.0,B,1000).", CommandOptionType.MultipleValue);
+                CommandOption dataareas = cmd.Option("-g | --tags", "Tags used to register blocks for the simulation Provider (e.g. DB1.0,B,1000).", CommandOptionType.MultipleValue);
+                CommandOption bindOption = cmd.Option("-b | --bind", "The local address to listen on (default 127.0.0.1, use \"any\" to listen on all interfaces - the server is not authenticated!).", CommandOptionType.SingleValue);
                 CommandOption addressOption = cmd.Option("-a | --address", "The IPAddress of the plc is used by the Relay provider to connect to a plc.", CommandOptionType.SingleValue);
                 CommandOption dataProvider = cmd.Option("-x | --provider", "Used data provider  (Simulation, Relay).", CommandOptionType.SingleValue);
                 CommandOption pduSize = cmd.Option("-s | --pdu", "MaxPdu Size.", CommandOptionType.SingleValue);
@@ -39,6 +40,7 @@ namespace Dacs7Cli
                             Address = addressOption.HasValue() ? addressOption.Value() : "127.0.0.1:102",
                             MaxJobs = maxJobsOption.HasValue() ? int.Parse(maxJobsOption.Value()) : 10,
                             Port = portOption.HasValue() ? int.Parse(portOption.Value()) : 102,
+                            BindAddress = bindOption.HasValue() ? bindOption.Value() : Dacs7Server.DefaultBindAddress,
                             Tags = dataareas.HasValue() ? dataareas.Values : null,
                             DataProvider = dataProvider.HasValue() ? dataProvider.Value() : null,
                             MaxPduSize = pduSize.HasValue() ? ushort.Parse(pduSize.Value()) : (ushort)960
@@ -91,7 +93,7 @@ namespace Dacs7Cli
                 provider = RelayPlcDataProvider.Instance;
             }
 
-            Dacs7Server server = new(options.Port, provider, loggerFactory)
+            Dacs7Server server = new(options.BindAddress, options.Port, provider, loggerFactory)
             {
                 MaxAmQCalled = (ushort)options.MaxJobs,
                 MaxAmQCalling = (ushort)options.MaxJobs,
@@ -102,8 +104,8 @@ namespace Dacs7Cli
             try
             {
 
-                Console.WriteLine($"Started serving on port {options.Port} !");
                 await server.ConnectAsync();
+                Console.WriteLine($"Started serving on {server.BindAddress}:{options.Port} !");
 
                 if (client != null)
                 {

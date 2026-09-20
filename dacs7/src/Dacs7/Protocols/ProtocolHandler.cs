@@ -40,6 +40,11 @@ namespace Dacs7.Protocols
 
         public ConnectionState ConnectionState { get; private set; } = ConnectionState.Closed;
 
+        /// <summary>
+        /// True if the underlying transport (socket) is open. For a server this means it is listening.
+        /// </summary>
+        public bool IsTransportConnected => _transport?.Connection?.IsConnected == true;
+
         internal ushort GetNextReferenceId()
         {
             ushort id = unchecked((ushort)Interlocked.Increment(ref _referenceId));

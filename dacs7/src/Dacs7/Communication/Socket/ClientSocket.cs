@@ -99,13 +99,14 @@ namespace Dacs7.Communication
 
                 await DisposeSocketAsync().ConfigureAwait(false);
                 _identity = null;
-                _socket = new System.Net.Sockets.Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+                IPAddress[] addresses = await ResolveTargetAsync(_config.Hostname).ConfigureAwait(false);
+                _socket = new System.Net.Sockets.Socket(addresses[0].AddressFamily, SocketType.Stream, ProtocolType.Tcp)
                 {
                     ReceiveBufferSize = _configuration.ReceiveBufferSize,
                     NoDelay = true
                 };
                 _logger?.LogDebug("Socket connecting. ({0}:{1})", _config.Hostname, _config.ServiceName);
-                await _socket.ConnectAsync(_config.Hostname, _config.ServiceName).ConfigureAwait(false);
+                await _socket.ConnectAsync(addresses, _config.ServiceName).ConfigureAwait(false);
                 EnsureConnected();
                 _logger?.LogDebug("Socket connected. ({0}:{1})", _config.Hostname, _config.ServiceName);
                 if (_config.KeepAlive)
@@ -200,6 +201,33 @@ namespace Dacs7.Communication
             _socket = null;
             _tokenSource = null;
             _receivingTask = null;
+        }
+
+        /// <summary>
+        /// Resolves the configured hostname to the addresses to connect to.
+        /// IPv4 is preferred, an IPv6 only target (or an IPv6 address) is connected over IPv6.
+        /// </summary>
+        private async Task<IPAddress[]> ResolveTargetAsync(string hostname)
+        {
+            if (IPAddress.TryParse(hostname, out IPAddress literal))
+            {
+                return new[] { literal };
+            }
+
+            IPAddress[] resolved = await Dns.GetHostAddressesAsync(hostname).ConfigureAwait(false);
+            IPAddress[] addresses = Array.FindAll(resolved, a => a.AddressFamily == AddressFamily.InterNetwork);
+
+            if (addresses.Length == 0)
+            {
+                addresses = Array.FindAll(resolved, a => a.AddressFamily == AddressFamily.InterNetworkV6);
+            }
+
+            if (addresses.Length == 0)
+            {
+                ThrowHelper.ThrowCouldNotResolveHostname(hostname);
+            }
+
+            return addresses;
         }
 
         private async Task StartReceive()
