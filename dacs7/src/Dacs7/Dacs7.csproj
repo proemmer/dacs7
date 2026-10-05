@@ -21,7 +21,7 @@
       * see CHANGELOG.md for details
 </PackageReleaseNotes>
     <PackageProjectUrl>http://proemmer.github.io/dacs7</PackageProjectUrl>
-    <PackageLicenseUrl>https://opensource.org/licenses/Apache-2.0</PackageLicenseUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <RepositoryUrl>git://github.com/proemmer/dacs7</RepositoryUrl>
@@ -31,7 +31,7 @@
 
 
 
-    <Version>2.3.2</Version>
+    <Version>2.3.3</Version>
     <SignAssembly>true</SignAssembly>
     
     

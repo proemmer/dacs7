@@ -23,6 +23,7 @@
 
 ### Build
 
+- **The package declares its licence as the SPDX expression `Apache-2.0`.** Before, the nuspec carried only the deprecated licence URL, which licence scanners and SBOM tools cannot read. The licence itself is unchanged.
 - **The library compiles with C# 13 and later.** `Converter.ToBinString` and `Converter.ToHexString` called `Enumerable.Reverse` through a `byte[]`, which resolves to the (void returning) span overload since C# 13, so the build failed with the current SDKs.
 
 ## 2.3.0
