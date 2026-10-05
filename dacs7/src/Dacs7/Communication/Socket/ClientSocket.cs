@@ -252,7 +252,7 @@ namespace Dacs7.Communication
                         }
 
                         ArraySegment<byte> buffer = new(receiveBuffer, buffered, bufferSize - buffered);
-                        int received = await _socket.ReceiveAsync(buffer, SocketFlags.Partial).ConfigureAwait(false);
+                        int received = await _socket.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false); // Partial is Windows-only: Linux rejects it ("Operation not supported")
 
                         if (received == 0)
                         {
